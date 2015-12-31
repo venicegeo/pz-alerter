@@ -10,8 +10,6 @@ import (
 	"testing"
 )
 
-var numRead int
-
 const kafkaHost = "localhost:9092"
 var kafka *Kafka
 
