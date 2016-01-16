@@ -8,85 +8,17 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 )
 
-//---------------------------------------------------------------------------
-
-var alertID = 1
-
-type Alert struct {
-	ID        string `json:"id"`
-	Name      string `json:"name" binding:"required"`
-	Condition string `json:"condition" binding:"required"`
-}
-
-type AlertDB struct {
-	data map[string]Alert
-}
-
-func newAlertDB() *AlertDB {
-	db := new(AlertDB)
-	db.data = make(map[string]Alert)
-	return db
-}
-
-func (db *AlertDB) write(alert *Alert) error {
-	alert.ID = strconv.Itoa(alertID)
-	db.data[alert.ID] = *alert
-	alertID++
-	return nil
-}
-
-func (db *AlertDB) readByID(id string) *Alert {
-	v, ok := db.data[id]
-	if !ok {
-		return nil
-	}
-	return &v
-}
-
-func (db *AlertDB) deleteByID(id string) bool {
-	_, ok := db.data[id]
-	if !ok {
-		return false
-	}
-	delete(db.data, id)
-	return true
-}
 
 //---------------------------------------------------------------------------
 
-var eventID = 1
 
-type Event struct {
-	ID        string `json:"id"`
-	Condition string `json:"condition" binding:"required"`
-}
-
-type EventDB struct {
-	data map[string]Event
-}
-
-func newEventDB() *EventDB {
-	db := new(EventDB)
-	db.data = make(map[string]Event)
-	return db
-}
-
-func (db *EventDB) write(event *Event) error {
-	event.ID = strconv.Itoa(eventID)
-	db.data[event.ID] = *event
-	eventID++
-	return nil
-}
-
-//---------------------------------------------------------------------------
 
 func runAlertServer(discoveryURL string, port string) error {
 
-	alertDB := newAlertDB()
+	conditionDB := newConditionDB()
 	eventDB := newEventDB()
 
 	myAddress := fmt.Sprintf("%s:%s", "localhost", port)
@@ -101,6 +33,8 @@ func runAlertServer(discoveryURL string, port string) error {
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.Default()
+
+	//---------------------------------
 
 	router.POST("/events", func(c *gin.Context) {
 		var event Event
@@ -121,28 +55,45 @@ func runAlertServer(discoveryURL string, port string) error {
 		c.JSON(http.StatusOK, eventDB.data)
 	})
 
-	router.POST("/alerts", func(c *gin.Context) {
-		var alert Alert
-		err := c.BindJSON(&alert)
+	//---------------------------------
+
+	router.POST("/conditions", func(c *gin.Context) {
+		var condition Condition
+		err := c.BindJSON(&condition)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		err = alertDB.write(&alert)
+		err = conditionDB.write(&condition)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"id": alert.ID})
+		c.JSON(http.StatusCreated, gin.H{"id": condition.ID})
 	})
 
-	router.GET("/alerts", func(c *gin.Context) {
-		c.JSON(http.StatusOK, alertDB.data)
+	router.PUT("/conditions", func(c *gin.Context) {
+		var condition Condition
+		err := c.BindJSON(&condition)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		ok := conditionDB.update(&condition)
+		if !ok {
+			c.JSON(http.StatusNotFound, gin.H{"id": condition.ID})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"id": condition.ID})
 	})
 
-	router.GET("/alerts/:id", func(c *gin.Context) {
+	router.GET("/conditions", func(c *gin.Context) {
+		c.JSON(http.StatusOK, conditionDB.data)
+	})
+
+	router.GET("/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		v := alertDB.readByID(id)
+		v := conditionDB.readByID(id)
 		if v == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
@@ -150,15 +101,17 @@ func runAlertServer(discoveryURL string, port string) error {
 		c.JSON(http.StatusOK, v)
 	})
 
-	router.DELETE("/alerts/:id", func(c *gin.Context) {
+	router.DELETE("/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok := alertDB.deleteByID(id)
+		ok := conditionDB.deleteByID(id)
 		if !ok {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 		c.JSON(http.StatusOK, nil)
 	})
+
+	//---------------------------------
 
 	err = router.Run("localhost:" + port)
 	return err

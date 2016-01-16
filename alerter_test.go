@@ -71,15 +71,15 @@ func getEvents(t *testing.T) []string {
 
 //---------------------------------------------------------------------------
 
-func makeAlert(t *testing.T, name string) string {
-	m := Alert{Name: name, Condition: "c"}
+func makeCondition(t *testing.T, name string) string {
+	m := Condition{Name: name, Condition: "c"}
 
 	data, err := json.Marshal(m)
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer(data)
 
-	resp, err := http.Post("http://localhost:12342/alerts", piazza.ContentTypeJSON, body)
+	resp, err := http.Post("http://localhost:12342/conditions", piazza.ContentTypeJSON, body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -95,8 +95,8 @@ func makeAlert(t *testing.T, name string) string {
 	return x["id"]
 }
 
-func getAlert(t *testing.T, id string) bool {
-	resp, err := http.Get("http://localhost:12342/alerts/" + id)
+func getCondition(t *testing.T, id string) bool {
+	resp, err := http.Get("http://localhost:12342/conditions/" + id)
 	assert.NoError(t, err)
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -117,8 +117,8 @@ func getAlert(t *testing.T, id string) bool {
 	return true
 }
 
-func getAlerts(t *testing.T) []string {
-	resp, err := http.Get("http://localhost:12342/alerts")
+func getConditions(t *testing.T) []string {
+	resp, err := http.Get("http://localhost:12342/conditions")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -137,8 +137,8 @@ func getAlerts(t *testing.T) []string {
 	return a
 }
 
-func deleteAlert(t *testing.T, id string) {
-	resp, err := piazza.Delete("http://localhost:12342/alerts/" + id)
+func deleteCondition(t *testing.T, id string) {
+	resp, err := piazza.Delete("http://localhost:12342/conditions/" + id)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
@@ -146,35 +146,35 @@ func deleteAlert(t *testing.T, id string) {
 func TestOkay(t *testing.T) {
 	setup("12342")
 
-	a1 := makeAlert(t, "a")
-	assert.Equal(t, "1", a1)
+	c1 := makeCondition(t, "c1")
+	assert.Equal(t, "1", c1)
 
-	a2 := makeAlert(t, "b")
-	assert.Equal(t, "2", a2)
+	c2 := makeCondition(t, "c2")
+	assert.Equal(t, "2", c2)
 
-	as := getAlerts(t)
-	assert.Len(t, as, 2)
-	assert.Contains(t, as, a1)
-	assert.Contains(t, as, a2)
+	cs := getConditions(t)
+	assert.Len(t, cs, 2)
+	assert.Contains(t, cs, c1)
+	assert.Contains(t, cs, c2)
 
-	ok := getAlert(t, a1)
+	ok := getCondition(t, c1)
 	assert.True(t, ok)
 
-	deleteAlert(t, a1)
+	deleteCondition(t, c1)
 
-	ok = getAlert(t, a1)
+	ok = getCondition(t, c1)
 	assert.True(t, !ok)
 
-	deleteAlert(t, a2)
+	deleteCondition(t, c2)
 
-	as = getAlerts(t)
-	assert.Len(t, as, 0)
+	cs = getConditions(t)
+	assert.Len(t, cs, 0)
 
 //
-	e1 := makeEvent(t, "x")
+	e1 := makeEvent(t, "e1")
 	assert.Equal(t, "1", e1)
 
-	e2 := makeEvent(t, "y")
+	e2 := makeEvent(t, "e2")
 	assert.Equal(t, "2", e2)
 
 	es := getEvents(t)
