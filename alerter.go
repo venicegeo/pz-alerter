@@ -8,14 +8,16 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"strconv"
+	"strings"
 )
 
-var alertId int = 1
+//---------------------------------------------------------------------------
+
+var alertID = 1
 
 type Alert struct {
-	Id        string `json:"id"`
+	ID        string `json:"id"`
 	Name      string `json:"name" binding:"required"`
 	Condition string `json:"condition" binding:"required"`
 }
@@ -30,14 +32,14 @@ func newAlertDB() *AlertDB {
 	return db
 }
 
-func (db *AlertDB) write(alert* Alert) error {
-	alert.Id = strconv.Itoa(alertId)
-	db.data[alert.Id] = *alert
-	alertId++
+func (db *AlertDB) write(alert *Alert) error {
+	alert.ID = strconv.Itoa(alertID)
+	db.data[alert.ID] = *alert
+	alertID++
 	return nil
 }
 
-func (db *AlertDB) readById(id string) *Alert {
+func (db *AlertDB) readByID(id string) *Alert {
 	v, ok := db.data[id]
 	if !ok {
 		return nil
@@ -45,7 +47,7 @@ func (db *AlertDB) readById(id string) *Alert {
 	return &v
 }
 
-func (db *AlertDB) deleteById(id string) bool {
+func (db *AlertDB) deleteByID(id string) bool {
 	_, ok := db.data[id]
 	if !ok {
 		return false
@@ -54,9 +56,38 @@ func (db *AlertDB) deleteById(id string) bool {
 	return true
 }
 
+//---------------------------------------------------------------------------
+
+var eventID = 1
+
+type Event struct {
+	ID        string `json:"id"`
+	Condition string `json:"condition" binding:"required"`
+}
+
+type EventDB struct {
+	data map[string]Event
+}
+
+func newEventDB() *EventDB {
+	db := new(EventDB)
+	db.data = make(map[string]Event)
+	return db
+}
+
+func (db *EventDB) write(event *Event) error {
+	event.ID = strconv.Itoa(eventID)
+	db.data[event.ID] = *event
+	eventID++
+	return nil
+}
+
+//---------------------------------------------------------------------------
+
 func runAlertServer(discoveryURL string, port string) error {
 
-	db := newAlertDB()
+	alertDB := newAlertDB()
+	eventDB := newEventDB()
 
 	myAddress := fmt.Sprintf("%s:%s", "localhost", port)
 	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
@@ -71,6 +102,25 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	router := gin.Default()
 
+	router.POST("/events", func(c *gin.Context) {
+		var event Event
+		err := c.BindJSON(&event)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		err = eventDB.write(&event)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
+	})
+
+	router.GET("/events", func(c *gin.Context) {
+		c.JSON(http.StatusOK, eventDB.data)
+	})
+
 	router.POST("/alerts", func(c *gin.Context) {
 		var alert Alert
 		err := c.BindJSON(&alert)
@@ -78,21 +128,21 @@ func runAlertServer(discoveryURL string, port string) error {
 			c.Error(err)
 			return
 		}
-		err = db.write(&alert)
+		err = alertDB.write(&alert)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"id": alert.Id})
+		c.JSON(http.StatusCreated, gin.H{"id": alert.ID})
 	})
 
 	router.GET("/alerts", func(c *gin.Context) {
-		c.JSON(http.StatusOK, db.data)
+		c.JSON(http.StatusOK, alertDB.data)
 	})
 
 	router.GET("/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		v := db.readById(id)
+		v := alertDB.readByID(id)
 		if v == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
@@ -102,7 +152,7 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	router.DELETE("/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok := db.deleteById(id)
+		ok := alertDB.deleteByID(id)
 		if !ok {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
@@ -113,7 +163,6 @@ func runAlertServer(discoveryURL string, port string) error {
 	err = router.Run("localhost:" + port)
 	return err
 }
-
 
 func app() int {
 	var discoveryURL = flag.String("discovery", "http://localhost:3000", "URL of pz-discovery")
