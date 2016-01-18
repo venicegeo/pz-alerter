@@ -11,15 +11,24 @@ import (
 	"strings"
 )
 
-
 //---------------------------------------------------------------------------
 
+func checkConditions(e Event, conditionDB *ConditionDB, alertDB *AlertDB) {
+	for _, cond := range(conditionDB.data) {
+		if cond.Type == e.Type {
+			a := newAlert(cond.ID, cond.Date)
+			alertDB.write(&a)
+		}
+	}
+}
 
+//---------------------------------------------------------------------------
 
 func runAlertServer(discoveryURL string, port string) error {
 
 	conditionDB := newConditionDB()
 	eventDB := newEventDB()
+	alertDB := newAlertDB()
 
 	myAddress := fmt.Sprintf("%s:%s", "localhost", port)
 	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
@@ -32,7 +41,9 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	gin.SetMode(gin.ReleaseMode)
 
-	router := gin.Default()
+	router := gin.New()
+	//router.Use(gin.Logger())
+	//router.Use(gin.Recovery())
 
 	//---------------------------------
 
@@ -49,6 +60,8 @@ func runAlertServer(discoveryURL string, port string) error {
 			return
 		}
 		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
+
+		checkConditions(event, conditionDB, alertDB)
 	})
 
 	router.GET("/events", func(c *gin.Context) {
@@ -57,6 +70,21 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	//---------------------------------
 
+	router.GET("/alerts:id", func(c *gin.Context) {
+		id := c.Param("id")
+		v := alertDB.getByID(id)
+		if v == nil {
+			c.JSON(http.StatusNotFound, gin.H{"condition_id": id})
+			return
+		}
+		c.JSON(http.StatusOK, v)
+	})
+
+	router.GET("/alerts", func(c *gin.Context) {
+		c.JSON(http.StatusOK, alertDB.data)
+	})
+
+	//---------------------------------
 	router.POST("/conditions", func(c *gin.Context) {
 		var condition Condition
 		err := c.BindJSON(&condition)

@@ -8,27 +8,27 @@ import (
 //---------------------------------------------------------------------------
 
 var eventID = 1
+
 func newEventID() string {
 	s := strconv.Itoa(eventID)
 	eventID++
 	return s
 }
 
+// Event types
 const EventDataIngested = "DataIngested"
 const EventDataAccessed = "DataAccessed"
 const EventUSDataFound = "USDataFound"
+const EventFoo = "Foo"
+const EventBar = "Bar"
+
+type EventType string
 
 type Event struct {
-	ID             string `json:"id"`
-//	Type           string `json:"type" binding:"required"`
-	Condition      string `json:"condition" binding:"required"` // an ES query string
-//	Title          string `json:"title" binding:"required"`
-//	Description    string `json:"description"`
-//	UserID         string `json:"used_id" binding:"required"`
-//	StartDate      string `json:"start_date" binding:"required"`
-//	ExpirationDate string `json:"expiration_date"`
-//	IsEnabled      bool   `json:"is_enabled" binding:"required"`
-//	HitCount       int    `json:"hit_count" binding:"required"`
+	ID   string            `json:"id"`
+	Type EventType         `json:"type" binding:"required"`
+	Date string            `json:"date" binding:"required"`
+	Data map[string]string `json:"data"` // specific to event type
 }
 
 type EventDB struct {
