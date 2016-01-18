@@ -11,16 +11,6 @@ import (
 	"strings"
 )
 
-//---------------------------------------------------------------------------
-
-func checkConditions(e Event, conditionDB *ConditionDB, alertDB *AlertDB) {
-	for _, cond := range(conditionDB.data) {
-		if cond.Type == e.Type {
-			a := newAlert(cond.ID, cond.Date)
-			alertDB.write(&a)
-		}
-	}
-}
 
 //---------------------------------------------------------------------------
 
@@ -61,7 +51,7 @@ func runAlertServer(discoveryURL string, port string) error {
 		}
 		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
 
-		checkConditions(event, conditionDB, alertDB)
+		alertDB.checkConditions(event, conditionDB)
 	})
 
 	router.GET("/events", func(c *gin.Context) {
@@ -70,7 +60,7 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	//---------------------------------
 
-	router.GET("/alerts:id", func(c *gin.Context) {
+	router.GET("/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		v := alertDB.getByID(id)
 		if v == nil {
@@ -81,7 +71,7 @@ func runAlertServer(discoveryURL string, port string) error {
 	})
 
 	router.GET("/alerts", func(c *gin.Context) {
-		c.JSON(http.StatusOK, alertDB.data)
+		c.JSON(http.StatusOK, alertDB.getAll())
 	})
 
 	//---------------------------------

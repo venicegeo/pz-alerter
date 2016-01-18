@@ -174,7 +174,7 @@ func deleteCondition(t *testing.T, id string) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func getAlerts(t *testing.T) []string {
+func getAlerts(t *testing.T) []Alert {
 	resp, err := http.Get("http://localhost:12342/alerts")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -182,14 +182,14 @@ func getAlerts(t *testing.T) []string {
 	d, err := ioutil.ReadAll(resp.Body)
 	assert.NoError(t, err)
 	defer resp.Body.Close()
-	
+
 	var x map[string]Alert
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
 
-	a := make([]string, 0)
+	a := make([]Alert, 0)
 	for i := range x {
-		a = append(a, fmt.Sprintf("%d", x[i]))
+		a = append(a, x[i])
 	}
 	return a
 }
@@ -276,13 +276,13 @@ func (suite *AlerterTester) TestTriggering() {
 	assert.Equal(t, "5", c3)
 
 	rawE1 := Event{
-		Type: EventDataIngested,
+		Type: EventDataAccessed,
 		Date: time.Now().String(),
 		Data: map[string]string{"file": "111.tif"},
 	}
 
 	rawE2 := Event{
-		Type: EventDataAccessed,
+		Type: EventDataIngested,
 		Date: time.Now().String(),
 		Data: map[string]string{"file": "111.tif"},
 	}
@@ -303,4 +303,10 @@ func (suite *AlerterTester) TestTriggering() {
 
 	as := getAlerts(t)
 	assert.Len(t, as, 2)
+	assert.Equal(t, "1", as[0].ID)
+	assert.Equal(t, "3", as[0].EventID)
+	assert.Equal(t, "4", as[0].ConditionID)
+	assert.Equal(t, "2", as[1].ID)
+	assert.Equal(t, "4", as[1].EventID)
+	assert.Equal(t, "3", as[1].ConditionID)
 }
