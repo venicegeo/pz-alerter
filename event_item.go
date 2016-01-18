@@ -8,12 +8,6 @@ import (
 
 var eventID = 1
 
-func newEventID() string {
-	s := strconv.Itoa(eventID)
-	eventID++
-	return s
-}
-
 // Event types
 const EventDataIngested = "DataIngested"
 const EventDataAccessed = "DataAccessed"
@@ -24,9 +18,16 @@ const EventBar = "Bar"
 type EventType string
 
 type Event struct {
-	ID   string            `json:"id"`
+	ID   string            `json:"id" binding:"required"`
 	Type EventType         `json:"type" binding:"required"`
 	Date string            `json:"date" binding:"required"`
 	Data map[string]string `json:"data"` // specific to event type
-	Tag  string            `json:"tag"`
+}
+
+func newEvent() *Event {
+	id := strconv.Itoa(eventID)
+	eventID++
+
+	e := &Event{ID: id}
+	return e
 }

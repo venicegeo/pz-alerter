@@ -8,11 +8,6 @@ import (
 
 var conditionID = 1
 
-func newConditionID() string {
-	s := strconv.Itoa(conditionID)
-	conditionID++
-	return s
-}
 
 type Condition struct {
 	ID string `json:"id"`
@@ -27,3 +22,10 @@ type Condition struct {
 	HitCount int `json:"hit_count"`
 }
 
+func newCondition() *Condition {
+	id := strconv.Itoa(conditionID)
+	conditionID++
+
+	e := &Condition{ID: id}
+	return e
+}

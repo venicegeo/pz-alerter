@@ -14,45 +14,64 @@ import (
 
 //---------------------------------------------------------------------------
 
-var esClient *elastic.Client
+func makeESIndex(client *elastic.Client, index string) error {
+	exists, err := client.IndexExists(index).Do()
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		_, err = client.DeleteIndex(index).Do()
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = client.CreateIndex(index).Do()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func newESClient() (*elastic.Client, error) {
+	client, err := elastic.NewClient()
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
+}
+
+///////////////////////////////////////////////////////////
 
 func runAlertServer(discoveryURL string, port string) error {
 
-	conditionDB := newConditionDB()
-	eventDB := newEventDB()
-	alertDB := newAlertDB()
+	esClient, err := newESClient()
+	if err != nil {
+		return err
+	}
+
+	conditionDB, err := newConditionDB(esClient, "conditions")
+	if err != nil {
+		return err
+	}
+	eventDB, err := newEventDB(esClient, "events")
+	if err != nil {
+		return err
+	}
+	alertDB, err := newAlertDB(esClient, "alerts")
+	if err != nil {
+		return err
+	}
 
 	myAddress := fmt.Sprintf("%s:%s", "localhost", port)
 	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
 
 	piazza.RegistryInit(discoveryURL)
-	err := piazza.RegisterService("pz-alerter", "core-service", myURL)
+	err = piazza.RegisterService("pz-alerter", "core-service", myURL)
 	if err != nil {
 		return err
 	}
-
-	///////////////////////////////////////////////////////
-	// Create a client
-	esClient, err = elastic.NewClient()
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-
-	// Delete the index, just in case
-	_, err = esClient.DeleteIndex("events").Do()
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-
-	// Create the index
-	_, err = esClient.CreateIndex("events").Do()
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-	///////////////////////////////////////////////////////////
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -63,34 +82,42 @@ func runAlertServer(discoveryURL string, port string) error {
 	//---------------------------------
 
 	router.POST("/events", func(c *gin.Context) {
-		var event Event
-		err := c.BindJSON(&event)
+		event := &Event{}
+		err := c.BindJSON(event)
 		if err != nil {
 			log.Println(err)
 			c.Error(err)
 			return
 		}
-		err = eventDB.write(&event)
+		err = eventDB.write(event)
 		if err != nil {
-			log.Println("bbbb")
+			log.Println("bbbb",err)
 			c.Error(err)
 			return
 		}
-		log.Println("cccc")
 		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
 
-		alertDB.checkConditions(event, conditionDB)
+		alertDB.checkConditions(*event, conditionDB)
 	})
 
 	router.GET("/events", func(c *gin.Context) {
-		c.JSON(http.StatusOK, eventDB.getAll())
+		m, err := eventDB.getAll()
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(http.StatusOK, m)
 	})
 
 	//---------------------------------
 
 	router.GET("/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		v := alertDB.getByID(id)
+		v, err := alertDB.getByConditionID(id)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"condition_id": id})
+			return
+		}
 		if v == nil {
 			c.JSON(http.StatusNotFound, gin.H{"condition_id": id})
 			return
@@ -99,7 +126,12 @@ func runAlertServer(discoveryURL string, port string) error {
 	})
 
 	router.GET("/alerts", func(c *gin.Context) {
-		c.JSON(http.StatusOK, alertDB.getAll())
+		all, err := alertDB.getAll()
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(http.StatusOK, all)
 	})
 
 	//---------------------------------
@@ -118,7 +150,7 @@ func runAlertServer(discoveryURL string, port string) error {
 		c.JSON(http.StatusCreated, gin.H{"id": condition.ID})
 	})
 
-	router.PUT("/conditions", func(c *gin.Context) {
+	/*router.PUT("/conditions", func(c *gin.Context) {
 		var condition Condition
 		err := c.BindJSON(&condition)
 		if err != nil {
@@ -131,15 +163,24 @@ func runAlertServer(discoveryURL string, port string) error {
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"id": condition.ID})
-	})
+	})*/
 
 	router.GET("/conditions", func(c *gin.Context) {
-		c.JSON(http.StatusOK, conditionDB.data)
+		all, err := conditionDB.getAll()
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		c.JSON(http.StatusOK, all)
 	})
 
 	router.GET("/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		v := conditionDB.readByID(id)
+		v, err := conditionDB.readByID(id)
+		if err != nil {
+			c.Error(err)
+			return
+		}
 		if v == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
@@ -149,8 +190,8 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	router.DELETE("/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok := conditionDB.deleteByID(id)
-		if !ok {
+		err := conditionDB.deleteByID(id)
+		if err != nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}

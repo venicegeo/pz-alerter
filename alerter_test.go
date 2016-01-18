@@ -45,11 +45,13 @@ func setup(port string) {
 //---------------------------------------------------------------------------
 
 func makeEvent(t *testing.T, name string) string {
-	m := Event{Type: "=type=", Date: "=date="}
+	m := newEvent()
+	m.Type = "=type="
+	m.Date = "=date="
 	return makeRawEvent(t, m)
 }
 
-func makeRawEvent(t *testing.T, event Event) string {
+func makeRawEvent(t *testing.T, event *Event) string {
 
 	data, err := json.Marshal(event)
 	assert.NoError(t, err)
@@ -95,16 +97,16 @@ func getEvents(t *testing.T) []string {
 //---------------------------------------------------------------------------
 
 func makeCondition(t *testing.T, title string) string {
-	m := Condition{
-		Title:     title,
-		Type:      "=type=",
-		UserID:    "=userid=",
-		Date: "=date="}
+	m := newCondition()
+	m.Title = title
+	m.Type = "=type="
+	m.UserID = "=userid="
+	m.Date = "=date="
 
 	return makeRawCondition(t, m)
 }
 
-func makeRawCondition(t *testing.T, cond Condition) string {
+func makeRawCondition(t *testing.T, cond *Condition) string {
 	data, err := json.Marshal(cond)
 	assert.NoError(t, err)
 
@@ -242,55 +244,46 @@ func (suite *AlerterTester) TestEvents() {
 func (suite *AlerterTester) TestTriggering() {
 	t := suite.T()
 
-	rawC1 := Condition{
-		Title:       "cond1 title",
-		Description: "cond1 descr",
-		Type:        EventDataIngested,
-		UserID:      "user1",
-		Date:   time.Now().String(),
-	}
-
-	rawC2 := Condition{
-		Title:       "cond2 title",
-		Description: "cond2 descr",
-		Type:        EventDataAccessed,
-		UserID:      "user2",
-		Date:   time.Now().String(),
-	}
-
-	rawC3 := Condition{
-		Title:       "cond2 title",
-		Description: "cond2 descr",
-		Type:        EventFoo,
-		UserID:      "user2",
-		Date:   time.Now().String(),
-	}
-
-	c1 := makeRawCondition(t, rawC1)
+	c1 := newCondition()
 	assert.Equal(t, "3", c1)
 
-	c2 := makeRawCondition(t, rawC2)
-	assert.Equal(t, "4", c2)
+	c2 := newCondition()
+	assert.Equal(t, "4", c1)
 
-	c3 := makeRawCondition(t, rawC3)
-	assert.Equal(t, "5", c3)
+	c3 := newCondition()
+	assert.Equal(t, "5", c1)
 
-	rawE1 := Event{
-		Type: EventDataAccessed,
-		Date: time.Now().String(),
-		Data: map[string]string{"file": "111.tif"},
-	}
+	c1.Title = "cond1 title"
+	c1.Description = "cond1 descr"
+	c1.Type = EventDataIngested
+	c1.UserID = "user1"
+	c1.Date = time.Now().String()
 
-	rawE2 := Event{
-		Type: EventDataIngested,
-		Date: time.Now().String(),
-		Data: map[string]string{"file": "111.tif"},
-	}
+	c2.Title = "cond2 title"
+	c2.Description = "cond2 descr"
+	c2.Type = EventDataAccessed
+	c2.UserID = "user2"
+	c2.Date = time.Now().String()
 
-	rawE3 := Event{
-		Type: EventBar,
-		Date: time.Now().String(),
-	}
+	c3.Title = "cond2 title"
+	c3.Description = "cond2 descr"
+	c3.Type = EventFoo
+	c3.UserID = "user2"
+	c3.Date = time.Now().String()
+
+	rawE1 := newEvent()
+	rawE1.Type = EventDataAccessed
+	rawE1.Date = time.Now().String()
+	rawE1.Data = map[string]string{"file": "111.tif"}
+
+	rawE2 := newEvent()
+	rawE2.Type = EventDataIngested
+	rawE2.Date = time.Now().String()
+	rawE2.Data = map[string]string{"file": "111.tif"}
+
+	rawE3 := newEvent()
+	rawE3.Type = EventBar
+	rawE3.Date = time.Now().String()
 
 	e1 := makeRawEvent(t, rawE1)
 	assert.Equal(t, "3", e1)
