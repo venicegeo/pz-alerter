@@ -28,4 +28,5 @@ type Event struct {
 	Type EventType         `json:"type" binding:"required"`
 	Date string            `json:"date" binding:"required"`
 	Data map[string]string `json:"data"` // specific to event type
+	Tag  string            `json:"tag"`
 }

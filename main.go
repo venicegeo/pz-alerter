@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
+	"gopkg.in/olivere/elastic.v3"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 )
 
-
 //---------------------------------------------------------------------------
+
+var esClient *elastic.Client
 
 func runAlertServer(discoveryURL string, port string) error {
 
@@ -29,6 +31,29 @@ func runAlertServer(discoveryURL string, port string) error {
 		return err
 	}
 
+	///////////////////////////////////////////////////////
+	// Create a client
+	esClient, err = elastic.NewClient()
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+
+	// Delete the index, just in case
+	_, err = esClient.DeleteIndex("events").Do()
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+
+	// Create the index
+	_, err = esClient.CreateIndex("events").Do()
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+	///////////////////////////////////////////////////////////
+
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -41,21 +66,24 @@ func runAlertServer(discoveryURL string, port string) error {
 		var event Event
 		err := c.BindJSON(&event)
 		if err != nil {
+			log.Println(err)
 			c.Error(err)
 			return
 		}
 		err = eventDB.write(&event)
 		if err != nil {
+			log.Println("bbbb")
 			c.Error(err)
 			return
 		}
+		log.Println("cccc")
 		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
 
 		alertDB.checkConditions(event, conditionDB)
 	})
 
 	router.GET("/events", func(c *gin.Context) {
-		c.JSON(http.StatusOK, eventDB.data)
+		c.JSON(http.StatusOK, eventDB.getAll())
 	})
 
 	//---------------------------------
