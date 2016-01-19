@@ -1,0 +1,8 @@
+applications:
+- name: pz-alerter
+  host: pz-alerter
+  memory: 512M
+  instances: 1
+  timeout: 80
+  command: ./pz-alerter --discovery http://pz-discover.cf.piazzageo.io
+  buildpack: binary_buildpack
