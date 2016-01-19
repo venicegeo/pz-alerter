@@ -209,8 +209,12 @@ func runAlertServer(discoveryURL string, port string) error {
 }
 
 func app() int {
+  var defaultPort = os.Getenv("PORT")
+  if defaultPort == "" {
+    defaultPort = "12342"
+  }
 	var discoveryURL = flag.String("discovery", "http://localhost:3000", "URL of pz-discovery")
-	var port = flag.String("port", "12342", "port number of this pz-alerter")
+	var port = flag.String("port", defaultPort, "port number of this pz-alerter")
 
 	flag.Parse()
 
