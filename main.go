@@ -215,7 +215,7 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	//---------------------------------
 
-	err = router.Run("localhost:" + port)
+	err = router.Run(":" + port)
 	return err
 }
 
