@@ -27,11 +27,6 @@ func newAlertDB(client *elastic.Client, index string) (*AlertDB, error) {
 
 func (db *AlertDB) write(alert *Alert) error {
 
-	//alert.ID = newAlertID()
-
-	if alert.ID == "" {
-		panic(0)
-	}
 	_, err := db.client.Index().
 		Index(db.index).
 		Type("alert").
@@ -104,7 +99,7 @@ func (db *AlertDB) getAll() (map[string]Alert, error) {
 	return m, nil
 }
 
-func (alertDB *AlertDB) checkConditions(e Event, conditionDB *ConditionDB) error {
+func (db *AlertDB) checkConditions(e Event, conditionDB *ConditionDB) error {
 	all, err := conditionDB.getAll()
 	if err != nil {
 		return nil
@@ -112,7 +107,7 @@ func (alertDB *AlertDB) checkConditions(e Event, conditionDB *ConditionDB) error
 	for _, cond := range all {
 		if cond.Type == e.Type {
 			a := newAlert(cond.ID, e.ID)
-			alertDB.write(&a)
+			db.write(&a)
 		}
 	}
 	return nil

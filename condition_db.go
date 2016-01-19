@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
+	//"errors"
 	"gopkg.in/olivere/elastic.v3"
+	//"log"
 )
 
 type ConditionDB struct {
@@ -61,12 +62,9 @@ func (db *ConditionDB) readByID(id string) (*Condition, error) {
 		Index(db.index).  // search in index "twitter"
 		Query(termQuery). // specify the query
 		Do()              // execute
+
 	if err != nil {
 		return nil, err
-	}
-
-	if searchResult.Hits == nil {
-		return nil, nil
 	}
 
 	for _, hit := range searchResult.Hits.Hits {
@@ -78,19 +76,27 @@ func (db *ConditionDB) readByID(id string) (*Condition, error) {
 		return &a, nil
 	}
 
-	return nil, errors.New("not reached")
+	return nil, nil
 }
 
-func (db *ConditionDB) deleteByID(id string) error {
-	_, err := db.client.Delete().
+func (db *ConditionDB) deleteByID(id string) (bool, error) {
+	res, err := db.client.Delete().
 		Index(db.index).
 		Type("condition").
 		Id(id).
 		Do()
 	if err != nil {
-		return err
+		return false, err
 	}
-	return nil
+
+
+	// TODO: how often should we do this?
+	_, err = db.client.Flush().Index(db.index).Do()
+	if err != nil {
+		return false, err
+	}
+
+	return res.Found, nil
 }
 
 func (db *ConditionDB) getAll() (map[string]Condition, error) {

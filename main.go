@@ -91,7 +91,6 @@ func runAlertServer(discoveryURL string, port string) error {
 		}
 		err = eventDB.write(event)
 		if err != nil {
-			log.Println("bbbb",err)
 			c.Error(err)
 			return
 		}
@@ -140,6 +139,7 @@ func runAlertServer(discoveryURL string, port string) error {
 		err := c.BindJSON(&condition)
 		if err != nil {
 			c.Error(err)
+			log.Println(err)
 			return
 		}
 		err = conditionDB.write(&condition)
@@ -190,8 +190,12 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	router.DELETE("/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		err := conditionDB.deleteByID(id)
+		ok, err := conditionDB.deleteByID(id)
 		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"id": id})
+			return
+		}
+		if !ok {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}

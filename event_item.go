@@ -8,7 +8,6 @@ import (
 
 var eventID = 1
 
-// Event types
 const EventDataIngested = "DataIngested"
 const EventDataAccessed = "DataAccessed"
 const EventUSDataFound = "USDataFound"

@@ -39,7 +39,7 @@ func setup(port string) {
 
 	go main2(s)
 
-	time.Sleep(250 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 }
 
 //---------------------------------------------------------------------------
@@ -87,7 +87,7 @@ func getEvents(t *testing.T) []string {
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
 
-	a := make([]string, 0)
+	var a []string
 	for k := range x {
 		a = append(a, k)
 	}
@@ -163,7 +163,7 @@ func getConditions(t *testing.T) []string {
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
 
-	a := make([]string, 0)
+	var a []string
 	for k := range x {
 		a = append(a, k)
 	}
@@ -189,7 +189,7 @@ func getAlerts(t *testing.T) []Alert {
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
 
-	a := make([]Alert, 0)
+	var a []Alert
 	for i := range x {
 		a = append(a, x[i])
 	}
@@ -244,55 +244,70 @@ func (suite *AlerterTester) TestEvents() {
 func (suite *AlerterTester) TestTriggering() {
 	t := suite.T()
 
-	c1 := newCondition()
-	assert.Equal(t, "3", c1)
+	cs := getConditions(t)
+	assert.Len(t, cs, 0)
 
-	c2 := newCondition()
-	assert.Equal(t, "4", c1)
+	rawC3 := newCondition()
+	assert.Equal(t, "3", rawC3.ID)
 
-	c3 := newCondition()
-	assert.Equal(t, "5", c1)
+	rawC4 := newCondition()
+	assert.Equal(t, "4", rawC4.ID)
 
-	c1.Title = "cond1 title"
-	c1.Description = "cond1 descr"
-	c1.Type = EventDataIngested
-	c1.UserID = "user1"
-	c1.Date = time.Now().String()
+	rawC5 := newCondition()
+	assert.Equal(t, "5", rawC5.ID)
 
-	c2.Title = "cond2 title"
-	c2.Description = "cond2 descr"
-	c2.Type = EventDataAccessed
-	c2.UserID = "user2"
-	c2.Date = time.Now().String()
+	rawC3.Title = "cond1 title"
+	rawC3.Description = "cond1 descr"
+	rawC3.Type = EventDataIngested
+	rawC3.UserID = "user1"
+	rawC3.Date = time.Now().String()
 
-	c3.Title = "cond2 title"
-	c3.Description = "cond2 descr"
-	c3.Type = EventFoo
-	c3.UserID = "user2"
-	c3.Date = time.Now().String()
+	rawC4.Title = "cond2 title"
+	rawC4.Description = "cond2 descr"
+	rawC4.Type = EventDataAccessed
+	rawC4.UserID = "user2"
+	rawC4.Date = time.Now().String()
 
-	rawE1 := newEvent()
-	rawE1.Type = EventDataAccessed
-	rawE1.Date = time.Now().String()
-	rawE1.Data = map[string]string{"file": "111.tif"}
+	rawC5.Title = "cond2 title"
+	rawC5.Description = "cond2 descr"
+	rawC5.Type = EventFoo
+	rawC5.UserID = "user2"
+	rawC5.Date = time.Now().String()
 
-	rawE2 := newEvent()
-	rawE2.Type = EventDataIngested
-	rawE2.Date = time.Now().String()
-	rawE2.Data = map[string]string{"file": "111.tif"}
+	c3 := makeRawCondition(t, rawC3)
+	assert.Equal(t, "3", c3)
+
+	c4 := makeRawCondition(t, rawC4)
+	assert.Equal(t, "4", c4)
+
+	c5 := makeRawCondition(t, rawC5)
+	assert.Equal(t, "5", c5)
+
+	cs = getConditions(t)
+	assert.Len(t, cs, 3)
 
 	rawE3 := newEvent()
-	rawE3.Type = EventBar
+	rawE3.Type = EventDataAccessed
 	rawE3.Date = time.Now().String()
+	rawE3.Data = map[string]string{"file": "111.tif"}
 
-	e1 := makeRawEvent(t, rawE1)
-	assert.Equal(t, "3", e1)
+	rawE4 := newEvent()
+	rawE4.Type = EventDataIngested
+	rawE4.Date = time.Now().String()
+	rawE4.Data = map[string]string{"file": "111.tif"}
 
-	e2 := makeRawEvent(t, rawE2)
-	assert.Equal(t, "4", e2)
+	rawE5 := newEvent()
+	rawE5.Type = EventBar
+	rawE5.Date = time.Now().String()
 
 	e3 := makeRawEvent(t, rawE3)
-	assert.Equal(t, "5", e3)
+	assert.Equal(t, "3", e3)
+
+	e4 := makeRawEvent(t, rawE4)
+	assert.Equal(t, "4", e4)
+
+	e5 := makeRawEvent(t, rawE5)
+	assert.Equal(t, "5", e5)
 
 	as := getAlerts(t)
 	assert.Len(t, as, 2)

@@ -10,7 +10,7 @@ var conditionID = 1
 
 
 type Condition struct {
-	ID string `json:"id"`
+	ID string `json:"id" binding:"required"`
 
 	Title       string    `json:"title" binding:"required"`
 	Description string    `json:"description"`

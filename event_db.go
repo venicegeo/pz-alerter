@@ -23,7 +23,7 @@ func newEventDB(client *elastic.Client, index string) (*EventDB, error) {
 func (db *EventDB) write(event *Event) error {
 
 	_, err := db.client.Index().
-		Index("events").
+		Index(db.index).
 		Type("event").
 		Id(event.ID).
 		BodyJson(event).
@@ -33,7 +33,7 @@ func (db *EventDB) write(event *Event) error {
 	}
 
 	// TODO: how often should we do this?
-	_, err = db.client.Flush().Index("events").Do()
+	_, err = db.client.Flush().Index(db.index).Do()
 	if err != nil {
 		panic(err)
 	}
@@ -46,7 +46,7 @@ func (db *EventDB) getAll() (map[string]Event, error) {
 	// search for everything
 	// TODO: there's a GET call for this?
 	searchResult, err := db.client.Search().
-		Index("events").
+		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
 		Sort("id", true).
 		Do()
