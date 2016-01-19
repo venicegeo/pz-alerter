@@ -69,7 +69,7 @@ func runAlertServer(discoveryURL string, port string) error {
 		return err
 	}
 
-	myAddress := fmt.Sprintf("%s:%s", "localhost", port)
+	myAddress := fmt.Sprintf(":%s", port)
 	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
 
 	piazza.RegistryInit(discoveryURL)
