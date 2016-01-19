@@ -35,7 +35,12 @@ func makeESIndex(client *elastic.Client, index string) error {
 }
 
 func newESClient() (*elastic.Client, error) {
-	client, err := elastic.NewClient()
+  client, err := elastic.NewClient(
+    elastic.SetURL("https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com"),
+    elastic.SetSniff(false),
+    elastic.SetMaxRetries(5),
+    elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),
+    elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)))
 	if err != nil {
 		return nil, err
 	}
