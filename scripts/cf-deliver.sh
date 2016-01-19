@@ -8,4 +8,4 @@ popd > /dev/null
 source $base/vars.sh
 
 # do we have this artifact in s3? If not, fail.
-[ -f $base/../pz-uuidgen ] || { aws s3 ls $S3URL && aws s3 cp $S3URL $base/../pz-uuidgen || exit 1; }
+[ -f $base/../pz-alerter ] || { aws s3 ls $S3URL && aws s3 cp $S3URL $base/../pz-alerter || exit 1; }
