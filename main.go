@@ -86,6 +86,12 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	//---------------------------------
 
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "Hi")
+	})
+
+	//---------------------------------
+
 	router.POST("/events", func(c *gin.Context) {
 		event := &Event{}
 		err := c.BindJSON(event)
