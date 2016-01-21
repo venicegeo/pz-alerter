@@ -35,11 +35,11 @@ func TestRunSuite(t *testing.T) {
 //---------------------------------------------------------------------------
 
 func setup(port string) {
-	s := fmt.Sprintf("-discovery http://localhost:3000 -port %s", port)
+	s := fmt.Sprintf("-server localhost:%s -discover localhost:3000", port)
 
 	go main2(s)
 
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(2500 * time.Millisecond)
 }
 
 //---------------------------------------------------------------------------

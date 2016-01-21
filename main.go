@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	"gopkg.in/olivere/elastic.v3"
@@ -49,7 +48,7 @@ func newESClient() (*elastic.Client, error) {
 
 ///////////////////////////////////////////////////////////
 
-func runAlertServer(discoveryURL string, port string) error {
+func runAlertServer(serviceAddress string, discoverAddress string, debug bool) error {
 
 	esClient, err := newESClient()
 	if err != nil {
@@ -69,14 +68,14 @@ func runAlertServer(discoveryURL string, port string) error {
 		return err
 	}
 
-	myAddress := fmt.Sprintf(":%s", port)
+/*	myAddress := fmt.Sprintf(":%s", port)
 	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
 
 	piazza.RegistryInit(discoveryURL)
 	err = piazza.RegisterService("pz-alerter", "core-service", myURL)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	gin.SetMode(gin.ReleaseMode)
 
@@ -215,31 +214,32 @@ func runAlertServer(discoveryURL string, port string) error {
 
 	//---------------------------------
 
-	err = router.Run(":" + port)
+	err = router.Run(serviceAddress)
 	return err
 }
 
 func app() int {
-  var defaultPort = os.Getenv("PORT")
-  if defaultPort == "" {
-    defaultPort = "12342"
-  }
-	var discoveryURL = flag.String("discovery", "http://localhost:3000", "URL of pz-discovery")
-	var port = flag.String("port", defaultPort, "port number of this pz-alerter")
 
-	flag.Parse()
+	var err error
 
-	log.Printf("starting: discovery=%s, port=%s", *discoveryURL, *port)
-
-	err := runAlertServer(*discoveryURL, *port)
+	// handles the command line flags, finds the discover service, registers us,
+	// and figures out our own server address
+	svc, err := piazza.NewDiscoverService(os.Args[0], "localhost:12342", "localhost:3000")
 	if err != nil {
-		fmt.Print(err)
+		log.Print(err)
+		return 1
+	}
+
+	err = runAlertServer(svc.BindTo, svc.DiscoverAddress, *svc.DebugFlag)
+	if err != nil {
+		log.Print(err)
 		return 1
 	}
 
 	// not reached
 	return 1
 }
+
 
 func main2(cmd string) int {
 	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
