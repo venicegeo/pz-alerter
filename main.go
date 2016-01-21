@@ -68,15 +68,6 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 		return err
 	}
 
-/*	myAddress := fmt.Sprintf(":%s", port)
-	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
-
-	piazza.RegistryInit(discoveryURL)
-	err = piazza.RegisterService("pz-alerter", "core-service", myURL)
-	if err != nil {
-		return err
-	}*/
-
 	gin.SetMode(gin.ReleaseMode)
 
 	router := gin.New()
@@ -224,7 +215,7 @@ func app() int {
 
 	// handles the command line flags, finds the discover service, registers us,
 	// and figures out our own server address
-	svc, err := piazza.NewDiscoverService(os.Args[0], "localhost:12342", "localhost:3000")
+	svc, err := piazza.NewDiscoverService("pz-alerter", "localhost:12342", "localhost:3000")
 	if err != nil {
 		log.Print(err)
 		return 1
@@ -242,7 +233,7 @@ func app() int {
 
 
 func main2(cmd string) int {
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+	flag.CommandLine = flag.NewFlagSet("pz-alerter", flag.ExitOnError)
 	os.Args = strings.Fields("main_tester " + cmd)
 	return app()
 }

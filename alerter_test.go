@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	//"io/ioutil"
 	"fmt"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -10,7 +9,6 @@ import (
 	"net/http"
 	"testing"
 	"time"
-	//pztesting "github.com/venicegeo/pz-gocommon/testing"
 	"bytes"
 	"io/ioutil"
 )
@@ -311,10 +309,21 @@ func (suite *AlerterTester) TestTriggering() {
 
 	as := getAlerts(t)
 	assert.Len(t, as, 2)
-	assert.Equal(t, "1", as[0].ID)
-	assert.Equal(t, "3", as[0].EventID)
-	assert.Equal(t, "4", as[0].ConditionID)
-	assert.Equal(t, "2", as[1].ID)
-	assert.Equal(t, "4", as[1].EventID)
-	assert.Equal(t, "3", as[1].ConditionID)
+
+	// TODO: dependent on order of returned results
+	if as[0].ID == "1" {
+		assert.Equal(t, "1", as[0].ID)
+		assert.Equal(t, "3", as[0].EventID)
+		assert.Equal(t, "4", as[0].ConditionID)
+		assert.Equal(t, "2", as[1].ID)
+		assert.Equal(t, "4", as[1].EventID)
+		assert.Equal(t, "3", as[1].ConditionID)
+	} else {
+		assert.Equal(t, "2", as[0].ID)
+		assert.Equal(t, "4", as[0].EventID)
+		assert.Equal(t, "3", as[0].ConditionID)
+		assert.Equal(t, "1", as[1].ID)
+		assert.Equal(t, "3", as[1].EventID)
+		assert.Equal(t, "4", as[1].ConditionID)
+	}
 }
