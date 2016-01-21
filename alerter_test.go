@@ -39,7 +39,7 @@ func setup(port string) {
 
 	go main2(s)
 
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(1500 * time.Millisecond)
 }
 
 //---------------------------------------------------------------------------
