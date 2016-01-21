@@ -87,7 +87,7 @@ func runAlertServer(discoveryURL string, port string) error {
 	//---------------------------------
 
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "Hi")
+		c.JSON(http.StatusOK, "Hi. I'm pz-alerter.")
 	})
 
 	//---------------------------------
