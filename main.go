@@ -38,8 +38,8 @@ func newESClient() (*elastic.Client, error) {
     elastic.SetURL("https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com"),
     elastic.SetSniff(false),
     elastic.SetMaxRetries(5),
-    elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),
-    elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)))
+    /*elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),*/
+    /*elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags))*/)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 	//---------------------------------
 
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "Hi. I'm pz-alerter.")
+		c.IndentedJSON(http.StatusOK, "Hi. I'm pz-alerter.")
 	})
 
 	//---------------------------------
@@ -95,7 +95,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
+		c.IndentedJSON(http.StatusCreated, gin.H{"id": event.ID})
 
 		alertDB.checkConditions(*event, conditionDB)
 	})
@@ -106,23 +106,23 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, m)
+		c.IndentedJSON(http.StatusOK, m)
 	})
 
 	//---------------------------------
 
-	router.GET("/alerts/:id", func(c *gin.Context) {
+	router.GET("/alerts/bycondition/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		v, err := alertDB.getByConditionID(id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"condition_id": id})
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"condition_id": id})
 			return
 		}
 		if v == nil {
-			c.JSON(http.StatusNotFound, gin.H{"condition_id": id})
+			c.IndentedJSON(http.StatusNotFound, gin.H{"condition_id": id})
 			return
 		}
-		c.JSON(http.StatusOK, v)
+		c.IndentedJSON(http.StatusOK, v)
 	})
 
 	router.GET("/alerts", func(c *gin.Context) {
@@ -131,7 +131,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, all)
+		c.IndentedJSON(http.StatusOK, all)
 	})
 
 	//---------------------------------
@@ -148,7 +148,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"id": condition.ID})
+		c.IndentedJSON(http.StatusCreated, gin.H{"id": condition.ID})
 	})
 
 	/*router.PUT("/conditions", func(c *gin.Context) {
@@ -172,7 +172,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, all)
+		c.IndentedJSON(http.StatusOK, all)
 	})
 
 	router.GET("/conditions/:id", func(c *gin.Context) {
@@ -183,24 +183,24 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 			return
 		}
 		if v == nil {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, v)
+		c.IndentedJSON(http.StatusOK, v)
 	})
 
 	router.DELETE("/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		ok, err := conditionDB.deleteByID(id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"id": id})
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 			return
 		}
 		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, nil)
+		c.IndentedJSON(http.StatusOK, nil)
 	})
 
 	//---------------------------------

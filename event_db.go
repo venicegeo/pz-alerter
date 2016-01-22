@@ -21,6 +21,8 @@ func newEventDB(client *elastic.Client, index string) (*EventDB, error) {
 }
 
 func (db *EventDB) write(event *Event) error {
+	id := newEventID()
+	event.ID = id
 
 	_, err := db.client.Index().
 		Index(db.index).

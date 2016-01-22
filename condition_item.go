@@ -10,7 +10,7 @@ var conditionID = 1
 
 
 type Condition struct {
-	ID string `json:"id" binding:"required"`
+	ID string `json:"id"`
 
 	Title       string    `json:"title" binding:"required"`
 	Description string    `json:"description"`
@@ -19,13 +19,11 @@ type Condition struct {
 	Date   string    `json:"start_date" binding:"required"`
 	//ExpirationDate string `json:"expiration_date"`
 	//IsEnabled      bool   `json:"is_enabled" binding:"required"`
-	HitCount int `json:"hit_count"`
+	//HitCount int `json:"hit_count"`
 }
 
-func newCondition() *Condition {
+func newConditionID() string {
 	id := strconv.Itoa(conditionID)
 	conditionID++
-
-	e := &Condition{ID: id}
-	return e
+	return id
 }

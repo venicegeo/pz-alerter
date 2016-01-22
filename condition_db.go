@@ -27,6 +27,10 @@ func newConditionDB(client *elastic.Client, index string) (*ConditionDB, error) 
 }
 
 func (db *ConditionDB) write(condition *Condition) error {
+
+	id := newConditionID()
+	condition.ID = id
+
 	_, err := db.client.Index().
 		Index(db.index).
 		Type("condition").
@@ -59,9 +63,9 @@ func (db *ConditionDB) update(condition *Condition) bool {
 func (db *ConditionDB) readByID(id string) (*Condition, error) {
 	termQuery := elastic.NewTermQuery("id", id)
 	searchResult, err := db.client.Search().
-		Index(db.index).  // search in index "twitter"
-		Query(termQuery). // specify the query
-		Do()              // execute
+		Index(db.index).
+		Query(termQuery).
+		Do()
 
 	if err != nil {
 		return nil, err
@@ -88,7 +92,6 @@ func (db *ConditionDB) deleteByID(id string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-
 
 	// TODO: how often should we do this?
 	_, err = db.client.Flush().Index(db.index).Do()
