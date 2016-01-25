@@ -3,67 +3,31 @@ package main
 import (
 	"flag"
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v3"
+	piazza "github.com/venicegeo/pz-gocommon"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 )
 
-//---------------------------------------------------------------------------
-
-func makeESIndex(client *elastic.Client, index string) error {
-	exists, err := client.IndexExists(index).Do()
-	if err != nil {
-		return err
-	}
-
-	if exists {
-		_, err = client.DeleteIndex(index).Do()
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = client.CreateIndex(index).Do()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func newESClient() (*elastic.Client, error) {
-  client, err := elastic.NewClient(
-    elastic.SetURL("https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com"),
-    elastic.SetSniff(false),
-    elastic.SetMaxRetries(5),
-    /*elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),*/
-    /*elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags))*/)
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
-
 ///////////////////////////////////////////////////////////
 
 func runAlertServer(serviceAddress string, discoverAddress string, debug bool) error {
 
-	esClient, err := newESClient()
+	es, err := piazza.NewElasticSearch()
 	if err != nil {
 		return err
 	}
 
-	conditionDB, err := newConditionDB(esClient, "conditions")
+	conditionDB, err := newConditionDB(es, "conditions")
 	if err != nil {
 		return err
 	}
-	eventDB, err := newEventDB(esClient, "events")
+	eventDB, err := newEventDB(es, "events")
 	if err != nil {
 		return err
 	}
-	alertDB, err := newAlertDB(esClient, "alerts")
+	alertDB, err := newAlertDB(es, "alerts")
 	if err != nil {
 		return err
 	}
@@ -111,27 +75,30 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 
 	//---------------------------------
 
-	router.GET("/alerts/bycondition/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		v, err := alertDB.getByConditionID(id)
-		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"condition_id": id})
-			return
-		}
-		if v == nil {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"condition_id": id})
-			return
-		}
-		c.IndentedJSON(http.StatusOK, v)
-	})
-
 	router.GET("/alerts", func(c *gin.Context) {
-		all, err := alertDB.getAll()
+
+		conditionID := c.Query("condition")
+		if conditionID != "" {
+			v, err := alertDB.getByConditionID(conditionID)
+			if err != nil {
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"condition_id": conditionID})
+				return
+			}
+			if v == nil {
+				c.IndentedJSON(http.StatusNotFound, gin.H{"condition_id": conditionID})
+				return
+			}
+			c.IndentedJSON(http.StatusOK, v)
+			return
+		}
+
+			all, err := alertDB.getAll()
 		if err != nil {
 			c.Error(err)
 			return
 		}
 		c.IndentedJSON(http.StatusOK, all)
+
 	})
 
 	//---------------------------------
@@ -230,7 +197,6 @@ func app() int {
 	// not reached
 	return 1
 }
-
 
 func main2(cmd string) int {
 	flag.CommandLine = flag.NewFlagSet("pz-alerter", flag.ExitOnError)

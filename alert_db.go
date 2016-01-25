@@ -4,21 +4,22 @@ import (
 	"encoding/json"
 	"gopkg.in/olivere/elastic.v3"
 	"log"
+	piazza "github.com/venicegeo/pz-gocommon"
 )
 
 //---------------------------------------------------------------------------
 
 type AlertDB struct {
-	client *elastic.Client
+	es *piazza.ElasticSearch
 	index  string
 }
 
-func newAlertDB(client *elastic.Client, index string) (*AlertDB, error) {
+func newAlertDB(es *piazza.ElasticSearch, index string) (*AlertDB, error) {
 	db := new(AlertDB)
-	db.client = client
+	db.es = es
 	db.index = index
 
-	err := makeESIndex(client, index)
+	err := es.MakeIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -27,20 +28,19 @@ func newAlertDB(client *elastic.Client, index string) (*AlertDB, error) {
 
 func (db *AlertDB) write(alert *Alert) error {
 
-	_, err := db.client.Index().
+	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("alert").
 		Id(alert.ID).
 		BodyJson(alert).
 		Do()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	// TODO: how often should we do this?
-	_, err = db.client.Flush().Index(db.index).Do()
+	err = db.es.Flush(db.index)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil
@@ -48,7 +48,7 @@ func (db *AlertDB) write(alert *Alert) error {
 
 func (db *AlertDB) getByConditionID(conditionID string) ([]Alert, error) {
 	termQuery := elastic.NewTermQuery("condition_id", conditionID)
-	searchResult, err := db.client.Search().
+	searchResult, err := db.es.Client.Search().
 		Index(db.index).  // search in index "twitter"
 		Query(termQuery). // specify the query
 		Sort("id", true).
@@ -74,7 +74,7 @@ func (db *AlertDB) getByConditionID(conditionID string) ([]Alert, error) {
 }
 
 func (db *AlertDB) getAll() (map[string]Alert, error) {
-	searchResult, err := db.client.Search().
+	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
 		Sort("id", true).
