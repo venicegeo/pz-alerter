@@ -15,10 +15,7 @@ var pzService *piazza.PzService
 
 func runAlertServer() error {
 
-	es, err := piazza.NewElasticSearch()
-	if err != nil {
-		return err
-	}
+	es := pzService.ElasticSearch
 
 	conditionDB, err := newConditionDB(es, "conditions")
 	if err != nil {
@@ -175,7 +172,7 @@ func runAlertServer() error {
 	return router.Run(pzService.Address)
 }
 
-func app() int {
+func app(done chan bool) int {
 
 	var err error
 
@@ -193,6 +190,22 @@ func app() int {
 		return 1
 	}
 
+	err = pzService.WaitForService("pz-logger", 1000)
+	if err != nil {
+		pzService.Fatal(err)
+		return 1
+	}
+
+	err = pzService.WaitForService("pz-uuidgen", 1000)
+	if err != nil {
+		pzService.Fatal(err)
+		return 1
+	}
+
+	if done != nil {
+		done <- true
+	}
+
 	err = runAlertServer()
 	if err != nil {
 		pzService.Fatal(err)
@@ -203,12 +216,12 @@ func app() int {
 	return 1
 }
 
-func main2(cmd string) int {
+func main2(cmd string, done chan bool) int {
 	flag.CommandLine = flag.NewFlagSet("pz-alerter", flag.ExitOnError)
 	os.Args = strings.Fields("main_tester " + cmd)
-	return app()
+	return app(done)
 }
 
 func main() {
-	os.Exit(app())
+	os.Exit(app(nil))
 }

@@ -18,7 +18,7 @@ type AlerterTester struct {
 }
 
 func (suite *AlerterTester) SetupSuite() {
-	setup("12342")
+	setup(suite.T(), "12342")
 }
 
 func (suite *AlerterTester) TearDownSuite() {
@@ -32,12 +32,17 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
-func setup(port string) {
+func setup(t *testing.T, port string) {
 	s := fmt.Sprintf("-server localhost:%s -discover localhost:3000", port)
 
-	go main2(s)
+	done := make(chan bool, 1)
+	go main2(s, done)
+	<-done
 
-	time.Sleep(2500 * time.Millisecond)
+	err := pzService.WaitForService(pzService.Name, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 //---------------------------------------------------------------------------
