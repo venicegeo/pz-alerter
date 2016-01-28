@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"gopkg.in/olivere/elastic.v3"
-	"log"
 	piazza "github.com/venicegeo/pz-gocommon"
+	"fmt"
 )
 
 //---------------------------------------------------------------------------
@@ -109,7 +109,7 @@ func (db *AlertDB) checkConditions(e Event, conditionDB *ConditionDB) error {
 		if cond.Type == e.Type {
 			a := newAlert(cond.ID, e.ID)
 			db.write(&a)
-			log.Printf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID)
+			pzService.Log(piazza.SeverityInfo, fmt.Sprintf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID))
 		}
 	}
 	return nil

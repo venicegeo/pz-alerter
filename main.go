@@ -4,15 +4,16 @@ import (
 	"flag"
 	"github.com/gin-gonic/gin"
 	piazza "github.com/venicegeo/pz-gocommon"
-	"log"
 	"net/http"
 	"os"
 	"strings"
 )
 
+var pzService *piazza.PzService
+
 ///////////////////////////////////////////////////////////
 
-func runAlertServer(serviceAddress string, discoverAddress string, debug bool) error {
+func runAlertServer() error {
 
 	es, err := piazza.NewElasticSearch()
 	if err != nil {
@@ -49,7 +50,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 		event := &Event{}
 		err := c.BindJSON(event)
 		if err != nil {
-			log.Println(err)
+			pzService.Error("POST to /events", err)
 			c.Error(err)
 			return
 		}
@@ -106,7 +107,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 		err := c.BindJSON(&condition)
 		if err != nil {
 			c.Error(err)
-			log.Println(err)
+			pzService.Error("POST to /conditions", err)
 			return
 		}
 		err = conditionDB.write(&condition)
@@ -171,7 +172,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 
 	//---------------------------------
 
-	return router.Run(serviceAddress)
+	return router.Run(pzService.Address)
 }
 
 func app() int {
@@ -180,15 +181,21 @@ func app() int {
 
 	// handles the command line flags, finds the discover service, registers us,
 	// and figures out our own server address
-	svc, err := piazza.NewDiscoverService("pz-alerter", "localhost:12342", "localhost:3000")
+	serviceAddress, discoverAddress, debug, err := piazza.NewDiscoverService("pz-alerter", "localhost:12342", "localhost:3000")
 	if err != nil {
-		log.Print(err)
+		pzService.Fatal(err)
 		return 1
 	}
 
-	err = runAlertServer(svc.BindTo, svc.DiscoverAddress, *svc.DebugFlag)
+	pzService, err = piazza.NewPzService("pz-alerter", serviceAddress, discoverAddress, debug)
 	if err != nil {
-		log.Print(err)
+		pzService.Fatal(err)
+		return 1
+	}
+
+	err = runAlertServer()
+	if err != nil {
+		pzService.Fatal(err)
 		return 1
 	}
 

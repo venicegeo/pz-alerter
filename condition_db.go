@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	piazza "github.com/venicegeo/pz-gocommon"
 	"gopkg.in/olivere/elastic.v3"
-	//"log"
 )
 
 type ConditionDB struct {
