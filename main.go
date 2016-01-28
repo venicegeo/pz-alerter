@@ -33,7 +33,6 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 	}
 
 	gin.SetMode(gin.ReleaseMode)
-
 	router := gin.New()
 	//router.Use(gin.Logger())
 	//router.Use(gin.Recovery())
@@ -41,7 +40,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 	//---------------------------------
 
 	router.GET("/", func(c *gin.Context) {
-		c.IndentedJSON(http.StatusOK, "Hi. I'm pz-alerter.")
+		c.String(http.StatusOK, "Hi. I'm pz-alerter.")
 	})
 
 	//---------------------------------
@@ -172,8 +171,7 @@ func runAlertServer(serviceAddress string, discoverAddress string, debug bool) e
 
 	//---------------------------------
 
-	err = router.Run(serviceAddress)
-	return err
+	return router.Run(serviceAddress)
 }
 
 func app() int {
