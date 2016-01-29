@@ -2,23 +2,24 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"gopkg.in/olivere/elastic.v3"
+	piazza "github.com/venicegeo/pz-gocommon"
+	"fmt"
 )
 
 //---------------------------------------------------------------------------
 
 type AlertDB struct {
-	client *elastic.Client
+	es *piazza.ElasticSearch
 	index  string
 }
 
-func newAlertDB(client *elastic.Client, index string) (*AlertDB, error) {
+func newAlertDB(es *piazza.ElasticSearch, index string) (*AlertDB, error) {
 	db := new(AlertDB)
-	db.client = client
+	db.es = es
 	db.index = index
 
-	err := makeESIndex(client, index)
+	err := es.MakeIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -27,28 +28,27 @@ func newAlertDB(client *elastic.Client, index string) (*AlertDB, error) {
 
 func (db *AlertDB) write(alert *Alert) error {
 
-	_, err := db.client.Index().
+	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("alert").
 		Id(alert.ID).
 		BodyJson(alert).
 		Do()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	// TODO: how often should we do this?
-	_, err = db.client.Flush().Index(db.index).Do()
+	err = db.es.Flush(db.index)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil
 }
 
-func (db *AlertDB) getByConditionID(conditionID string) (*Alert, error) {
+func (db *AlertDB) getByConditionID(conditionID string) ([]Alert, error) {
 	termQuery := elastic.NewTermQuery("condition_id", conditionID)
-	searchResult, err := db.client.Search().
+	searchResult, err := db.es.Client.Search().
 		Index(db.index).  // search in index "twitter"
 		Query(termQuery). // specify the query
 		Sort("id", true).
@@ -61,20 +61,20 @@ func (db *AlertDB) getByConditionID(conditionID string) (*Alert, error) {
 		return nil, nil
 	}
 
+	var as []Alert
 	for _, hit := range searchResult.Hits.Hits {
 		var a Alert
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
 			return nil, err
 		}
-		return &a, nil
+		as = append(as, a)
 	}
-
-	return nil, errors.New("not reached")
+	return as, nil
 }
 
 func (db *AlertDB) getAll() (map[string]Alert, error) {
-	searchResult, err := db.client.Search().
+	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
 		Sort("id", true).
@@ -105,9 +105,11 @@ func (db *AlertDB) checkConditions(e Event, conditionDB *ConditionDB) error {
 		return nil
 	}
 	for _, cond := range all {
+		//log.Printf("e%s.%s ==? c%s.%s", e.ID, e.Type, cond.ID, cond.Type)
 		if cond.Type == e.Type {
 			a := newAlert(cond.ID, e.ID)
 			db.write(&a)
+			pzService.Log(piazza.SeverityInfo, fmt.Sprintf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID))
 		}
 	}
 	return nil

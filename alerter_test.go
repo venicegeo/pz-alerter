@@ -1,18 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
-	//"io/ioutil"
 	"fmt"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	piazza "github.com/venicegeo/pz-gocommon"
+	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
-	//pztesting "github.com/venicegeo/pz-gocommon/testing"
-	"bytes"
-	"io/ioutil"
 )
 
 type AlerterTester struct {
@@ -20,7 +18,7 @@ type AlerterTester struct {
 }
 
 func (suite *AlerterTester) SetupSuite() {
-	setup("12342")
+	setup(suite.T(), "12342")
 }
 
 func (suite *AlerterTester) TearDownSuite() {
@@ -34,31 +32,29 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
-func setup(port string) {
-	s := fmt.Sprintf("-discovery http://localhost:3000 -port %s", port)
+func setup(t *testing.T, port string) {
+	s := fmt.Sprintf("-server localhost:%s -discover localhost:3000", port)
 
-	go main2(s)
+	done := make(chan bool, 1)
+	go main2(s, done)
+	<-done
 
-	time.Sleep(1500 * time.Millisecond)
+	err := pzService.WaitForService(pzService.Name, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 //---------------------------------------------------------------------------
 
-func makeEvent(t *testing.T, name string) string {
-	m := newEvent()
-	m.Type = "=type="
-	m.Date = "=date="
-	return makeRawEvent(t, m)
-}
-
-func makeRawEvent(t *testing.T, event *Event) string {
+func postEvent(t *testing.T, event Event) string {
 
 	data, err := json.Marshal(event)
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer(data)
 
-	resp, err := http.Post("http://localhost:12342/events", piazza.ContentTypeJSON, body)
+	resp, err := http.Post("http://localhost:12342/v1/events", piazza.ContentTypeJSON, body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -75,7 +71,7 @@ func makeRawEvent(t *testing.T, event *Event) string {
 }
 
 func getEvents(t *testing.T) []string {
-	resp, err := http.Get("http://localhost:12342/events")
+	resp, err := http.Get("http://localhost:12342/v1/events")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -96,23 +92,13 @@ func getEvents(t *testing.T) []string {
 
 //---------------------------------------------------------------------------
 
-func makeCondition(t *testing.T, title string) string {
-	m := newCondition()
-	m.Title = title
-	m.Type = "=type="
-	m.UserID = "=userid="
-	m.Date = "=date="
-
-	return makeRawCondition(t, m)
-}
-
-func makeRawCondition(t *testing.T, cond *Condition) string {
+func postCondition(t *testing.T, cond Condition) string {
 	data, err := json.Marshal(cond)
 	assert.NoError(t, err)
 
 	body := bytes.NewBuffer(data)
 
-	resp, err := http.Post("http://localhost:12342/conditions", piazza.ContentTypeJSON, body)
+	resp, err := http.Post("http://localhost:12342/v1/conditions", piazza.ContentTypeJSON, body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -129,7 +115,7 @@ func makeRawCondition(t *testing.T, cond *Condition) string {
 }
 
 func getCondition(t *testing.T, id string) bool {
-	resp, err := http.Get("http://localhost:12342/conditions/" + id)
+	resp, err := http.Get("http://localhost:12342/v1/conditions/" + id)
 	assert.NoError(t, err)
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -151,7 +137,7 @@ func getCondition(t *testing.T, id string) bool {
 }
 
 func getConditions(t *testing.T) []string {
-	resp, err := http.Get("http://localhost:12342/conditions")
+	resp, err := http.Get("http://localhost:12342/v1/conditions")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -171,13 +157,13 @@ func getConditions(t *testing.T) []string {
 }
 
 func deleteCondition(t *testing.T, id string) {
-	resp, err := piazza.Delete("http://localhost:12342/conditions/" + id)
+	resp, err := piazza.Delete("http://localhost:12342/v1/conditions/" + id)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func getAlerts(t *testing.T) []Alert {
-	resp, err := http.Get("http://localhost:12342/alerts")
+	resp, err := http.Get("http://localhost:12342/v1/alerts")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -201,26 +187,36 @@ func getAlerts(t *testing.T) []Alert {
 func (suite *AlerterTester) TestConditions() {
 	t := suite.T()
 
-	c1 := makeCondition(t, "c1")
-	assert.Equal(t, "1", c1)
+	var c1 Condition
+	c1.Title = "c1"
+	c1.Type = "=type="
+	c1.UserID = "=userid="
+	c1.Date = "=date="
+	c1ID := postCondition(t, c1)
+	assert.Equal(t, c1ID, "1")
 
-	c2 := makeCondition(t, "c2")
-	assert.Equal(t, "2", c2)
+	var c2 Condition
+	c2.Title = "c2"
+	c2.Type = "=type="
+	c2.UserID = "=userid="
+	c2.Date = "=date="
+	c2ID := postCondition(t, c2)
+	assert.Equal(t, c2ID, "2")
 
 	cs := getConditions(t)
 	assert.Len(t, cs, 2)
-	assert.Contains(t, cs, c1)
-	assert.Contains(t, cs, c2)
+	assert.Contains(t, cs, "1")
+	assert.Contains(t, cs, "2")
 
-	ok := getCondition(t, c1)
+	ok := getCondition(t, "1")
 	assert.True(t, ok)
 
-	deleteCondition(t, c1)
+	deleteCondition(t, "1")
 
-	ok = getCondition(t, c1)
+	ok = getCondition(t, "1")
 	assert.True(t, !ok)
 
-	deleteCondition(t, c2)
+	deleteCondition(t, "2")
 
 	cs = getConditions(t)
 	assert.Len(t, cs, 0)
@@ -229,16 +225,24 @@ func (suite *AlerterTester) TestConditions() {
 func (suite *AlerterTester) TestEvents() {
 	t := suite.T()
 
-	e1 := makeEvent(t, "e1")
-	assert.Equal(t, "1", e1)
+	var e1 Event
+	e1.Type = EventDataIngested
+	e1.Date = "22 Jan 2016"
+	e1.Data = nil
+	e1ID := postEvent(t, e1)
+	assert.Equal(t, "E1", e1ID)
 
-	e2 := makeEvent(t, "e2")
-	assert.Equal(t, "2", e2)
+	var e2 Event
+	e2.Type = EventDataAccessed
+	e2.Date = "22 Jan 2016"
+	e2.Data = nil
+	e2ID := postEvent(t, e2)
+	assert.Equal(t, "E2", e2ID)
 
 	es := getEvents(t)
 	assert.Len(t, es, 2)
-	assert.Contains(t, es, e1)
-	assert.Contains(t, es, e2)
+	assert.Contains(t, es, "E1")
+	assert.Contains(t, es, "E2")
 }
 
 func (suite *AlerterTester) TestTriggering() {
@@ -247,74 +251,122 @@ func (suite *AlerterTester) TestTriggering() {
 	cs := getConditions(t)
 	assert.Len(t, cs, 0)
 
-	rawC3 := newCondition()
-	assert.Equal(t, "3", rawC3.ID)
-
-	rawC4 := newCondition()
-	assert.Equal(t, "4", rawC4.ID)
-
-	rawC5 := newCondition()
-	assert.Equal(t, "5", rawC5.ID)
-
+	var rawC3 Condition
 	rawC3.Title = "cond1 title"
 	rawC3.Description = "cond1 descr"
 	rawC3.Type = EventDataIngested
 	rawC3.UserID = "user1"
 	rawC3.Date = time.Now().String()
+	c3ID := postCondition(t, rawC3)
+	assert.Equal(t, "3", c3ID)
 
+	var rawC4 Condition
 	rawC4.Title = "cond2 title"
 	rawC4.Description = "cond2 descr"
 	rawC4.Type = EventDataAccessed
 	rawC4.UserID = "user2"
 	rawC4.Date = time.Now().String()
+	c4ID := postCondition(t, rawC4)
+	assert.Equal(t, "4", c4ID)
 
+	var rawC5 Condition
 	rawC5.Title = "cond2 title"
 	rawC5.Description = "cond2 descr"
 	rawC5.Type = EventFoo
 	rawC5.UserID = "user2"
 	rawC5.Date = time.Now().String()
-
-	c3 := makeRawCondition(t, rawC3)
-	assert.Equal(t, "3", c3)
-
-	c4 := makeRawCondition(t, rawC4)
-	assert.Equal(t, "4", c4)
-
-	c5 := makeRawCondition(t, rawC5)
-	assert.Equal(t, "5", c5)
+	c5ID := postCondition(t, rawC5)
+	assert.Equal(t, "5", c5ID)
 
 	cs = getConditions(t)
 	assert.Len(t, cs, 3)
 
-	rawE3 := newEvent()
-	rawE3.Type = EventDataAccessed
-	rawE3.Date = time.Now().String()
-	rawE3.Data = map[string]string{"file": "111.tif"}
+	var e3 Event
+	e3.Type = EventDataAccessed
+	e3.Date = time.Now().String()
+	e3.Data = map[string]string{"file": "111.tif"}
+	e3ID := postEvent(t, e3)
+	assert.Equal(t, "E3", e3ID)
 
-	rawE4 := newEvent()
-	rawE4.Type = EventDataIngested
-	rawE4.Date = time.Now().String()
-	rawE4.Data = map[string]string{"file": "111.tif"}
+	var e4 Event
+	e4.Type = EventDataIngested
+	e4.Date = time.Now().String()
+	e4.Data = map[string]string{"file": "111.tif"}
+	e4ID := postEvent(t, e4)
+	assert.Equal(t, "E4", e4ID)
 
-	rawE5 := newEvent()
-	rawE5.Type = EventBar
-	rawE5.Date = time.Now().String()
-
-	e3 := makeRawEvent(t, rawE3)
-	assert.Equal(t, "3", e3)
-
-	e4 := makeRawEvent(t, rawE4)
-	assert.Equal(t, "4", e4)
-
-	e5 := makeRawEvent(t, rawE5)
-	assert.Equal(t, "5", e5)
+	var e5 Event
+	e5.Type = EventBar
+	e5.Date = time.Now().String()
+	e5ID := postEvent(t, e5)
+	assert.Equal(t, "E5", e5ID)
 
 	as := getAlerts(t)
 	assert.Len(t, as, 2)
-	assert.Equal(t, "1", as[0].ID)
-	assert.Equal(t, "3", as[0].EventID)
-	assert.Equal(t, "4", as[0].ConditionID)
-	assert.Equal(t, "2", as[1].ID)
-	assert.Equal(t, "4", as[1].EventID)
-	assert.Equal(t, "3", as[1].ConditionID)
+
+	// TODO: dependent on order of returned results
+	if as[0].ID == "A1" {
+		assert.Equal(t, "A1", as[0].ID)
+		assert.Equal(t, "E3", as[0].EventID)
+		assert.Equal(t, "4", as[0].ConditionID)
+		assert.Equal(t, "A2", as[1].ID)
+		assert.Equal(t, "E4", as[1].EventID)
+		assert.Equal(t, "3", as[1].ConditionID)
+	} else {
+		assert.Equal(t, "A2", as[0].ID)
+		assert.Equal(t, "E4", as[0].EventID)
+		assert.Equal(t, "3", as[0].ConditionID)
+		assert.Equal(t, "A1", as[1].ID)
+		assert.Equal(t, "E3", as[1].EventID)
+		assert.Equal(t, "4", as[1].ConditionID)
+	}
+}
+
+func (suite *AlerterTester) TestAdmin() {
+	t := suite.T()
+
+	resp, err := http.Get("http://localhost:12342/v1/admin/settings")
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	sm := map[string]string{}
+	err = json.Unmarshal(data, &sm)
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	if sm["debug"] != "false" {
+		t.Error("settings get had invalid response")
+	}
+
+	m := map[string]string{"debug": "true"}
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("admin settings %s", err)
+	}
+	resp, err = http.Post("http://localhost:12342/v1/admin/settings", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		t.Fatalf("admin settings post failed: %s", err)
+	}
+
+	resp, err = http.Get("http://localhost:12342/v1/admin/settings")
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	data, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	sm = map[string]string{}
+	err = json.Unmarshal(data, &sm)
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	if sm["debug"] != "true" {
+		t.Error("settings get had invalid response")
+	}
+
 }

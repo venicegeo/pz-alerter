@@ -17,16 +17,14 @@ const EventBar = "Bar"
 type EventType string
 
 type Event struct {
-	ID   string            `json:"id" binding:"required"`
+	ID   string            `json:"id"`
 	Type EventType         `json:"type" binding:"required"`
 	Date string            `json:"date" binding:"required"`
 	Data map[string]string `json:"data"` // specific to event type
 }
 
-func newEvent() *Event {
+func newEventID() string {
 	id := strconv.Itoa(eventID)
 	eventID++
-
-	e := &Event{ID: id}
-	return e
+	return "E" + id
 }

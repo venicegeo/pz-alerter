@@ -3,17 +3,18 @@ package main
 import (
 	"encoding/json"
 	"gopkg.in/olivere/elastic.v3"
+	piazza "github.com/venicegeo/pz-gocommon"
 )
 
 type EventDB struct {
-	client *elastic.Client
+	es *piazza.ElasticSearch
 	index  string
 }
 
-func newEventDB(client *elastic.Client, index string) (*EventDB, error) {
-	db := &EventDB{client: client, index: index}
+func newEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
+	db := &EventDB{es: es, index: index}
 
-	err := makeESIndex(client, index)
+	err := es.MakeIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -21,8 +22,10 @@ func newEventDB(client *elastic.Client, index string) (*EventDB, error) {
 }
 
 func (db *EventDB) write(event *Event) error {
+	id := newEventID()
+	event.ID = id
 
-	_, err := db.client.Index().
+	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("event").
 		Id(event.ID).
@@ -32,10 +35,9 @@ func (db *EventDB) write(event *Event) error {
 		panic(err)
 	}
 
-	// TODO: how often should we do this?
-	_, err = db.client.Flush().Index(db.index).Do()
+	err = db.es.Flush(db.index)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil
@@ -45,7 +47,7 @@ func (db *EventDB) getAll() (map[string]Event, error) {
 
 	// search for everything
 	// TODO: there's a GET call for this?
-	searchResult, err := db.client.Search().
+	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
 		Sort("id", true).

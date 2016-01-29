@@ -2,24 +2,22 @@ package main
 
 import (
 	"encoding/json"
-	//"errors"
+	piazza "github.com/venicegeo/pz-gocommon"
 	"gopkg.in/olivere/elastic.v3"
-	//"log"
 )
 
 type ConditionDB struct {
 	//data   map[string]Condition
-	client *elastic.Client
+	es *piazza.ElasticSearch
 	index  string
 }
 
-func newConditionDB(client *elastic.Client, index string) (*ConditionDB, error) {
+func newConditionDB(es *piazza.ElasticSearch, index string) (*ConditionDB, error) {
 	db := new(ConditionDB)
-	//db.data = make(map[string]Condition)
-	db.client = client
+	db.es = es
 	db.index = index
 
-	err := makeESIndex(client, index)
+	err := es.MakeIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -27,20 +25,23 @@ func newConditionDB(client *elastic.Client, index string) (*ConditionDB, error) 
 }
 
 func (db *ConditionDB) write(condition *Condition) error {
-	_, err := db.client.Index().
+
+	id := newConditionID()
+	condition.ID = id
+
+	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("condition").
 		Id(condition.ID).
 		BodyJson(condition).
 		Do()
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	// TODO: how often should we do this?
-	_, err = db.client.Flush().Index(db.index).Do()
+	err = db.es.Flush(db.index)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	return nil
@@ -58,10 +59,10 @@ func (db *ConditionDB) update(condition *Condition) bool {
 
 func (db *ConditionDB) readByID(id string) (*Condition, error) {
 	termQuery := elastic.NewTermQuery("id", id)
-	searchResult, err := db.client.Search().
-		Index(db.index).  // search in index "twitter"
-		Query(termQuery). // specify the query
-		Do()              // execute
+	searchResult, err := db.es.Client.Search().
+		Index(db.index).
+		Query(termQuery).
+		Do()
 
 	if err != nil {
 		return nil, err
@@ -80,7 +81,7 @@ func (db *ConditionDB) readByID(id string) (*Condition, error) {
 }
 
 func (db *ConditionDB) deleteByID(id string) (bool, error) {
-	res, err := db.client.Delete().
+	res, err := db.es.Client.Delete().
 		Index(db.index).
 		Type("condition").
 		Id(id).
@@ -89,9 +90,7 @@ func (db *ConditionDB) deleteByID(id string) (bool, error) {
 		return false, err
 	}
 
-
-	// TODO: how often should we do this?
-	_, err = db.client.Flush().Index(db.index).Do()
+	err = db.es.Flush(db.index)
 	if err != nil {
 		return false, err
 	}
@@ -103,7 +102,7 @@ func (db *ConditionDB) getAll() (map[string]Condition, error) {
 
 	// search for everything
 	// TODO: there's a GET call for this?
-	searchResult, err := db.client.Search().
+	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
 		Sort("id", true).

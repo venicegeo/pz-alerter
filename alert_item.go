@@ -20,6 +20,7 @@ func newAlert(conditionID string, eventID string) Alert {
 
 	id := strconv.Itoa(alertID)
 	alertID++
+	id = "A" + id
 
 	return Alert{
 		ID:          id,

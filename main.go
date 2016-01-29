@@ -2,84 +2,95 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v3"
-	"log"
+	piazza "github.com/venicegeo/pz-gocommon"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
-//---------------------------------------------------------------------------
+var pzService *piazza.PzService
 
-func makeESIndex(client *elastic.Client, index string) error {
-	exists, err := client.IndexExists(index).Do()
-	if err != nil {
-		return err
-	}
+var startTime = time.Now()
 
-	if exists {
-		_, err = client.DeleteIndex(index).Do()
-		if err != nil {
-			return err
-		}
-	}
-
-	_, err = client.CreateIndex(index).Do()
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func newESClient() (*elastic.Client, error) {
-  client, err := elastic.NewClient(
-    elastic.SetURL("https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com"),
-    elastic.SetSniff(false),
-    elastic.SetMaxRetries(5),
-    elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)),
-    elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)))
-	if err != nil {
-		return nil, err
-	}
-	return client, nil
-}
+var debugMode bool
 
 ///////////////////////////////////////////////////////////
 
-func runAlertServer(discoveryURL string, port string) error {
+func handleGetAdminStats(c *gin.Context) {
+	m := map[string]string{"start_time": startTime.String()}
+	c.JSON(http.StatusOK, m)
+}
 
-	esClient, err := newESClient()
+func handleGetAdminSettings(c *gin.Context) {
+	s := "false"
+	if debugMode {
+		s = "true"
+	}
+	m := map[string]string{"debug": s}
+	c.JSON(http.StatusOK, m)
+}
+
+func handlePostAdminSettings(c *gin.Context) {
+	m := map[string]string{}
+	err := c.BindJSON(&m)
+	if err != nil {
+		c.Error(err)
+		return
+	}
+	for k, v := range m {
+		switch k {
+		case "debug":
+			switch v {
+			case "true":
+				debugMode = true
+				break
+			case "false":
+				debugMode = false
+			default:
+				c.String(http.StatusBadRequest, "Illegal value for 'debug': %s", v)
+				return
+			}
+		default:
+			c.String(http.StatusBadRequest, "Unknown parameter: %s", k)
+			return
+		}
+	}
+	c.JSON(http.StatusOK, m)
+}
+
+func handlePostAdminShutdown(c *gin.Context) {
+	var reason string
+	err := c.BindJSON(&reason)
+	if err != nil {
+		c.String(http.StatusBadRequest, "no reason supplied")
+		return
+	}
+	pzService.Log(piazza.SeverityFatal, "Shutdown requested: "+reason)
+
+	// TODO: need a graceful shutdown method
+	os.Exit(0)
+}
+
+func runAlertServer() error {
+
+	es := pzService.ElasticSearch
+
+	conditionDB, err := newConditionDB(es, "conditions")
 	if err != nil {
 		return err
 	}
-
-	conditionDB, err := newConditionDB(esClient, "conditions")
+	eventDB, err := newEventDB(es, "events")
 	if err != nil {
 		return err
 	}
-	eventDB, err := newEventDB(esClient, "events")
-	if err != nil {
-		return err
-	}
-	alertDB, err := newAlertDB(esClient, "alerts")
-	if err != nil {
-		return err
-	}
-
-	myAddress := fmt.Sprintf(":%s", port)
-	myURL := fmt.Sprintf("http://%s/alerts", myAddress)
-
-	piazza.RegistryInit(discoveryURL)
-	err = piazza.RegisterService("pz-alerter", "core-service", myURL)
+	alertDB, err := newAlertDB(es, "alerts")
 	if err != nil {
 		return err
 	}
 
 	gin.SetMode(gin.ReleaseMode)
-
 	router := gin.New()
 	//router.Use(gin.Logger())
 	//router.Use(gin.Recovery())
@@ -87,16 +98,16 @@ func runAlertServer(discoveryURL string, port string) error {
 	//---------------------------------
 
 	router.GET("/", func(c *gin.Context) {
-		c.JSON(http.StatusOK, "Hi. I'm pz-alerter.")
+		c.String(http.StatusOK, "Hi. I'm pz-alerter.")
 	})
 
 	//---------------------------------
 
-	router.POST("/events", func(c *gin.Context) {
+	router.POST("/v1/events", func(c *gin.Context) {
 		event := &Event{}
 		err := c.BindJSON(event)
 		if err != nil {
-			log.Println(err)
+			pzService.Error("POST to /v1/events", err)
 			c.Error(err)
 			return
 		}
@@ -105,52 +116,55 @@ func runAlertServer(discoveryURL string, port string) error {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"id": event.ID})
+		c.IndentedJSON(http.StatusCreated, gin.H{"id": event.ID})
 
 		alertDB.checkConditions(*event, conditionDB)
 	})
 
-	router.GET("/events", func(c *gin.Context) {
+	router.GET("/v1/events", func(c *gin.Context) {
 		m, err := eventDB.getAll()
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, m)
+		c.IndentedJSON(http.StatusOK, m)
 	})
 
 	//---------------------------------
 
-	router.GET("/alerts/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		v, err := alertDB.getByConditionID(id)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"condition_id": id})
-			return
-		}
-		if v == nil {
-			c.JSON(http.StatusNotFound, gin.H{"condition_id": id})
-			return
-		}
-		c.JSON(http.StatusOK, v)
-	})
+	router.GET("/v1/alerts", func(c *gin.Context) {
 
-	router.GET("/alerts", func(c *gin.Context) {
-		all, err := alertDB.getAll()
+		conditionID := c.Query("condition")
+		if conditionID != "" {
+			v, err := alertDB.getByConditionID(conditionID)
+			if err != nil {
+				c.IndentedJSON(http.StatusInternalServerError, gin.H{"condition_id": conditionID})
+				return
+			}
+			if v == nil {
+				c.IndentedJSON(http.StatusNotFound, gin.H{"condition_id": conditionID})
+				return
+			}
+			c.IndentedJSON(http.StatusOK, v)
+			return
+		}
+
+			all, err := alertDB.getAll()
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, all)
+		c.IndentedJSON(http.StatusOK, all)
+
 	})
 
 	//---------------------------------
-	router.POST("/conditions", func(c *gin.Context) {
+	router.POST("/v1/conditions", func(c *gin.Context) {
 		var condition Condition
 		err := c.BindJSON(&condition)
 		if err != nil {
 			c.Error(err)
-			log.Println(err)
+			pzService.Error("POST to /v1/conditions", err)
 			return
 		}
 		err = conditionDB.write(&condition)
@@ -158,10 +172,10 @@ func runAlertServer(discoveryURL string, port string) error {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusCreated, gin.H{"id": condition.ID})
+		c.IndentedJSON(http.StatusCreated, gin.H{"id": condition.ID})
 	})
 
-	/*router.PUT("/conditions", func(c *gin.Context) {
+	/*router.PUT("/v1/conditions", func(c *gin.Context) {
 		var condition Condition
 		err := c.BindJSON(&condition)
 		if err != nil {
@@ -176,16 +190,16 @@ func runAlertServer(discoveryURL string, port string) error {
 		c.JSON(http.StatusOK, gin.H{"id": condition.ID})
 	})*/
 
-	router.GET("/conditions", func(c *gin.Context) {
+	router.GET("/v1/conditions", func(c *gin.Context) {
 		all, err := conditionDB.getAll()
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		c.JSON(http.StatusOK, all)
+		c.IndentedJSON(http.StatusOK, all)
 	})
 
-	router.GET("/conditions/:id", func(c *gin.Context) {
+	router.GET("/v1/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		v, err := conditionDB.readByID(id)
 		if err != nil {
@@ -193,47 +207,75 @@ func runAlertServer(discoveryURL string, port string) error {
 			return
 		}
 		if v == nil {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, v)
+		c.IndentedJSON(http.StatusOK, v)
 	})
 
-	router.DELETE("/conditions/:id", func(c *gin.Context) {
+	router.DELETE("/v1/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		ok, err := conditionDB.deleteByID(id)
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"id": id})
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 			return
 		}
 		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, nil)
+		c.IndentedJSON(http.StatusOK, nil)
 	})
 
 	//---------------------------------
 
-	err = router.Run(":" + port)
-	return err
+	router.GET("/v1/admin/stats", func(c *gin.Context) { handleGetAdminStats(c) })
+
+	router.GET("/v1/admin/settings", func(c *gin.Context) { handleGetAdminSettings(c) })
+	router.POST("/v1/admin/settings", func(c *gin.Context) { handlePostAdminSettings(c) })
+
+	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
+
+	return router.Run(pzService.Address)
 }
 
-func app() int {
-  var defaultPort = os.Getenv("PORT")
-  if defaultPort == "" {
-    defaultPort = "12342"
-  }
-	var discoveryURL = flag.String("discovery", "http://localhost:3000", "URL of pz-discovery")
-	var port = flag.String("port", defaultPort, "port number of this pz-alerter")
+func app(done chan bool) int {
 
-	flag.Parse()
+	var err error
 
-	log.Printf("starting: discovery=%s, port=%s", *discoveryURL, *port)
-
-	err := runAlertServer(*discoveryURL, *port)
+	// handles the command line flags, finds the discover service, registers us,
+	// and figures out our own server address
+	serviceAddress, discoverAddress, debug, err := piazza.NewDiscoverService("pz-alerter", "localhost:12342", "localhost:3000")
 	if err != nil {
-		fmt.Print(err)
+		pzService.Fatal(err)
+		return 1
+	}
+
+	pzService, err = piazza.NewPzService("pz-alerter", serviceAddress, discoverAddress, debug)
+	if err != nil {
+		pzService.Fatal(err)
+		return 1
+	}
+
+	err = pzService.WaitForService("pz-logger", 1000)
+	if err != nil {
+		pzService.Fatal(err)
+		return 1
+	}
+
+	err = pzService.WaitForService("pz-uuidgen", 1000)
+	if err != nil {
+		pzService.Fatal(err)
+		return 1
+	}
+
+	if done != nil {
+		done <- true
+	}
+
+	err = runAlertServer()
+	if err != nil {
+		pzService.Fatal(err)
 		return 1
 	}
 
@@ -241,12 +283,12 @@ func app() int {
 	return 1
 }
 
-func main2(cmd string) int {
-	flag.CommandLine = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+func main2(cmd string, done chan bool) int {
+	flag.CommandLine = flag.NewFlagSet("pz-alerter", flag.ExitOnError)
 	os.Args = strings.Fields("main_tester " + cmd)
-	return app()
+	return app(done)
 }
 
 func main() {
-	os.Exit(app())
+	os.Exit(app(nil))
 }
