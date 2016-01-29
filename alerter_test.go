@@ -1,16 +1,16 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	piazza "github.com/venicegeo/pz-gocommon"
+	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
-	"bytes"
-	"io/ioutil"
 )
 
 type AlerterTester struct {
@@ -47,7 +47,6 @@ func setup(t *testing.T, port string) {
 
 //---------------------------------------------------------------------------
 
-
 func postEvent(t *testing.T, event Event) string {
 
 	data, err := json.Marshal(event)
@@ -55,7 +54,7 @@ func postEvent(t *testing.T, event Event) string {
 
 	body := bytes.NewBuffer(data)
 
-	resp, err := http.Post("http://localhost:12342/events", piazza.ContentTypeJSON, body)
+	resp, err := http.Post("http://localhost:12342/v1/events", piazza.ContentTypeJSON, body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -72,7 +71,7 @@ func postEvent(t *testing.T, event Event) string {
 }
 
 func getEvents(t *testing.T) []string {
-	resp, err := http.Get("http://localhost:12342/events")
+	resp, err := http.Get("http://localhost:12342/v1/events")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -99,7 +98,7 @@ func postCondition(t *testing.T, cond Condition) string {
 
 	body := bytes.NewBuffer(data)
 
-	resp, err := http.Post("http://localhost:12342/conditions", piazza.ContentTypeJSON, body)
+	resp, err := http.Post("http://localhost:12342/v1/conditions", piazza.ContentTypeJSON, body)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusCreated, resp.StatusCode)
 
@@ -116,7 +115,7 @@ func postCondition(t *testing.T, cond Condition) string {
 }
 
 func getCondition(t *testing.T, id string) bool {
-	resp, err := http.Get("http://localhost:12342/conditions/" + id)
+	resp, err := http.Get("http://localhost:12342/v1/conditions/" + id)
 	assert.NoError(t, err)
 
 	if resp.StatusCode == http.StatusNotFound {
@@ -138,7 +137,7 @@ func getCondition(t *testing.T, id string) bool {
 }
 
 func getConditions(t *testing.T) []string {
-	resp, err := http.Get("http://localhost:12342/conditions")
+	resp, err := http.Get("http://localhost:12342/v1/conditions")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -158,13 +157,13 @@ func getConditions(t *testing.T) []string {
 }
 
 func deleteCondition(t *testing.T, id string) {
-	resp, err := piazza.Delete("http://localhost:12342/conditions/" + id)
+	resp, err := piazza.Delete("http://localhost:12342/v1/conditions/" + id)
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
 func getAlerts(t *testing.T) []Alert {
-	resp, err := http.Get("http://localhost:12342/alerts")
+	resp, err := http.Get("http://localhost:12342/v1/alerts")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 
@@ -321,4 +320,53 @@ func (suite *AlerterTester) TestTriggering() {
 		assert.Equal(t, "E3", as[1].EventID)
 		assert.Equal(t, "4", as[1].ConditionID)
 	}
+}
+
+func (suite *AlerterTester) TestAdmin() {
+	t := suite.T()
+
+	resp, err := http.Get("http://localhost:12342/v1/admin/settings")
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	sm := map[string]string{}
+	err = json.Unmarshal(data, &sm)
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	if sm["debug"] != "false" {
+		t.Error("settings get had invalid response")
+	}
+
+	m := map[string]string{"debug": "true"}
+	b, err := json.Marshal(m)
+	if err != nil {
+		t.Fatalf("admin settings %s", err)
+	}
+	resp, err = http.Post("http://localhost:12342/v1/admin/settings", "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		t.Fatalf("admin settings post failed: %s", err)
+	}
+
+	resp, err = http.Get("http://localhost:12342/v1/admin/settings")
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	data, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	sm = map[string]string{}
+	err = json.Unmarshal(data, &sm)
+	if err != nil {
+		t.Fatalf("admin settings get failed: %s", err)
+	}
+	if sm["debug"] != "true" {
+		t.Error("settings get had invalid response")
+	}
+
 }
