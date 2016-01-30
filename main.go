@@ -1,12 +1,11 @@
 package main
 
 import (
-	"flag"
 	"github.com/gin-gonic/gin"
 	piazza "github.com/venicegeo/pz-gocommon"
+	"log"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -149,7 +148,7 @@ func runAlertServer() error {
 			return
 		}
 
-			all, err := alertDB.getAll()
+		all, err := alertDB.getAll()
 		if err != nil {
 			c.Error(err)
 			return
@@ -239,19 +238,23 @@ func runAlertServer() error {
 	return router.Run(pzService.Address)
 }
 
-func app(done chan bool) int {
+func Main(done chan bool, local bool) int {
 
 	var err error
 
-	// handles the command line flags, finds the discover service, registers us,
-	// and figures out our own server address
-	serviceAddress, discoverAddress, debug, err := piazza.NewDiscoverService("pz-alerter", "localhost:12342", "localhost:3000")
+	config, err := piazza.GetConfig("pz-alerter", local)
 	if err != nil {
-		pzService.Fatal(err)
+		log.Fatal(err)
 		return 1
 	}
 
-	pzService, err = piazza.NewPzService("pz-alerter", serviceAddress, discoverAddress, debug)
+	err = config.RegisterServiceWithDiscover()
+	if err != nil {
+		log.Fatal(err)
+		return 1
+	}
+
+	pzService, err = piazza.NewPzService(config, false)
 	if err != nil {
 		pzService.Fatal(err)
 		return 1
@@ -283,12 +286,7 @@ func app(done chan bool) int {
 	return 1
 }
 
-func main2(cmd string, done chan bool) int {
-	flag.CommandLine = flag.NewFlagSet("pz-alerter", flag.ExitOnError)
-	os.Args = strings.Fields("main_tester " + cmd)
-	return app(done)
-}
-
 func main() {
-	os.Exit(app(nil))
+	local := piazza.IsLocalConfig()
+	os.Exit(Main(nil, local))
 }
