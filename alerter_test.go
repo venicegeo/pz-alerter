@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	piazza "github.com/venicegeo/pz-gocommon"
@@ -18,7 +17,16 @@ type AlerterTester struct {
 }
 
 func (suite *AlerterTester) SetupSuite() {
-	setup(suite.T(), "12342")
+	t := suite.T()
+
+	done := make(chan bool, 1)
+	go Main(done, true)
+	<-done
+
+	err := pzService.WaitForService(pzService.Name, 1000)
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func (suite *AlerterTester) TearDownSuite() {
@@ -30,20 +38,6 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-//---------------------------------------------------------------------------
-
-func setup(t *testing.T, port string) {
-	s := fmt.Sprintf("-server localhost:%s -discover localhost:3000", port)
-
-	done := make(chan bool, 1)
-	go main2(s, done)
-	<-done
-
-	err := pzService.WaitForService(pzService.Name, 1000)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
 
 //---------------------------------------------------------------------------
 
