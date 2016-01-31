@@ -103,7 +103,7 @@ func runAlertServer() error {
 	//---------------------------------
 
 	router.POST("/v1/events", func(c *gin.Context) {
-		event := &Event{}
+		event := &piazza.Event{}
 		err := c.BindJSON(event)
 		if err != nil {
 			pzService.Error("POST to /v1/events", err)
@@ -115,7 +115,9 @@ func runAlertServer() error {
 			c.Error(err)
 			return
 		}
-		c.IndentedJSON(http.StatusCreated, gin.H{"id": event.ID})
+
+		a := piazza.AlerterIdResponse{ID: event.ID}
+		c.IndentedJSON(http.StatusCreated, a)
 
 		alertDB.checkConditions(*event, conditionDB)
 	})
@@ -159,7 +161,7 @@ func runAlertServer() error {
 
 	//---------------------------------
 	router.POST("/v1/conditions", func(c *gin.Context) {
-		var condition Condition
+		var condition piazza.Condition
 		err := c.BindJSON(&condition)
 		if err != nil {
 			c.Error(err)

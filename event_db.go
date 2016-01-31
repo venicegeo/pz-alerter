@@ -21,7 +21,7 @@ func newEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
 	return db, nil
 }
 
-func (db *EventDB) write(event *Event) error {
+func (db *EventDB) write(event *piazza.Event) error {
 	id := newEventID()
 	event.ID = id
 
@@ -43,7 +43,7 @@ func (db *EventDB) write(event *Event) error {
 	return nil
 }
 
-func (db *EventDB) getAll() (map[string]Event, error) {
+func (db *EventDB) getAll() (*piazza.EventList, error) {
 
 	// search for everything
 	// TODO: there's a GET call for this?
@@ -56,10 +56,10 @@ func (db *EventDB) getAll() (map[string]Event, error) {
 		return nil, err
 	}
 
-	m := make(map[string]Event)
+	m := piazza.EventList{}
 
 	for _, hit := range searchResult.Hits.Hits {
-		var t Event
+		var t piazza.Event
 		err := json.Unmarshal(*hit.Source, &t)
 		if err != nil {
 			return nil, err
@@ -67,5 +67,5 @@ func (db *EventDB) getAll() (map[string]Event, error) {
 		m[t.ID] = t
 	}
 
-	return m, nil
+	return &m, nil
 }

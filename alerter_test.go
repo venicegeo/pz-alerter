@@ -41,7 +41,7 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
-func postEvent(t *testing.T, event Event) string {
+func postEvent(t *testing.T, event piazza.Event) string {
 
 	data, err := json.Marshal(event)
 	assert.NoError(t, err)
@@ -59,9 +59,9 @@ func postEvent(t *testing.T, event Event) string {
 	var x map[string]string
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
-	assert.Contains(t, x, "id")
+	assert.Contains(t, x, "ID")
 
-	return x["id"]
+	return x["ID"]
 }
 
 func getEvents(t *testing.T) []string {
@@ -86,7 +86,7 @@ func getEvents(t *testing.T) []string {
 
 //---------------------------------------------------------------------------
 
-func postCondition(t *testing.T, cond Condition) string {
+func postCondition(t *testing.T, cond piazza.Condition) string {
 	data, err := json.Marshal(cond)
 	assert.NoError(t, err)
 
@@ -100,12 +100,11 @@ func postCondition(t *testing.T, cond Condition) string {
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
-	var x map[string]string
+	var x piazza.AlerterIdResponse
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
-	assert.Contains(t, x, "id")
 
-	return x["id"]
+	return x.ID
 }
 
 func getCondition(t *testing.T, id string) bool {
@@ -121,7 +120,7 @@ func getCondition(t *testing.T, id string) bool {
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
-	var x Condition
+	var x piazza.Condition
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
 
@@ -156,7 +155,7 @@ func deleteCondition(t *testing.T, id string) {
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
 }
 
-func getAlerts(t *testing.T) []Alert {
+func getAlerts(t *testing.T) []piazza.Alert {
 	resp, err := http.Get("http://localhost:12342/v1/alerts")
 	assert.NoError(t, err)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
@@ -165,11 +164,11 @@ func getAlerts(t *testing.T) []Alert {
 	assert.NoError(t, err)
 	defer resp.Body.Close()
 
-	var x map[string]Alert
+	var x map[string]piazza.Alert
 	err = json.Unmarshal(d, &x)
 	assert.NoError(t, err)
 
-	var a []Alert
+	var a []piazza.Alert
 	for i := range x {
 		a = append(a, x[i])
 	}
@@ -181,7 +180,7 @@ func getAlerts(t *testing.T) []Alert {
 func (suite *AlerterTester) TestConditions() {
 	t := suite.T()
 
-	var c1 Condition
+	var c1 piazza.Condition
 	c1.Title = "c1"
 	c1.Type = "=type="
 	c1.UserID = "=userid="
@@ -189,7 +188,7 @@ func (suite *AlerterTester) TestConditions() {
 	c1ID := postCondition(t, c1)
 	assert.Equal(t, c1ID, "1")
 
-	var c2 Condition
+	var c2 piazza.Condition
 	c2.Title = "c2"
 	c2.Type = "=type="
 	c2.UserID = "=userid="
@@ -219,15 +218,15 @@ func (suite *AlerterTester) TestConditions() {
 func (suite *AlerterTester) TestEvents() {
 	t := suite.T()
 
-	var e1 Event
-	e1.Type = EventDataIngested
+	var e1 piazza.Event
+	e1.Type = piazza.EventDataIngested
 	e1.Date = "22 Jan 2016"
 	e1.Data = nil
 	e1ID := postEvent(t, e1)
 	assert.Equal(t, "E1", e1ID)
 
-	var e2 Event
-	e2.Type = EventDataAccessed
+	var e2 piazza.Event
+	e2.Type = piazza.EventDataAccessed
 	e2.Date = "22 Jan 2016"
 	e2.Data = nil
 	e2ID := postEvent(t, e2)
@@ -245,28 +244,28 @@ func (suite *AlerterTester) TestTriggering() {
 	cs := getConditions(t)
 	assert.Len(t, cs, 0)
 
-	var rawC3 Condition
+	var rawC3 piazza.Condition
 	rawC3.Title = "cond1 title"
 	rawC3.Description = "cond1 descr"
-	rawC3.Type = EventDataIngested
+	rawC3.Type = piazza.EventDataIngested
 	rawC3.UserID = "user1"
 	rawC3.Date = time.Now().String()
 	c3ID := postCondition(t, rawC3)
 	assert.Equal(t, "3", c3ID)
 
-	var rawC4 Condition
+	var rawC4 piazza.Condition
 	rawC4.Title = "cond2 title"
 	rawC4.Description = "cond2 descr"
-	rawC4.Type = EventDataAccessed
+	rawC4.Type = piazza.EventDataAccessed
 	rawC4.UserID = "user2"
 	rawC4.Date = time.Now().String()
 	c4ID := postCondition(t, rawC4)
 	assert.Equal(t, "4", c4ID)
 
-	var rawC5 Condition
+	var rawC5 piazza.Condition
 	rawC5.Title = "cond2 title"
 	rawC5.Description = "cond2 descr"
-	rawC5.Type = EventFoo
+	rawC5.Type = piazza.EventFoo
 	rawC5.UserID = "user2"
 	rawC5.Date = time.Now().String()
 	c5ID := postCondition(t, rawC5)
@@ -275,22 +274,22 @@ func (suite *AlerterTester) TestTriggering() {
 	cs = getConditions(t)
 	assert.Len(t, cs, 3)
 
-	var e3 Event
-	e3.Type = EventDataAccessed
+	var e3 piazza.Event
+	e3.Type = piazza.EventDataAccessed
 	e3.Date = time.Now().String()
 	e3.Data = map[string]string{"file": "111.tif"}
 	e3ID := postEvent(t, e3)
 	assert.Equal(t, "E3", e3ID)
 
-	var e4 Event
-	e4.Type = EventDataIngested
+	var e4 piazza.Event
+	e4.Type = piazza.EventDataIngested
 	e4.Date = time.Now().String()
 	e4.Data = map[string]string{"file": "111.tif"}
 	e4ID := postEvent(t, e4)
 	assert.Equal(t, "E4", e4ID)
 
-	var e5 Event
-	e5.Type = EventBar
+	var e5 piazza.Event
+	e5.Type = piazza.EventBar
 	e5.Date = time.Now().String()
 	e5ID := postEvent(t, e5)
 	assert.Equal(t, "E5", e5ID)
