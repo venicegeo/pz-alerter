@@ -2,6 +2,7 @@ package main
 
 import (
 	"strconv"
+	piazza "github.com/venicegeo/pz-gocommon"
 )
 
 //---------------------------------------------------------------------------
@@ -9,26 +10,16 @@ import (
 
 var alertID = 1
 
-type Alert struct {
-	ID          string `json:"id"`
-	ConditionID string `json:"condition_id" binding:"required"`
-	EventID     string `json:"event_id" binding:"required"`
-}
-
 // newAlert makes an Alert, setting the ID for you.
-func newAlert(conditionID string, eventID string) Alert {
+func newAlert(conditionID string, eventID string) piazza.Alert {
 
 	id := strconv.Itoa(alertID)
 	alertID++
 	id = "A" + id
 
-	return Alert{
+	return piazza.Alert{
 		ID:          id,
 		ConditionID: conditionID,
 		EventID: eventID,
 	}
-}
-
-func (item *Alert) id() string {
-	return item.ID
 }

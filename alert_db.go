@@ -26,7 +26,7 @@ func newAlertDB(es *piazza.ElasticSearch, index string) (*AlertDB, error) {
 	return db, nil
 }
 
-func (db *AlertDB) write(alert *Alert) error {
+func (db *AlertDB) write(alert *piazza.Alert) error {
 
 	_, err := db.es.Client.Index().
 		Index(db.index).
@@ -46,7 +46,7 @@ func (db *AlertDB) write(alert *Alert) error {
 	return nil
 }
 
-func (db *AlertDB) getByConditionID(conditionID string) ([]Alert, error) {
+func (db *AlertDB) getByConditionID(conditionID string) ([]piazza.Alert, error) {
 	termQuery := elastic.NewTermQuery("condition_id", conditionID)
 	searchResult, err := db.es.Client.Search().
 		Index(db.index).  // search in index "twitter"
@@ -61,9 +61,9 @@ func (db *AlertDB) getByConditionID(conditionID string) ([]Alert, error) {
 		return nil, nil
 	}
 
-	var as []Alert
+	var as []piazza.Alert
 	for _, hit := range searchResult.Hits.Hits {
-		var a Alert
+		var a piazza.Alert
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
 			return nil, err
@@ -73,7 +73,7 @@ func (db *AlertDB) getByConditionID(conditionID string) ([]Alert, error) {
 	return as, nil
 }
 
-func (db *AlertDB) getAll() (map[string]Alert, error) {
+func (db *AlertDB) getAll() (map[string]piazza.Alert, error) {
 	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
@@ -83,11 +83,11 @@ func (db *AlertDB) getAll() (map[string]Alert, error) {
 		return nil, err
 	}
 
-	m := make(map[string]Alert)
+	m := make(map[string]piazza.Alert)
 
 	if searchResult.Hits != nil {
 		for _, hit := range searchResult.Hits.Hits {
-			var t Alert
+			var t piazza.Alert
 			err := json.Unmarshal(*hit.Source, &t)
 			if err != nil {
 				return nil, err
@@ -99,7 +99,7 @@ func (db *AlertDB) getAll() (map[string]Alert, error) {
 	return m, nil
 }
 
-func (db *AlertDB) checkConditions(e Event, conditionDB *ConditionDB) error {
+func (db *AlertDB) checkConditions(e piazza.Event, conditionDB *ConditionDB) error {
 	all, err := conditionDB.getAll()
 	if err != nil {
 		return nil
