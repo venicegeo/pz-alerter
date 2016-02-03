@@ -1,8 +1,7 @@
-package main
+package client
 
 import (
 	"strconv"
-	piazza "github.com/venicegeo/pz-gocommon"
 )
 
 //---------------------------------------------------------------------------
@@ -11,13 +10,13 @@ import (
 var alertID = 1
 
 // newAlert makes an Alert, setting the ID for you.
-func newAlert(conditionID string, eventID string) piazza.Alert {
+func NewAlert(conditionID string, eventID string) Alert {
 
 	id := strconv.Itoa(alertID)
 	alertID++
 	id = "A" + id
 
-	return piazza.Alert{
+	return Alert{
 		ID:          id,
 		ConditionID: conditionID,
 		EventID: eventID,

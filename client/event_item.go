@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"strconv"
@@ -8,7 +8,7 @@ import (
 
 var eventID = 1
 
-func newEventID() string {
+func NewEventID() string {
 	id := strconv.Itoa(eventID)
 	eventID++
 	return "E" + id
