@@ -60,16 +60,7 @@ func handlePostAdminSettings(c *gin.Context) {
 }
 
 func handlePostAdminShutdown(c *gin.Context) {
-	var reason string
-	err := c.BindJSON(&reason)
-	if err != nil {
-		c.String(http.StatusBadRequest, "no reason supplied")
-		return
-	}
-	pzService.Log(piazza.SeverityFatal, "Shutdown requested: "+reason)
-
-	// TODO: need a graceful shutdown method
-	os.Exit(0)
+	piazza.HandlePostAdminShutdown(pzService, c)
 }
 
 func runAlertServer() error {
