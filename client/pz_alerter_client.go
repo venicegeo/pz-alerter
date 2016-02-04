@@ -14,11 +14,11 @@ type PzAlerterClient struct {
 	url string
 }
 
-func NewPzAlerterClient(address string) *PzAlerterClient {
+func NewPzAlerterClient(sys *piazza.System) (*PzAlerterClient, error) {
 	c := new(PzAlerterClient)
-	c.url = fmt.Sprintf("http://%s/v1", address)
+	c.url = fmt.Sprintf("http://%s/v1", sys.Config.ServerAddress)
 
-	return c
+	return c, nil
 }
 
 func (c *PzAlerterClient) PostToEvents(event *Event) (*AlerterIdResponse, error) {

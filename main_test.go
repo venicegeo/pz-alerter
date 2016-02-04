@@ -1,15 +1,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	piazza "github.com/venicegeo/pz-gocommon"
+	loggerPkg "github.com/venicegeo/pz-logger/client"
+	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-alerter/client"
 	"github.com/venicegeo/pz-alerter/server"
-	"io/ioutil"
-	"net/http"
 	"testing"
 	"time"
 	"log"
@@ -17,50 +15,60 @@ import (
 
 type AlerterTester struct {
 	suite.Suite
-	client *client.PzAlerterClient
+	logger *loggerPkg.PzLoggerClient
+	uuidgenner *uuidgenPkg.PzUuidGenClient
+	alerter *client.PzAlerterClient
 }
 
 func (suite *AlerterTester) SetupSuite() {
 	//t := suite.T()
 
-	config, err := piazza.GetConfig("pz-alerter", true)
+	config, err := piazza.NewConfig("pz-alerter", piazza.ConfigModeTest)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	discoverClient, err := piazza.NewDiscoverClient(config)
+	sys, err := piazza.NewSystem(config)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = discoverClient.RegisterServiceWithDiscover(config.ServiceName, config.ServerAddress)
+	suite.logger, err = loggerPkg.NewPzLoggerClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = discoverClient.WaitForService("pz-logger", 1000)
+	err = sys.WaitForService("pz-logger", 1000)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = discoverClient.WaitForService("pz-uuidgen", 1000)
+	suite.uuidgenner, err = uuidgenPkg.NewPzUuidGenClient(sys)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = sys.WaitForService("pz-uuidgen", 1000)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	suite.alerter, err = client.NewPzAlerterClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	go func() {
-		err := server.RunAlertServer(config)
+		err = server.RunAlertServer(sys, suite.logger, suite.uuidgenner)
 		if err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	err = discoverClient.WaitForService("pz-alerter", 1000)
+	err = sys.WaitForService("pz-alerter", 1000)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	suite.client = client.NewPzAlerterClient(config.ServerAddress)
 }
 
 func (suite *AlerterTester) TearDownSuite() {
@@ -77,7 +85,7 @@ func TestRunSuite(t *testing.T) {
 func (suite *AlerterTester) TestConditions() {
 	t := suite.T()
 
-	alerter := suite.client
+	alerter := suite.alerter
 
 	var err error
 	var idResponse *client.AlerterIdResponse
@@ -139,7 +147,7 @@ func (suite *AlerterTester) TestConditions() {
 func (suite *AlerterTester) TestEvents() {
 	t := suite.T()
 
-	alerter := suite.client
+	alerter := suite.alerter
 
 	var err error
 	var idResponse *client.AlerterIdResponse
@@ -181,7 +189,7 @@ func (suite *AlerterTester) TestEvents() {
 func (suite *AlerterTester) TestTriggering() {
 	t := suite.T()
 
-	alerter := suite.client
+	alerter := suite.alerter
 
 	var err error
 	var idResponse *client.AlerterIdResponse
@@ -274,48 +282,21 @@ func (suite *AlerterTester) TestTriggering() {
 func (suite *AlerterTester) TestAdmin() {
 	t := suite.T()
 
-	resp, err := http.Get("http://localhost:12342/v1/admin/settings")
-	if err != nil {
-		t.Fatalf("admin settings get failed: %s", err)
-	}
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	sm := map[string]string{}
-	err = json.Unmarshal(data, &sm)
-	if err != nil {
-		t.Fatalf("admin settings get failed: %s", err)
-	}
-	if sm["debug"] != "false" {
-		t.Error("settings get had invalid response")
+	alerter := suite.alerter
+
+	settings, err := alerter.GetFromAdminSettings()
+	assert.NoError(t, err)
+	if settings.Debug != false {
+		t.Error("settings not false")
 	}
 
-	m := map[string]string{"debug": "true"}
-	b, err := json.Marshal(m)
-	if err != nil {
-		t.Fatalf("admin settings %s", err)
-	}
-	resp, err = http.Post("http://localhost:12342/v1/admin/settings", "application/json", bytes.NewBuffer(b))
-	if err != nil {
-		t.Fatalf("admin settings post failed: %s", err)
-	}
+	settings.Debug = true
+	err = alerter.PostToAdminSettings(settings)
+	assert.NoError(t, err)
 
-	resp, err = http.Get("http://localhost:12342/v1/admin/settings")
-	if err != nil {
-		t.Fatalf("admin settings get failed: %s", err)
+	settings, err = alerter.GetFromAdminSettings()
+	assert.NoError(t, err)
+	if settings.Debug != true {
+		t.Error("settings not true")
 	}
-	data, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
-	sm = map[string]string{}
-	err = json.Unmarshal(data, &sm)
-	if err != nil {
-		t.Fatalf("admin settings get failed: %s", err)
-	}
-	if sm["debug"] != "true" {
-		t.Error("settings get had invalid response")
-	}
-
 }

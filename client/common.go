@@ -25,7 +25,6 @@ type AlerterIdResponse struct {
 
 /////////////////
 
-
 const EventDataIngested = "DataIngested"
 const EventDataAccessed = "DataAccessed"
 const EventUSDataFound = "USDataFound"
@@ -45,7 +44,6 @@ type EventList map[string]Event
 
 ////////////////
 
-
 type Alert struct {
 	ID          string `json:"id"`
 	ConditionID string `json:"condition_id" binding:"required"`
@@ -56,7 +54,6 @@ type AlertList map[string]Alert
 
 //////////////
 
-
 type Condition struct {
 	ID string `json:"id"`
 
@@ -64,7 +61,7 @@ type Condition struct {
 	Description string    `json:"description"`
 	Type        EventType `json:"type" binding:"required"`
 	UserID      string    `json:"user_id" binding:"required"`
-	Date   string    `json:"start_date" binding:"required"`
+	Date        string    `json:"start_date" binding:"required"`
 	//ExpirationDate string `json:"expiration_date"`
 	//IsEnabled      bool   `json:"is_enabled" binding:"required"`
 	//HitCount int `json:"hit_count"`

@@ -3,6 +3,8 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	piazza "github.com/venicegeo/pz-gocommon"
+	loggerPkg "github.com/venicegeo/pz-logger/client"
+	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-alerter/client"
 	"log"
 	"net/http"
@@ -16,54 +18,33 @@ var debugMode bool
 ///////////////////////////////////////////////////////////
 
 func handleGetAdminStats(c *gin.Context) {
-	m := map[string]string{"start_time": startTime.String()}
+	m := client.AlerterAdminStats{StartTime: startTime}
 	c.JSON(http.StatusOK, m)
 }
 
 func handleGetAdminSettings(c *gin.Context) {
-	s := "false"
-	if debugMode {
-		s = "true"
-	}
-	m := map[string]string{"debug": s}
-	c.JSON(http.StatusOK, m)
+	s := client.AlerterAdminSettings{Debug: debugMode}
+	c.JSON(http.StatusOK, &s)
 }
 
 func handlePostAdminSettings(c *gin.Context) {
-	m := map[string]string{}
-	err := c.BindJSON(&m)
+	var s client.AlerterAdminSettings
+	err := c.BindJSON(&s)
 	if err != nil {
 		c.Error(err)
 		return
 	}
-	for k, v := range m {
-		switch k {
-		case "debug":
-			switch v {
-			case "true":
-				debugMode = true
-				break
-			case "false":
-				debugMode = false
-			default:
-				c.String(http.StatusBadRequest, "Illegal value for 'debug': %s", v)
-				return
-			}
-		default:
-			c.String(http.StatusBadRequest, "Unknown parameter: %s", k)
-			return
-		}
-	}
-	c.JSON(http.StatusOK, m)
+	debugMode = s.Debug
+	c.JSON(http.StatusOK, s)
 }
 
 func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
-func RunAlertServer(config *piazza.ServiceConfig) error {
+func RunAlertServer(sys *piazza.System, logger *loggerPkg.PzLoggerClient, uuidgenner *uuidgenPkg.PzUuidGenClient) error {
 
-	es := config.ElasticSearch
+	es := sys.ElasticSearch
 
 	conditionDB, err := client.NewConditionDB(es, "conditions")
 	if err != nil {
@@ -228,5 +209,5 @@ func RunAlertServer(config *piazza.ServiceConfig) error {
 
 	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
 
-	return router.Run(config.BindTo)
+	return router.Run(sys.Config.BindTo)
 }
