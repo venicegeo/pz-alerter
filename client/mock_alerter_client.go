@@ -1,46 +1,51 @@
 package client
 
 import (
+	"github.com/venicegeo/pz-gocommon"
 )
 
-type MockAlerter struct{}
+type MockAlerterClient struct{}
 
-func (*MockAlerter) PostToEvents(*Event) (*AlerterIdResponse, error) {
+func NewMockAlerterClient(sys *piazza.System) (*MockAlerterClient, error) {
+	return &MockAlerterClient{}, nil
+}
+
+func (*MockAlerterClient) PostToEvents(*Event) (*AlerterIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerter) GetFromEvents() (*EventList, error) {
+func (*MockAlerterClient) GetFromEvents() (*EventList, error) {
 	return nil, nil
 }
 
-func (*MockAlerter) GetFromAlerts() (*AlerterIdResponse, error) {
+func (*MockAlerterClient) GetFromAlerts() (*AlertList, error) {
 	return nil, nil
 }
 
-func (*MockAlerter) PostToConditions(*Condition) (*AlerterIdResponse, error) {
+func (*MockAlerterClient) PostToConditions(*Condition) (*AlerterIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerter) GetFromConditions() (*ConditionList, error) {
+func (*MockAlerterClient) GetFromConditions() (*ConditionList, error) {
 	return nil, nil
 }
 
-func (*MockAlerter) GetFromCondition(id string) (*Condition, error) {
+func (*MockAlerterClient) GetFromCondition(id string) (*Condition, error) {
 	return nil, nil
 }
 
-func (*MockAlerter) DeleteOfCondition(id string) error {
+func (*MockAlerterClient) DeleteOfCondition(id string) error {
 	return nil
 }
 
-func (*MockAlerter) GetFromAdminStats() (*AlerterAdminStats, error) {
+func (*MockAlerterClient) GetFromAdminStats() (*AlerterAdminStats, error) {
 	return &AlerterAdminStats{}, nil
 }
 
-func (*MockAlerter) GetFromAdminSettings() (*AlerterAdminSettings, error) {
+func (*MockAlerterClient) GetFromAdminSettings() (*AlerterAdminSettings, error) {
 	return &AlerterAdminSettings{}, nil
 }
 
-func (*MockAlerter) PostToAdminSettings(*AlerterAdminSettings) error {
+func (*MockAlerterClient) PostToAdminSettings(*AlerterAdminSettings) error {
 	return nil
 }

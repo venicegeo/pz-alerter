@@ -3,21 +3,21 @@ package main
 import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/venicegeo/pz-alerter/client"
+	"github.com/venicegeo/pz-alerter/server"
 	piazza "github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"github.com/venicegeo/pz-alerter/client"
-	"github.com/venicegeo/pz-alerter/server"
+	"log"
 	"testing"
 	"time"
-	"log"
 )
 
 type AlerterTester struct {
 	suite.Suite
-	logger *loggerPkg.PzLoggerClient
-	uuidgenner *uuidgenPkg.PzUuidGenClient
-	alerter *client.PzAlerterClient
+	logger     loggerPkg.LoggerClient
+	uuidgenner uuidgenPkg.UuidGenClient
+	alerter    client.AlerterClient
 }
 
 func (suite *AlerterTester) SetupSuite() {
@@ -33,22 +33,12 @@ func (suite *AlerterTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.logger, err = loggerPkg.NewPzLoggerClient(sys)
+	suite.logger, err = loggerPkg.NewMockLoggerClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = sys.WaitForService("pz-logger", 1000)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	suite.uuidgenner, err = uuidgenPkg.NewPzUuidGenClient(sys)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = sys.WaitForService("pz-uuidgen", 1000)
+	suite.uuidgenner, err = uuidgenPkg.NewMockUuidGenClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}

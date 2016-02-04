@@ -26,22 +26,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewPzLoggerClient(sys)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = sys.WaitForService("pz-logger", 1000)
-	if err != nil {
-		log.Fatal(err)
+	var logger loggerPkg.LoggerClient
+	{
+		logger, err = loggerPkg.NewPzLoggerClient(sys)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = sys.WaitForService("pz-logger", 1000)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
-	uuidgenner, err := uuidgenPkg.NewPzUuidGenClient(sys)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = sys.WaitForService("pz-uuidgen", 1000)
-	if err != nil {
-		log.Fatal(err)
+	var uuidgenner uuidgenPkg.UuidGenClient
+	{
+		uuidgenner, err = uuidgenPkg.NewPzUuidGenClient(sys)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = sys.WaitForService("pz-uuidgen", 1000)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	err = server.RunAlertServer(sys, logger, uuidgenner)

@@ -4,11 +4,11 @@ import (
 	"time"
 )
 
-type Alerter interface {
+type AlerterClient interface {
 	// low-level interfaces
 	PostToEvents(*Event) (*AlerterIdResponse, error)
 	GetFromEvents() (*EventList, error)
-	GetFromAlerts() (*AlerterIdResponse, error)
+	GetFromAlerts() (*AlertList, error)
 	PostToConditions(*Condition) (*AlerterIdResponse, error)
 	GetFromConditions() (*ConditionList, error)
 	GetFromCondition(id string) (*Condition, error)
@@ -20,7 +20,7 @@ type Alerter interface {
 }
 
 type AlerterIdResponse struct {
-	ID string `json:"id`
+	ID string `json:"id"`
 }
 
 /////////////////
