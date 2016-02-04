@@ -5,11 +5,14 @@ import (
 	"encoding/json"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	piazza "github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-alerter/client"
+	"github.com/venicegeo/pz-alerter/server"
 	"io/ioutil"
 	"net/http"
 	"testing"
 	"time"
+	"log"
 )
 
 type AlerterTester struct {
@@ -18,18 +21,46 @@ type AlerterTester struct {
 }
 
 func (suite *AlerterTester) SetupSuite() {
-	t := suite.T()
+	//t := suite.T()
 
-	done := make(chan bool, 1)
-	go Main(done, true)
-	<-done
-
-	err := pzService.WaitForService(pzService.Name, 1000)
+	config, err := piazza.GetConfig("pz-alerter", true)
 	if err != nil {
-		t.Fatal(err)
+		log.Fatal(err)
 	}
 
-	suite.client = client.NewPzAlerterClient("localhost:12342")
+	discoverClient, err := piazza.NewDiscoverClient(config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = discoverClient.RegisterServiceWithDiscover(config.ServiceName, config.ServerAddress)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = discoverClient.WaitForService("pz-logger", 1000)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = discoverClient.WaitForService("pz-uuidgen", 1000)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	go func() {
+		err := server.RunAlertServer(config)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	err = discoverClient.WaitForService("pz-alerter", 1000)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	suite.client = client.NewPzAlerterClient(config.ServerAddress)
 }
 
 func (suite *AlerterTester) TearDownSuite() {

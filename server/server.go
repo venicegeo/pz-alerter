@@ -6,11 +6,8 @@ import (
 	"github.com/venicegeo/pz-alerter/client"
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
-
-var pzService *piazza.PzService
 
 var startTime = time.Now()
 
@@ -61,13 +58,12 @@ func handlePostAdminSettings(c *gin.Context) {
 }
 
 func handlePostAdminShutdown(c *gin.Context) {
-	piazza.HandlePostAdminShutdown(pzService, c)
+	piazza.HandlePostAdminShutdown(c)
 }
 
-func RunAlertServer(pzServiceParam *piazza.PzService) error {
-	pzService = pzServiceParam
+func RunAlertServer(config *piazza.ServiceConfig) error {
 
-	es := pzService.ElasticSearch
+	es := config.ElasticSearch
 
 	conditionDB, err := client.NewConditionDB(es, "conditions")
 	if err != nil {
@@ -232,62 +228,5 @@ func RunAlertServer(pzServiceParam *piazza.PzService) error {
 
 	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
 
-	return router.Run(pzService.Address)
-}
-
-func Main(done chan bool, local bool) int {
-
-	var err error
-
-	config, err := piazza.GetConfig("pz-alerter", local)
-	if err != nil {
-		log.Fatal(err)
-		return 1
-	}
-
-	err = config.RegisterServiceWithDiscover()
-	if err != nil {
-		log.Fatal(err)
-		return 1
-	}
-
-	pzService, err = piazza.NewPzService(config, false)
-	if err != nil {
-		//pzService.Fatal(err)
-		log.Fatal(err)
-		return 1
-	}
-
-	err = pzService.WaitForService("pz-logger", 1000)
-	if err != nil {
-		//pzService.Fatal(err)
-		log.Fatal(err)
-		return 1
-	}
-
-	err = pzService.WaitForService("pz-uuidgen", 1000)
-	if err != nil {
-		//pzService.Fatal(err)
-		log.Fatal(err)
-		return 1
-	}
-
-	if done != nil {
-		done <- true
-	}
-
-	err = RunAlertServer(pzService)
-	if err != nil {
-		//pzService.Fatal(err)
-		log.Fatal(err)
-		return 1
-	}
-
-	// not reached
-	return 1
-}
-
-func main() {
-	local := piazza.IsLocalConfig()
-	os.Exit(Main(nil, local))
+	return router.Run(config.BindTo)
 }
