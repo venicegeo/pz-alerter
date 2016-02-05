@@ -10,18 +10,46 @@ import (
 	"io/ioutil"
 )
 
-type PzAlerterClient struct {
+type PzAlerterService struct {
 	url string
+	Name string
+	Address string
 }
 
-func NewPzAlerterClient(sys *piazza.System) (*PzAlerterClient, error) {
-	c := new(PzAlerterClient)
-	c.url = fmt.Sprintf("http://%s/v1", sys.Config.ServerAddress)
+func NewPzAlerterService(sys *piazza.System, wait bool) (*PzAlerterService, error) {
+	var _ IAlerterService = new(PzAlerterService)
+	var _ piazza.IService = new(PzAlerterService)
 
-	return c, nil
+	service := new(PzAlerterService)
+	service.url = fmt.Sprintf("http://%s/v1", sys.Config.ServerAddress)
+
+	service.Name = "pz-alerter"
+
+	data, err := sys.DiscoverService.GetData(service.Name)
+	if err != nil {
+		return nil, err
+	}
+	service.Address = data.Host
+
+	if wait {
+		err = sys.WaitForService(service, 1000)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return service, nil
 }
 
-func (c *PzAlerterClient) PostToEvents(event *Event) (*AlerterIdResponse, error) {
+func (c *PzAlerterService) GetName() string {
+	return c.Name
+}
+
+func (c *PzAlerterService) GetAddress() string {
+	return c.Address
+}
+
+func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error) {
 	body, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
@@ -50,7 +78,7 @@ func (c *PzAlerterClient) PostToEvents(event *Event) (*AlerterIdResponse, error)
 	return result, nil
 }
 
-func (c *PzAlerterClient) GetFromEvents() (*EventList, error) {
+func (c *PzAlerterService) GetFromEvents() (*EventList, error) {
 	resp, err := http.Get(c.url + "/events")
 	if err != nil {
 		return nil, err
@@ -74,7 +102,7 @@ func (c *PzAlerterClient) GetFromEvents() (*EventList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) GetFromAlerts() (*AlertList, error) {
+func (c *PzAlerterService) GetFromAlerts() (*AlertList, error) {
 	resp, err := http.Get(c.url + "/alerts")
 	if err != nil {
 		return nil, err
@@ -98,7 +126,7 @@ func (c *PzAlerterClient) GetFromAlerts() (*AlertList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) PostToConditions(cond *Condition) (*AlerterIdResponse, error) {
+func (c *PzAlerterService) PostToConditions(cond *Condition) (*AlerterIdResponse, error) {
 	body, err := json.Marshal(cond)
 	if err != nil {
 		return nil, err
@@ -127,7 +155,7 @@ func (c *PzAlerterClient) PostToConditions(cond *Condition) (*AlerterIdResponse,
 	return result, nil
 }
 
-func (c *PzAlerterClient) GetFromConditions() (*ConditionList, error) {
+func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
 	resp, err := http.Get(c.url + "/conditions")
 	if err != nil {
 		return nil, err
@@ -151,7 +179,7 @@ func (c *PzAlerterClient) GetFromConditions() (*ConditionList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) GetFromCondition(id string) (*Condition, error) {
+func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
 	resp, err := http.Get(c.url + "/conditions/" + id)
 	if err != nil {
 		return nil, err
@@ -180,7 +208,7 @@ func (c *PzAlerterClient) GetFromCondition(id string) (*Condition, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) DeleteOfCondition(id string) error {
+func (c *PzAlerterService) DeleteOfCondition(id string) error {
 	resp, err := piazza.Delete(c.url + "/conditions/" + id)
 	if err != nil {
 		return err
@@ -192,7 +220,7 @@ func (c *PzAlerterClient) DeleteOfCondition(id string) error {
 }
 
 
-func (c *PzAlerterClient) GetFromAdminStats() (*AlerterAdminStats, error) {
+func (c *PzAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
 
 	resp, err := http.Get(c.url + "/admin/stats")
 	if err != nil {
@@ -214,7 +242,7 @@ func (c *PzAlerterClient) GetFromAdminStats() (*AlerterAdminStats, error) {
 	return stats, nil
 }
 
-func (c *PzAlerterClient) GetFromAdminSettings() (*AlerterAdminSettings, error) {
+func (c *PzAlerterService) GetFromAdminSettings() (*AlerterAdminSettings, error) {
 
 	resp, err := http.Get(c.url + "/admin/settings")
 	if err != nil {
@@ -236,7 +264,7 @@ func (c *PzAlerterClient) GetFromAdminSettings() (*AlerterAdminSettings, error) 
 	return settings, nil
 }
 
-func (c *PzAlerterClient) PostToAdminSettings(settings *AlerterAdminSettings) error {
+func (c *PzAlerterService) PostToAdminSettings(settings *AlerterAdminSettings) error {
 
 	data, err := json.Marshal(settings)
 	if err != nil {

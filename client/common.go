@@ -4,7 +4,10 @@ import (
 	"time"
 )
 
-type AlerterClient interface {
+type IAlerterService interface {
+	GetName() string
+	GetAddress() string
+
 	// low-level interfaces
 	PostToEvents(*Event) (*AlerterIdResponse, error)
 	GetFromEvents() (*EventList, error)

@@ -15,9 +15,9 @@ import (
 
 type AlerterTester struct {
 	suite.Suite
-	logger     loggerPkg.LoggerClient
-	uuidgenner uuidgenPkg.UuidGenClient
-	alerter    client.AlerterClient
+	logger     loggerPkg.ILoggerService
+	uuidgenner uuidgenPkg.IUuidGenService
+	alerter    client.IAlerterService
 }
 
 func (suite *AlerterTester) SetupSuite() {
@@ -33,17 +33,17 @@ func (suite *AlerterTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.logger, err = loggerPkg.NewMockLoggerClient(sys)
+	suite.logger, err = loggerPkg.NewMockLoggerService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	suite.uuidgenner, err = uuidgenPkg.NewMockUuidGenClient(sys)
+	suite.uuidgenner, err = uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	suite.alerter, err = client.NewPzAlerterClient(sys)
+	suite.alerter, err = client.NewPzAlerterService(sys, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func (suite *AlerterTester) SetupSuite() {
 		}
 	}()
 
-	err = sys.WaitForService("pz-alerter", 1000)
+	err = sys.WaitForService(suite.alerter, 1000)
 	if err != nil {
 		log.Fatal(err)
 	}

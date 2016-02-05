@@ -42,7 +42,7 @@ func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
-func RunAlertServer(sys *piazza.System, logger loggerPkg.LoggerClient, uuidgenner uuidgenPkg.UuidGenClient) error {
+func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) error {
 
 	es := sys.ElasticSearch
 
