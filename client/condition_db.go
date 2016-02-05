@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"encoding/json"
@@ -12,7 +12,7 @@ type ConditionDB struct {
 	index  string
 }
 
-func newConditionDB(es *piazza.ElasticSearch, index string) (*ConditionDB, error) {
+func NewConditionDB(es *piazza.ElasticSearch, index string) (*ConditionDB, error) {
 	db := new(ConditionDB)
 	db.es = es
 	db.index = index
@@ -24,9 +24,9 @@ func newConditionDB(es *piazza.ElasticSearch, index string) (*ConditionDB, error
 	return db, nil
 }
 
-func (db *ConditionDB) write(condition *piazza.Condition) error {
+func (db *ConditionDB) Write(condition *Condition) error {
 
-	id := newConditionID()
+	id := NewConditionID()
 	condition.ID = id
 
 	_, err := db.es.Client.Index().
@@ -47,7 +47,7 @@ func (db *ConditionDB) write(condition *piazza.Condition) error {
 	return nil
 }
 
-func (db *ConditionDB) update(condition *piazza.Condition) bool {
+func (db *ConditionDB) Update(condition *Condition) bool {
 /**	_, ok := db.data[condition.ID]
 	if ok {
 		db.data[condition.ID] = *condition
@@ -57,7 +57,7 @@ func (db *ConditionDB) update(condition *piazza.Condition) bool {
 	return false
 }
 
-func (db *ConditionDB) readByID(id string) (*piazza.Condition, error) {
+func (db *ConditionDB) ReadByID(id string) (*Condition, error) {
 	termQuery := elastic.NewTermQuery("id", id)
 	searchResult, err := db.es.Client.Search().
 		Index(db.index).
@@ -69,7 +69,7 @@ func (db *ConditionDB) readByID(id string) (*piazza.Condition, error) {
 	}
 
 	for _, hit := range searchResult.Hits.Hits {
-		var a piazza.Condition
+		var a Condition
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
 			return nil, err
@@ -80,7 +80,7 @@ func (db *ConditionDB) readByID(id string) (*piazza.Condition, error) {
 	return nil, nil
 }
 
-func (db *ConditionDB) deleteByID(id string) (bool, error) {
+func (db *ConditionDB) DeleteByID(id string) (bool, error) {
 	res, err := db.es.Client.Delete().
 		Index(db.index).
 		Type("condition").
@@ -98,7 +98,7 @@ func (db *ConditionDB) deleteByID(id string) (bool, error) {
 	return res.Found, nil
 }
 
-func (db *ConditionDB) getAll() (map[string]piazza.Condition, error) {
+func (db *ConditionDB) GetAll() (map[string]Condition, error) {
 
 	// search for everything
 	// TODO: there's a GET call for this?
@@ -111,10 +111,10 @@ func (db *ConditionDB) getAll() (map[string]piazza.Condition, error) {
 		return nil, err
 	}
 
-	m := make(map[string]piazza.Condition)
+	m := make(map[string]Condition)
 
 	for _, hit := range searchResult.Hits.Hits {
-		var t piazza.Condition
+		var t Condition
 		err := json.Unmarshal(*hit.Source, &t)
 		if err != nil {
 			return nil, err

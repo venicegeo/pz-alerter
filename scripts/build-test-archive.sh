@@ -15,7 +15,7 @@ go get github.com/venicegeo/pz-alerter
 
 go get github.com/stretchr/testify/assert
 go get github.com/stretchr/testify/suite
-#go test -v github.com/venicegeo/pz-alerter
+go test -v github.com/venicegeo/pz-alerter
 
 go install github.com/venicegeo/pz-alerter
 

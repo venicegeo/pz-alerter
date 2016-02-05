@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"errors"
@@ -10,18 +10,46 @@ import (
 	"io/ioutil"
 )
 
-type PzAlerterClient struct {
+type PzAlerterService struct {
 	url string
+	Name string
+	Address string
 }
 
-func NewPzAlerterClient(address string) *PzAlerterClient {
-	c := new(PzAlerterClient)
-	c.url = fmt.Sprintf("http://%s/v1", address)
+func NewPzAlerterService(sys *piazza.System, wait bool) (*PzAlerterService, error) {
+	var _ IAlerterService = new(PzAlerterService)
+	var _ piazza.IService = new(PzAlerterService)
 
-	return c
+	service := new(PzAlerterService)
+	service.url = fmt.Sprintf("http://%s/v1", sys.Config.ServerAddress)
+
+	service.Name = "pz-alerter"
+
+	data, err := sys.DiscoverService.GetData(service.Name)
+	if err != nil {
+		return nil, err
+	}
+	service.Address = data.Host
+
+	if wait {
+		err = sys.WaitForService(service, 1000)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return service, nil
 }
 
-func (c *PzAlerterClient) PostToEvents(event *piazza.Event) (*piazza.AlerterIdResponse, error) {
+func (c *PzAlerterService) GetName() string {
+	return c.Name
+}
+
+func (c *PzAlerterService) GetAddress() string {
+	return c.Address
+}
+
+func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error) {
 	body, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
@@ -41,7 +69,7 @@ func (c *PzAlerterClient) PostToEvents(event *piazza.Event) (*piazza.AlerterIdRe
 		return nil, err
 	}
 
-	result := new(piazza.AlerterIdResponse)
+	result := new(AlerterIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
 		return nil, err
@@ -50,7 +78,7 @@ func (c *PzAlerterClient) PostToEvents(event *piazza.Event) (*piazza.AlerterIdRe
 	return result, nil
 }
 
-func (c *PzAlerterClient) GetFromEvents() (*piazza.EventList, error) {
+func (c *PzAlerterService) GetFromEvents() (*EventList, error) {
 	resp, err := http.Get(c.url + "/events")
 	if err != nil {
 		return nil, err
@@ -65,7 +93,7 @@ func (c *PzAlerterClient) GetFromEvents() (*piazza.EventList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x piazza.EventList
+	var x EventList
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -74,7 +102,7 @@ func (c *PzAlerterClient) GetFromEvents() (*piazza.EventList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) GetFromAlerts() (*piazza.AlertList, error) {
+func (c *PzAlerterService) GetFromAlerts() (*AlertList, error) {
 	resp, err := http.Get(c.url + "/alerts")
 	if err != nil {
 		return nil, err
@@ -89,7 +117,7 @@ func (c *PzAlerterClient) GetFromAlerts() (*piazza.AlertList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x piazza.AlertList
+	var x AlertList
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -98,7 +126,7 @@ func (c *PzAlerterClient) GetFromAlerts() (*piazza.AlertList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) PostToConditions(cond *piazza.Condition) (*piazza.AlerterIdResponse, error) {
+func (c *PzAlerterService) PostToConditions(cond *Condition) (*AlerterIdResponse, error) {
 	body, err := json.Marshal(cond)
 	if err != nil {
 		return nil, err
@@ -118,7 +146,7 @@ func (c *PzAlerterClient) PostToConditions(cond *piazza.Condition) (*piazza.Aler
 		return nil, err
 	}
 
-	result := new(piazza.AlerterIdResponse)
+	result := new(AlerterIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
 		return nil, err
@@ -127,7 +155,7 @@ func (c *PzAlerterClient) PostToConditions(cond *piazza.Condition) (*piazza.Aler
 	return result, nil
 }
 
-func (c *PzAlerterClient) GetFromConditions() (*piazza.ConditionList, error) {
+func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
 	resp, err := http.Get(c.url + "/conditions")
 	if err != nil {
 		return nil, err
@@ -142,7 +170,7 @@ func (c *PzAlerterClient) GetFromConditions() (*piazza.ConditionList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x piazza.ConditionList
+	var x ConditionList
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -151,7 +179,7 @@ func (c *PzAlerterClient) GetFromConditions() (*piazza.ConditionList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterClient) GetFromCondition(id string) (*piazza.Condition, error) {
+func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
 	resp, err := http.Get(c.url + "/conditions/" + id)
 	if err != nil {
 		return nil, err
@@ -167,7 +195,7 @@ func (c *PzAlerterClient) GetFromCondition(id string) (*piazza.Condition, error)
 	}
 	defer resp.Body.Close()
 
-	var x piazza.Condition
+	var x Condition
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -180,7 +208,7 @@ func (c *PzAlerterClient) GetFromCondition(id string) (*piazza.Condition, error)
 	return &x, nil
 }
 
-func (c *PzAlerterClient) DeleteOfCondition(id string) error {
+func (c *PzAlerterService) DeleteOfCondition(id string) error {
 	resp, err := piazza.Delete(c.url + "/conditions/" + id)
 	if err != nil {
 		return err
@@ -192,7 +220,7 @@ func (c *PzAlerterClient) DeleteOfCondition(id string) error {
 }
 
 
-func (c *PzAlerterClient) GetFromAdminStats() (*piazza.AlerterAdminStats, error) {
+func (c *PzAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
 
 	resp, err := http.Get(c.url + "/admin/stats")
 	if err != nil {
@@ -205,7 +233,7 @@ func (c *PzAlerterClient) GetFromAdminStats() (*piazza.AlerterAdminStats, error)
 		return nil, err
 	}
 
-	stats := new(piazza.AlerterAdminStats)
+	stats := new(AlerterAdminStats)
 	err = json.Unmarshal(data, stats)
 	if err != nil {
 		return nil, err
@@ -214,7 +242,7 @@ func (c *PzAlerterClient) GetFromAdminStats() (*piazza.AlerterAdminStats, error)
 	return stats, nil
 }
 
-func (c *PzAlerterClient) GetFromAdminSettings() (*piazza.AlerterAdminSettings, error) {
+func (c *PzAlerterService) GetFromAdminSettings() (*AlerterAdminSettings, error) {
 
 	resp, err := http.Get(c.url + "/admin/settings")
 	if err != nil {
@@ -227,7 +255,7 @@ func (c *PzAlerterClient) GetFromAdminSettings() (*piazza.AlerterAdminSettings, 
 		return nil, err
 	}
 
-	settings := new(piazza.AlerterAdminSettings)
+	settings := new(AlerterAdminSettings)
 	err = json.Unmarshal(data, settings)
 	if err != nil {
 		return nil, err
@@ -236,7 +264,7 @@ func (c *PzAlerterClient) GetFromAdminSettings() (*piazza.AlerterAdminSettings, 
 	return settings, nil
 }
 
-func (c *PzAlerterClient) PostToAdminSettings(settings *piazza.AlerterAdminSettings) error {
+func (c *PzAlerterService) PostToAdminSettings(settings *AlerterAdminSettings) error {
 
 	data, err := json.Marshal(settings)
 	if err != nil {

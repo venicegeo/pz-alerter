@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ type EventDB struct {
 	index  string
 }
 
-func newEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
+func NewEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
 	db := &EventDB{es: es, index: index}
 
 	err := es.MakeIndex(index)
@@ -21,8 +21,8 @@ func newEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
 	return db, nil
 }
 
-func (db *EventDB) write(event *piazza.Event) error {
-	id := newEventID()
+func (db *EventDB) Write(event *Event) error {
+	id := NewEventID()
 	event.ID = id
 
 	_, err := db.es.Client.Index().
@@ -43,7 +43,7 @@ func (db *EventDB) write(event *piazza.Event) error {
 	return nil
 }
 
-func (db *EventDB) getAll() (*piazza.EventList, error) {
+func (db *EventDB) GetAll() (*EventList, error) {
 
 	// search for everything
 	// TODO: there's a GET call for this?
@@ -56,10 +56,10 @@ func (db *EventDB) getAll() (*piazza.EventList, error) {
 		return nil, err
 	}
 
-	m := piazza.EventList{}
+	m := EventList{}
 
 	for _, hit := range searchResult.Hits.Hits {
-		var t piazza.Event
+		var t Event
 		err := json.Unmarshal(*hit.Source, &t)
 		if err != nil {
 			return nil, err

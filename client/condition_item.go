@@ -1,4 +1,4 @@
-package main
+package client
 
 import (
 	"strconv"
@@ -9,7 +9,7 @@ import (
 var conditionID = 1
 
 
-func newConditionID() string {
+func NewConditionID() string {
 	id := strconv.Itoa(conditionID)
 	conditionID++
 	return id
