@@ -9,22 +9,42 @@ import (
 	"log"
 	"net/http"
 	"time"
+	"sync"
 )
 
-var startTime = time.Now()
+type LockedAdminSettings struct {
+	sync.Mutex
+	client.AlerterAdminSettings
+}
 
-var debugMode bool
+var settings LockedAdminSettings
+
+type LockedAdminStats struct {
+	sync.Mutex
+	client.AlerterAdminStats
+}
+
+var stats LockedAdminStats
+
+func init() {
+	stats.StartTime = time.Now()
+}
+
 
 ///////////////////////////////////////////////////////////
 
 func handleGetAdminStats(c *gin.Context) {
-	m := client.AlerterAdminStats{StartTime: startTime}
-	c.JSON(http.StatusOK, m)
+	stats.Lock()
+	t := stats.AlerterAdminStats
+	stats.Unlock()
+	c.JSON(http.StatusOK, t)
 }
 
 func handleGetAdminSettings(c *gin.Context) {
-	s := client.AlerterAdminSettings{Debug: debugMode}
-	c.JSON(http.StatusOK, &s)
+	settings.Lock()
+	t := settings
+	settings.Unlock()
+	c.JSON(http.StatusOK, t)
 }
 
 func handlePostAdminSettings(c *gin.Context) {
@@ -34,7 +54,9 @@ func handlePostAdminSettings(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	debugMode = s.Debug
+	settings.Lock()
+	settings.AlerterAdminSettings = s
+	settings.Unlock()
 	c.JSON(http.StatusOK, s)
 }
 

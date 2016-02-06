@@ -15,7 +15,7 @@ func main() {
 		mode = piazza.ConfigModeLocal
 	}
 
-	config, err := piazza.NewConfig("pz-alerter", mode)
+	config, err := piazza.NewConfig(piazza.PzAlerter, mode)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -40,6 +40,9 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if len(sys.Services) != 3 {
+		log.Fatalf("internal error: services expected (%d) != actual (%d)", 3, len(sys.Services))
+	}
 	done := sys.StartServer(routes)
 
 	err = <- done

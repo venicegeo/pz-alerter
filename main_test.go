@@ -18,12 +18,13 @@ type AlerterTester struct {
 	logger     loggerPkg.ILoggerService
 	uuidgenner uuidgenPkg.IUuidGenService
 	alerter    client.IAlerterService
+	sys        *piazza.System
 }
 
 func (suite *AlerterTester) SetupSuite() {
-	//t := suite.T()
+	t := suite.T()
 
-	config, err := piazza.NewConfig("pz-alerter", piazza.ConfigModeTest)
+	config, err := piazza.NewConfig(piazza.PzAlerter, piazza.ConfigModeTest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -54,6 +55,10 @@ func (suite *AlerterTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	suite.sys = sys
+
+	assert.Len(t, sys.Services, 4)
 }
 
 func (suite *AlerterTester) TearDownSuite() {

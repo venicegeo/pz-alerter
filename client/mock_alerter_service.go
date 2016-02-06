@@ -5,23 +5,27 @@ import (
 )
 
 type MockAlerterService struct{
-	Name string
-	Address string
+	name string
+	address string
 }
 
 func NewMockAlerterService(sys *piazza.System) (*MockAlerterService, error) {
 	var _ IAlerterService = new(MockAlerterService)
 	var _ piazza.IService = new(MockAlerterService)
 
-	return &MockAlerterService{Name: "pz-alerter", Address: "0.0.0.0"}, nil
+	service := &MockAlerterService{name: piazza.PzAlerter, address: "0.0.0.0"}
+
+	sys.Services[piazza.PzAlerter] = service
+
+	return service, nil
 }
 
-func (m *MockAlerterService) GetName() string {
-	return m.Name
+func (m MockAlerterService) GetName() string {
+	return m.name
 }
 
-func (m *MockAlerterService) GetAddress() string {
-	return m.Address
+func (m MockAlerterService) GetAddress() string {
+	return m.address
 }
 
 func (*MockAlerterService) PostToEvents(*Event) (*AlerterIdResponse, error) {
