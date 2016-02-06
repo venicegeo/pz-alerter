@@ -43,19 +43,14 @@ func (suite *AlerterTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.alerter, err = client.NewPzAlerterService(sys, false)
+	routes, err := server.CreateHandlers(sys, suite.logger, suite.uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go func() {
-		err = server.RunAlertServer(sys, suite.logger, suite.uuidgenner)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	_ = sys.StartServer(routes)
 
-	err = sys.WaitForService(suite.alerter, 1000)
+	suite.alerter, err = client.NewPzAlerterService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}

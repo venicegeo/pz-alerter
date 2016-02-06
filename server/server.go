@@ -42,21 +42,21 @@ func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
-func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) error {
+func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
 	es := sys.ElasticSearch
 
 	conditionDB, err := client.NewConditionDB(es, "conditions")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	eventDB, err := client.NewEventDB(es, "events")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	alertDB, err := client.NewAlertDB(es, "alerts")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	gin.SetMode(gin.ReleaseMode)
@@ -67,6 +67,7 @@ func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	//---------------------------------
 
 	router.GET("/", func(c *gin.Context) {
+		log.Print("got health-check request")
 		c.String(http.StatusOK, "Hi. I'm pz-alerter.")
 	})
 
@@ -209,5 +210,5 @@ func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
 
-	return router.Run(sys.Config.BindTo)
+	return router, nil
 }

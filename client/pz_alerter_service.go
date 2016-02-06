@@ -1,22 +1,22 @@
 package client
 
 import (
-	"errors"
-	piazza "github.com/venicegeo/pz-gocommon"
-	"fmt"
-	"encoding/json"
-	"net/http"
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	piazza "github.com/venicegeo/pz-gocommon"
 	"io/ioutil"
+	"net/http"
 )
 
 type PzAlerterService struct {
-	url string
-	Name string
+	url     string
+	Name    string
 	Address string
 }
 
-func NewPzAlerterService(sys *piazza.System, wait bool) (*PzAlerterService, error) {
+func NewPzAlerterService(sys *piazza.System) (*PzAlerterService, error) {
 	var _ IAlerterService = new(PzAlerterService)
 	var _ piazza.IService = new(PzAlerterService)
 
@@ -31,11 +31,9 @@ func NewPzAlerterService(sys *piazza.System, wait bool) (*PzAlerterService, erro
 	}
 	service.Address = data.Host
 
-	if wait {
-		err = sys.WaitForService(service, 1000)
-		if err != nil {
-			return nil, err
-		}
+	err = sys.WaitForService(service.Name, service.Address)
+	if err != nil {
+		return nil, err
 	}
 
 	return service, nil
@@ -55,7 +53,7 @@ func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error
 		return nil, err
 	}
 
-	resp, err := http.Post(c.url + "/events", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	resp, err := http.Post(c.url+"/events", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +130,7 @@ func (c *PzAlerterService) PostToConditions(cond *Condition) (*AlerterIdResponse
 		return nil, err
 	}
 
-	resp, err := http.Post(c.url + "/conditions", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	resp, err := http.Post(c.url+"/conditions", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -219,7 +217,6 @@ func (c *PzAlerterService) DeleteOfCondition(id string) error {
 	return nil
 }
 
-
 func (c *PzAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
 
 	resp, err := http.Get(c.url + "/admin/stats")
@@ -271,7 +268,7 @@ func (c *PzAlerterService) PostToAdminSettings(settings *AlerterAdminSettings) e
 		return err
 	}
 
-	resp, err := http.Post(c.url + "/admin/settings", piazza.ContentTypeJSON, bytes.NewBuffer(data))
+	resp, err := http.Post(c.url+"/admin/settings", piazza.ContentTypeJSON, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}

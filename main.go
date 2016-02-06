@@ -25,21 +25,25 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewPzLoggerService(sys, true)
+	logger, err := loggerPkg.NewPzLoggerService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys, true)
+	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = server.RunAlertServer(sys, logger, uuidgenner)
+	routes, err := server.CreateHandlers(sys, logger, uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// not reached
-	log.Fatal("not reached")
+	done := sys.StartServer(routes)
+
+	err = <- done
+	if err != nil {
+		log.Fatal(err)
+	}
 }
