@@ -4,8 +4,8 @@ import (
 	"github.com/venicegeo/pz-gocommon"
 )
 
-type MockAlerterService struct{
-	name string
+type MockAlerterService struct {
+	name    string
 	address string
 }
 

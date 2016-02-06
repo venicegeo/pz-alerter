@@ -2,14 +2,14 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/venicegeo/pz-alerter/client"
 	piazza "github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"github.com/venicegeo/pz-alerter/client"
 	"log"
 	"net/http"
-	"time"
 	"sync"
+	"time"
 )
 
 type LockedAdminSettings struct {
@@ -29,7 +29,6 @@ var stats LockedAdminStats
 func init() {
 	stats.StartTime = time.Now()
 }
-
 
 ///////////////////////////////////////////////////////////
 

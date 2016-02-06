@@ -40,12 +40,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if len(sys.Services) != 3 {
-		log.Fatalf("internal error: services expected (%d) != actual (%d)", 3, len(sys.Services))
+	if len(sys.Services) != 4 {
+		log.Fatalf("internal error: services expected (%d) != actual (%d)", 4, len(sys.Services))
 	}
 	done := sys.StartServer(routes)
 
-	err = <- done
+	err = <-done
 	if err != nil {
 		log.Fatal(err)
 	}

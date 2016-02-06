@@ -105,7 +105,7 @@ func (suite *AlerterTester) TestConditions() {
 	assert.Len(t, *cs, 2)
 	ok1 := false
 	ok2 := false
-	for k, _ := range *cs {
+	for k := range *cs {
 		if k == "1" {
 			ok1 = true
 		}
@@ -165,7 +165,7 @@ func (suite *AlerterTester) TestEvents() {
 	assert.Len(t, *es, 2)
 	ok1 := false
 	ok2 := false
-	for k, _ := range *es {
+	for k := range *es {
 		if k == "E1" {
 			ok1 = true
 		}

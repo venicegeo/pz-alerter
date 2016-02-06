@@ -8,8 +8,8 @@ import (
 
 type ConditionDB struct {
 	//data   map[string]Condition
-	es *piazza.ElasticSearchService
-	index  string
+	es    *piazza.ElasticSearchService
+	index string
 }
 
 func NewConditionDB(es *piazza.ElasticSearchService, index string) (*ConditionDB, error) {
@@ -48,7 +48,7 @@ func (db *ConditionDB) Write(condition *Condition) error {
 }
 
 func (db *ConditionDB) Update(condition *Condition) bool {
-/**	_, ok := db.data[condition.ID]
+	/**	_, ok := db.data[condition.ID]
 	if ok {
 		db.data[condition.ID] = *condition
 		return true

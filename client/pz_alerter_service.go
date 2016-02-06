@@ -25,8 +25,8 @@ func NewPzAlerterService(sys *piazza.System) (*PzAlerterService, error) {
 	data := sys.DiscoverService.GetDataForService(piazza.PzAlerter)
 
 	service := &PzAlerterService{
-		url: fmt.Sprintf("http://%s/v1", data.Host),
-		name: piazza.PzAlerter,
+		url:     fmt.Sprintf("http://%s/v1", data.Host),
+		name:    piazza.PzAlerter,
 		address: data.Host,
 	}
 
@@ -208,7 +208,7 @@ func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
 }
 
 func (c *PzAlerterService) DeleteOfCondition(id string) error {
-	resp, err := piazza.HttpDelete(c.url + "/conditions/" + id)
+	resp, err := piazza.HTTPDelete(c.url + "/conditions/" + id)
 	if err != nil {
 		return err
 	}
