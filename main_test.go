@@ -18,12 +18,13 @@ type AlerterTester struct {
 	logger     loggerPkg.ILoggerService
 	uuidgenner uuidgenPkg.IUuidGenService
 	alerter    client.IAlerterService
+	sys        *piazza.System
 }
 
 func (suite *AlerterTester) SetupSuite() {
-	//t := suite.T()
+	t := suite.T()
 
-	config, err := piazza.NewConfig("pz-alerter", piazza.ConfigModeTest)
+	config, err := piazza.NewConfig(piazza.PzAlerter, piazza.ConfigModeTest)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,22 +44,21 @@ func (suite *AlerterTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.alerter, err = client.NewPzAlerterService(sys, false)
+	routes, err := server.CreateHandlers(sys, suite.logger, suite.uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	go func() {
-		err = server.RunAlertServer(sys, suite.logger, suite.uuidgenner)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}()
+	_ = sys.StartServer(routes)
 
-	err = sys.WaitForService(suite.alerter, 1000)
+	suite.alerter, err = client.NewPzAlerterService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	suite.sys = sys
+
+	assert.Len(t, sys.Services, 5)
 }
 
 func (suite *AlerterTester) TearDownSuite() {
@@ -105,7 +105,7 @@ func (suite *AlerterTester) TestConditions() {
 	assert.Len(t, *cs, 2)
 	ok1 := false
 	ok2 := false
-	for k, _ := range *cs {
+	for k := range *cs {
 		if k == "1" {
 			ok1 = true
 		}
@@ -165,7 +165,7 @@ func (suite *AlerterTester) TestEvents() {
 	assert.Len(t, *es, 2)
 	ok1 := false
 	ok2 := false
-	for k, _ := range *es {
+	for k := range *es {
 		if k == "E1" {
 			ok1 = true
 		}

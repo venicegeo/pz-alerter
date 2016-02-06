@@ -2,29 +2,48 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/venicegeo/pz-alerter/client"
 	piazza "github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"github.com/venicegeo/pz-alerter/client"
 	"log"
 	"net/http"
+	"sync"
 	"time"
 )
 
-var startTime = time.Now()
+type LockedAdminSettings struct {
+	sync.Mutex
+	client.AlerterAdminSettings
+}
 
-var debugMode bool
+var settings LockedAdminSettings
+
+type LockedAdminStats struct {
+	sync.Mutex
+	client.AlerterAdminStats
+}
+
+var stats LockedAdminStats
+
+func init() {
+	stats.StartTime = time.Now()
+}
 
 ///////////////////////////////////////////////////////////
 
 func handleGetAdminStats(c *gin.Context) {
-	m := client.AlerterAdminStats{StartTime: startTime}
-	c.JSON(http.StatusOK, m)
+	stats.Lock()
+	t := stats.AlerterAdminStats
+	stats.Unlock()
+	c.JSON(http.StatusOK, t)
 }
 
 func handleGetAdminSettings(c *gin.Context) {
-	s := client.AlerterAdminSettings{Debug: debugMode}
-	c.JSON(http.StatusOK, &s)
+	settings.Lock()
+	t := settings
+	settings.Unlock()
+	c.JSON(http.StatusOK, t)
 }
 
 func handlePostAdminSettings(c *gin.Context) {
@@ -34,7 +53,9 @@ func handlePostAdminSettings(c *gin.Context) {
 		c.Error(err)
 		return
 	}
-	debugMode = s.Debug
+	settings.Lock()
+	settings.AlerterAdminSettings = s
+	settings.Unlock()
 	c.JSON(http.StatusOK, s)
 }
 
@@ -42,21 +63,21 @@ func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
-func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) error {
+func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
-	es := sys.ElasticSearch
+	es := sys.ElasticSearchService
 
 	conditionDB, err := client.NewConditionDB(es, "conditions")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	eventDB, err := client.NewEventDB(es, "events")
 	if err != nil {
-		return err
+		return nil, err
 	}
 	alertDB, err := client.NewAlertDB(es, "alerts")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	gin.SetMode(gin.ReleaseMode)
@@ -67,6 +88,7 @@ func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	//---------------------------------
 
 	router.GET("/", func(c *gin.Context) {
+		log.Print("got health-check request")
 		c.String(http.StatusOK, "Hi. I'm pz-alerter.")
 	})
 
@@ -209,5 +231,5 @@ func RunAlertServer(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
 
-	return router.Run(sys.Config.BindTo)
+	return router, nil
 }

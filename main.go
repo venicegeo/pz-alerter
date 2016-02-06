@@ -15,7 +15,7 @@ func main() {
 		mode = piazza.ConfigModeLocal
 	}
 
-	config, err := piazza.NewConfig("pz-alerter", mode)
+	config, err := piazza.NewConfig(piazza.PzAlerter, mode)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -25,21 +25,28 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewPzLoggerService(sys, true)
+	logger, err := loggerPkg.NewPzLoggerService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys, true)
+	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = server.RunAlertServer(sys, logger, uuidgenner)
+	routes, err := server.CreateHandlers(sys, logger, uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// not reached
-	log.Fatal("not reached")
+	if len(sys.Services) != 4 {
+		log.Fatalf("internal error: services expected (%d) != actual (%d)", 4, len(sys.Services))
+	}
+	done := sys.StartServer(routes)
+
+	err = <-done
+	if err != nil {
+		log.Fatal(err)
+	}
 }

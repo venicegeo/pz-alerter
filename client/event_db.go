@@ -2,16 +2,16 @@ package client
 
 import (
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v3"
 	piazza "github.com/venicegeo/pz-gocommon"
+	"gopkg.in/olivere/elastic.v3"
 )
 
 type EventDB struct {
-	es *piazza.ElasticSearch
-	index  string
+	es    *piazza.ElasticSearchService
+	index string
 }
 
-func NewEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
+func NewEventDB(es *piazza.ElasticSearchService, index string) (*EventDB, error) {
 	db := &EventDB{es: es, index: index}
 
 	err := es.MakeIndex(index)

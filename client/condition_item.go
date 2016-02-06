@@ -8,7 +8,6 @@ import (
 
 var conditionID = 1
 
-
 func NewConditionID() string {
 	id := strconv.Itoa(conditionID)
 	conditionID++

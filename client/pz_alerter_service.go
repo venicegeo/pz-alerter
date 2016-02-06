@@ -1,52 +1,51 @@
 package client
 
 import (
-	"errors"
-	piazza "github.com/venicegeo/pz-gocommon"
-	"fmt"
-	"encoding/json"
-	"net/http"
 	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	piazza "github.com/venicegeo/pz-gocommon"
 	"io/ioutil"
+	"net/http"
 )
 
 type PzAlerterService struct {
-	url string
-	Name string
-	Address string
+	name    string
+	address string
+	url     string
 }
 
-func NewPzAlerterService(sys *piazza.System, wait bool) (*PzAlerterService, error) {
+func NewPzAlerterService(sys *piazza.System) (*PzAlerterService, error) {
 	var _ IAlerterService = new(PzAlerterService)
 	var _ piazza.IService = new(PzAlerterService)
 
-	service := new(PzAlerterService)
-	service.url = fmt.Sprintf("http://%s/v1", sys.Config.ServerAddress)
+	var err error
 
-	service.Name = "pz-alerter"
+	data := sys.DiscoverService.GetDataForService(piazza.PzAlerter)
 
-	data, err := sys.DiscoverService.GetData(service.Name)
+	service := &PzAlerterService{
+		url:     fmt.Sprintf("http://%s/v1", data.Host),
+		name:    piazza.PzAlerter,
+		address: data.Host,
+	}
+
+	err = sys.WaitForService(service)
 	if err != nil {
 		return nil, err
 	}
-	service.Address = data.Host
 
-	if wait {
-		err = sys.WaitForService(service, 1000)
-		if err != nil {
-			return nil, err
-		}
-	}
+	sys.Services[piazza.PzAlerter] = service
 
 	return service, nil
 }
 
-func (c *PzAlerterService) GetName() string {
-	return c.Name
+func (c PzAlerterService) GetName() string {
+	return c.name
 }
 
-func (c *PzAlerterService) GetAddress() string {
-	return c.Address
+func (c PzAlerterService) GetAddress() string {
+	return c.address
 }
 
 func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error) {
@@ -55,7 +54,7 @@ func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error
 		return nil, err
 	}
 
-	resp, err := http.Post(c.url + "/events", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	resp, err := http.Post(c.url+"/events", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -132,7 +131,7 @@ func (c *PzAlerterService) PostToConditions(cond *Condition) (*AlerterIdResponse
 		return nil, err
 	}
 
-	resp, err := http.Post(c.url + "/conditions", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	resp, err := http.Post(c.url+"/conditions", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +208,7 @@ func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
 }
 
 func (c *PzAlerterService) DeleteOfCondition(id string) error {
-	resp, err := piazza.Delete(c.url + "/conditions/" + id)
+	resp, err := piazza.HTTPDelete(c.url + "/conditions/" + id)
 	if err != nil {
 		return err
 	}
@@ -218,7 +217,6 @@ func (c *PzAlerterService) DeleteOfCondition(id string) error {
 	}
 	return nil
 }
-
 
 func (c *PzAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
 
@@ -271,7 +269,7 @@ func (c *PzAlerterService) PostToAdminSettings(settings *AlerterAdminSettings) e
 		return err
 	}
 
-	resp, err := http.Post(c.url + "/admin/settings", piazza.ContentTypeJSON, bytes.NewBuffer(data))
+	resp, err := http.Post(c.url+"/admin/settings", piazza.ContentTypeJSON, bytes.NewBuffer(data))
 	if err != nil {
 		return err
 	}
