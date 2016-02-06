@@ -208,7 +208,7 @@ func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
 }
 
 func (c *PzAlerterService) DeleteOfCondition(id string) error {
-	resp, err := piazza.Delete(c.url + "/conditions/" + id)
+	resp, err := piazza.HttpDelete(c.url + "/conditions/" + id)
 	if err != nil {
 		return err
 	}

@@ -58,7 +58,7 @@ func (suite *AlerterTester) SetupSuite() {
 
 	suite.sys = sys
 
-	assert.Len(t, sys.Services, 4)
+	assert.Len(t, sys.Services, 5)
 }
 
 func (suite *AlerterTester) TearDownSuite() {

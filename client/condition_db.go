@@ -8,11 +8,11 @@ import (
 
 type ConditionDB struct {
 	//data   map[string]Condition
-	es *piazza.ElasticSearch
+	es *piazza.ElasticSearchService
 	index  string
 }
 
-func NewConditionDB(es *piazza.ElasticSearch, index string) (*ConditionDB, error) {
+func NewConditionDB(es *piazza.ElasticSearchService, index string) (*ConditionDB, error) {
 	db := new(ConditionDB)
 	db.es = es
 	db.index = index

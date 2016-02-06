@@ -10,11 +10,11 @@ import (
 //---------------------------------------------------------------------------
 
 type AlertDB struct {
-	es *piazza.ElasticSearch
+	es *piazza.ElasticSearchService
 	index  string
 }
 
-func NewAlertDB(es *piazza.ElasticSearch, index string) (*AlertDB, error) {
+func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error) {
 	db := new(AlertDB)
 	db.es = es
 	db.index = index

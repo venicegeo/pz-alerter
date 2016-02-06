@@ -66,7 +66,7 @@ func handlePostAdminShutdown(c *gin.Context) {
 
 func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
-	es := sys.ElasticSearch
+	es := sys.ElasticSearchService
 
 	conditionDB, err := client.NewConditionDB(es, "conditions")
 	if err != nil {

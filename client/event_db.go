@@ -7,11 +7,11 @@ import (
 )
 
 type EventDB struct {
-	es *piazza.ElasticSearch
+	es *piazza.ElasticSearchService
 	index  string
 }
 
-func NewEventDB(es *piazza.ElasticSearch, index string) (*EventDB, error) {
+func NewEventDB(es *piazza.ElasticSearchService, index string) (*EventDB, error) {
 	db := &EventDB{es: es, index: index}
 
 	err := es.MakeIndex(index)
