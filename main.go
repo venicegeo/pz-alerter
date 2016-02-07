@@ -25,12 +25,12 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewPzLoggerService(sys)
+	logger, err := loggerPkg.NewPzLoggerService(sys, sys.DiscoverService.GetDataForService(piazza.PzLogger).Host)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys)
+	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys, sys.DiscoverService.GetDataForService(piazza.PzUuidgen).Host)
 	if err != nil {
 		log.Fatal(err)
 	}

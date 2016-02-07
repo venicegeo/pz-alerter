@@ -16,18 +16,16 @@ type PzAlerterService struct {
 	url     string
 }
 
-func NewPzAlerterService(sys *piazza.System) (*PzAlerterService, error) {
+func NewPzAlerterService(sys *piazza.System, address string) (*PzAlerterService, error) {
 	var _ IAlerterService = new(PzAlerterService)
 	var _ piazza.IService = new(PzAlerterService)
 
 	var err error
 
-	data := sys.DiscoverService.GetDataForService(piazza.PzAlerter)
-
 	service := &PzAlerterService{
-		url:     fmt.Sprintf("http://%s/v1", data.Host),
+		url:     fmt.Sprintf("http://%s/v1", address),
 		name:    piazza.PzAlerter,
-		address: data.Host,
+		address: address,
 	}
 
 	err = sys.WaitForService(service)
