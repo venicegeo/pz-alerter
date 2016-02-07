@@ -51,7 +51,7 @@ func (suite *AlerterTester) SetupSuite() {
 
 	_ = sys.StartServer(routes)
 
-	suite.alerter, err = client.NewPzAlerterService(sys)
+	suite.alerter, err = client.NewPzAlerterService(sys, sys.Config.GetBindToAddress())
 	if err != nil {
 		log.Fatal(err)
 	}
