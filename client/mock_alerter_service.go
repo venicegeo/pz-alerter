@@ -1,11 +1,11 @@
 package client
 
 import (
-	"github.com/venicegeo/pz-gocommon"
+	piazza "github.com/venicegeo/pz-gocommon"
 )
 
 type MockAlerterService struct {
-	name    string
+	name    piazza.ServiceName
 	address string
 }
 
@@ -20,7 +20,7 @@ func NewMockAlerterService(sys *piazza.System) (*MockAlerterService, error) {
 	return service, nil
 }
 
-func (m MockAlerterService) GetName() string {
+func (m MockAlerterService) GetName() piazza.ServiceName {
 	return m.name
 }
 

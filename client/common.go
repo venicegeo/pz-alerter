@@ -1,12 +1,13 @@
 package client
 
 import (
+	piazza "github.com/venicegeo/pz-gocommon"
 	"time"
 	"strconv"
 )
 
 type IAlerterService interface {
-	GetName() string
+	GetName() piazza.ServiceName
 	GetAddress() string
 
 	// low-level interfaces

@@ -11,7 +11,7 @@ import (
 )
 
 type PzAlerterService struct {
-	name    string
+	name    piazza.ServiceName
 	address string
 	url     string
 }
@@ -38,7 +38,7 @@ func NewPzAlerterService(sys *piazza.System, address string) (*PzAlerterService,
 	return service, nil
 }
 
-func (c PzAlerterService) GetName() string {
+func (c PzAlerterService) GetName() piazza.ServiceName {
 	return c.name
 }
 
