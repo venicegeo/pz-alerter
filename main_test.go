@@ -83,8 +83,6 @@ func (suite *AlerterTester) TestConditions() {
 	var c1 client.Condition
 	c1.Title = "c1"
 	c1.Type = "=type="
-	c1.UserID = "=userid="
-	c1.Date = "=date="
 	idResponse, err = alerter.PostToConditions(&c1)
 	assert.NoError(t, err)
 	c1ID := idResponse.ID
@@ -93,8 +91,6 @@ func (suite *AlerterTester) TestConditions() {
 	var c2 client.Condition
 	c2.Title = "c2"
 	c2.Type = "=type="
-	c2.UserID = "=userid="
-	c2.Date = "=date="
 	idResponse, err = alerter.PostToConditions(&c2)
 	assert.NoError(t, err)
 	c2ID := idResponse.ID
@@ -134,6 +130,52 @@ func (suite *AlerterTester) TestConditions() {
 	assert.Len(t, *cs, 0)
 }
 
+func (suite *AlerterTester) TestActions() {
+	t := suite.T()
+
+	alerter := suite.alerter
+
+	var err error
+	var idResponse *client.AlerterIdResponse
+
+	var x1 client.Action
+	x1.Events = []client.Ident{client.Ident("e1"),client.Ident("e2")}
+	x1.Conditions = []client.Ident{client.Ident("c1"),client.Ident("c2")}
+	x1.Job = "job message 1"
+	idResponse, err = alerter.PostToActions(&x1)
+	assert.NoError(t, err)
+	c1ID := idResponse.ID
+	assert.EqualValues(t, "X1", c1ID)
+
+	var x2 client.Action
+	x2.Events = []client.Ident{client.Ident("e3"),client.Ident("e4")}
+	x2.Conditions = []client.Ident{client.Ident("c3"),client.Ident("c4")}
+	x2.Job = "job message 2"
+	idResponse, err = alerter.PostToActions(&x2)
+	assert.NoError(t, err)
+	c2ID := idResponse.ID
+	assert.EqualValues(t, "X2", c2ID)
+
+	cs, err := alerter.GetFromActions()
+	assert.NoError(t, err)
+	assert.Len(t, *cs, 2)
+	ok1 := false
+	ok2 := false
+	for k := range *cs {
+		if k == "X1" {
+			ok1 = true
+		}
+		if k == "X2" {
+			ok2 = true
+		}
+	}
+	assert.True(t, ok1 && ok2)
+
+	cond, err := alerter.GetFromAction("X1")
+	assert.NoError(t, err)
+	assert.NotNil(t, cond)
+}
+
 func (suite *AlerterTester) TestEvents() {
 	t := suite.T()
 
@@ -144,7 +186,7 @@ func (suite *AlerterTester) TestEvents() {
 
 	var e1 client.Event
 	e1.Type = client.EventDataIngested
-	e1.Date = "22 Jan 2016"
+	e1.Date = time.Now()
 	e1.Data = nil
 	idResponse, err = alerter.PostToEvents(&e1)
 	assert.NoError(t, err)
@@ -153,7 +195,7 @@ func (suite *AlerterTester) TestEvents() {
 
 	var e2 client.Event
 	e2.Type = client.EventDataAccessed
-	e2.Date = "22 Jan 2016"
+	e2.Date = time.Now()
 	e2.Data = nil
 	idResponse, err = alerter.PostToEvents(&e2)
 	assert.NoError(t, err)
@@ -190,10 +232,7 @@ func (suite *AlerterTester) TestTriggering() {
 
 	var rawC3 client.Condition
 	rawC3.Title = "cond1 title"
-	rawC3.Description = "cond1 descr"
 	rawC3.Type = client.EventDataIngested
-	rawC3.UserID = "user1"
-	rawC3.Date = time.Now().String()
 	idResponse, err = alerter.PostToConditions(&rawC3)
 	assert.NoError(t, err)
 	c3ID := idResponse.ID
@@ -201,10 +240,7 @@ func (suite *AlerterTester) TestTriggering() {
 
 	var rawC4 client.Condition
 	rawC4.Title = "cond2 title"
-	rawC4.Description = "cond2 descr"
 	rawC4.Type = client.EventDataAccessed
-	rawC4.UserID = "user2"
-	rawC4.Date = time.Now().String()
 	idResponse, err = alerter.PostToConditions(&rawC4)
 	assert.NoError(t, err)
 	c4ID := idResponse.ID
@@ -212,10 +248,7 @@ func (suite *AlerterTester) TestTriggering() {
 
 	var rawC5 client.Condition
 	rawC5.Title = "cond2 title"
-	rawC5.Description = "cond2 descr"
 	rawC5.Type = client.EventFoo
-	rawC5.UserID = "user2"
-	rawC5.Date = time.Now().String()
 	idResponse, err = alerter.PostToConditions(&rawC5)
 	assert.NoError(t, err)
 	c5ID := idResponse.ID
@@ -227,7 +260,7 @@ func (suite *AlerterTester) TestTriggering() {
 
 	var e3 client.Event
 	e3.Type = client.EventDataAccessed
-	e3.Date = time.Now().String()
+	e3.Date = time.Now()
 	e3.Data = map[string]string{"file": "111.tif"}
 	idResponse, err = alerter.PostToEvents(&e3)
 	assert.NoError(t, err)
@@ -236,7 +269,7 @@ func (suite *AlerterTester) TestTriggering() {
 
 	var e4 client.Event
 	e4.Type = client.EventDataIngested
-	e4.Date = time.Now().String()
+	e4.Date = time.Now()
 	e4.Data = map[string]string{"file": "111.tif"}
 	idResponse, err = alerter.PostToEvents(&e4)
 	assert.NoError(t, err)
@@ -245,7 +278,7 @@ func (suite *AlerterTester) TestTriggering() {
 
 	var e5 client.Event
 	e5.Type = client.EventBar
-	e5.Date = time.Now().String()
+	e5.Date = time.Now()
 	idResponse, err = alerter.PostToEvents(&e5)
 	assert.NoError(t, err)
 	e5ID := idResponse.ID
@@ -261,12 +294,10 @@ func (suite *AlerterTester) TestTriggering() {
 	v2, ok := (*as)["A2"]
 	assert.True(t, ok)
 
-	assert.Equal(t, "A1", v1.ID)
-	assert.Equal(t, "E3", v1.EventID)
-	assert.Equal(t, "4", v1.ConditionID)
-	assert.Equal(t, "A2", v2.ID)
-	assert.Equal(t, "E4", v2.EventID)
-	assert.Equal(t, "3", v2.ConditionID)
+	assert.Equal(t, client.Ident("A1"), v1.ID)
+	assert.Equal(t, client.Ident("X4"), v1.Action)
+	assert.Equal(t, client.Ident("A2"), v2.ID)
+	assert.Equal(t, client.Ident("X4"), v2.Action)
 }
 
 func (suite *AlerterTester) TestAdmin() {

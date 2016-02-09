@@ -32,7 +32,7 @@ func (db *ConditionDB) Write(condition *Condition) error {
 	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("condition").
-		Id(condition.ID).
+		Id(condition.ID.String()).
 		BodyJson(condition).
 		Do()
 	if err != nil {
@@ -98,7 +98,7 @@ func (db *ConditionDB) DeleteByID(id string) (bool, error) {
 	return res.Found, nil
 }
 
-func (db *ConditionDB) GetAll() (map[string]Condition, error) {
+func (db *ConditionDB) GetAll() (map[Ident]Condition, error) {
 
 	// search for everything
 	// TODO: there's a GET call for this?
@@ -111,7 +111,7 @@ func (db *ConditionDB) GetAll() (map[string]Condition, error) {
 		return nil, err
 	}
 
-	m := make(map[string]Condition)
+	m := make(map[Ident]Condition)
 
 	for _, hit := range searchResult.Hits.Hits {
 		var t Condition

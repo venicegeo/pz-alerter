@@ -28,7 +28,7 @@ func (db *EventDB) Write(event *Event) error {
 	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("event").
-		Id(event.ID).
+		Id(event.ID.String()).
 		BodyJson(event).
 		Do()
 	if err != nil {

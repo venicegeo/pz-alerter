@@ -1,15 +1,14 @@
 package client
 
 import (
-	"strconv"
 )
 
 //---------------------------------------------------------------------------
 
 var eventID = 1
 
-func NewEventID() string {
-	id := strconv.Itoa(eventID)
+func NewEventID() Ident {
+	id := NewIdentFromInt(eventID)
 	eventID++
-	return "E" + id
+	return Ident("E" + string(id))
 }

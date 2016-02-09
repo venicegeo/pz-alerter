@@ -1,7 +1,6 @@
 package client
 
 import (
-	"strconv"
 )
 
 //---------------------------------------------------------------------------
@@ -10,15 +9,14 @@ import (
 var alertID = 1
 
 // newAlert makes an Alert, setting the ID for you.
-func NewAlert(conditionID string, eventID string) Alert {
+func NewAlert(actionID Ident) Alert {
 
-	id := strconv.Itoa(alertID)
+	id := NewIdentFromInt(alertID)
 	alertID++
-	id = "A" + id
+	s := "A" + string(id)
 
 	return Alert{
-		ID:          id,
-		ConditionID: conditionID,
-		EventID: eventID,
+		ID:          Ident(s),
+		Action: actionID,
 	}
 }

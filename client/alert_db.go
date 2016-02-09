@@ -31,7 +31,7 @@ func (db *AlertDB) Write(alert *Alert) error {
 	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("alert").
-		Id(alert.ID).
+		Id(alert.ID.String()).
 		BodyJson(alert).
 		Do()
 	if err != nil {
@@ -73,7 +73,7 @@ func (db *AlertDB) GetByConditionID(conditionID string) ([]Alert, error) {
 	return as, nil
 }
 
-func (db *AlertDB) GetAll() (map[string]Alert, error) {
+func (db *AlertDB) GetAll() (map[Ident]Alert, error) {
 	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(elastic.NewMatchAllQuery()).
@@ -83,7 +83,7 @@ func (db *AlertDB) GetAll() (map[string]Alert, error) {
 		return nil, err
 	}
 
-	m := make(map[string]Alert)
+	m := make(map[Ident]Alert)
 
 	if searchResult.Hits != nil {
 		for _, hit := range searchResult.Hits.Hits {
@@ -107,7 +107,7 @@ func (db *AlertDB) CheckConditions(e Event, conditionDB *ConditionDB) error {
 	for _, cond := range all {
 		//log.Printf("e%s.%s ==? c%s.%s", e.ID, e.Type, cond.ID, cond.Type)
 		if cond.Type == e.Type {
-			a := NewAlert(cond.ID, e.ID)
+			a := NewAlert(Ident("SomeActionID"))
 			db.Write(&a)
 			//pzService.Log(piazza.SeverityInfo, fmt.Sprintf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID))
 			log.Printf("INFO: Hit! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID)

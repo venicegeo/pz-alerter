@@ -2,6 +2,7 @@ package client
 
 import (
 	"time"
+	"strconv"
 )
 
 type IAlerterService interface {
@@ -14,8 +15,11 @@ type IAlerterService interface {
 	GetFromAlerts() (*AlertList, error)
 	PostToConditions(*Condition) (*AlerterIdResponse, error)
 	GetFromConditions() (*ConditionList, error)
-	GetFromCondition(id string) (*Condition, error)
-	DeleteOfCondition(id string) error
+	GetFromCondition(id Ident) (*Condition, error)
+	DeleteOfCondition(id Ident) error
+	PostToActions(*Action) (*AlerterIdResponse, error)
+	GetFromActions() (*ActionList, error)
+	GetFromAction(id Ident) (*Action, error)
 
 	GetFromAdminStats() (*AlerterAdminStats, error)
 	GetFromAdminSettings() (*AlerterAdminSettings, error)
@@ -23,61 +27,92 @@ type IAlerterService interface {
 }
 
 type AlerterIdResponse struct {
-	ID string `json:"id"`
+	ID Ident `json:"id"`
+}
+
+type Ident string
+
+func (id Ident) String() string {
+	return string(id)
+}
+
+func NewIdentFromInt(id int) Ident {
+	s := strconv.Itoa(id)
+	return Ident(s)
 }
 
 /////////////////
-
-const EventDataIngested = "DataIngested"
-const EventDataAccessed = "DataAccessed"
-const EventUSDataFound = "USDataFound"
-const EventFoo = "Foo"
-const EventBar = "Bar"
 
 type EventType string
 
-type Event struct {
-	ID   string            `json:"id"`
-	Type EventType         `json:"type" binding:"required"`
-	Date string            `json:"date" binding:"required"`
-	Data map[string]string `json:"data"` // specific to event type
-}
-
-type EventList map[string]Event
-
-////////////////
-
-type Alert struct {
-	ID          string `json:"id"`
-	ConditionID string `json:"condition_id" binding:"required"`
-	EventID     string `json:"event_id" binding:"required"`
-}
-
-type AlertList map[string]Alert
-
-//////////////
-
-type Condition struct {
-	ID string `json:"id"`
-
-	Title       string    `json:"title" binding:"required"`
-	Description string    `json:"description"`
-	Type        EventType `json:"type" binding:"required"`
-	UserID      string    `json:"user_id" binding:"required"`
-	Date        string    `json:"start_date" binding:"required"`
-	//ExpirationDate string `json:"expiration_date"`
-	//IsEnabled      bool   `json:"is_enabled" binding:"required"`
-	//HitCount int `json:"hit_count"`
-}
-
-type ConditionList map[string]Condition
+const (
+	EventDataIngested EventType = "DataIngested"
+	EventDataAccessed EventType = "DataAccessed"
+	EventUSDataFound  EventType = "USDataFound"
+	EventFoo          EventType = "Foo"
+	EventBar          EventType = "Bar"
+)
 
 /////////////////
 
+// expresses the idea of "this ES query returns an event"
+// Query is specific to the event type
+type Condition struct {
+	ID    Ident     `json:"id"`
+	Title string    `json:"title" binding:"required"`
+	Type  EventType `json:"type" binding:"required"`
+	Query string    `json:"type" binding:"required"`
+}
+
+type ConditionList map[Ident]Condition
+
+/////////////////
+
+// when the and'ed set of Conditions all are true, do Something
+// Events are the results of the Conditions queries
+// Job is the JobMessage to submit back to Pz
+// TODO: some sort of mapping from the event info into the Job string
+type Action struct {
+	ID         Ident   `json:"id"`
+	Conditions []Ident `json:"conditions" binding:"required"`
+	Events     []Ident `json:"events"`
+	Job        string  `json:job`
+}
+
+type ActionList map[Ident]Action
+
+/////////////////
+
+// posted by some source (service, user, etc) to indicate Something Happened
+// Data is specific to the event type
+// TODO: use the delayed-parsing, raw-message json thing?
+type Event struct {
+	ID   Ident             `json:"id"`
+	Type EventType         `json:"type" binding:"required"`
+	Date time.Time         `json:"date" binding:"required"`
+	Data map[string]string `json:"data"`
+}
+
+type EventList map[Ident]Event
+
+////////////////
+
+// a notification, automatically created when an Action happens
+type Alert struct {
+	ID     Ident `json:"id"`
+	Action Ident `json:"action_id"`
+}
+
+type AlertList map[Ident]Alert
+
+//////////////
+
 type AlerterAdminStats struct {
-	StartTime   time.Time `json:"starttime"`
-	NumRequests int       `json:"num_requests"`
-	NumUUIDs    int       `json:"num_uuids"`
+	Date          time.Time `json:"date"`
+	NumAlerts     int       `json:"num_alerts"`
+	NumConditions int       `json:"num_conditions"`
+	NumEvents     int       `json:"num_events"`
+	NumActions    int       `json:"num_actions"`
 }
 
 type AlerterAdminSettings struct {

@@ -27,7 +27,7 @@ type LockedAdminStats struct {
 var stats LockedAdminStats
 
 func init() {
-	stats.StartTime = time.Now()
+	stats.Date = time.Now()
 }
 
 ///////////////////////////////////////////////////////////
@@ -79,6 +79,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	if err != nil {
 		return nil, err
 	}
+	actionDB, err := client.NewActionDB(es, "actions")
+	if err != nil {
+		return nil, err
+	}
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
@@ -122,6 +126,58 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		c.IndentedJSON(http.StatusOK, m)
+	})
+
+	//---------------------------------
+
+	router.POST("/v1/actions", func(c *gin.Context) {
+		action := &client.Action{}
+		err := c.BindJSON(action)
+		if err != nil {
+			//pzService.Error("POST to /v1/events", err)
+			log.Printf("POST to /v1/actions: %v", err)
+			c.Error(err)
+			return
+		}
+
+		action.ID = client.NewActionIdent()
+
+		err = actionDB.Write(action)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		a := client.AlerterIdResponse{ID: action.ID}
+		c.IndentedJSON(http.StatusCreated, a)
+	})
+
+	router.GET("/v1/actions", func(c *gin.Context) {
+		m, err := actionDB.GetAll()
+		if err != nil {
+			c.Error(err)
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, m)
+		log.Printf("%#v", m)
+	})
+
+	router.GET("/v1/actions/:id", func(c *gin.Context) {
+		s := c.Param("id")
+
+		id := client.Ident(s)
+		v, err := actionDB.GetByID(id)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		if v == nil {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		log.Print("266622 ", s)
+		c.IndentedJSON(http.StatusOK, v)
 	})
 
 	//---------------------------------

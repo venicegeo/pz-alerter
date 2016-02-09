@@ -176,8 +176,8 @@ func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
-	resp, err := http.Get(c.url + "/conditions/" + id)
+func (c *PzAlerterService) GetFromCondition(id Ident) (*Condition, error) {
+	resp, err := http.Get(c.url + "/conditions/" + id.String())
 	if err != nil {
 		return nil, err
 	}
@@ -205,8 +205,8 @@ func (c *PzAlerterService) GetFromCondition(id string) (*Condition, error) {
 	return &x, nil
 }
 
-func (c *PzAlerterService) DeleteOfCondition(id string) error {
-	resp, err := piazza.HTTPDelete(c.url + "/conditions/" + id)
+func (c *PzAlerterService) DeleteOfCondition(id Ident) error {
+	resp, err := piazza.HTTPDelete(c.url + "/conditions/" + id.String())
 	if err != nil {
 		return err
 	}
@@ -214,6 +214,88 @@ func (c *PzAlerterService) DeleteOfCondition(id string) error {
 		return errors.New(resp.Status)
 	}
 	return nil
+}
+
+func (c *PzAlerterService) PostToActions(action *Action) (*AlerterIdResponse, error) {
+	body, err := json.Marshal(action)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Post(c.url+"/actions", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return nil, errors.New(resp.Status)
+	}
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	result := new(AlerterIdResponse)
+	err = json.Unmarshal(data, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (c *PzAlerterService) GetFromActions() (*ActionList, error) {
+	resp, err := http.Get(c.url + "/actions")
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var x ActionList
+	err = json.Unmarshal(d, &x)
+	if err != nil {
+		return nil, err
+	}
+
+	return &x, nil
+}
+
+func (c *PzAlerterService) GetFromAction(id Ident) (*Action, error) {
+	resp, err := http.Get(c.url + "/actions/" + id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var x Action
+	err = json.Unmarshal(d, &x)
+	if err != nil {
+		return nil, err
+	}
+
+	if id != x.ID {
+		return nil, errors.New("internal error, action ID mismatch")
+	}
+
+	return &x, nil
 }
 
 func (c *PzAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {

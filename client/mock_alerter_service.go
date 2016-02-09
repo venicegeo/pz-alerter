@@ -48,12 +48,24 @@ func (*MockAlerterService) GetFromConditions() (*ConditionList, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromCondition(id string) (*Condition, error) {
+func (*MockAlerterService) GetFromCondition(id Ident) (*Condition, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) DeleteOfCondition(id string) error {
+func (*MockAlerterService) DeleteOfCondition(id Ident) error {
 	return nil
+}
+
+func (*MockAlerterService) PostToActions(*Action) (*AlerterIdResponse, error) {
+	return nil, nil
+}
+
+func (*MockAlerterService) GetFromActions() (*ActionList, error) {
+	return nil, nil
+}
+
+func (*MockAlerterService) GetFromAction(id Ident) (*Action, error) {
+	return nil, nil
 }
 
 func (*MockAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
