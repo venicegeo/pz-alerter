@@ -1,14 +1,20 @@
 package client
 
 import (
+	"sync"
 )
 
 //---------------------------------------------------------------------------
 
 var conditionID = 1
 
-func NewConditionID() Ident {
+var conditionIdLock sync.Mutex
+
+func NewConditionIdent() Ident {
+	conditionIdLock.Lock()
 	id := NewIdentFromInt(conditionID)
 	conditionID++
-	return id
+	conditionIdLock.Unlock()
+	s := "C" + id.String()
+	return Ident(s)
 }

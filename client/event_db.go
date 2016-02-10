@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 	piazza "github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v2"
 )
 
 type EventDB struct {

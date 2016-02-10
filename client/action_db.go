@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v2"
 	"github.com/venicegeo/pz-gocommon"
 	"log"
 )
@@ -85,32 +85,39 @@ func (db *ActionDB) GetByID(id Ident) (*Action, error) {
 
 	err = db.es.Flush(db.index)
 	if err != nil {
-		return err
+		log.Print("done -1")
+		return nil, err
 	}
 
 
-	termQuery := elastic.NewMatchAllQuery() //NewTermQuery("id", id.String())
+	termQuery := elastic.NewTermQuery("id", id.String())
+	//termQuery := elastic.NewMatchAllQuery()
 	searchResult, err := db.es.Client.Search().
 	Index(db.index).
 	Query(termQuery).
-	//Sort("id", true).
+	Sort("id", false).
 	Do()
 
 	if err != nil {
+		log.Print("done 0", err)
 		return nil, err
 	}
-	log.Print("**target ", id)
+	log.Print("**target ", id.String())
 
-	for _, hit := range searchResult.Hits.Hits {
-		log.Print("****target ", id)
-		var a Action
-		err := json.Unmarshal(*hit.Source, &a)
-		log.Printf("**hit %#v", hit)
-		if err != nil {
-			return nil, err
+	if searchResult.Hits != nil {
+		for _, hit := range searchResult.Hits.Hits {
+			log.Print("****target ", id)
+			var a Action
+			err := json.Unmarshal(*hit.Source, &a)
+			log.Printf("**hit %#v", hit)
+			if err != nil {
+				return nil, err
+			}
+			log.Print("done 1")
+			//return &a, nil
 		}
-		return &a, nil
 	}
 
+	log.Print("done 2")
 	return nil, nil
 }

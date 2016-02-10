@@ -8,6 +8,7 @@ import (
 	piazza "github.com/venicegeo/pz-gocommon"
 	"io/ioutil"
 	"net/http"
+	"log"
 )
 
 type PzAlerterService struct {
@@ -179,15 +180,19 @@ func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
 func (c *PzAlerterService) GetFromCondition(id Ident) (*Condition, error) {
 	resp, err := http.Get(c.url + "/conditions/" + id.String())
 	if err != nil {
+		log.Printf("====0 %#v", id)
 		return nil, err
 	}
+	log.Printf("====1")
 
 	if resp.StatusCode != http.StatusOK {
+		log.Printf("====2 %#v", resp)
 		return nil, errors.New(resp.Status)
 	}
 
 	d, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("====3")
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -195,13 +200,16 @@ func (c *PzAlerterService) GetFromCondition(id Ident) (*Condition, error) {
 	var x Condition
 	err = json.Unmarshal(d, &x)
 	if err != nil {
+		log.Printf("====4")
 		return nil, err
 	}
 
 	if id != x.ID {
+		log.Printf("====5")
 		return nil, errors.New("internal error, condition ID mismatch")
 	}
 
+	log.Printf("====6")
 	return &x, nil
 }
 

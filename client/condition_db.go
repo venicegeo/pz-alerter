@@ -3,7 +3,8 @@ package client
 import (
 	"encoding/json"
 	piazza "github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v2"
+	"log"
 )
 
 type ConditionDB struct {
@@ -24,26 +25,36 @@ func NewConditionDB(es *piazza.ElasticSearchService, index string) (*ConditionDB
 	return db, nil
 }
 
+type XCondition struct {
+	ID    string     `json:"id"`
+	Title string    `json:"title"`
+}
+
 func (db *ConditionDB) Write(condition *Condition) error {
 
-	id := NewConditionID()
+	id := NewConditionIdent()
 	condition.ID = id
+
+	xcondition := XCondition{ID: condition.ID.String(), Title: condition.Title}
 
 	_, err := db.es.Client.Index().
 		Index(db.index).
 		Type("condition").
 		Id(condition.ID.String()).
-		BodyJson(condition).
+		BodyJson(xcondition).
 		Do()
 	if err != nil {
+		log.Printf("baz 2 %#v", err)
 		return err
 	}
 
 	err = db.es.Flush(db.index)
 	if err != nil {
+		log.Printf("baz 3 %#v", err)
 		return err
 	}
 
+	log.Printf("baz 4")
 	return nil
 }
 
@@ -57,8 +68,25 @@ func (db *ConditionDB) Update(condition *Condition) bool {
 	return false
 }
 
-func (db *ConditionDB) ReadByID(id string) (*Condition, error) {
-	termQuery := elastic.NewTermQuery("id", id)
+func (db *ConditionDB) ReadByID(id Ident) (*Condition, error) {
+	get1, err := db.es.Client.Get().
+	Index("conditions").
+	Type("condition").
+	Id("C1").
+	Do()
+	if err != nil {
+		// Handle error
+		panic(err)
+	}
+	log.Printf("!!!!!! %#v %#v", get1, get1.Source)
+	b, err := get1.Source.MarshalJSON()
+	if err != nil {
+		panic("at disco")
+	}
+	log.Printf("bbbb %#v", b)
+
+
+	termQuery := elastic.NewTermQuery("id", id.String())
 	searchResult, err := db.es.Client.Search().
 		Index(db.index).
 		Query(termQuery).
@@ -67,16 +95,20 @@ func (db *ConditionDB) ReadByID(id string) (*Condition, error) {
 	if err != nil {
 		return nil, err
 	}
-
+log.Printf("#1 %#v %s", id, db.index)
 	for _, hit := range searchResult.Hits.Hits {
+		log.Printf("#2")
 		var a Condition
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
+			log.Printf("#3")
 			return nil, err
 		}
+		log.Printf("#4 %#v", a)
 		return &a, nil
 	}
 
+	log.Printf("#5")
 	return nil, nil
 }
 

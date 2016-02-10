@@ -62,7 +62,7 @@ type Condition struct {
 	ID    Ident     `json:"id"`
 	Title string    `json:"title" binding:"required"`
 	Type  EventType `json:"type" binding:"required"`
-	Query string    `json:"type" binding:"required"`
+	Query string    `json:"query" binding:"required"`
 }
 
 type ConditionList map[Ident]Condition

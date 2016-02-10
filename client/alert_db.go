@@ -2,7 +2,7 @@ package client
 
 import (
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v2"
 	piazza "github.com/venicegeo/pz-gocommon"
 	"log"
 )

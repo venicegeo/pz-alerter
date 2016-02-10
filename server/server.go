@@ -84,6 +84,24 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		return nil, err
 	}
 
+
+	//err = es.Flush("conditions")
+	//if err != nil {
+	//	return nil,err
+	//}
+	err = es.Flush("events")
+	if err != nil {
+		return nil,err
+	}
+	err = es.Flush("alerts")
+	if err != nil {
+		return nil,err
+	}
+	err = es.Flush("actions")
+	if err != nil {
+		return nil,err
+	}
+
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.New()
 	//router.Use(gin.Logger())
@@ -220,7 +238,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		}
 		err = conditionDB.Write(&condition)
 		if err != nil {
-			c.Error(err)
+			c.AbortWithError(499, err)
 			return
 		}
 		c.IndentedJSON(http.StatusCreated, gin.H{"id": condition.ID})
@@ -252,15 +270,18 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.GET("/v1/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		v, err := conditionDB.ReadByID(id)
+		v, err := conditionDB.ReadByID(client.Ident(id))
 		if err != nil {
+			log.Printf("+++0")
 			c.Error(err)
 			return
 		}
 		if v == nil {
+			log.Printf("+++1")
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
+		log.Printf("+++2")
 		c.IndentedJSON(http.StatusOK, v)
 	})
 
