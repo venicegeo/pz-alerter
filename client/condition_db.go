@@ -2,13 +2,10 @@ package client
 
 import (
 	"encoding/json"
-	piazza "github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v2"
-	"log"
+	"github.com/venicegeo/pz-gocommon"
 )
 
 type ConditionDB struct {
-	//data   map[string]Condition
 	es    *piazza.ElasticSearchService
 	index string
 }
@@ -18,16 +15,11 @@ func NewConditionDB(es *piazza.ElasticSearchService, index string) (*ConditionDB
 	db.es = es
 	db.index = index
 
-	err := es.MakeIndex(index)
+	err := es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
 	return db, nil
-}
-
-type XCondition struct {
-	ID    string     `json:"id"`
-	Title string    `json:"title"`
 }
 
 func (db *ConditionDB) Write(condition *Condition) error {
@@ -35,26 +27,16 @@ func (db *ConditionDB) Write(condition *Condition) error {
 	id := NewConditionIdent()
 	condition.ID = id
 
-	xcondition := XCondition{ID: condition.ID.String(), Title: condition.Title}
-
-	_, err := db.es.Client.Index().
-		Index(db.index).
-		Type("condition").
-		Id(condition.ID.String()).
-		BodyJson(xcondition).
-		Do()
+	_, err := db.es.PostData(db.index, "condition", condition.ID.String(), condition)
 	if err != nil {
-		log.Printf("baz 2 %#v", err)
 		return err
 	}
 
-	err = db.es.Flush(db.index)
+	err = db.es.FlushIndex(db.index)
 	if err != nil {
-		log.Printf("baz 3 %#v", err)
 		return err
 	}
 
-	log.Printf("baz 4")
 	return nil
 }
 
@@ -69,60 +51,30 @@ func (db *ConditionDB) Update(condition *Condition) bool {
 }
 
 func (db *ConditionDB) ReadByID(id Ident) (*Condition, error) {
-	get1, err := db.es.Client.Get().
-	Index("conditions").
-	Type("condition").
-	Id("C1").
-	Do()
-	if err != nil {
-		// Handle error
-		panic(err)
-	}
-	log.Printf("!!!!!! %#v %#v", get1, get1.Source)
-	b, err := get1.Source.MarshalJSON()
-	if err != nil {
-		panic("at disco")
-	}
-	log.Printf("bbbb %#v", b)
-
-
-	termQuery := elastic.NewTermQuery("id", id.String())
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(termQuery).
-		Do()
-
+	getResult, err := db.es.GetById(db.index, id.String())
 	if err != nil {
 		return nil, err
 	}
-log.Printf("#1 %#v %s", id, db.index)
-	for _, hit := range searchResult.Hits.Hits {
-		log.Printf("#2")
-		var a Condition
-		err := json.Unmarshal(*hit.Source, &a)
-		if err != nil {
-			log.Printf("#3")
-			return nil, err
-		}
-		log.Printf("#4 %#v", a)
-		return &a, nil
+	if !getResult.Found {
+		return nil, nil
 	}
 
-	log.Printf("#5")
-	return nil, nil
+	var tmp Condition
+	src := getResult.Source
+	err = json.Unmarshal(*src, &tmp)
+	if err != nil {
+		return nil, err
+	}
+	return &tmp, nil
 }
 
 func (db *ConditionDB) DeleteByID(id string) (bool, error) {
-	res, err := db.es.Client.Delete().
-		Index(db.index).
-		Type("condition").
-		Id(id).
-		Do()
+	res, err := db.es.DeleteById(db.index, "condition", id)
 	if err != nil {
 		return false, err
 	}
 
-	err = db.es.Flush(db.index)
+	err = db.es.FlushIndex(db.index)
 	if err != nil {
 		return false, err
 	}
@@ -132,13 +84,7 @@ func (db *ConditionDB) DeleteByID(id string) (bool, error) {
 
 func (db *ConditionDB) GetAll() (map[Ident]Condition, error) {
 
-	// search for everything
-	// TODO: there's a GET call for this?
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(elastic.NewMatchAllQuery()).
-		Sort("id", true).
-		Do()
+	searchResult, err := db.es.SearchByMatchAll(db.index)
 	if err != nil {
 		return nil, err
 	}

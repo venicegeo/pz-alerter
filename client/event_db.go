@@ -14,7 +14,7 @@ type EventDB struct {
 func NewEventDB(es *piazza.ElasticSearchService, index string) (*EventDB, error) {
 	db := &EventDB{es: es, index: index}
 
-	err := es.MakeIndex(index)
+	err := es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func (db *EventDB) Write(event *Event) error {
 		panic(err)
 	}
 
-	err = db.es.Flush(db.index)
+	err = db.es.FlushIndex(db.index)
 	if err != nil {
 		return err
 	}

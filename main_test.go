@@ -73,7 +73,6 @@ func TestRunSuite(t *testing.T) {
 //---------------------------------------------------------------------------
 
 func (suite *AlerterTester) TestConditions() {
-	//return
 	t := suite.T()
 
 	alerter := suite.alerter
@@ -112,8 +111,8 @@ func (suite *AlerterTester) TestConditions() {
 			ok2 = true
 		}
 	}
-	assert.True(t, ok1 && ok2)
 
+	assert.True(t, ok1 && ok2)
 	cond, err := alerter.GetFromCondition("C1")
 	assert.NoError(t, err)
 	assert.NotNil(t, cond)

@@ -19,7 +19,7 @@ func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error)
 	db.es = es
 	db.index = index
 
-	err := es.MakeIndex(index)
+	err := es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (db *AlertDB) Write(alert *Alert) error {
 		return err
 	}
 
-	err = db.es.Flush(db.index)
+	err = db.es.FlushIndex(db.index)
 	if err != nil {
 		return err
 	}

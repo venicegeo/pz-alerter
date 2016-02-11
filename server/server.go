@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"sync"
 	"time"
+	"fmt"
 )
 
 type LockedAdminSettings struct {
@@ -85,19 +86,19 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	}
 
 
-	//err = es.Flush("conditions")
-	//if err != nil {
-	//	return nil,err
-	//}
-	err = es.Flush("events")
+	err = es.FlushIndex("conditions")
 	if err != nil {
 		return nil,err
 	}
-	err = es.Flush("alerts")
+	err = es.FlushIndex("events")
 	if err != nil {
 		return nil,err
 	}
-	err = es.Flush("actions")
+	err = es.FlushIndex("alerts")
+	if err != nil {
+		return nil,err
+	}
+	err = es.FlushIndex("actions")
 	if err != nil {
 		return nil,err
 	}
@@ -272,16 +273,13 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		id := c.Param("id")
 		v, err := conditionDB.ReadByID(client.Ident(id))
 		if err != nil {
-			log.Printf("+++0")
 			c.Error(err)
 			return
 		}
 		if v == nil {
-			log.Printf("+++1")
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.AbortWithError(http.StatusNotFound, fmt.Errorf("Condition %d not found", id))
 			return
 		}
-		log.Printf("+++2")
 		c.IndentedJSON(http.StatusOK, v)
 	})
 

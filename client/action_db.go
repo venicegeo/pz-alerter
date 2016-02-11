@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"gopkg.in/olivere/elastic.v2"
 	"github.com/venicegeo/pz-gocommon"
-	"log"
 )
 
 //---------------------------------------------------------------------------
@@ -19,7 +18,7 @@ func NewActionDB(es *piazza.ElasticSearchService, index string) (*ActionDB, erro
 	db.es = es
 	db.index = index
 
-	err := es.MakeIndex(index)
+	err := es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +37,7 @@ func (db *ActionDB) Write(action *Action) error {
 		return err
 	}
 
-	err = db.es.Flush(db.index)
+	err = db.es.FlushIndex(db.index)
 	if err != nil {
 		return err
 	}
@@ -75,49 +74,15 @@ func (db *ActionDB) GetAll() (map[Ident]Action, error) {
 
 func (db *ActionDB) GetByID(id Ident) (*Action, error) {
 
-	m, err := db.GetAll()
+	getResult, err := db.es.GetById(db.index, id.String())
 	if err != nil {
-		log.Fatalf("bonk")
-	}
-	log.Printf("ALL: %#v", m)
-
-
-
-	err = db.es.Flush(db.index)
-	if err != nil {
-		log.Print("done -1")
 		return nil, err
 	}
-
-
-	termQuery := elastic.NewTermQuery("id", id.String())
-	//termQuery := elastic.NewMatchAllQuery()
-	searchResult, err := db.es.Client.Search().
-	Index(db.index).
-	Query(termQuery).
-	Sort("id", false).
-	Do()
-
+	var tmp Action
+	src := getResult.Source
+	err = json.Unmarshal(*src, &tmp)
 	if err != nil {
-		log.Print("done 0", err)
 		return nil, err
 	}
-	log.Print("**target ", id.String())
-
-	if searchResult.Hits != nil {
-		for _, hit := range searchResult.Hits.Hits {
-			log.Print("****target ", id)
-			var a Action
-			err := json.Unmarshal(*hit.Source, &a)
-			log.Printf("**hit %#v", hit)
-			if err != nil {
-				return nil, err
-			}
-			log.Print("done 1")
-			//return &a, nil
-		}
-	}
-
-	log.Print("done 2")
-	return nil, nil
+	return &tmp, nil
 }
