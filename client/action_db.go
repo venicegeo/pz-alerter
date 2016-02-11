@@ -2,7 +2,6 @@ package client
 
 import (
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v2"
 	"github.com/venicegeo/pz-gocommon"
 )
 
@@ -27,12 +26,7 @@ func NewActionDB(es *piazza.ElasticSearchService, index string) (*ActionDB, erro
 
 func (db *ActionDB) Write(action *Action) error {
 
-	_, err := db.es.Client.Index().
-		Index(db.index).
-		Type("action").
-		Id(action.ID.String()).
-		BodyJson(action).
-		Do()
+	_, err := db.es.PostData(db.index, "action", action.ID.String(), action)
 	if err != nil {
 		return err
 	}
@@ -47,11 +41,7 @@ func (db *ActionDB) Write(action *Action) error {
 
 
 func (db *ActionDB) GetAll() (map[Ident]Action, error) {
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(elastic.NewMatchAllQuery()).
-		Sort("id", true).
-		Do()
+	searchResult, err := db.es.SearchByMatchAll(db.index)
 	if err != nil {
 		return nil, err
 	}

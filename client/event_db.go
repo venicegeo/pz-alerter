@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	piazza "github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v2"
 )
 
 type EventDB struct {
@@ -25,14 +24,9 @@ func (db *EventDB) Write(event *Event) error {
 	id := NewEventID()
 	event.ID = id
 
-	_, err := db.es.Client.Index().
-		Index(db.index).
-		Type("event").
-		Id(event.ID.String()).
-		BodyJson(event).
-		Do()
+	_, err := db.es.PostData(db.index, "event", event.ID.String(), event)
 	if err != nil {
-		panic(err)
+		return err
 	}
 
 	err = db.es.FlushIndex(db.index)
@@ -45,13 +39,7 @@ func (db *EventDB) Write(event *Event) error {
 
 func (db *EventDB) GetAll() (*EventList, error) {
 
-	// search for everything
-	// TODO: there's a GET call for this?
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(elastic.NewMatchAllQuery()).
-		Sort("id", true).
-		Do()
+	searchResult, err := db.es.SearchByMatchAll(db.index)
 	if err != nil {
 		return nil, err
 	}
