@@ -126,6 +126,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			c.Error(err)
 			return
 		}
+
 		err = eventDB.Write(event)
 		if err != nil {
 			c.Error(err)
@@ -145,6 +146,20 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		c.IndentedJSON(http.StatusOK, m)
+	})
+
+	router.DELETE("/v1/events/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		ok, err := eventDB.DeleteByID(id)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+			return
+		}
+		if !ok {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, nil)
 	})
 
 	//---------------------------------
@@ -179,7 +194,6 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		}
 
 		c.IndentedJSON(http.StatusOK, m)
-		log.Printf("%#v", m)
 	})
 
 	router.GET("/v1/actions/:id", func(c *gin.Context) {
@@ -195,8 +209,21 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		log.Print("266622 ", s)
 		c.IndentedJSON(http.StatusOK, v)
+	})
+
+	router.DELETE("/v1/action/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		ok, err := actionDB.DeleteByID(id)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+			return
+		}
+		if !ok {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, nil)
 	})
 
 	//---------------------------------
@@ -224,7 +251,22 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		c.IndentedJSON(http.StatusOK, all)
+	})
 
+	router.POST("/v1/alerts", func(c *gin.Context) {
+		var alert client.Alert
+		err := c.BindJSON(&alert)
+		if err != nil {
+			c.Error(err)
+			log.Printf("ERROR: POST to /v1/alerts %v", err)
+			return
+		}
+		err = alertDB.Write(&alert)
+		if err != nil {
+			c.AbortWithError(499, err)
+			return
+		}
+		c.IndentedJSON(http.StatusCreated, gin.H{"id": alert.ID})
 	})
 
 	//---------------------------------

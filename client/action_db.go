@@ -17,7 +17,12 @@ func NewActionDB(es *piazza.ElasticSearchService, index string) (*ActionDB, erro
 	db.es = es
 	db.index = index
 
-	err := es.CreateIndex(index)
+	err := es.DeleteIndex(index)
+	if err != nil {
+		return nil, err
+	}
+
+	err = es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -75,4 +80,18 @@ func (db *ActionDB) GetByID(id Ident) (*Action, error) {
 		return nil, err
 	}
 	return &tmp, nil
+}
+
+func (db *ActionDB) DeleteByID(id string) (bool, error) {
+	res, err := db.es.DeleteById(db.index, "action", id)
+	if err != nil {
+		return false, err
+	}
+
+	err = db.es.FlushIndex(db.index)
+	if err != nil {
+		return false, err
+	}
+
+	return res.Found, nil
 }

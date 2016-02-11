@@ -36,8 +36,24 @@ func (*MockAlerterService) GetFromEvents() (*EventList, error) {
 	return nil, nil
 }
 
+func (*MockAlerterService) DeleteOfEvent(id Ident) error {
+	return nil
+}
+
 func (*MockAlerterService) GetFromAlerts() (*AlertList, error) {
 	return nil, nil
+}
+
+func (*MockAlerterService) GetFromAlert(id Ident) (*Alert, error) {
+	return nil, nil
+}
+
+func (*MockAlerterService) PostToAlerts(*Alert) (*AlerterIdResponse, error) {
+	return nil, nil
+}
+
+func (*MockAlerterService) DeleteOfAlert(id Ident) error {
+	return nil
 }
 
 func (*MockAlerterService) PostToConditions(*Condition) (*AlerterIdResponse, error) {

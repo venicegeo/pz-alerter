@@ -13,7 +13,12 @@ type EventDB struct {
 func NewEventDB(es *piazza.ElasticSearchService, index string) (*EventDB, error) {
 	db := &EventDB{es: es, index: index}
 
-	err := es.CreateIndex(index)
+	err := es.DeleteIndex(index)
+	if err != nil {
+		return nil, err
+	}
+
+	err = es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -56,4 +61,18 @@ func (db *EventDB) GetAll() (*EventList, error) {
 	}
 
 	return &m, nil
+}
+
+func (db *EventDB) DeleteByID(id string) (bool, error) {
+	res, err := db.es.DeleteById(db.index, "event", id)
+	if err != nil {
+		return false, err
+	}
+
+	err = db.es.FlushIndex(db.index)
+	if err != nil {
+		return false, err
+	}
+
+	return res.Found, nil
 }

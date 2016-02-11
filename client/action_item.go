@@ -9,13 +9,13 @@ import (
 
 var actionID = 1
 
-var alertIdLock sync.Mutex
+var actionIdLock sync.Mutex
 
 func NewActionIdent() Ident {
-	alertIdLock.Lock()
+	actionIdLock.Lock()
 	id := NewIdentFromInt(actionID)
 	actionID++
-	alertIdLock.Unlock()
+	actionIdLock.Unlock()
 	s := "X" + id.String()
 	return Ident(s)
 }

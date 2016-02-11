@@ -2,8 +2,7 @@ package client
 
 import (
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v2"
-	piazza "github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon"
 	"log"
 )
 
@@ -19,7 +18,12 @@ func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error)
 	db.es = es
 	db.index = index
 
-	err := es.CreateIndex(index)
+	err := es.DeleteIndex(index)
+	if err != nil {
+		return nil, err
+	}
+
+	err = es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}
@@ -28,12 +32,7 @@ func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error)
 
 func (db *AlertDB) Write(alert *Alert) error {
 
-	_, err := db.es.Client.Index().
-		Index(db.index).
-		Type("alert").
-		Id(alert.ID.String()).
-		BodyJson(alert).
-		Do()
+	_, err := db.es.PostData(db.index, "alert", alert.ID.String(), alert)
 	if err != nil {
 		return err
 	}
@@ -47,12 +46,7 @@ func (db *AlertDB) Write(alert *Alert) error {
 }
 
 func (db *AlertDB) GetByConditionID(conditionID string) ([]Alert, error) {
-	termQuery := elastic.NewTermQuery("condition_id", conditionID)
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).  // search in index "twitter"
-		Query(termQuery). // specify the query
-		Sort("id", true).
-		Do() // execute
+	searchResult, err := db.es.SearchByTermQuery(db.index, "condition_id", conditionID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,11 +68,7 @@ func (db *AlertDB) GetByConditionID(conditionID string) ([]Alert, error) {
 }
 
 func (db *AlertDB) GetAll() (map[Ident]Alert, error) {
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(elastic.NewMatchAllQuery()).
-		Sort("id", true).
-		Do()
+	searchResult, err := db.es.SearchByMatchAll(db.index)
 	if err != nil {
 		return nil, err
 	}
@@ -107,11 +97,26 @@ func (db *AlertDB) CheckConditions(e Event, conditionDB *ConditionDB) error {
 	for _, cond := range all {
 		//log.Printf("e%s.%s ==? c%s.%s", e.ID, e.Type, cond.ID, cond.Type)
 		if cond.Type == e.Type {
-			a := NewAlert(Ident("SomeActionID"))
+			a := NewAlert(NewAlertIdent())
 			db.Write(&a)
 			//pzService.Log(piazza.SeverityInfo, fmt.Sprintf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID))
 			log.Printf("INFO: Hit! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID)
 		}
 	}
 	return nil
+}
+
+
+func (db *AlertDB) DeleteByID(id string) (bool, error) {
+	res, err := db.es.DeleteById(db.index, "alert", id)
+	if err != nil {
+		return false, err
+	}
+
+	err = db.es.FlushIndex(db.index)
+	if err != nil {
+		return false, err
+	}
+
+	return res.Found, nil
 }

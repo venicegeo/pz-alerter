@@ -47,6 +47,7 @@ func (c PzAlerterService) GetAddress() string {
 }
 
 func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error) {
+
 	body, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
@@ -56,6 +57,7 @@ func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error
 	if err != nil {
 		return nil, err
 	}
+
 	if resp.StatusCode != http.StatusCreated {
 		return nil, errors.New(resp.Status)
 	}
@@ -91,12 +93,25 @@ func (c *PzAlerterService) GetFromEvents() (*EventList, error) {
 	defer resp.Body.Close()
 
 	var x EventList
-	err = json.Unmarshal(d, &x)
-	if err != nil {
-		return nil, err
+	if len(d) > 0 {
+		err = json.Unmarshal(d, &x)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &x, nil
+}
+
+func (c *PzAlerterService) DeleteOfEvent(id Ident) error {
+	resp, err := piazza.HTTPDelete(c.url + "/events/" + id.String())
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+	return nil
 }
 
 func (c *PzAlerterService) GetFromAlerts() (*AlertList, error) {
@@ -115,12 +130,84 @@ func (c *PzAlerterService) GetFromAlerts() (*AlertList, error) {
 	defer resp.Body.Close()
 
 	var x AlertList
+	if len(d) > 0 {
+		err = json.Unmarshal(d, &x)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &x, nil
+}
+
+func (c *PzAlerterService) PostToAlerts(event *Alert) (*AlerterIdResponse, error) {
+
+	body, err := json.Marshal(event)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := http.Post(c.url+"/alerts", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return nil, errors.New(resp.Status)
+	}
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	result := new(AlerterIdResponse)
+	err = json.Unmarshal(data, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (c *PzAlerterService) GetFromAlert(id Ident) (*Alert, error) {
+	resp, err := http.Get(c.url + "/alerts/" + id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, errors.New(resp.Status)
+	}
+
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var x Alert
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
 	}
 
+	if id != x.ID {
+		return nil, errors.New("internal error, alert ID mismatch")
+	}
+
 	return &x, nil
+}
+
+func (c *PzAlerterService) DeleteOfAlert(id Ident) error {
+	resp, err := piazza.HTTPDelete(c.url + "/alerts/" + id.String())
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+	return nil
 }
 
 func (c *PzAlerterService) PostToConditions(cond *Condition) (*AlerterIdResponse, error) {
@@ -168,9 +255,11 @@ func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
 	defer resp.Body.Close()
 
 	var x ConditionList
-	err = json.Unmarshal(d, &x)
-	if err != nil {
-		return nil, err
+	if len(d) > 0 {
+		err = json.Unmarshal(d, &x)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return &x, nil

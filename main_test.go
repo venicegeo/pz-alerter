@@ -60,11 +60,33 @@ func (suite *AlerterTester) SetupSuite() {
 	suite.sys = sys
 
 	assert.Len(sys.Services, 5)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TearDownSuite() {
 	//TODO: kill the go routine running the server
 }
+
+func (suite *AlerterTester) assertNoData() {
+	t := suite.T()
+
+	var err error
+
+	cs, err := suite.alerter.GetFromConditions()
+	assert.NoError(t, err)
+	assert.Len(t, *cs, 0)
+
+	es, err := suite.alerter.GetFromEvents()
+	assert.NoError(t, err)
+	assert.Len(t, *es, 0)
+
+	as, err := suite.alerter.GetFromAlerts()
+	assert.NoError(t, err)
+	assert.Len(t, *as, 0)
+}
+
+
 
 func TestRunSuite(t *testing.T) {
 	s := new(AlerterTester)
@@ -73,9 +95,72 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
+func (suite *AlerterTester) TestAlerts() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.assertNoData()
+
+	alerter := suite.alerter
+
+	var err error
+	var idResponse *client.AlerterIdResponse
+
+	var a1 client.Alert
+	a1.Action = "this is action 1"
+	idResponse, err = alerter.PostToAlerts(&a1)
+	assert.NoError(err)
+	a1ID := idResponse.ID
+	assert.EqualValues("A1", a1ID)
+
+	var a2 client.Alert
+	a2.Action = "this is action 2"
+	idResponse, err = alerter.PostToAlerts(&a2)
+	assert.NoError(err)
+	a2ID := idResponse.ID
+	assert.EqualValues("A2", a2ID)
+
+	as, err := alerter.GetFromAlerts()
+	assert.NoError(err)
+	assert.Len(*as, 2)
+	ok1 := false
+	ok2 := false
+	for k := range *as {
+		if k == "A1" {
+			ok1 = true
+		}
+		if k == "A2" {
+			ok2 = true
+		}
+	}
+
+	assert.True(ok1 && ok2)
+	cond, err := alerter.GetFromAlert("A1")
+	assert.NoError(err)
+	assert.NotNil(cond)
+
+	err = alerter.DeleteOfAlert("A1")
+	assert.NoError(err)
+
+	cond, err = alerter.GetFromAlert("A1")
+	assert.Error(err)
+	assert.Nil(cond)
+
+	err = alerter.DeleteOfAlert("A2")
+	assert.NoError(err)
+
+	as, err = alerter.GetFromAlerts()
+	assert.NoError(err)
+	assert.Len(*as, 0)
+
+	suite.assertNoData()
+}
+
 func (suite *AlerterTester) TestConditions() {
 	t := suite.T()
 	assert := assert.New(t)
+
+	suite.assertNoData()
 
 	alerter := suite.alerter
 
@@ -132,11 +217,15 @@ func (suite *AlerterTester) TestConditions() {
 	cs, err = alerter.GetFromConditions()
 	assert.NoError(err)
 	assert.Len(*cs, 0)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestActions() {
 	t := suite.T()
 	assert := assert.New(t)
+
+	suite.assertNoData()
 
 	alerter := suite.alerter
 
@@ -179,6 +268,8 @@ func (suite *AlerterTester) TestActions() {
 	cond, err := alerter.GetFromAction("X1")
 	assert.NoError(err)
 	assert.NotNil(cond)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestEvents() {
@@ -186,6 +277,7 @@ func (suite *AlerterTester) TestEvents() {
 	assert := assert.New(t)
 
 	alerter := suite.alerter
+	suite.assertNoData()
 
 	var err error
 	var idResponse *client.AlerterIdResponse
@@ -222,6 +314,13 @@ func (suite *AlerterTester) TestEvents() {
 		}
 	}
 	assert.True(ok1 && ok2)
+
+	err = alerter.DeleteOfEvent("E1")
+	assert.NoError(err)
+	err = alerter.DeleteOfEvent("E2")
+	assert.NoError(err)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestTriggering() {
@@ -230,12 +329,14 @@ func (suite *AlerterTester) TestTriggering() {
 
 	alerter := suite.alerter
 
+	suite.assertNoData()
+
 	var err error
 	var idResponse *client.AlerterIdResponse
 
 	cs, err := alerter.GetFromConditions()
 	assert.NoError(err)
-	assert.Len(*cs, 0)
+	assert.Len(*cs, 10)
 
 	var rawC3 client.Condition
 	rawC3.Title = "cond1 title"
@@ -312,6 +413,8 @@ func (suite *AlerterTester) TestTriggering() {
 	alerter.DeleteOfCondition("C3")
 	alerter.DeleteOfCondition("C4")
 	alerter.DeleteOfCondition("C5")
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestAdmin() {

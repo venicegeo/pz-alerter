@@ -15,7 +15,12 @@ func NewConditionDB(es *piazza.ElasticSearchService, index string) (*ConditionDB
 	db.es = es
 	db.index = index
 
-	err := es.CreateIndex(index)
+	err := es.DeleteIndex(index)
+	if err != nil {
+		return nil, err
+	}
+
+	err = es.CreateIndex(index)
 	if err != nil {
 		return nil, err
 	}

@@ -13,11 +13,18 @@ type IAlerterService interface {
 	// low-level interfaces
 	PostToEvents(*Event) (*AlerterIdResponse, error)
 	GetFromEvents() (*EventList, error)
+	DeleteOfEvent(id Ident) error
+
 	GetFromAlerts() (*AlertList, error)
+	GetFromAlert(id Ident) (*Alert, error)
+	PostToAlerts(*Alert) (*AlerterIdResponse, error)
+	DeleteOfAlert(id Ident) error
+
 	PostToConditions(*Condition) (*AlerterIdResponse, error)
 	GetFromConditions() (*ConditionList, error)
 	GetFromCondition(id Ident) (*Condition, error)
 	DeleteOfCondition(id Ident) error
+
 	PostToActions(*Action) (*AlerterIdResponse, error)
 	GetFromActions() (*ActionList, error)
 	GetFromAction(id Ident) (*Action, error)
