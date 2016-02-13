@@ -20,7 +20,6 @@ func NewActionIdent() Ident {
 	return Ident(s)
 }
 
-// newAlert makes an Alert, setting the ID for you.
 func NewAction(conditions []Ident, events []Ident, job string) Action {
 
 	id := NewActionIdent()

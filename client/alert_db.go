@@ -3,7 +3,6 @@ package client
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
-	"log"
 )
 
 //---------------------------------------------------------------------------
@@ -12,6 +11,7 @@ type AlertDB struct {
 	es *piazza.ElasticSearchService
 	index  string
 }
+
 
 func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error) {
 	db := new(AlertDB)
@@ -32,6 +32,10 @@ func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error)
 
 func (db *AlertDB) Write(alert *Alert) error {
 
+	if alert.ID == NoIdent {
+		alert.ID = NewAlertIdent()
+	}
+
 	_, err := db.es.PostData(db.index, "alert", alert.ID.String(), alert)
 	if err != nil {
 		return err
@@ -43,6 +47,26 @@ func (db *AlertDB) Write(alert *Alert) error {
 	}
 
 	return nil
+}
+
+func (db *AlertDB) GetByID(id Ident) (*Alert, error) {
+
+	getResult, err := db.es.GetById(db.index, id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if !getResult.Found {
+		return nil, nil
+	}
+
+	var tmp Alert
+	src := getResult.Source
+	err = json.Unmarshal(*src, &tmp)
+	if err != nil {
+		return nil, err
+	}
+	return &tmp, nil
 }
 
 func (db *AlertDB) GetByConditionID(conditionID string) ([]Alert, error) {
@@ -87,23 +111,6 @@ func (db *AlertDB) GetAll() (map[Ident]Alert, error) {
 	}
 
 	return m, nil
-}
-
-func (db *AlertDB) CheckConditions(e Event, conditionDB *ConditionDB) error {
-	all, err := conditionDB.GetAll()
-	if err != nil {
-		return nil
-	}
-	for _, cond := range all {
-		//log.Printf("e%s.%s ==? c%s.%s", e.ID, e.Type, cond.ID, cond.Type)
-		if cond.Type == e.Type {
-			a := NewAlert(NewAlertIdent())
-			db.Write(&a)
-			//pzService.Log(piazza.SeverityInfo, fmt.Sprintf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID))
-			log.Printf("INFO: Hit! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID)
-		}
-	}
-	return nil
 }
 
 

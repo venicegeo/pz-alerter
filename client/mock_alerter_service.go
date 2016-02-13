@@ -84,6 +84,10 @@ func (*MockAlerterService) GetFromAction(id Ident) (*Action, error) {
 	return nil, nil
 }
 
+func (*MockAlerterService) DeleteOfAction(id Ident) error {
+	return nil
+}
+
 func (*MockAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
 	return &AlerterAdminStats{}, nil
 }

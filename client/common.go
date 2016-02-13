@@ -4,6 +4,7 @@ import (
 	piazza "github.com/venicegeo/pz-gocommon"
 	"time"
 	"strconv"
+	"sort"
 )
 
 type IAlerterService interface {
@@ -28,6 +29,7 @@ type IAlerterService interface {
 	PostToActions(*Action) (*AlerterIdResponse, error)
 	GetFromActions() (*ActionList, error)
 	GetFromAction(id Ident) (*Action, error)
+	DeleteOfAction(id Ident) error
 
 	GetFromAdminStats() (*AlerterAdminStats, error)
 	GetFromAdminSettings() (*AlerterAdminSettings, error)
@@ -39,6 +41,8 @@ type AlerterIdResponse struct {
 }
 
 type Ident string
+
+const NoIdent Ident = ""
 
 func (id Ident) String() string {
 	return string(id)
@@ -59,6 +63,8 @@ const (
 	EventUSDataFound  EventType = "USDataFound"
 	EventFoo          EventType = "Foo"
 	EventBar          EventType = "Bar"
+	EventBaz          EventType = "Baz"
+	EventBuz          EventType = "Buz"
 )
 
 /////////////////
@@ -89,6 +95,7 @@ type Action struct {
 
 type ActionList map[Ident]Action
 
+
 /////////////////
 
 // posted by some source (service, user, etc) to indicate Something Happened
@@ -107,11 +114,28 @@ type EventList map[Ident]Event
 
 // a notification, automatically created when an Action happens
 type Alert struct {
-	ID     Ident `json:"id"`
-	Action Ident `json:"action_id"`
+	ID       Ident `json:"id"`
+	ActionId Ident `json:"action_id"`
+	EventId  Ident `json:"event_id"`
 }
 
 type AlertList map[Ident]Alert
+
+type AlertListById []Alert
+func (a AlertListById) Len() int           { return len(a) }
+func (a AlertListById) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a AlertListById) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
+func (list *AlertList) ToSortedArray() []Alert {
+	array := make([]Alert, len(*list))
+	i := 0
+	for _,v := range(*list) {
+		array[i] = v
+		i++
+	}
+	sort.Sort(AlertListById(array))
+	return array
+}
 
 //////////////
 

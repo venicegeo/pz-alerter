@@ -25,6 +25,6 @@ func NewAlert(actionID Ident) Alert {
 
 	return Alert{
 		ID:          Ident(s),
-		Action: actionID,
+		ActionId: actionID,
 	}
 }

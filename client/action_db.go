@@ -3,6 +3,7 @@ package client
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
+	"log"
 )
 
 //---------------------------------------------------------------------------
@@ -94,4 +95,35 @@ func (db *ActionDB) DeleteByID(id string) (bool, error) {
 	}
 
 	return res.Found, nil
+}
+
+func (db *ActionDB) CheckActions(event Event, conditionDB *ConditionDB, alertDB *AlertDB) error {
+	actions, err := db.GetAll()
+	if err != nil {
+		return nil
+	}
+
+	for _, action := range actions {
+		//log.Printf("e%s.%s ==? c%s.%s", e.ID, e.Type, cond.ID, cond.Type)
+		match := true
+		for _, condId := range(action.Conditions) {
+			cond, err := conditionDB.ReadByID(condId)
+			if err != nil {
+				return nil
+			}
+
+			if cond.Type != event.Type {
+				match = false
+				break
+			}
+		}
+		if match {
+			alert := NewAlert(NewAlertIdent())
+			alert.ActionId = action.ID
+			alert.EventId = event.ID
+			alertDB.Write(&alert)
+			log.Printf("INFO: Hit! event %s has triggered action %s, causing alert %s", event.ID, action.ID, alert.ID)
+		}
+	}
+	return nil
 }

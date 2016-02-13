@@ -172,6 +172,7 @@ func (c *PzAlerterService) PostToAlerts(event *Alert) (*AlerterIdResponse, error
 }
 
 func (c *PzAlerterService) GetFromAlert(id Ident) (*Alert, error) {
+
 	resp, err := http.Get(c.url + "/alerts/" + id.String())
 	if err != nil {
 		return nil, err
@@ -384,6 +385,17 @@ func (c *PzAlerterService) GetFromAction(id Ident) (*Action, error) {
 	}
 
 	return &x, nil
+}
+
+func (c *PzAlerterService) DeleteOfAction(id Ident) error {
+	resp, err := piazza.HTTPDelete(c.url + "/actions/" + id.String())
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		return errors.New(resp.Status)
+	}
+	return nil
 }
 
 func (c *PzAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {

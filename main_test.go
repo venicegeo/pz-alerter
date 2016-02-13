@@ -84,6 +84,10 @@ func (suite *AlerterTester) assertNoData() {
 	as, err := suite.alerter.GetFromAlerts()
 	assert.NoError(t, err)
 	assert.Len(t, *as, 0)
+
+	xs, err := suite.alerter.GetFromActions()
+	assert.NoError(t, err)
+	assert.Len(t, *xs, 0)
 }
 
 
@@ -107,14 +111,14 @@ func (suite *AlerterTester) TestAlerts() {
 	var idResponse *client.AlerterIdResponse
 
 	var a1 client.Alert
-	a1.Action = "this is action 1"
+	a1.ActionId = "this is action 1"
 	idResponse, err = alerter.PostToAlerts(&a1)
 	assert.NoError(err)
 	a1ID := idResponse.ID
 	assert.EqualValues("A1", a1ID)
 
 	var a2 client.Alert
-	a2.Action = "this is action 2"
+	a2.ActionId = "this is action 2"
 	idResponse, err = alerter.PostToAlerts(&a2)
 	assert.NoError(err)
 	a2ID := idResponse.ID
@@ -135,16 +139,16 @@ func (suite *AlerterTester) TestAlerts() {
 	}
 
 	assert.True(ok1 && ok2)
-	cond, err := alerter.GetFromAlert("A1")
+	alert, err := alerter.GetFromAlert("A1")
 	assert.NoError(err)
-	assert.NotNil(cond)
+	assert.NotNil(alert)
 
 	err = alerter.DeleteOfAlert("A1")
 	assert.NoError(err)
 
-	cond, err = alerter.GetFromAlert("A1")
+	alert, err = alerter.GetFromAlert("A1")
 	assert.Error(err)
-	assert.Nil(cond)
+	assert.Nil(alert)
 
 	err = alerter.DeleteOfAlert("A2")
 	assert.NoError(err)
@@ -265,9 +269,14 @@ func (suite *AlerterTester) TestActions() {
 	}
 	assert.True(ok1 && ok2)
 
-	cond, err := alerter.GetFromAction("X1")
+	tmp, err := alerter.GetFromAction("X1")
 	assert.NoError(err)
-	assert.NotNil(cond)
+	assert.NotNil(tmp)
+
+	err = alerter.DeleteOfAction("X1")
+	assert.NoError(err)
+	err = alerter.DeleteOfAction("X2")
+	assert.NoError(err)
 
 	suite.assertNoData()
 }
@@ -324,6 +333,7 @@ func (suite *AlerterTester) TestEvents() {
 }
 
 func (suite *AlerterTester) TestTriggering() {
+
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -334,85 +344,113 @@ func (suite *AlerterTester) TestTriggering() {
 	var err error
 	var idResponse *client.AlerterIdResponse
 
+	////////////////
+	var c1 client.Condition
+	c1.Title = "c1 title"
+	c1.Type = client.EventFoo
+	c1.Query = "c1 query"
+	idResponse, err = alerter.PostToConditions(&c1)
+	assert.NoError(err)
+	c1Id := idResponse.ID
+
+	var c2 client.Condition
+	c2.Title = "c2 title"
+	c2.Type = client.EventBar
+	c2.Query = "c2 query"
+	idResponse, err = alerter.PostToConditions(&c2)
+	assert.NoError(err)
+	c2Id := idResponse.ID
+
+	var c3 client.Condition
+	c3.Title = "c3 title"
+	c3.Type = client.EventBaz
+	c3.Query = "c3 query"
+	idResponse, err = alerter.PostToConditions(&c3)
+	assert.NoError(err)
+	c3Id := idResponse.ID
+
 	cs, err := alerter.GetFromConditions()
-	assert.NoError(err)
-	assert.Len(*cs, 10)
-
-	var rawC3 client.Condition
-	rawC3.Title = "cond1 title"
-	rawC3.Type = client.EventDataIngested
-	rawC3.Query = "c3 query"
-	idResponse, err = alerter.PostToConditions(&rawC3)
-	assert.NoError(err)
-	c3ID := idResponse.ID
-	assert.EqualValues("C3", c3ID)
-
-	var rawC4 client.Condition
-	rawC4.Title = "cond2 title"
-	rawC4.Type = client.EventDataAccessed
-	rawC4.Query = "c4 query"
-	idResponse, err = alerter.PostToConditions(&rawC4)
-	assert.NoError(err)
-	c4ID := idResponse.ID
-	assert.EqualValues("C4", c4ID)
-
-	var rawC5 client.Condition
-	rawC5.Title = "cond2 title"
-	rawC5.Type = client.EventFoo
-	rawC5.Query = "c5 query"
-	idResponse, err = alerter.PostToConditions(&rawC5)
-	assert.NoError(err)
-	c5ID := idResponse.ID
-	assert.EqualValues("C5", c5ID)
-
-	cs, err = alerter.GetFromConditions()
 	assert.NoError(err)
 	assert.Len(*cs, 3)
 
+	//////////////////////////
+	var x1 client.Action
+	x1.Conditions = []client.Ident{c2Id}
+	x1.Job = "action 1 job"
+	idResponse, err = alerter.PostToActions(&x1)
+	assert.NoError(err)
+	x1Id := idResponse.ID
+
+	var x2 client.Action
+	x2.Conditions = []client.Ident{c1Id}
+	x2.Job = "action 2 job"
+	idResponse, err = alerter.PostToActions(&x2)
+	assert.NoError(err)
+	x2Id := idResponse.ID
+
+	var x3 client.Action
+	x3.Conditions = []client.Ident{c3Id}
+	x3.Job = "action 3 job"
+	idResponse, err = alerter.PostToActions(&x3)
+	assert.NoError(err)
+	x3Id := idResponse.ID
+
+	/////////////////////
+
+	// will cause action X2
+	var e1 client.Event
+	e1.Type = client.EventFoo
+	e1.Date = time.Now()
+	e1.Data = map[string]string{"file": "e1.tif"}
+	idResponse, err = alerter.PostToEvents(&e1)
+	assert.NoError(err)
+	e1Id := idResponse.ID
+
+	// will cause action X1
+	var e2 client.Event
+	e2.Type = client.EventBar
+	e2.Date = time.Now()
+	e2.Data = map[string]string{"file": "e2.tif"}
+	idResponse, err = alerter.PostToEvents(&e2)
+	assert.NoError(err)
+	e2Id := idResponse.ID
+
+	// will cause no actions
 	var e3 client.Event
-	e3.Type = client.EventDataAccessed
+	e3.Type = client.EventBuz
 	e3.Date = time.Now()
-	e3.Data = map[string]string{"file": "111.tif"}
 	idResponse, err = alerter.PostToEvents(&e3)
 	assert.NoError(err)
-	e3ID := idResponse.ID
-	assert.EqualValues("E3", e3ID)
+	e3Id := idResponse.ID
 
-	var e4 client.Event
-	e4.Type = client.EventDataIngested
-	e4.Date = time.Now()
-	e4.Data = map[string]string{"file": "111.tif"}
-	idResponse, err = alerter.PostToEvents(&e4)
-	assert.NoError(err)
-	e4ID := idResponse.ID
-	assert.EqualValues("E4", e4ID)
-
-	var e5 client.Event
-	e5.Type = client.EventBar
-	e5.Date = time.Now()
-	idResponse, err = alerter.PostToEvents(&e5)
-	assert.NoError(err)
-	e5ID := idResponse.ID
-	assert.EqualValues("E5", e5ID)
+	////////////////////////////////////
 
 	as, err := alerter.GetFromAlerts()
 	assert.NoError(err)
 	assert.Len(*as, 2)
 
-	// TODO: dependent on order of returned results
-	v1, ok := (*as)["A1"]
-	assert.True(ok)
-	v2, ok := (*as)["A2"]
-	assert.True(ok)
+	alerts := as.ToSortedArray()
+	assert.Len(alerts, 2)
 
-	assert.EqualValues(client.Ident("A1"), v1.ID)
-	assert.EqualValues(client.Ident("X4"), v1.Action)
-	assert.EqualValues(client.Ident("A2"), v2.ID)
-	assert.EqualValues(client.Ident("X4"), v2.Action)
+	t1 := (alerts[0].ActionId == x1Id)
+	t2 := (alerts[1].ActionId == x2Id)
+	t3 := (alerts[0].ActionId == x2Id)
+	t4 := (alerts[1].ActionId == x1Id)
+	assert.True((t1 && t2) || (t3 && t4))
 
-	alerter.DeleteOfCondition("C3")
-	alerter.DeleteOfCondition("C4")
-	alerter.DeleteOfCondition("C5")
+	//////////////
+
+	alerter.DeleteOfCondition(c1Id)
+	alerter.DeleteOfCondition(c2Id)
+	alerter.DeleteOfCondition(c3Id)
+	alerter.DeleteOfAction(x1Id)
+	alerter.DeleteOfAction(x2Id)
+	alerter.DeleteOfAction(x3Id)
+	alerter.DeleteOfEvent(e1Id)
+	alerter.DeleteOfEvent(e2Id)
+	alerter.DeleteOfEvent(e3Id)
+	alerter.DeleteOfAlert(alerts[0].ID)
+	alerter.DeleteOfAlert(alerts[1].ID)
 
 	suite.assertNoData()
 }

@@ -136,7 +136,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		a := client.AlerterIdResponse{ID: event.ID}
 		c.IndentedJSON(http.StatusCreated, a)
 
-		alertDB.CheckConditions(*event, conditionDB)
+		actionDB.CheckActions(*event, conditionDB, alertDB)
 	})
 
 	router.GET("/v1/events", func(c *gin.Context) {
@@ -212,7 +212,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, v)
 	})
 
-	router.DELETE("/v1/action/:id", func(c *gin.Context) {
+	router.DELETE("/v1/actions/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		ok, err := actionDB.DeleteByID(id)
 		if err != nil {
@@ -253,6 +253,22 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, all)
 	})
 
+	router.GET("/v1/alerts/:id", func(c *gin.Context) {
+		s := c.Param("id")
+
+		id := client.Ident(s)
+		v, err := alertDB.GetByID(id)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		if v == nil {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, v)
+	})
+
 	router.POST("/v1/alerts", func(c *gin.Context) {
 		var alert client.Alert
 		err := c.BindJSON(&alert)
@@ -267,6 +283,20 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		c.IndentedJSON(http.StatusCreated, gin.H{"id": alert.ID})
+	})
+
+	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		ok, err := alertDB.DeleteByID(id)
+		if err != nil {
+			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+			return
+		}
+		if !ok {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, nil)
 	})
 
 	//---------------------------------
