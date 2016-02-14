@@ -13,21 +13,21 @@ type IAlerterService interface {
 
 	// low-level interfaces
 	PostToEvents(*Event) (*AlerterIdResponse, error)
-	GetFromEvents() (*EventList, error)
+	GetFromEvents() (*[]Event, error)
 	DeleteOfEvent(id Ident) error
 
-	GetFromAlerts() (*AlertList, error)
+	GetFromAlerts() (*[]Alert, error)
 	GetFromAlert(id Ident) (*Alert, error)
 	PostToAlerts(*Alert) (*AlerterIdResponse, error)
 	DeleteOfAlert(id Ident) error
 
 	PostToConditions(*Condition) (*AlerterIdResponse, error)
-	GetFromConditions() (*ConditionList, error)
+	GetFromConditions() (*[]Condition, error)
 	GetFromCondition(id Ident) (*Condition, error)
 	DeleteOfCondition(id Ident) error
 
 	PostToActions(*Action) (*AlerterIdResponse, error)
-	GetFromActions() (*ActionList, error)
+	GetFromActions() (*[]Action, error)
 	GetFromAction(id Ident) (*Action, error)
 	DeleteOfAction(id Ident) error
 
@@ -119,17 +119,17 @@ type Alert struct {
 	EventId  Ident `json:"event_id"`
 }
 
-type AlertList map[Ident]Alert
+type AlertList []Alert
 
 type AlertListById []Alert
 func (a AlertListById) Len() int           { return len(a) }
 func (a AlertListById) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a AlertListById) Less(i, j int) bool { return a[i].ID < a[j].ID }
 
-func (list *AlertList) ToSortedArray() []Alert {
-	array := make([]Alert, len(*list))
+func (list AlertList) ToSortedArray() []Alert {
+	array := make([]Alert, len(list))
 	i := 0
-	for _,v := range(*list) {
+	for _,v := range(list) {
 		array[i] = v
 		i++
 	}

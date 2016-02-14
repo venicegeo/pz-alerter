@@ -3,7 +3,7 @@ package server
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-alerter/client"
-	piazza "github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"log"
@@ -68,37 +68,38 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	es := sys.ElasticSearchService
 
-	conditionDB, err := client.NewConditionDB(es, "conditions")
+	conditionRDB, err := client.NewResourceDB(es, "rconditions", "Conditions")
 	if err != nil {
 		return nil, err
 	}
-	eventDB, err := client.NewEventDB(es, "events")
+	alertRDB, err := client.NewAlertDB(es, "ralerts", "Alert")
 	if err != nil {
 		return nil, err
 	}
-	alertDB, err := client.NewAlertDB(es, "alerts")
+	actionRDB, err := client.NewActionRDB(es, "ractions", "Actions")
 	if err != nil {
 		return nil, err
 	}
-	actionDB, err := client.NewActionDB(es, "actions")
+
+	eventRDB, err := client.NewResourceDB(es, "revents", "Events")
 	if err != nil {
 		return nil, err
 	}
 
 
-	err = es.FlushIndex("conditions")
+	err = es.FlushIndex("rconditions")
 	if err != nil {
 		return nil,err
 	}
-	err = es.FlushIndex("events")
+	err = es.FlushIndex("revents")
 	if err != nil {
 		return nil,err
 	}
-	err = es.FlushIndex("alerts")
+	err = es.FlushIndex("ralerts")
 	if err != nil {
 		return nil,err
 	}
-	err = es.FlushIndex("actions")
+	err = es.FlushIndex("ractions")
 	if err != nil {
 		return nil,err
 	}
@@ -127,20 +128,21 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		err = eventDB.Write(event)
+		event.ID = client.NewEventID()
+		id, err := eventRDB.PostData(event, event.ID)
 		if err != nil {
 			c.Error(err)
 			return
 		}
 
-		a := client.AlerterIdResponse{ID: event.ID}
+		a := client.AlerterIdResponse{ID: id}
 		c.IndentedJSON(http.StatusCreated, a)
 
-		actionDB.CheckActions(*event, conditionDB, alertDB)
+		actionRDB.CheckActions(*event, conditionRDB, alertRDB)
 	})
 
 	router.GET("/v1/events", func(c *gin.Context) {
-		m, err := eventDB.GetAll()
+		m, err := eventRDB.GetAll()
 		if err != nil {
 			c.Error(err)
 			return
@@ -150,7 +152,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.DELETE("/v1/events/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := eventDB.DeleteByID(id)
+		ok, err := eventRDB.DeleteByID(id)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 			return
@@ -176,7 +178,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		action.ID = client.NewActionIdent()
 
-		err = actionDB.Write(action)
+		_, err = actionRDB.PostData(action, action.ID)
 		if err != nil {
 			c.Error(err)
 			return
@@ -187,7 +189,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	})
 
 	router.GET("/v1/actions", func(c *gin.Context) {
-		m, err := actionDB.GetAll()
+		m, err := actionRDB.GetAll()
 		if err != nil {
 			c.Error(err)
 			return
@@ -200,12 +202,13 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		s := c.Param("id")
 
 		id := client.Ident(s)
-		v, err := actionDB.GetByID(id)
+		var v client.Action
+		ok, err := actionRDB.GetById(id, &v)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		if v == nil {
+		if !ok {
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
@@ -214,7 +217,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.DELETE("/v1/actions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := actionDB.DeleteByID(id)
+		ok, err := actionRDB.DeleteByID(id)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 			return
@@ -232,7 +235,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		conditionID := c.Query("condition")
 		if conditionID != "" {
-			v, err := alertDB.GetByConditionID(conditionID)
+			v, err := alertRDB.GetByConditionID(conditionID)
 			if err != nil {
 				c.IndentedJSON(http.StatusInternalServerError, gin.H{"condition_id": conditionID})
 				return
@@ -245,7 +248,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		all, err := alertDB.GetAll()
+		all, err := alertRDB.GetAll()
 		if err != nil {
 			c.Error(err)
 			return
@@ -257,16 +260,17 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		s := c.Param("id")
 
 		id := client.Ident(s)
-		v, err := alertDB.GetByID(id)
+		var alert client.Alert
+		ok, err := alertRDB.GetById(id, &alert)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		if v == nil {
+		if !ok {
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, v)
+		c.IndentedJSON(http.StatusOK, alert)
 	})
 
 	router.POST("/v1/alerts", func(c *gin.Context) {
@@ -277,7 +281,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			log.Printf("ERROR: POST to /v1/alerts %v", err)
 			return
 		}
-		err = alertDB.Write(&alert)
+
+		alert.ID = client.NewAlertIdent()
+
+		_, err = alertRDB.PostData(&alert, alert.ID)
 		if err != nil {
 			c.AbortWithError(499, err)
 			return
@@ -287,7 +294,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := alertDB.DeleteByID(id)
+		ok, err := alertRDB.DeleteByID(id)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 			return
@@ -309,7 +316,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			log.Printf("ERROR: POST to /v1/conditions %v", err)
 			return
 		}
-		err = conditionDB.Write(&condition)
+
+		condition.ID = client.NewConditionIdent()
+
+		_, err = conditionRDB.PostData(&condition, condition.ID)
 		if err != nil {
 			c.AbortWithError(499, err)
 			return
@@ -333,7 +343,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	})*/
 
 	router.GET("/v1/conditions", func(c *gin.Context) {
-		all, err := conditionDB.GetAll()
+		all, err := conditionRDB.GetAll()
 		if err != nil {
 			c.Error(err)
 			return
@@ -343,21 +353,22 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.GET("/v1/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		v, err := conditionDB.ReadByID(client.Ident(id))
+		var condition client.Condition
+		ok, err := conditionRDB.GetById(client.Ident(id), &condition)
 		if err != nil {
 			c.Error(err)
 			return
 		}
-		if v == nil {
+		if !ok {
 			c.AbortWithError(http.StatusNotFound, fmt.Errorf("Condition %d not found", id))
 			return
 		}
-		c.IndentedJSON(http.StatusOK, v)
+		c.IndentedJSON(http.StatusOK, condition)
 	})
 
 	router.DELETE("/v1/conditions/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := conditionDB.DeleteByID(id)
+		ok, err := conditionRDB.DeleteByID(id)
 		if err != nil {
 			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
 			return

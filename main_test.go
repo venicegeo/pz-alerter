@@ -134,13 +134,15 @@ func (suite *AlerterTester) TestAAResource() {
 	}
 
 	var t2 client.Event
-	err = db.GetById(a2Id, &t2)
+	ok, err := db.GetById(a2Id, &t2)
 	assert.NoError(err)
+	assert.True(ok)
 	assert.EqualValues(a2.Type, t2.Type)
 
 	var t1 client.Event
-	err = db.GetById(a1Id, &t1)
+	ok, err = db.GetById(a1Id, &t1)
 	assert.NoError(err)
+	assert.True(ok)
 	assert.EqualValues(a1.Type, t1.Type)
 }
 
@@ -174,11 +176,11 @@ func (suite *AlerterTester) TestAlerts() {
 	assert.Len(*as, 2)
 	ok1 := false
 	ok2 := false
-	for k := range *as {
-		if k == "A1" {
+	for _, v := range *as {
+		if v.ID == "A1" {
 			ok1 = true
 		}
-		if k == "A2" {
+		if v.ID == "A2" {
 			ok2 = true
 		}
 	}
@@ -239,11 +241,11 @@ func (suite *AlerterTester) TestConditions() {
 	assert.Len(*cs, 2)
 	ok1 := false
 	ok2 := false
-	for k := range *cs {
-		if k == "C1" {
+	for _, v := range *cs {
+		if v.ID == "C1" {
 			ok1 = true
 		}
-		if k == "C2" {
+		if v.ID == "C2" {
 			ok2 = true
 		}
 	}
@@ -304,11 +306,11 @@ func (suite *AlerterTester) TestActions() {
 	assert.Len(*cs, 2)
 	ok1 := false
 	ok2 := false
-	for k := range *cs {
-		if k == "X1" {
+	for _, v := range *cs {
+		if v.ID == "X1" {
 			ok1 = true
 		}
-		if k == "X2" {
+		if v.ID == "X2" {
 			ok2 = true
 		}
 	}
@@ -359,11 +361,11 @@ func (suite *AlerterTester) TestEvents() {
 	assert.Len(*es, 2)
 	ok1 := false
 	ok2 := false
-	for k := range *es {
-		if k == "E1" {
+	for _, v := range *es {
+		if v.ID == "E1" {
 			ok1 = true
 		}
-		if k == "E2" {
+		if v.ID == "E2" {
 			ok2 = true
 		}
 	}
@@ -474,7 +476,9 @@ func (suite *AlerterTester) TestTriggering() {
 	assert.NoError(err)
 	assert.Len(*as, 2)
 
-	alerts := as.ToSortedArray()
+	var list client.AlertList
+	list = *as
+	alerts := list.ToSortedArray()
 	assert.Len(alerts, 2)
 
 	t1 := (alerts[0].ActionId == x1Id)

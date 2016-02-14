@@ -77,7 +77,7 @@ func (c *PzAlerterService) PostToEvents(event *Event) (*AlerterIdResponse, error
 	return result, nil
 }
 
-func (c *PzAlerterService) GetFromEvents() (*EventList, error) {
+func (c *PzAlerterService) GetFromEvents() (*[]Event, error) {
 	resp, err := http.Get(c.url + "/events")
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func (c *PzAlerterService) GetFromEvents() (*EventList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x EventList
+	var x []Event
 	if len(d) > 0 {
 		err = json.Unmarshal(d, &x)
 		if err != nil {
@@ -114,7 +114,7 @@ func (c *PzAlerterService) DeleteOfEvent(id Ident) error {
 	return nil
 }
 
-func (c *PzAlerterService) GetFromAlerts() (*AlertList, error) {
+func (c *PzAlerterService) GetFromAlerts() (*[]Alert, error) {
 	resp, err := http.Get(c.url + "/alerts")
 	if err != nil {
 		return nil, err
@@ -129,7 +129,7 @@ func (c *PzAlerterService) GetFromAlerts() (*AlertList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x AlertList
+	var x []Alert
 	if len(d) > 0 {
 		err = json.Unmarshal(d, &x)
 		if err != nil {
@@ -240,7 +240,7 @@ func (c *PzAlerterService) PostToConditions(cond *Condition) (*AlerterIdResponse
 	return result, nil
 }
 
-func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
+func (c *PzAlerterService) GetFromConditions() (*[]Condition, error) {
 	resp, err := http.Get(c.url + "/conditions")
 	if err != nil {
 		return nil, err
@@ -255,7 +255,7 @@ func (c *PzAlerterService) GetFromConditions() (*ConditionList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x ConditionList
+	var x []Condition
 	if len(d) > 0 {
 		err = json.Unmarshal(d, &x)
 		if err != nil {
@@ -334,7 +334,7 @@ func (c *PzAlerterService) PostToActions(action *Action) (*AlerterIdResponse, er
 	return result, nil
 }
 
-func (c *PzAlerterService) GetFromActions() (*ActionList, error) {
+func (c *PzAlerterService) GetFromActions() (*[]Action, error) {
 	resp, err := http.Get(c.url + "/actions")
 	if err != nil {
 		return nil, err
@@ -349,7 +349,7 @@ func (c *PzAlerterService) GetFromActions() (*ActionList, error) {
 	}
 	defer resp.Body.Close()
 
-	var x ActionList
+	var x []Action
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err

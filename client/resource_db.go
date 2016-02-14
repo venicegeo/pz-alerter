@@ -77,19 +77,23 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 	return raws, nil
 }
 
-func (db *ResourceDB) GetById(id Ident, obj interface{}) error {
+func (db *ResourceDB) GetById(id Ident, obj interface{}) (bool, error) {
 
 	getResult, err := db.es.GetById(db.index, id.String())
 	if err != nil {
-		return err
+		return false, err
+	}
+
+	if !getResult.Found {
+		return false, nil
 	}
 
 	src := getResult.Source
 	err = json.Unmarshal(*src, obj)
 	if err != nil {
-		return err
+		return true, err
 	}
-	return nil
+	return true, nil
 }
 
 func (db *ResourceDB) DeleteByID(id string) (bool, error) {
