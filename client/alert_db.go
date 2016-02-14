@@ -6,7 +6,6 @@ import (
 	"sync"
 )
 
-
 var alertIdLock sync.Mutex
 var alertID = 1
 
@@ -20,20 +19,19 @@ func NewAlertIdent() Ident {
 }
 
 // newAlert makes an Alert, setting the ID for you.
-func NewAlert(actionID Ident) Alert {
+func NewAlert(triggerId Ident) Alert {
 
 	id := NewIdentFromInt(alertID)
 	alertID++
 	s := "A" + string(id)
 
 	return Alert{
-		ID:          Ident(s),
-		ActionId: actionID,
+		ID:        Ident(s),
+		TriggerId: triggerId,
 	}
 }
 
 //---------------------------------------------------------------------------
-
 
 type AlertRDB struct {
 	*ResourceDB

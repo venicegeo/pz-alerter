@@ -56,35 +56,19 @@ func (*MockAlerterService) DeleteOfAlert(id Ident) error {
 	return nil
 }
 
-func (*MockAlerterService) PostToConditions(*Condition) (*AlerterIdResponse, error) {
+func (*MockAlerterService) PostToTriggers(*Trigger) (*AlerterIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromConditions() (*[]Condition, error) {
+func (*MockAlerterService) GetFromTriggers() (*[]Trigger, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromCondition(id Ident) (*Condition, error) {
+func (*MockAlerterService) GetFromTrigger(id Ident) (*Trigger, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) DeleteOfCondition(id Ident) error {
-	return nil
-}
-
-func (*MockAlerterService) PostToActions(*Action) (*AlerterIdResponse, error) {
-	return nil, nil
-}
-
-func (*MockAlerterService) GetFromActions() (*[]Action, error) {
-	return nil, nil
-}
-
-func (*MockAlerterService) GetFromAction(id Ident) (*Action, error) {
-	return nil, nil
-}
-
-func (*MockAlerterService) DeleteOfAction(id Ident) error {
+func (*MockAlerterService) DeleteOfTrigger(id Ident) error {
 	return nil
 }
 

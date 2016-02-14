@@ -2,9 +2,9 @@ package client
 
 import (
 	piazza "github.com/venicegeo/pz-gocommon"
-	"time"
-	"strconv"
 	"sort"
+	"strconv"
+	"time"
 )
 
 type IAlerterService interface {
@@ -21,15 +21,10 @@ type IAlerterService interface {
 	PostToAlerts(*Alert) (*AlerterIdResponse, error)
 	DeleteOfAlert(id Ident) error
 
-	PostToConditions(*Condition) (*AlerterIdResponse, error)
-	GetFromConditions() (*[]Condition, error)
-	GetFromCondition(id Ident) (*Condition, error)
-	DeleteOfCondition(id Ident) error
-
-	PostToActions(*Action) (*AlerterIdResponse, error)
-	GetFromActions() (*[]Action, error)
-	GetFromAction(id Ident) (*Action, error)
-	DeleteOfAction(id Ident) error
+	PostToTriggers(*Trigger) (*AlerterIdResponse, error)
+	GetFromTriggers() (*[]Trigger, error)
+	GetFromTrigger(id Ident) (*Trigger, error)
+	DeleteOfTrigger(id Ident) error
 
 	GetFromAdminStats() (*AlerterAdminStats, error)
 	GetFromAdminSettings() (*AlerterAdminSettings, error)
@@ -72,13 +67,13 @@ const (
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	ID    Ident     `json:"id"`
-	Title string    `json:"title" binding:"required"`
 	Type  EventType `json:"type" binding:"required"`
 	Query string    `json:"query" binding:"required"`
 }
 
-type ConditionList map[Ident]Condition
+type Job struct {
+	Task string
+}
 
 /////////////////
 
@@ -86,15 +81,14 @@ type ConditionList map[Ident]Condition
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
 // TODO: some sort of mapping from the event info into the Job string
-type Action struct {
-	ID         Ident   `json:"id"`
-	Conditions []Ident `json:"conditions" binding:"required"`
-	Events     []Ident `json:"events"`
-	Job        string  `json:job`
+type Trigger struct {
+	ID        Ident     `json:"id"`
+	Title     string    `json:"title" binding:"required"`
+	Condition Condition `json:"conditions" binding:"required"`
+	Job       Job       `json:"job" binding:"required"`
 }
 
-type ActionList map[Ident]Action
-
+type TriggerList []Trigger
 
 /////////////////
 
@@ -108,20 +102,21 @@ type Event struct {
 	Data map[string]string `json:"data"`
 }
 
-type EventList map[Ident]Event
+type EventList []Event
 
 ////////////////
 
-// a notification, automatically created when an Action happens
+// a notification, automatically created when an Trigger happens
 type Alert struct {
-	ID       Ident `json:"id"`
-	ActionId Ident `json:"action_id"`
-	EventId  Ident `json:"event_id"`
+	ID        Ident `json:"id"`
+	TriggerId Ident `json:"trigger_id"`
+	EventId   Ident `json:"event_id"`
 }
 
 type AlertList []Alert
 
 type AlertListById []Alert
+
 func (a AlertListById) Len() int           { return len(a) }
 func (a AlertListById) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a AlertListById) Less(i, j int) bool { return a[i].ID < a[j].ID }
@@ -129,7 +124,7 @@ func (a AlertListById) Less(i, j int) bool { return a[i].ID < a[j].ID }
 func (list AlertList) ToSortedArray() []Alert {
 	array := make([]Alert, len(list))
 	i := 0
-	for _,v := range(list) {
+	for _, v := range list {
 		array[i] = v
 		i++
 	}
@@ -144,7 +139,7 @@ type AlerterAdminStats struct {
 	NumAlerts     int       `json:"num_alerts"`
 	NumConditions int       `json:"num_conditions"`
 	NumEvents     int       `json:"num_events"`
-	NumActions    int       `json:"num_actions"`
+	NumTriggers   int       `json:"num_triggers"`
 }
 
 type AlerterAdminSettings struct {

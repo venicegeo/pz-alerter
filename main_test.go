@@ -73,10 +73,6 @@ func (suite *AlerterTester) assertNoData() {
 
 	var err error
 
-	cs, err := suite.alerter.GetFromConditions()
-	assert.NoError(t, err)
-	assert.Len(t, *cs, 0)
-
 	es, err := suite.alerter.GetFromEvents()
 	assert.NoError(t, err)
 	assert.Len(t, *es, 0)
@@ -85,7 +81,7 @@ func (suite *AlerterTester) assertNoData() {
 	assert.NoError(t, err)
 	assert.Len(t, *as, 0)
 
-	xs, err := suite.alerter.GetFromActions()
+	xs, err := suite.alerter.GetFromTriggers()
 	assert.NoError(t, err)
 	assert.Len(t, *xs, 0)
 }
@@ -158,14 +154,14 @@ func (suite *AlerterTester) TestAlerts() {
 	var idResponse *client.AlerterIdResponse
 
 	var a1 client.Alert
-	a1.ActionId = "this is action 1"
+	a1.TriggerId = "this is trigger 1"
 	idResponse, err = alerter.PostToAlerts(&a1)
 	assert.NoError(err)
 	a1ID := idResponse.ID
 	assert.EqualValues("A1", a1ID)
 
 	var a2 client.Alert
-	a2.ActionId = "this is action 2"
+	a2.TriggerId = "this is trigger 2"
 	idResponse, err = alerter.PostToAlerts(&a2)
 	assert.NoError(err)
 	a2ID := idResponse.ID
@@ -207,7 +203,8 @@ func (suite *AlerterTester) TestAlerts() {
 	suite.assertNoData()
 }
 
-func (suite *AlerterTester) TestConditions() {
+
+func (suite *AlerterTester) TestTriggers() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -218,111 +215,56 @@ func (suite *AlerterTester) TestConditions() {
 	var err error
 	var idResponse *client.AlerterIdResponse
 
-	var c1 client.Condition
-	c1.Title = "c1"
-	c1.Type = "Foo"
-	c1.Query = "query string"
-	idResponse, err = alerter.PostToConditions(&c1)
+	x1 := client.Trigger{
+		Title: "the x1 trigger",
+		Condition: client.Condition{
+			Type: client.EventFoo,
+			Query: "the x1 condition query",
+		},
+		Job: client.Job{
+			Task: "the x1 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x1)
 	assert.NoError(err)
-	c1ID := idResponse.ID
-	assert.EqualValues("C1", c1ID)
+	x1Id := idResponse.ID
 
-	var c2 client.Condition
-	c2.Title = "c2"
-	c2.Type = "Bar"
-	c2.Query = "another query string"
-	idResponse, err = alerter.PostToConditions(&c2)
+	x2 := client.Trigger{
+		Title: "the x2 trigger",
+		Condition: client.Condition{
+			Type: client.EventBar,
+			Query: "the x2 condition query",
+		},
+		Job: client.Job{
+			Task: "the x2 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x2)
 	assert.NoError(err)
-	c2ID := idResponse.ID
-	assert.EqualValues("C2", c2ID)
+	x2Id := idResponse.ID
 
-	cs, err := alerter.GetFromConditions()
+	cs, err := alerter.GetFromTriggers()
 	assert.NoError(err)
 	assert.Len(*cs, 2)
 	ok1 := false
 	ok2 := false
 	for _, v := range *cs {
-		if v.ID == "C1" {
+		if v.ID == x1Id {
 			ok1 = true
 		}
-		if v.ID == "C2" {
-			ok2 = true
-		}
-	}
-
-	assert.True(ok1 && ok2)
-	cond, err := alerter.GetFromCondition("C1")
-	assert.NoError(err)
-	assert.NotNil(cond)
-
-	err = alerter.DeleteOfCondition("C1")
-	assert.NoError(err)
-
-	cond, err = alerter.GetFromCondition("C1")
-	assert.Error(err) // TODO: should be more refined error here
-	assert.Nil(cond)
-
-	err = alerter.DeleteOfCondition("C2")
-	assert.NoError(err)
-
-	cs, err = alerter.GetFromConditions()
-	assert.NoError(err)
-	assert.Len(*cs, 0)
-
-	suite.assertNoData()
-}
-
-func (suite *AlerterTester) TestActions() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	suite.assertNoData()
-
-	alerter := suite.alerter
-
-	var err error
-	var idResponse *client.AlerterIdResponse
-
-	var x1 client.Action
-	x1.Events = []client.Ident{client.Ident("e1"), client.Ident("e2")}
-	x1.Conditions = []client.Ident{client.Ident("c1"), client.Ident("c2")}
-	x1.Job = "job message 1"
-	idResponse, err = alerter.PostToActions(&x1)
-	assert.NoError(err)
-	c1ID := idResponse.ID
-	assert.EqualValues("X1", c1ID)
-
-	var x2 client.Action
-	x2.Events = []client.Ident{client.Ident("e3"), client.Ident("e4")}
-	x2.Conditions = []client.Ident{client.Ident("c3"), client.Ident("c4")}
-	x2.Job = "job message 2"
-	idResponse, err = alerter.PostToActions(&x2)
-	assert.NoError(err)
-	c2ID := idResponse.ID
-	assert.EqualValues("X2", c2ID)
-
-	cs, err := alerter.GetFromActions()
-	assert.NoError(err)
-	assert.Len(*cs, 2)
-	ok1 := false
-	ok2 := false
-	for _, v := range *cs {
-		if v.ID == "X1" {
-			ok1 = true
-		}
-		if v.ID == "X2" {
+		if v.ID == x2Id {
 			ok2 = true
 		}
 	}
 	assert.True(ok1 && ok2)
 
-	tmp, err := alerter.GetFromAction("X1")
+	tmp, err := alerter.GetFromTrigger(x1Id)
 	assert.NoError(err)
 	assert.NotNil(tmp)
 
-	err = alerter.DeleteOfAction("X1")
+	err = alerter.DeleteOfTrigger(x1Id)
 	assert.NoError(err)
-	err = alerter.DeleteOfAction("X2")
+	err = alerter.DeleteOfTrigger(x2Id)
 	assert.NoError(err)
 
 	suite.assertNoData()
@@ -392,59 +334,42 @@ func (suite *AlerterTester) TestTriggering() {
 	var idResponse *client.AlerterIdResponse
 
 	////////////////
-	var c1 client.Condition
-	c1.Title = "c1 title"
-	c1.Type = client.EventFoo
-	c1.Query = "c1 query"
-	idResponse, err = alerter.PostToConditions(&c1)
-	assert.NoError(err)
-	c1Id := idResponse.ID
 
-	var c2 client.Condition
-	c2.Title = "c2 title"
-	c2.Type = client.EventBar
-	c2.Query = "c2 query"
-	idResponse, err = alerter.PostToConditions(&c2)
-	assert.NoError(err)
-	c2Id := idResponse.ID
-
-	var c3 client.Condition
-	c3.Title = "c3 title"
-	c3.Type = client.EventBaz
-	c3.Query = "c3 query"
-	idResponse, err = alerter.PostToConditions(&c3)
-	assert.NoError(err)
-	c3Id := idResponse.ID
-
-	cs, err := alerter.GetFromConditions()
-	assert.NoError(err)
-	assert.Len(*cs, 3)
-
-	//////////////////////////
-	var x1 client.Action
-	x1.Conditions = []client.Ident{c2Id}
-	x1.Job = "action 1 job"
-	idResponse, err = alerter.PostToActions(&x1)
+	x1 := client.Trigger{
+		Title: "the x1 trigger",
+		Condition: client.Condition{
+			Type: client.EventFoo,
+			Query: "the x1 condition query",
+		},
+		Job: client.Job{
+			Task: "the x1 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x1)
 	assert.NoError(err)
 	x1Id := idResponse.ID
 
-	var x2 client.Action
-	x2.Conditions = []client.Ident{c1Id}
-	x2.Job = "action 2 job"
-	idResponse, err = alerter.PostToActions(&x2)
+	x2 := client.Trigger{
+		Title: "the x2 trigger",
+		Condition: client.Condition{
+			Type: client.EventBar,
+			Query: "the x2 condition query",
+		},
+		Job: client.Job{
+			Task: "the x2 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x2)
 	assert.NoError(err)
 	x2Id := idResponse.ID
 
-	var x3 client.Action
-	x3.Conditions = []client.Ident{c3Id}
-	x3.Job = "action 3 job"
-	idResponse, err = alerter.PostToActions(&x3)
+	xs, err := alerter.GetFromTriggers()
 	assert.NoError(err)
-	x3Id := idResponse.ID
+	assert.Len(*xs, 2)
 
 	/////////////////////
 
-	// will cause action X2
+	// will cause trigger X1
 	var e1 client.Event
 	e1.Type = client.EventFoo
 	e1.Date = time.Now()
@@ -453,7 +378,7 @@ func (suite *AlerterTester) TestTriggering() {
 	assert.NoError(err)
 	e1Id := idResponse.ID
 
-	// will cause action X1
+	// will cause trigger X2
 	var e2 client.Event
 	e2.Type = client.EventBar
 	e2.Date = time.Now()
@@ -462,7 +387,7 @@ func (suite *AlerterTester) TestTriggering() {
 	assert.NoError(err)
 	e2Id := idResponse.ID
 
-	// will cause no actions
+	// will cause no triggers
 	var e3 client.Event
 	e3.Type = client.EventBuz
 	e3.Date = time.Now()
@@ -481,20 +406,16 @@ func (suite *AlerterTester) TestTriggering() {
 	alerts := list.ToSortedArray()
 	assert.Len(alerts, 2)
 
-	t1 := (alerts[0].ActionId == x1Id)
-	t2 := (alerts[1].ActionId == x2Id)
-	t3 := (alerts[0].ActionId == x2Id)
-	t4 := (alerts[1].ActionId == x1Id)
+	t1 := (alerts[0].TriggerId == x1Id)
+	t2 := (alerts[1].TriggerId == x2Id)
+	t3 := (alerts[0].TriggerId == x2Id)
+	t4 := (alerts[1].TriggerId == x1Id)
 	assert.True((t1 && t2) || (t3 && t4))
 
 	//////////////
 
-	alerter.DeleteOfCondition(c1Id)
-	alerter.DeleteOfCondition(c2Id)
-	alerter.DeleteOfCondition(c3Id)
-	alerter.DeleteOfAction(x1Id)
-	alerter.DeleteOfAction(x2Id)
-	alerter.DeleteOfAction(x3Id)
+	alerter.DeleteOfTrigger(x1Id)
+	alerter.DeleteOfTrigger(x2Id)
 	alerter.DeleteOfEvent(e1Id)
 	alerter.DeleteOfEvent(e2Id)
 	alerter.DeleteOfEvent(e3Id)
