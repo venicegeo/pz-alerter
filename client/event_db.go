@@ -25,6 +25,17 @@ func NewEventDB(es *piazza.ElasticSearchService, index string) (*EventDB, error)
 	return db, nil
 }
 
+func ConvertRawsToEvents(raws []*json.RawMessage) ([]Event, error) {
+	objs := make([]Event, len(raws))
+	for i, _ := range raws {
+		err := json.Unmarshal(*raws[i], &objs[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return objs, nil
+}
+
 func (db *EventDB) Write(event *Event) error {
 	id := NewEventID()
 	event.ID = id

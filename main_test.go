@@ -5,7 +5,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-alerter/client"
 	"github.com/venicegeo/pz-alerter/server"
-	piazza "github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"log"
@@ -90,14 +90,59 @@ func (suite *AlerterTester) assertNoData() {
 	assert.Len(t, *xs, 0)
 }
 
-
-
 func TestRunSuite(t *testing.T) {
 	s := new(AlerterTester)
 	suite.Run(t, s)
 }
 
 //---------------------------------------------------------------------------
+
+func (suite *AlerterTester) TestAAResource() {
+	t := suite.T()
+	assert := assert.New(t)
+	//alerter := suite.alerter
+
+	es := suite.sys.ElasticSearchService
+
+	var a1 client.Event
+	a1.Type = client.EventFoo
+	a1.Date = time.Now()
+
+	var a2 client.Event
+	a2.Type = client.EventBar
+	a2.Date = time.Now()
+
+	db, err := client.NewResourceDB(es, "event", "Event")
+	assert.NoError(err)
+
+	a1Id, err := db.PostData(&a1, client.NewResourceID())
+	assert.NoError(err)
+	a2Id, err := db.PostData(&a2, client.NewResourceID())
+	assert.NoError(err)
+
+	{
+		raws, err := db.GetAll()
+		assert.NoError(err)
+		assert.Len(raws, 2)
+
+		objs, err := client.ConvertRawsToEvents(raws)
+		assert.NoError(err)
+
+		ok1 := (objs[0].Type == a1.Type) && (objs[1].Type == a2.Type)
+		ok2 := (objs[1].Type == a1.Type) && (objs[0].Type == a2.Type)
+		assert.True((ok1 || ok2) && !(ok1 && ok2))
+	}
+
+	var t2 client.Event
+	err = db.GetById(a2Id, &t2)
+	assert.NoError(err)
+	assert.EqualValues(a2.Type, t2.Type)
+
+	var t1 client.Event
+	err = db.GetById(a1Id, &t1)
+	assert.NoError(err)
+	assert.EqualValues(a1.Type, t1.Type)
+}
 
 func (suite *AlerterTester) TestAlerts() {
 	t := suite.T()
