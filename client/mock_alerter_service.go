@@ -18,82 +18,82 @@ import (
 	piazza "github.com/venicegeo/pz-gocommon"
 )
 
-type MockAlerterService struct {
+type MockWorkflowService struct {
 	name    piazza.ServiceName
 	address string
 }
 
-func NewMockAlerterService(sys *piazza.System) (*MockAlerterService, error) {
-	var _ IAlerterService = new(MockAlerterService)
-	var _ piazza.IService = new(MockAlerterService)
+func NewMockWorkflowService(sys *piazza.System) (*MockWorkflowService, error) {
+	var _ IWorkflowService = new(MockWorkflowService)
+	var _ piazza.IService = new(MockWorkflowService)
 
-	service := &MockAlerterService{name: piazza.PzAlerter, address: "0.0.0.0"}
+	service := &MockWorkflowService{name: piazza.PzWorkflow, address: "0.0.0.0"}
 
-	sys.Services[piazza.PzAlerter] = service
+	sys.Services[piazza.PzWorkflow] = service
 
 	return service, nil
 }
 
-func (m MockAlerterService) GetName() piazza.ServiceName {
+func (m MockWorkflowService) GetName() piazza.ServiceName {
 	return m.name
 }
 
-func (m MockAlerterService) GetAddress() string {
+func (m MockWorkflowService) GetAddress() string {
 	return m.address
 }
 
-func (*MockAlerterService) PostToEvents(*Event) (*AlerterIdResponse, error) {
+func (*MockWorkflowService) PostToEvents(*Event) (*WorkflowIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromEvents() (*[]Event, error) {
+func (*MockWorkflowService) GetFromEvents() (*[]Event, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) DeleteOfEvent(id Ident) error {
+func (*MockWorkflowService) DeleteOfEvent(id Ident) error {
 	return nil
 }
 
-func (*MockAlerterService) GetFromAlerts() (*[]Alert, error) {
+func (*MockWorkflowService) GetFromAlerts() (*[]Alert, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromAlert(id Ident) (*Alert, error) {
+func (*MockWorkflowService) GetFromAlert(id Ident) (*Alert, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) PostToAlerts(*Alert) (*AlerterIdResponse, error) {
+func (*MockWorkflowService) PostToAlerts(*Alert) (*WorkflowIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) DeleteOfAlert(id Ident) error {
+func (*MockWorkflowService) DeleteOfAlert(id Ident) error {
 	return nil
 }
 
-func (*MockAlerterService) PostToTriggers(*Trigger) (*AlerterIdResponse, error) {
+func (*MockWorkflowService) PostToTriggers(*Trigger) (*WorkflowIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromTriggers() (*[]Trigger, error) {
+func (*MockWorkflowService) GetFromTriggers() (*[]Trigger, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromTrigger(id Ident) (*Trigger, error) {
+func (*MockWorkflowService) GetFromTrigger(id Ident) (*Trigger, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) DeleteOfTrigger(id Ident) error {
+func (*MockWorkflowService) DeleteOfTrigger(id Ident) error {
 	return nil
 }
 
-func (*MockAlerterService) GetFromAdminStats() (*AlerterAdminStats, error) {
-	return &AlerterAdminStats{}, nil
+func (*MockWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
+	return &WorkflowAdminStats{}, nil
 }
 
-func (*MockAlerterService) GetFromAdminSettings() (*AlerterAdminSettings, error) {
-	return &AlerterAdminSettings{}, nil
+func (*MockWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, error) {
+	return &WorkflowAdminSettings{}, nil
 }
 
-func (*MockAlerterService) PostToAdminSettings(*AlerterAdminSettings) error {
+func (*MockWorkflowService) PostToAdminSettings(*WorkflowAdminSettings) error {
 	return nil
 }

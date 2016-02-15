@@ -7,4 +7,4 @@ popd > /dev/null
 # gather some data about the repo
 source $base/vars.sh
 
-[ `curl -s -o /dev/null -w "%{http_code}" http://pz-uuidgen.cf.piazzageo.io` = 200 ]
+[ `curl -s -o /dev/null -w "%{http_code}" http://pz-workflow.cf.piazzageo.io` = 200 ]

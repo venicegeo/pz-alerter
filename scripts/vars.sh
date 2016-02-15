@@ -1,6 +1,6 @@
 #!/bin/bash
 
-APP=pz-alerter
+APP=pz-workflow
 EXT=bin
 SHA=$(git rev-parse HEAD)
 SHORT=$(git rev-parse --short HEAD)

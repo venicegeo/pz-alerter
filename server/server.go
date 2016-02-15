@@ -16,7 +16,7 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-alerter/client"
+	"github.com/venicegeo/pz-workflow/client"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
@@ -28,14 +28,14 @@ import (
 
 type LockedAdminSettings struct {
 	sync.Mutex
-	client.AlerterAdminSettings
+	client.WorkflowAdminSettings
 }
 
 var settings LockedAdminSettings
 
 type LockedAdminStats struct {
 	sync.Mutex
-	client.AlerterAdminStats
+	client.WorkflowAdminStats
 }
 
 var stats LockedAdminStats
@@ -48,7 +48,7 @@ func init() {
 
 func handleGetAdminStats(c *gin.Context) {
 	stats.Lock()
-	t := stats.AlerterAdminStats
+	t := stats.WorkflowAdminStats
 	stats.Unlock()
 	c.JSON(http.StatusOK, t)
 }
@@ -61,14 +61,14 @@ func handleGetAdminSettings(c *gin.Context) {
 }
 
 func handlePostAdminSettings(c *gin.Context) {
-	var s client.AlerterAdminSettings
+	var s client.WorkflowAdminSettings
 	err := c.BindJSON(&s)
 	if err != nil {
 		c.Error(err)
 		return
 	}
 	settings.Lock()
-	settings.AlerterAdminSettings = s
+	settings.WorkflowAdminSettings = s
 	settings.Unlock()
 	c.JSON(http.StatusOK, s)
 }
@@ -118,7 +118,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.GET("/", func(c *gin.Context) {
 		log.Print("got health-check request")
-		c.String(http.StatusOK, "Hi. I'm pz-alerter.")
+		c.String(http.StatusOK, "Hi. I'm pz-workflow.")
 	})
 
 	//---------------------------------
@@ -140,7 +140,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		a := client.AlerterIdResponse{ID: id}
+		a := client.WorkflowIdResponse{ID: id}
 		c.IndentedJSON(http.StatusCreated, a)
 
 		triggerDB.CheckTriggers(*event, alertDB)
@@ -206,7 +206,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		a := client.AlerterIdResponse{ID: trigger.ID}
+		a := client.WorkflowIdResponse{ID: trigger.ID}
 		c.IndentedJSON(http.StatusCreated, a)
 	})
 
