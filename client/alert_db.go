@@ -1,58 +1,78 @@
+// Copyright 2016, RadiantBlue Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client
 
 import (
 	"encoding/json"
-	"gopkg.in/olivere/elastic.v3"
-	piazza "github.com/venicegeo/pz-gocommon"
-	"log"
+	"github.com/venicegeo/pz-gocommon"
+	"sync"
 )
+
+var alertIdLock sync.Mutex
+var alertID = 1
+
+func NewAlertIdent() Ident {
+	alertIdLock.Lock()
+	id := NewIdentFromInt(alertID)
+	alertID++
+	alertIdLock.Unlock()
+	s := "A" + id.String()
+	return Ident(s)
+}
+
+// newAlert makes an Alert, setting the ID for you.
+func NewAlert(triggerId Ident) Alert {
+
+	id := NewIdentFromInt(alertID)
+	alertID++
+	s := "A" + string(id)
+
+	return Alert{
+		ID:        Ident(s),
+		TriggerId: triggerId,
+	}
+}
 
 //---------------------------------------------------------------------------
 
-type AlertDB struct {
-	es *piazza.ElasticSearchService
-	index  string
+type AlertRDB struct {
+	*ResourceDB
 }
 
-func NewAlertDB(es *piazza.ElasticSearchService, index string) (*AlertDB, error) {
-	db := new(AlertDB)
-	db.es = es
-	db.index = index
-
-	err := es.MakeIndex(index)
+func NewAlertDB(es *piazza.ElasticSearchService, index string, typename string) (*AlertRDB, error) {
+	rdb, err := NewResourceDB(es, index, typename)
 	if err != nil {
 		return nil, err
 	}
-	return db, nil
+	ardb := AlertRDB{ResourceDB: rdb}
+	return &ardb, nil
 }
 
-func (db *AlertDB) Write(alert *Alert) error {
-
-	_, err := db.es.Client.Index().
-		Index(db.index).
-		Type("alert").
-		Id(alert.ID).
-		BodyJson(alert).
-		Do()
-	if err != nil {
-		return err
+func ConvertRawsToAlerts(raws []*json.RawMessage) ([]Alert, error) {
+	objs := make([]Alert, len(raws))
+	for i, _ := range raws {
+		err := json.Unmarshal(*raws[i], &objs[i])
+		if err != nil {
+			return nil, err
+		}
 	}
-
-	err = db.es.Flush(db.index)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return objs, nil
 }
 
-func (db *AlertDB) GetByConditionID(conditionID string) ([]Alert, error) {
-	termQuery := elastic.NewTermQuery("condition_id", conditionID)
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).  // search in index "twitter"
-		Query(termQuery). // specify the query
-		Sort("id", true).
-		Do() // execute
+func (db *AlertRDB) GetByConditionID(conditionID string) ([]Alert, error) {
+	searchResult, err := db.es.SearchByTermQuery(db.index, "condition_id", conditionID)
 	if err != nil {
 		return nil, err
 	}
@@ -71,47 +91,4 @@ func (db *AlertDB) GetByConditionID(conditionID string) ([]Alert, error) {
 		as = append(as, a)
 	}
 	return as, nil
-}
-
-func (db *AlertDB) GetAll() (map[string]Alert, error) {
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(elastic.NewMatchAllQuery()).
-		Sort("id", true).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-
-	m := make(map[string]Alert)
-
-	if searchResult.Hits != nil {
-		for _, hit := range searchResult.Hits.Hits {
-			var t Alert
-			err := json.Unmarshal(*hit.Source, &t)
-			if err != nil {
-				return nil, err
-			}
-			m[t.ID] = t
-		}
-	}
-
-	return m, nil
-}
-
-func (db *AlertDB) CheckConditions(e Event, conditionDB *ConditionDB) error {
-	all, err := conditionDB.GetAll()
-	if err != nil {
-		return nil
-	}
-	for _, cond := range all {
-		//log.Printf("e%s.%s ==? c%s.%s", e.ID, e.Type, cond.ID, cond.Type)
-		if cond.Type == e.Type {
-			a := NewAlert(cond.ID, e.ID)
-			db.Write(&a)
-			//pzService.Log(piazza.SeverityInfo, fmt.Sprintf("HIT! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID))
-			log.Printf("INFO: Hit! event %s has triggered condition %s: alert %s", e.ID, cond.ID, a.ID)
-		}
-	}
-	return nil
 }

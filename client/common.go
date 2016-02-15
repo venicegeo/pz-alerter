@@ -1,21 +1,44 @@
+// Copyright 2016, RadiantBlue Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client
 
 import (
+	piazza "github.com/venicegeo/pz-gocommon"
+	"sort"
+	"strconv"
 	"time"
 )
 
 type IAlerterService interface {
-	GetName() string
+	GetName() piazza.ServiceName
 	GetAddress() string
 
 	// low-level interfaces
 	PostToEvents(*Event) (*AlerterIdResponse, error)
-	GetFromEvents() (*EventList, error)
-	GetFromAlerts() (*AlertList, error)
-	PostToConditions(*Condition) (*AlerterIdResponse, error)
-	GetFromConditions() (*ConditionList, error)
-	GetFromCondition(id string) (*Condition, error)
-	DeleteOfCondition(id string) error
+	GetFromEvents() (*[]Event, error)
+	DeleteOfEvent(id Ident) error
+
+	GetFromAlerts() (*[]Alert, error)
+	GetFromAlert(id Ident) (*Alert, error)
+	PostToAlerts(*Alert) (*AlerterIdResponse, error)
+	DeleteOfAlert(id Ident) error
+
+	PostToTriggers(*Trigger) (*AlerterIdResponse, error)
+	GetFromTriggers() (*[]Trigger, error)
+	GetFromTrigger(id Ident) (*Trigger, error)
+	DeleteOfTrigger(id Ident) error
 
 	GetFromAdminStats() (*AlerterAdminStats, error)
 	GetFromAdminSettings() (*AlerterAdminSettings, error)
@@ -23,61 +46,114 @@ type IAlerterService interface {
 }
 
 type AlerterIdResponse struct {
-	ID string `json:"id"`
+	ID Ident `json:"id"`
+}
+
+type Ident string
+
+const NoIdent Ident = ""
+
+func (id Ident) String() string {
+	return string(id)
+}
+
+func NewIdentFromInt(id int) Ident {
+	s := strconv.Itoa(id)
+	return Ident(s)
 }
 
 /////////////////
-
-const EventDataIngested = "DataIngested"
-const EventDataAccessed = "DataAccessed"
-const EventUSDataFound = "USDataFound"
-const EventFoo = "Foo"
-const EventBar = "Bar"
 
 type EventType string
 
-type Event struct {
-	ID   string            `json:"id"`
-	Type EventType         `json:"type" binding:"required"`
-	Date string            `json:"date" binding:"required"`
-	Data map[string]string `json:"data"` // specific to event type
-}
-
-type EventList map[string]Event
-
-////////////////
-
-type Alert struct {
-	ID          string `json:"id"`
-	ConditionID string `json:"condition_id" binding:"required"`
-	EventID     string `json:"event_id" binding:"required"`
-}
-
-type AlertList map[string]Alert
-
-//////////////
-
-type Condition struct {
-	ID string `json:"id"`
-
-	Title       string    `json:"title" binding:"required"`
-	Description string    `json:"description"`
-	Type        EventType `json:"type" binding:"required"`
-	UserID      string    `json:"user_id" binding:"required"`
-	Date        string    `json:"start_date" binding:"required"`
-	//ExpirationDate string `json:"expiration_date"`
-	//IsEnabled      bool   `json:"is_enabled" binding:"required"`
-	//HitCount int `json:"hit_count"`
-}
-
-type ConditionList map[string]Condition
+const (
+	EventDataIngested EventType = "DataIngested"
+	EventDataAccessed EventType = "DataAccessed"
+	EventUSDataFound  EventType = "USDataFound"
+	EventFoo          EventType = "Foo"
+	EventBar          EventType = "Bar"
+	EventBaz          EventType = "Baz"
+	EventBuz          EventType = "Buz"
+)
 
 /////////////////
 
+// expresses the idea of "this ES query returns an event"
+// Query is specific to the event type
+type Condition struct {
+	Type  EventType `json:"type" binding:"required"`
+	Query string    `json:"query" binding:"required"`
+}
+
+type Job struct {
+	Task string
+}
+
+/////////////////
+
+// when the and'ed set of Conditions all are true, do Something
+// Events are the results of the Conditions queries
+// Job is the JobMessage to submit back to Pz
+// TODO: some sort of mapping from the event info into the Job string
+type Trigger struct {
+	ID        Ident     `json:"id"`
+	Title     string    `json:"title" binding:"required"`
+	Condition Condition `json:"conditions" binding:"required"`
+	Job       Job       `json:"job" binding:"required"`
+}
+
+type TriggerList []Trigger
+
+/////////////////
+
+// posted by some source (service, user, etc) to indicate Something Happened
+// Data is specific to the event type
+// TODO: use the delayed-parsing, raw-message json thing?
+type Event struct {
+	ID   Ident             `json:"id"`
+	Type EventType         `json:"type" binding:"required"`
+	Date time.Time         `json:"date" binding:"required"`
+	Data map[string]string `json:"data"`
+}
+
+type EventList []Event
+
+////////////////
+
+// a notification, automatically created when an Trigger happens
+type Alert struct {
+	ID        Ident `json:"id"`
+	TriggerId Ident `json:"trigger_id"`
+	EventId   Ident `json:"event_id"`
+}
+
+type AlertList []Alert
+
+type AlertListById []Alert
+
+func (a AlertListById) Len() int           { return len(a) }
+func (a AlertListById) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a AlertListById) Less(i, j int) bool { return a[i].ID < a[j].ID }
+
+func (list AlertList) ToSortedArray() []Alert {
+	array := make([]Alert, len(list))
+	i := 0
+	for _, v := range list {
+		array[i] = v
+		i++
+	}
+	sort.Sort(AlertListById(array))
+	return array
+}
+
+//////////////
+
 type AlerterAdminStats struct {
-	StartTime   time.Time `json:"starttime"`
-	NumRequests int       `json:"num_requests"`
-	NumUUIDs    int       `json:"num_uuids"`
+	Date          time.Time `json:"date"`
+	NumAlerts     int       `json:"num_alerts"`
+	NumConditions int       `json:"num_conditions"`
+	NumEvents     int       `json:"num_events"`
+	NumTriggers   int       `json:"num_triggers"`
 }
 
 type AlerterAdminSettings struct {

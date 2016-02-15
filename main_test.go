@@ -1,3 +1,17 @@
+// Copyright 2016, RadiantBlue Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package main
 
 import (
@@ -5,7 +19,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-alerter/client"
 	"github.com/venicegeo/pz-alerter/server"
-	piazza "github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"log"
@@ -23,6 +37,7 @@ type AlerterTester struct {
 
 func (suite *AlerterTester) SetupSuite() {
 	t := suite.T()
+	assert := assert.New(t)
 
 	config, err := piazza.NewConfig(piazza.PzAlerter, piazza.ConfigModeTest)
 	if err != nil {
@@ -58,11 +73,31 @@ func (suite *AlerterTester) SetupSuite() {
 
 	suite.sys = sys
 
-	assert.Len(t, sys.Services, 5)
+	assert.Len(sys.Services, 5)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TearDownSuite() {
 	//TODO: kill the go routine running the server
+}
+
+func (suite *AlerterTester) assertNoData() {
+	t := suite.T()
+
+	var err error
+
+	es, err := suite.alerter.GetFromEvents()
+	assert.NoError(t, err)
+	assert.Len(t, *es, 0)
+
+	as, err := suite.alerter.GetFromAlerts()
+	assert.NoError(t, err)
+	assert.Len(t, *as, 0)
+
+	xs, err := suite.alerter.GetFromTriggers()
+	assert.NoError(t, err)
+	assert.Len(t, *xs, 0)
 }
 
 func TestRunSuite(t *testing.T) {
@@ -72,220 +107,356 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
-func (suite *AlerterTester) TestConditions() {
+func (suite *AlerterTester) TestAAResource() {
 	t := suite.T()
+	assert := assert.New(t)
+	//alerter := suite.alerter
+
+	es := suite.sys.ElasticSearchService
+
+	var a1 client.Event
+	a1.Type = client.EventFoo
+	a1.Date = time.Now()
+
+	var a2 client.Event
+	a2.Type = client.EventBar
+	a2.Date = time.Now()
+
+	db, err := client.NewResourceDB(es, "event", "Event")
+	assert.NoError(err)
+
+	a1Id, err := db.PostData(&a1, client.NewResourceID())
+	assert.NoError(err)
+	a2Id, err := db.PostData(&a2, client.NewResourceID())
+	assert.NoError(err)
+
+	{
+		raws, err := db.GetAll()
+		assert.NoError(err)
+		assert.Len(raws, 2)
+
+		objs, err := client.ConvertRawsToEvents(raws)
+		assert.NoError(err)
+
+		ok1 := (objs[0].Type == a1.Type) && (objs[1].Type == a2.Type)
+		ok2 := (objs[1].Type == a1.Type) && (objs[0].Type == a2.Type)
+		assert.True((ok1 || ok2) && !(ok1 && ok2))
+	}
+
+	var t2 client.Event
+	ok, err := db.GetById(a2Id, &t2)
+	assert.NoError(err)
+	assert.True(ok)
+	assert.EqualValues(a2.Type, t2.Type)
+
+	var t1 client.Event
+	ok, err = db.GetById(a1Id, &t1)
+	assert.NoError(err)
+	assert.True(ok)
+	assert.EqualValues(a1.Type, t1.Type)
+}
+
+func (suite *AlerterTester) TestAlerts() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.assertNoData()
 
 	alerter := suite.alerter
 
 	var err error
 	var idResponse *client.AlerterIdResponse
 
-	var c1 client.Condition
-	c1.Title = "c1"
-	c1.Type = "=type="
-	c1.UserID = "=userid="
-	c1.Date = "=date="
-	idResponse, err = alerter.PostToConditions(&c1)
-	assert.NoError(t, err)
-	c1ID := idResponse.ID
-	assert.Equal(t, c1ID, "1")
+	var a1 client.Alert
+	a1.TriggerId = "this is trigger 1"
+	idResponse, err = alerter.PostToAlerts(&a1)
+	assert.NoError(err)
+	a1ID := idResponse.ID
+	assert.EqualValues("A1", a1ID)
 
-	var c2 client.Condition
-	c2.Title = "c2"
-	c2.Type = "=type="
-	c2.UserID = "=userid="
-	c2.Date = "=date="
-	idResponse, err = alerter.PostToConditions(&c2)
-	assert.NoError(t, err)
-	c2ID := idResponse.ID
-	assert.Equal(t, c2ID, "2")
+	var a2 client.Alert
+	a2.TriggerId = "this is trigger 2"
+	idResponse, err = alerter.PostToAlerts(&a2)
+	assert.NoError(err)
+	a2ID := idResponse.ID
+	assert.EqualValues("A2", a2ID)
 
-	cs, err := alerter.GetFromConditions()
-	assert.NoError(t, err)
-	assert.Len(t, *cs, 2)
+	as, err := alerter.GetFromAlerts()
+	assert.NoError(err)
+	assert.Len(*as, 2)
 	ok1 := false
 	ok2 := false
-	for k := range *cs {
-		if k == "1" {
+	for _, v := range *as {
+		if v.ID == "A1" {
 			ok1 = true
 		}
-		if k == "2" {
+		if v.ID == "A2" {
 			ok2 = true
 		}
 	}
-	assert.True(t, ok1 && ok2)
 
-	cond, err := alerter.GetFromCondition("1")
-	assert.NoError(t, err)
-	assert.NotNil(t, cond)
+	assert.True(ok1 && ok2)
+	alert, err := alerter.GetFromAlert("A1")
+	assert.NoError(err)
+	assert.NotNil(alert)
 
-	err = alerter.DeleteOfCondition("1")
-	assert.NoError(t, err)
+	err = alerter.DeleteOfAlert("A1")
+	assert.NoError(err)
 
-	cond, err = alerter.GetFromCondition("1")
-	assert.Error(t, err) // TODO: should be more refined error here
-	assert.Nil(t, cond)
+	alert, err = alerter.GetFromAlert("A1")
+	assert.Error(err)
+	assert.Nil(alert)
 
-	err = alerter.DeleteOfCondition("2")
-	assert.NoError(t, err)
+	err = alerter.DeleteOfAlert("A2")
+	assert.NoError(err)
 
-	cs, err = alerter.GetFromConditions()
-	assert.NoError(t, err)
-	assert.Len(t, *cs, 0)
+	as, err = alerter.GetFromAlerts()
+	assert.NoError(err)
+	assert.Len(*as, 0)
+
+	suite.assertNoData()
+}
+
+
+func (suite *AlerterTester) TestTriggers() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.assertNoData()
+
+	alerter := suite.alerter
+
+	var err error
+	var idResponse *client.AlerterIdResponse
+
+	x1 := client.Trigger{
+		Title: "the x1 trigger",
+		Condition: client.Condition{
+			Type: client.EventFoo,
+			Query: "the x1 condition query",
+		},
+		Job: client.Job{
+			Task: "the x1 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x1)
+	assert.NoError(err)
+	x1Id := idResponse.ID
+
+	x2 := client.Trigger{
+		Title: "the x2 trigger",
+		Condition: client.Condition{
+			Type: client.EventBar,
+			Query: "the x2 condition query",
+		},
+		Job: client.Job{
+			Task: "the x2 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x2)
+	assert.NoError(err)
+	x2Id := idResponse.ID
+
+	cs, err := alerter.GetFromTriggers()
+	assert.NoError(err)
+	assert.Len(*cs, 2)
+	ok1 := false
+	ok2 := false
+	for _, v := range *cs {
+		if v.ID == x1Id {
+			ok1 = true
+		}
+		if v.ID == x2Id {
+			ok2 = true
+		}
+	}
+	assert.True(ok1 && ok2)
+
+	tmp, err := alerter.GetFromTrigger(x1Id)
+	assert.NoError(err)
+	assert.NotNil(tmp)
+
+	err = alerter.DeleteOfTrigger(x1Id)
+	assert.NoError(err)
+	err = alerter.DeleteOfTrigger(x2Id)
+	assert.NoError(err)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestEvents() {
 	t := suite.T()
+	assert := assert.New(t)
 
 	alerter := suite.alerter
+	suite.assertNoData()
 
 	var err error
 	var idResponse *client.AlerterIdResponse
 
 	var e1 client.Event
 	e1.Type = client.EventDataIngested
-	e1.Date = "22 Jan 2016"
+	e1.Date = time.Now()
 	e1.Data = nil
 	idResponse, err = alerter.PostToEvents(&e1)
-	assert.NoError(t, err)
+	assert.NoError(err)
 	e1ID := idResponse.ID
-	assert.Equal(t, "E1", e1ID)
+	assert.EqualValues("E1", e1ID)
 
 	var e2 client.Event
 	e2.Type = client.EventDataAccessed
-	e2.Date = "22 Jan 2016"
+	e2.Date = time.Now()
 	e2.Data = nil
 	idResponse, err = alerter.PostToEvents(&e2)
-	assert.NoError(t, err)
+	assert.NoError(err)
 	e2ID := idResponse.ID
-	assert.Equal(t, "E2", e2ID)
+	assert.EqualValues("E2", e2ID)
 
 	es, err := alerter.GetFromEvents()
-	assert.NoError(t, err)
-	assert.Len(t, *es, 2)
+	assert.NoError(err)
+	assert.Len(*es, 2)
 	ok1 := false
 	ok2 := false
-	for k := range *es {
-		if k == "E1" {
+	for _, v := range *es {
+		if v.ID == "E1" {
 			ok1 = true
 		}
-		if k == "E2" {
+		if v.ID == "E2" {
 			ok2 = true
 		}
 	}
-	assert.True(t, ok1 && ok2)
+	assert.True(ok1 && ok2)
+
+	err = alerter.DeleteOfEvent("E1")
+	assert.NoError(err)
+	err = alerter.DeleteOfEvent("E2")
+	assert.NoError(err)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestTriggering() {
+
 	t := suite.T()
+	assert := assert.New(t)
 
 	alerter := suite.alerter
+
+	suite.assertNoData()
 
 	var err error
 	var idResponse *client.AlerterIdResponse
 
-	cs, err := alerter.GetFromConditions()
-	assert.NoError(t, err)
-	assert.Len(t, *cs, 0)
+	////////////////
 
-	var rawC3 client.Condition
-	rawC3.Title = "cond1 title"
-	rawC3.Description = "cond1 descr"
-	rawC3.Type = client.EventDataIngested
-	rawC3.UserID = "user1"
-	rawC3.Date = time.Now().String()
-	idResponse, err = alerter.PostToConditions(&rawC3)
-	assert.NoError(t, err)
-	c3ID := idResponse.ID
-	assert.Equal(t, "3", c3ID)
+	x1 := client.Trigger{
+		Title: "the x1 trigger",
+		Condition: client.Condition{
+			Type: client.EventFoo,
+			Query: "the x1 condition query",
+		},
+		Job: client.Job{
+			Task: "the x1 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x1)
+	assert.NoError(err)
+	x1Id := idResponse.ID
 
-	var rawC4 client.Condition
-	rawC4.Title = "cond2 title"
-	rawC4.Description = "cond2 descr"
-	rawC4.Type = client.EventDataAccessed
-	rawC4.UserID = "user2"
-	rawC4.Date = time.Now().String()
-	idResponse, err = alerter.PostToConditions(&rawC4)
-	assert.NoError(t, err)
-	c4ID := idResponse.ID
-	assert.Equal(t, "4", c4ID)
+	x2 := client.Trigger{
+		Title: "the x2 trigger",
+		Condition: client.Condition{
+			Type: client.EventBar,
+			Query: "the x2 condition query",
+		},
+		Job: client.Job{
+			Task: "the x2 task",
+		},
+	}
+	idResponse, err = alerter.PostToTriggers(&x2)
+	assert.NoError(err)
+	x2Id := idResponse.ID
 
-	var rawC5 client.Condition
-	rawC5.Title = "cond2 title"
-	rawC5.Description = "cond2 descr"
-	rawC5.Type = client.EventFoo
-	rawC5.UserID = "user2"
-	rawC5.Date = time.Now().String()
-	idResponse, err = alerter.PostToConditions(&rawC5)
-	assert.NoError(t, err)
-	c5ID := idResponse.ID
-	assert.Equal(t, "5", c5ID)
+	xs, err := alerter.GetFromTriggers()
+	assert.NoError(err)
+	assert.Len(*xs, 2)
 
-	cs, err = alerter.GetFromConditions()
-	assert.NoError(t, err)
-	assert.Len(t, *cs, 3)
+	/////////////////////
 
+	// will cause trigger X1
+	var e1 client.Event
+	e1.Type = client.EventFoo
+	e1.Date = time.Now()
+	e1.Data = map[string]string{"file": "e1.tif"}
+	idResponse, err = alerter.PostToEvents(&e1)
+	assert.NoError(err)
+	e1Id := idResponse.ID
+
+	// will cause trigger X2
+	var e2 client.Event
+	e2.Type = client.EventBar
+	e2.Date = time.Now()
+	e2.Data = map[string]string{"file": "e2.tif"}
+	idResponse, err = alerter.PostToEvents(&e2)
+	assert.NoError(err)
+	e2Id := idResponse.ID
+
+	// will cause no triggers
 	var e3 client.Event
-	e3.Type = client.EventDataAccessed
-	e3.Date = time.Now().String()
-	e3.Data = map[string]string{"file": "111.tif"}
+	e3.Type = client.EventBuz
+	e3.Date = time.Now()
 	idResponse, err = alerter.PostToEvents(&e3)
-	assert.NoError(t, err)
-	e3ID := idResponse.ID
-	assert.Equal(t, "E3", e3ID)
+	assert.NoError(err)
+	e3Id := idResponse.ID
 
-	var e4 client.Event
-	e4.Type = client.EventDataIngested
-	e4.Date = time.Now().String()
-	e4.Data = map[string]string{"file": "111.tif"}
-	idResponse, err = alerter.PostToEvents(&e4)
-	assert.NoError(t, err)
-	e4ID := idResponse.ID
-	assert.Equal(t, "E4", e4ID)
-
-	var e5 client.Event
-	e5.Type = client.EventBar
-	e5.Date = time.Now().String()
-	idResponse, err = alerter.PostToEvents(&e5)
-	assert.NoError(t, err)
-	e5ID := idResponse.ID
-	assert.Equal(t, "E5", e5ID)
+	////////////////////////////////////
 
 	as, err := alerter.GetFromAlerts()
-	assert.NoError(t, err)
-	assert.Len(t, *as, 2)
+	assert.NoError(err)
+	assert.Len(*as, 2)
 
-	// TODO: dependent on order of returned results
-	v1, ok := (*as)["A1"]
-	assert.True(t, ok)
-	v2, ok := (*as)["A2"]
-	assert.True(t, ok)
+	var list client.AlertList
+	list = *as
+	alerts := list.ToSortedArray()
+	assert.Len(alerts, 2)
 
-	assert.Equal(t, "A1", v1.ID)
-	assert.Equal(t, "E3", v1.EventID)
-	assert.Equal(t, "4", v1.ConditionID)
-	assert.Equal(t, "A2", v2.ID)
-	assert.Equal(t, "E4", v2.EventID)
-	assert.Equal(t, "3", v2.ConditionID)
+	t1 := (alerts[0].TriggerId == x1Id)
+	t2 := (alerts[1].TriggerId == x2Id)
+	t3 := (alerts[0].TriggerId == x2Id)
+	t4 := (alerts[1].TriggerId == x1Id)
+	assert.True((t1 && t2) || (t3 && t4))
+
+	//////////////
+
+	alerter.DeleteOfTrigger(x1Id)
+	alerter.DeleteOfTrigger(x2Id)
+	alerter.DeleteOfEvent(e1Id)
+	alerter.DeleteOfEvent(e2Id)
+	alerter.DeleteOfEvent(e3Id)
+	alerter.DeleteOfAlert(alerts[0].ID)
+	alerter.DeleteOfAlert(alerts[1].ID)
+
+	suite.assertNoData()
 }
 
 func (suite *AlerterTester) TestAdmin() {
 	t := suite.T()
+	assert := assert.New(t)
 
 	alerter := suite.alerter
 
 	settings, err := alerter.GetFromAdminSettings()
-	assert.NoError(t, err)
+	assert.NoError(err)
 	if settings.Debug != false {
 		t.Error("settings not false")
 	}
 
 	settings.Debug = true
 	err = alerter.PostToAdminSettings(settings)
-	assert.NoError(t, err)
+	assert.NoError(err)
 
 	settings, err = alerter.GetFromAdminSettings()
-	assert.NoError(t, err)
+	assert.NoError(err)
 	if settings.Debug != true {
 		t.Error("settings not true")
 	}

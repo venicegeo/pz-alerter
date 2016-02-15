@@ -1,71 +1,41 @@
+// Copyright 2016, RadiantBlue Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client
 
 import (
 	"encoding/json"
-	piazza "github.com/venicegeo/pz-gocommon"
-	"gopkg.in/olivere/elastic.v3"
 )
 
-type EventDB struct {
-	es    *piazza.ElasticSearchService
-	index string
+var eventID = 1
+
+func NewEventID() Ident {
+	id := NewIdentFromInt(eventID)
+	eventID++
+	return Ident("E" + string(id))
 }
 
-func NewEventDB(es *piazza.ElasticSearchService, index string) (*EventDB, error) {
-	db := &EventDB{es: es, index: index}
+//---------------------------------------------------------------------------
 
-	err := es.MakeIndex(index)
-	if err != nil {
-		return nil, err
-	}
-	return db, nil
-}
 
-func (db *EventDB) Write(event *Event) error {
-	id := NewEventID()
-	event.ID = id
-
-	_, err := db.es.Client.Index().
-		Index(db.index).
-		Type("event").
-		Id(event.ID).
-		BodyJson(event).
-		Do()
-	if err != nil {
-		panic(err)
-	}
-
-	err = db.es.Flush(db.index)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (db *EventDB) GetAll() (*EventList, error) {
-
-	// search for everything
-	// TODO: there's a GET call for this?
-	searchResult, err := db.es.Client.Search().
-		Index(db.index).
-		Query(elastic.NewMatchAllQuery()).
-		Sort("id", true).
-		Do()
-	if err != nil {
-		return nil, err
-	}
-
-	m := EventList{}
-
-	for _, hit := range searchResult.Hits.Hits {
-		var t Event
-		err := json.Unmarshal(*hit.Source, &t)
+func ConvertRawsToEvents(raws []*json.RawMessage) ([]Event, error) {
+	objs := make([]Event, len(raws))
+	for i, _ := range raws {
+		err := json.Unmarshal(*raws[i], &objs[i])
 		if err != nil {
 			return nil, err
 		}
-		m[t.ID] = t
 	}
-
-	return &m, nil
+	return objs, nil
 }

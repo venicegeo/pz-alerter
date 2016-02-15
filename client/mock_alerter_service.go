@@ -1,11 +1,25 @@
+// Copyright 2016, RadiantBlue Technologies, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package client
 
 import (
-	"github.com/venicegeo/pz-gocommon"
+	piazza "github.com/venicegeo/pz-gocommon"
 )
 
 type MockAlerterService struct {
-	name    string
+	name    piazza.ServiceName
 	address string
 }
 
@@ -20,7 +34,7 @@ func NewMockAlerterService(sys *piazza.System) (*MockAlerterService, error) {
 	return service, nil
 }
 
-func (m MockAlerterService) GetName() string {
+func (m MockAlerterService) GetName() piazza.ServiceName {
 	return m.name
 }
 
@@ -32,27 +46,43 @@ func (*MockAlerterService) PostToEvents(*Event) (*AlerterIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromEvents() (*EventList, error) {
+func (*MockAlerterService) GetFromEvents() (*[]Event, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromAlerts() (*AlertList, error) {
+func (*MockAlerterService) DeleteOfEvent(id Ident) error {
+	return nil
+}
+
+func (*MockAlerterService) GetFromAlerts() (*[]Alert, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) PostToConditions(*Condition) (*AlerterIdResponse, error) {
+func (*MockAlerterService) GetFromAlert(id Ident) (*Alert, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromConditions() (*ConditionList, error) {
+func (*MockAlerterService) PostToAlerts(*Alert) (*AlerterIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) GetFromCondition(id string) (*Condition, error) {
+func (*MockAlerterService) DeleteOfAlert(id Ident) error {
+	return nil
+}
+
+func (*MockAlerterService) PostToTriggers(*Trigger) (*AlerterIdResponse, error) {
 	return nil, nil
 }
 
-func (*MockAlerterService) DeleteOfCondition(id string) error {
+func (*MockAlerterService) GetFromTriggers() (*[]Trigger, error) {
+	return nil, nil
+}
+
+func (*MockAlerterService) GetFromTrigger(id Ident) (*Trigger, error) {
+	return nil, nil
+}
+
+func (*MockAlerterService) DeleteOfTrigger(id Ident) error {
 	return nil
 }
 
