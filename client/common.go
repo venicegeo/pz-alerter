@@ -98,7 +98,7 @@ type Job struct {
 type Trigger struct {
 	ID        Ident     `json:"id"`
 	Title     string    `json:"title" binding:"required"`
-	Condition Condition `json:"conditions" binding:"required"`
+	Condition Condition `json:"condition" binding:"required"`
 	Job       Job       `json:"job" binding:"required"`
 }
 
