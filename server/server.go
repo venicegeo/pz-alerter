@@ -155,6 +155,23 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, m)
 	})
 
+	router.GET("/v1/events/:id", func(c *gin.Context) {
+		s := c.Param("id")
+
+		id := client.Ident(s)
+		var v client.Event
+		ok, err := eventDB.GetById(id, &v)
+		if err != nil {
+			c.Error(err)
+			return
+		}
+		if !ok {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, v)
+	})
+
 	router.DELETE("/v1/events/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		ok, err := eventDB.DeleteByID(id)
