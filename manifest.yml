@@ -1,8 +1,8 @@
 applications:
-- name: pz-alerter
-  host: pz-alerter
+- name: pz-workflow
+  host: pz-workflow
   memory: 512M
   instances: 1
   timeout: 80
-  command: ./pz-alerter --discovery http://pz-discover.cf.piazzageo.io
+  command: ./pz-workflow
   buildpack: binary_buildpack

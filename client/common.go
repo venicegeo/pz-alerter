@@ -21,31 +21,31 @@ import (
 	"time"
 )
 
-type IAlerterService interface {
+type IWorkflowService interface {
 	GetName() piazza.ServiceName
 	GetAddress() string
 
 	// low-level interfaces
-	PostToEvents(*Event) (*AlerterIdResponse, error)
+	PostToEvents(*Event) (*WorkflowIdResponse, error)
 	GetFromEvents() (*[]Event, error)
 	DeleteOfEvent(id Ident) error
 
 	GetFromAlerts() (*[]Alert, error)
 	GetFromAlert(id Ident) (*Alert, error)
-	PostToAlerts(*Alert) (*AlerterIdResponse, error)
+	PostToAlerts(*Alert) (*WorkflowIdResponse, error)
 	DeleteOfAlert(id Ident) error
 
-	PostToTriggers(*Trigger) (*AlerterIdResponse, error)
+	PostToTriggers(*Trigger) (*WorkflowIdResponse, error)
 	GetFromTriggers() (*[]Trigger, error)
 	GetFromTrigger(id Ident) (*Trigger, error)
 	DeleteOfTrigger(id Ident) error
 
-	GetFromAdminStats() (*AlerterAdminStats, error)
-	GetFromAdminSettings() (*AlerterAdminSettings, error)
-	PostToAdminSettings(*AlerterAdminSettings) error
+	GetFromAdminStats() (*WorkflowAdminStats, error)
+	GetFromAdminSettings() (*WorkflowAdminSettings, error)
+	PostToAdminSettings(*WorkflowAdminSettings) error
 }
 
-type AlerterIdResponse struct {
+type WorkflowIdResponse struct {
 	ID Ident `json:"id"`
 }
 
@@ -148,7 +148,7 @@ func (list AlertList) ToSortedArray() []Alert {
 
 //////////////
 
-type AlerterAdminStats struct {
+type WorkflowAdminStats struct {
 	Date          time.Time `json:"date"`
 	NumAlerts     int       `json:"num_alerts"`
 	NumConditions int       `json:"num_conditions"`
@@ -156,6 +156,6 @@ type AlerterAdminStats struct {
 	NumTriggers   int       `json:"num_triggers"`
 }
 
-type AlerterAdminSettings struct {
+type WorkflowAdminSettings struct {
 	Debug bool `json:"debug"`
 }

@@ -11,17 +11,17 @@ mkdir -p $GOPATH
 
 ###
 
-go get github.com/venicegeo/pz-alerter
+go get github.com/venicegeo/pz-workflow
 
 go get github.com/stretchr/testify/assert
 go get github.com/stretchr/testify/suite
-go test -v github.com/venicegeo/pz-alerter
+go test -v github.com/venicegeo/pz-workflow
 
-go install github.com/venicegeo/pz-alerter
+go install github.com/venicegeo/pz-workflow
 
 ###
 
-exe=$GOPATH/bin/pz-alerter
+exe=$GOPATH/bin/pz-workflow
 
 # gather some data about the repo
 source $base/vars.sh

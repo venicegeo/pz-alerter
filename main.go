@@ -15,7 +15,7 @@
 package main
 
 import (
-	"github.com/venicegeo/pz-alerter/server"
+	"github.com/venicegeo/pz-workflow/server"
 	piazza "github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
@@ -29,7 +29,7 @@ func main() {
 		mode = piazza.ConfigModeLocal
 	}
 
-	config, err := piazza.NewConfig(piazza.PzAlerter, mode)
+	config, err := piazza.NewConfig(piazza.PzWorkflow, mode)
 	if err != nil {
 		log.Fatal(err)
 	}
