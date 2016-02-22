@@ -51,8 +51,11 @@ type AlertRDB struct {
 	*ResourceDB
 }
 
-func NewAlertDB(es *piazza.ElasticSearchService, index string, typename string) (*AlertRDB, error) {
-	rdb, err := NewResourceDB(es, index, typename)
+func NewAlertDB(es *piazza.EsClient, index string, typename string) (*AlertRDB, error) {
+
+	esi := piazza.NewEsIndexClient(es, index)
+
+	rdb, err := NewResourceDB(es, esi, typename)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +75,7 @@ func ConvertRawsToAlerts(raws []*json.RawMessage) ([]Alert, error) {
 }
 
 func (db *AlertRDB) GetByConditionID(conditionID string) ([]Alert, error) {
-	searchResult, err := db.es.SearchByTermQuery(db.index, "condition_id", conditionID)
+	searchResult, err := db.Esi.SearchByTermQuery("condition_id", conditionID)
 	if err != nil {
 		return nil, err
 	}

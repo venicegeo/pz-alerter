@@ -26,8 +26,14 @@ type IWorkflowService interface {
 	GetAddress() string
 
 	// low-level interfaces
-	PostToEvents(*Event) (*WorkflowIdResponse, error)
+	GetFromEventTypes() (*[]EventType, error)
+	GetFromEventType(id Ident) (*EventType, error)
+	PostToEventTypes(*EventType) (*WorkflowIdResponse, error)
+	DeleteOfEventType(id Ident) error
+
 	GetFromEvents() (*[]Event, error)
+	GetFromEvent(id Ident) (*Event, error)
+	PostToEvents(*Event) (*WorkflowIdResponse, error)
 	DeleteOfEvent(id Ident) error
 
 	GetFromAlerts() (*[]Alert, error)
@@ -35,9 +41,9 @@ type IWorkflowService interface {
 	PostToAlerts(*Alert) (*WorkflowIdResponse, error)
 	DeleteOfAlert(id Ident) error
 
-	PostToTriggers(*Trigger) (*WorkflowIdResponse, error)
 	GetFromTriggers() (*[]Trigger, error)
 	GetFromTrigger(id Ident) (*Trigger, error)
+	PostToTriggers(*Trigger) (*WorkflowIdResponse, error)
 	DeleteOfTrigger(id Ident) error
 
 	GetFromAdminStats() (*WorkflowAdminStats, error)
@@ -64,25 +70,11 @@ func NewIdentFromInt(id int) Ident {
 
 /////////////////
 
-type EventType string
-
-const (
-	EventDataIngested EventType = "DataIngested"
-	EventDataAccessed EventType = "DataAccessed"
-	EventUSDataFound  EventType = "USDataFound"
-	EventFoo          EventType = "Foo"
-	EventBar          EventType = "Bar"
-	EventBaz          EventType = "Baz"
-	EventBuz          EventType = "Buz"
-)
-
-/////////////////
-
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	Type  EventType `json:"type" binding:"required"`
-	Query string    `json:"query" binding:"required"`
+	EventType Ident `json:"type" binding:"required"`
+	Query     string    `json:"query" binding:"required"`
 }
 
 type Job struct {
@@ -110,13 +102,24 @@ type TriggerList []Trigger
 // Data is specific to the event type
 // TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
-	ID   Ident             `json:"id"`
-	Type EventType         `json:"type" binding:"required"`
-	Date time.Time         `json:"date" binding:"required"`
-	Data map[string]string `json:"data"`
+	ID        Ident             `json:"id"`
+	EventType Ident         `json:"type" binding:"required"`
+	Date      time.Time         `json:"date" binding:"required"`
+	Data      map[string]string `json:"data"`
 }
 
 type EventList []Event
+
+////////////////
+
+
+type EventType struct {
+	ID    Ident         `json:"id"`
+	Name  string `json:"type" binding:"required"`
+	Items map[string]piazza.MappingElementTypeName `json:"items" binding:"required"`
+}
+
+type EventTypeList []EventType
 
 ////////////////
 
@@ -131,9 +134,15 @@ type AlertList []Alert
 
 type AlertListById []Alert
 
-func (a AlertListById) Len() int           { return len(a) }
-func (a AlertListById) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-func (a AlertListById) Less(i, j int) bool { return a[i].ID < a[j].ID }
+func (a AlertListById) Len() int {
+	return len(a)
+}
+func (a AlertListById) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
+}
+func (a AlertListById) Less(i, j int) bool {
+	return a[i].ID < a[j].ID
+}
 
 func (list AlertList) ToSortedArray() []Alert {
 	array := make([]Alert, len(list))

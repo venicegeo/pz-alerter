@@ -91,6 +91,10 @@ func (suite *WorkflowTester) assertNoData() {
 	assert.NoError(t, err)
 	assert.Len(t, *es, 0)
 
+	ts, err := suite.workflow.GetFromEventTypes()
+	assert.NoError(t, err)
+	assert.Len(t, *ts, 0)
+
 	as, err := suite.workflow.GetFromAlerts()
 	assert.NoError(t, err)
 	assert.Len(t, *as, 0)
@@ -100,6 +104,23 @@ func (suite *WorkflowTester) assertNoData() {
 	assert.Len(t, *xs, 0)
 }
 
+func (suite *WorkflowTester) createEventType(name string, items map[string]piazza.MappingElementTypeName) client.Ident {
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	if items == nil {
+		items = map[string]piazza.MappingElementTypeName{}
+	}
+
+	et := &client.EventType{Name: name, Items: items}
+	idResp, err := workflow.PostToEventTypes(et)
+	assert.NoError(err)
+	assert.NotNil(idResp)
+
+	return idResp.ID
+}
+
 func TestRunSuite(t *testing.T) {
 	s := new(WorkflowTester)
 	suite.Run(t, s)
@@ -107,22 +128,25 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
-func (suite *WorkflowTester) TestAAResource() {
+func (suite *WorkflowTester) TestEventDB() {
 	t := suite.T()
 	assert := assert.New(t)
-	//workflow := suite.workflow
+	workflow := suite.workflow
 
 	es := suite.sys.ElasticSearchService
 
+	et1 := suite.createEventType("eventtype-a", nil)
+	et2 := suite.createEventType("eventType-b", nil)
+
 	var a1 client.Event
-	a1.Type = client.EventFoo
+	a1.EventType = et1
 	a1.Date = time.Now()
 
 	var a2 client.Event
-	a2.Type = client.EventBar
+	a2.EventType = et2
 	a2.Date = time.Now()
 
-	db, err := client.NewResourceDB(es, "event", "Event")
+	db, err := client.NewEventDB(es, "event", "Event")
 	assert.NoError(err)
 
 	a1Id, err := db.PostData(&a1, client.NewResourceID())
@@ -138,8 +162,8 @@ func (suite *WorkflowTester) TestAAResource() {
 		objs, err := client.ConvertRawsToEvents(raws)
 		assert.NoError(err)
 
-		ok1 := (objs[0].Type == a1.Type) && (objs[1].Type == a2.Type)
-		ok2 := (objs[1].Type == a1.Type) && (objs[0].Type == a2.Type)
+		ok1 := (objs[0].EventType == a1.EventType) && (objs[1].EventType == a2.EventType)
+		ok2 := (objs[1].EventType == a1.EventType) && (objs[0].EventType == a2.EventType)
 		assert.True((ok1 || ok2) && !(ok1 && ok2))
 	}
 
@@ -147,16 +171,21 @@ func (suite *WorkflowTester) TestAAResource() {
 	ok, err := db.GetById(a2Id, &t2)
 	assert.NoError(err)
 	assert.True(ok)
-	assert.EqualValues(a2.Type, t2.Type)
+	assert.EqualValues(a2.EventType, t2.EventType)
 
 	var t1 client.Event
 	ok, err = db.GetById(a1Id, &t1)
 	assert.NoError(err)
 	assert.True(ok)
-	assert.EqualValues(a1.Type, t1.Type)
+	assert.EqualValues(a1.EventType, t1.EventType)
+
+	err = workflow.DeleteOfEventType(et1)
+	assert.NoError(err)
+	err = workflow.DeleteOfEventType(et2)
+	assert.NoError(err)
 }
 
-func (suite *WorkflowTester) TestAlerts() {
+func (suite *WorkflowTester) TestAlertResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -217,8 +246,7 @@ func (suite *WorkflowTester) TestAlerts() {
 	suite.assertNoData()
 }
 
-
-func (suite *WorkflowTester) TestTriggers() {
+func (suite *WorkflowTester) TestTriggerResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -229,10 +257,13 @@ func (suite *WorkflowTester) TestTriggers() {
 	var err error
 	var idResponse *client.WorkflowIdResponse
 
+	et3 := suite.createEventType("eventtype-c", nil)
+	et4 := suite.createEventType("eventType-d", nil)
+
 	x1 := client.Trigger{
 		Title: "the x1 trigger",
 		Condition: client.Condition{
-			Type: client.EventFoo,
+			EventType: et3,
 			Query: "the x1 condition query",
 		},
 		Job: client.Job{
@@ -246,7 +277,7 @@ func (suite *WorkflowTester) TestTriggers() {
 	x2 := client.Trigger{
 		Title: "the x2 trigger",
 		Condition: client.Condition{
-			Type: client.EventBar,
+			EventType: et4,
 			Query: "the x2 condition query",
 		},
 		Job: client.Job{
@@ -281,10 +312,15 @@ func (suite *WorkflowTester) TestTriggers() {
 	err = workflow.DeleteOfTrigger(x2Id)
 	assert.NoError(err)
 
+	err = workflow.DeleteOfEventType(et3)
+	assert.NoError(err)
+	err = workflow.DeleteOfEventType(et4)
+	assert.NoError(err)
+
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TestEvents() {
+func (suite *WorkflowTester) TestEventResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -294,8 +330,11 @@ func (suite *WorkflowTester) TestEvents() {
 	var err error
 	var idResponse *client.WorkflowIdResponse
 
+	et5 := suite.createEventType("eventtype-e", nil)
+	et6 := suite.createEventType("eventType-f", nil)
+
 	var e1 client.Event
-	e1.Type = client.EventDataIngested
+	e1.EventType = et5
 	e1.Date = time.Now()
 	e1.Data = nil
 	idResponse, err = workflow.PostToEvents(&e1)
@@ -304,7 +343,7 @@ func (suite *WorkflowTester) TestEvents() {
 	assert.EqualValues("E1", e1ID)
 
 	var e2 client.Event
-	e2.Type = client.EventDataAccessed
+	e2.EventType = et6
 	e2.Date = time.Now()
 	e2.Data = nil
 	idResponse, err = workflow.PostToEvents(&e2)
@@ -332,6 +371,41 @@ func (suite *WorkflowTester) TestEvents() {
 	err = workflow.DeleteOfEvent("E2")
 	assert.NoError(err)
 
+	err = workflow.DeleteOfEventType(et5)
+	assert.NoError(err)
+	err = workflow.DeleteOfEventType(et6)
+	assert.NoError(err)
+
+	suite.assertNoData()
+}
+
+func (suite *WorkflowTester) TestEventTypeResource() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	workflow := suite.workflow
+	suite.assertNoData()
+
+	var err error
+
+	items := map[string]piazza.MappingElementTypeName{
+		"int": piazza.MappingElementTypeInteger,
+		"str": piazza.MappingElementTypeString,
+	}
+
+	et7 := suite.createEventType("eventtype-g", items)
+
+	assert.EqualValues("T5", et7)
+
+	es, err := workflow.GetFromEventTypes()
+	assert.NoError(err)
+	assert.Len(*es, 1)
+
+	assert.EqualValues("T5", et7)
+
+	err = workflow.DeleteOfEventType(et7)
+	assert.NoError(err)
+
 	suite.assertNoData()
 }
 
@@ -347,12 +421,16 @@ func (suite *WorkflowTester) TestTriggering() {
 	var err error
 	var idResponse *client.WorkflowIdResponse
 
+	et8 := suite.createEventType("eventType-h", nil)
+	et9 := suite.createEventType("eventType-i", nil)
+	et10 := suite.createEventType("eventType-j", nil)
+
 	////////////////
 
 	x1 := client.Trigger{
 		Title: "the x1 trigger",
 		Condition: client.Condition{
-			Type: client.EventFoo,
+			EventType: et8,
 			Query: "the x1 condition query",
 		},
 		Job: client.Job{
@@ -366,7 +444,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	x2 := client.Trigger{
 		Title: "the x2 trigger",
 		Condition: client.Condition{
-			Type: client.EventBar,
+			EventType: et9,
 			Query: "the x2 condition query",
 		},
 		Job: client.Job{
@@ -385,7 +463,7 @@ func (suite *WorkflowTester) TestTriggering() {
 
 	// will cause trigger X1
 	var e1 client.Event
-	e1.Type = client.EventFoo
+	e1.EventType = et8
 	e1.Date = time.Now()
 	e1.Data = map[string]string{"file": "e1.tif"}
 	idResponse, err = workflow.PostToEvents(&e1)
@@ -394,7 +472,7 @@ func (suite *WorkflowTester) TestTriggering() {
 
 	// will cause trigger X2
 	var e2 client.Event
-	e2.Type = client.EventBar
+	e2.EventType = et9
 	e2.Date = time.Now()
 	e2.Data = map[string]string{"file": "e2.tif"}
 	idResponse, err = workflow.PostToEvents(&e2)
@@ -403,7 +481,7 @@ func (suite *WorkflowTester) TestTriggering() {
 
 	// will cause no triggers
 	var e3 client.Event
-	e3.Type = client.EventBuz
+	e3.EventType = et10
 	e3.Date = time.Now()
 	idResponse, err = workflow.PostToEvents(&e3)
 	assert.NoError(err)
@@ -435,6 +513,13 @@ func (suite *WorkflowTester) TestTriggering() {
 	workflow.DeleteOfEvent(e3Id)
 	workflow.DeleteOfAlert(alerts[0].ID)
 	workflow.DeleteOfAlert(alerts[1].ID)
+
+	err = workflow.DeleteOfEventType(et8)
+	assert.NoError(err)
+	err = workflow.DeleteOfEventType(et9)
+	assert.NoError(err)
+	err = workflow.DeleteOfEventType(et10)
+	assert.NoError(err)
 
 	suite.assertNoData()
 }

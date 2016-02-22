@@ -42,17 +42,43 @@ func (m MockWorkflowService) GetAddress() string {
 	return m.address
 }
 
-func (*MockWorkflowService) PostToEvents(*Event) (*WorkflowIdResponse, error) {
+//================================================================
+
+func (*MockWorkflowService) GetFromEventTypes() (*[]EventType, error) {
 	return nil, nil
 }
 
+func (*MockWorkflowService) GetFromEventType(id Ident) (*EventType, error) {
+	return nil, nil
+}
+
+func (*MockWorkflowService) PostToEventTypes(*EventType) (*WorkflowIdResponse, error) {
+	return nil, nil
+}
+
+func (*MockWorkflowService) DeleteOfEventType(id Ident) error {
+	return nil
+}
+
+//================================================================
+
 func (*MockWorkflowService) GetFromEvents() (*[]Event, error) {
+	return nil, nil
+}
+
+func (*MockWorkflowService) GetFromEvent(id Ident) (*Event, error) {
+	return nil, nil
+}
+
+func (*MockWorkflowService) PostToEvents(*Event) (*WorkflowIdResponse, error) {
 	return nil, nil
 }
 
 func (*MockWorkflowService) DeleteOfEvent(id Ident) error {
 	return nil
 }
+
+//================================================================
 
 func (*MockWorkflowService) GetFromAlerts() (*[]Alert, error) {
 	return nil, nil
@@ -70,9 +96,7 @@ func (*MockWorkflowService) DeleteOfAlert(id Ident) error {
 	return nil
 }
 
-func (*MockWorkflowService) PostToTriggers(*Trigger) (*WorkflowIdResponse, error) {
-	return nil, nil
-}
+//================================================================
 
 func (*MockWorkflowService) GetFromTriggers() (*[]Trigger, error) {
 	return nil, nil
@@ -82,9 +106,15 @@ func (*MockWorkflowService) GetFromTrigger(id Ident) (*Trigger, error) {
 	return nil, nil
 }
 
+func (*MockWorkflowService) PostToTriggers(*Trigger) (*WorkflowIdResponse, error) {
+	return nil, nil
+}
+
 func (*MockWorkflowService) DeleteOfTrigger(id Ident) error {
 	return nil
 }
+
+//================================================================
 
 func (*MockWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 	return &WorkflowAdminStats{}, nil

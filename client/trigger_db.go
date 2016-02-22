@@ -53,8 +53,11 @@ type TriggerDB struct {
 	*ResourceDB
 }
 
-func NewTriggerDB(es *piazza.ElasticSearchService, index string, typename string) (*TriggerDB, error) {
-	rdb, err := NewResourceDB(es, index, typename)
+func NewTriggerDB(es *piazza.EsClient, index string, typename string) (*TriggerDB, error) {
+
+	esi := piazza.NewEsIndexClient(es, index)
+
+	rdb, err := NewResourceDB(es, esi, typename)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +90,7 @@ func (db *TriggerDB) CheckTriggers(event Event, alertDB *AlertRDB) error {
 	for _, trigger := range triggers {
 		cond := trigger.Condition
 
-		match := (cond.Type == event.Type)
+		match := (cond.EventType == event.EventType)
 
 		if match {
 			alert := NewAlert(NewAlertIdent())

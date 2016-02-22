@@ -33,38 +33,39 @@ func NewResourceID() Ident {
 //}
 
 type ResourceDB struct {
-	es       *piazza.ElasticSearchService
-	index    string
-	typename string
+	Es       *piazza.EsClient
+	Esi      *piazza.EsIndexClient
+	Typename string
 }
 
-func NewResourceDB(es *piazza.ElasticSearchService, index string, typename string) (*ResourceDB, error) {
+func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient, typename string) (*ResourceDB, error) {
 	db := &ResourceDB{
-		es:       es,
-		index:    index,
-		typename: typename,
+		Es:       es,
+		Esi:       esi,
+		Typename: typename,
 	}
 
-	err := es.DeleteIndex(index)
+	err := esi.Delete()
 	if err != nil {
 		return nil, err
 	}
 
-	err = es.CreateIndex(index)
+	err = esi.Create()
 	if err != nil {
 		return nil, err
 	}
+
 	return db, nil
 }
 
 func (db *ResourceDB) PostData(obj interface{}, id Ident) (Ident, error) {
 
-	_, err := db.es.PostData(db.index, db.typename, id.String(), obj)
+	_, err := db.Esi.PostData(db.Typename, id.String(), obj)
 	if err != nil {
 		return NoIdent, err
 	}
 
-	err = db.es.FlushIndex(db.index)
+	err = db.Esi.Flush()
 	if err != nil {
 		return NoIdent, err
 	}
@@ -73,7 +74,7 @@ func (db *ResourceDB) PostData(obj interface{}, id Ident) (Ident, error) {
 }
 
 func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
-	searchResult, err := db.es.SearchByMatchAll(db.index)
+	searchResult, err := db.Esi.SearchByMatchAll()
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +83,7 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 		return nil, nil
 	}
 
-	raws := make([]*json.RawMessage,searchResult.TotalHits())
+	raws := make([]*json.RawMessage, searchResult.TotalHits())
 
 	for i, hit := range searchResult.Hits.Hits {
 		raws[i] = hit.Source
@@ -93,7 +94,7 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 
 func (db *ResourceDB) GetById(id Ident, obj interface{}) (bool, error) {
 
-	getResult, err := db.es.GetById(db.index, id.String())
+	getResult, err := db.Esi.GetById(id.String())
 	if err != nil {
 		return false, err
 	}
@@ -111,12 +112,12 @@ func (db *ResourceDB) GetById(id Ident, obj interface{}) (bool, error) {
 }
 
 func (db *ResourceDB) DeleteByID(id string) (bool, error) {
-	res, err := db.es.DeleteById(db.index, db.typename, id)
+	res, err := db.Esi.DeleteById(db.Typename, id)
 	if err != nil {
 		return false, err
 	}
 
-	err = db.es.FlushIndex(db.index)
+	err = db.Esi.Flush()
 	if err != nil {
 		return false, err
 	}
