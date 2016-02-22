@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package main
+package client
 
 import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/venicegeo/pz-workflow/client"
-	"github.com/venicegeo/pz-workflow/server"
+	"github.com/venicegeo/pz-workflow/common"
+	_server "github.com/venicegeo/pz-workflow/server"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
@@ -27,15 +27,15 @@ import (
 	"time"
 )
 
-type WorkflowTester struct {
+type ClientTester struct {
 	suite.Suite
 	logger     loggerPkg.ILoggerService
 	uuidgenner uuidgenPkg.IUuidGenService
-	workflow   client.IWorkflowService
+	workflow   common.IWorkflowService
 	sys        *piazza.System
 }
 
-func (suite *WorkflowTester) SetupSuite() {
+func (suite *ClientTester) SetupSuite() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -59,14 +59,14 @@ func (suite *WorkflowTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	routes, err := server.CreateHandlers(sys, suite.logger, suite.uuidgenner)
+	routes, err := _server.CreateHandlers(sys, suite.logger, suite.uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	_ = sys.StartServer(routes)
 
-	suite.workflow, err = client.NewPzWorkflowService(sys, sys.Config.GetBindToAddress())
+	suite.workflow, err = NewPzWorkflowService(sys, sys.Config.GetBindToAddress())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -78,11 +78,11 @@ func (suite *WorkflowTester) SetupSuite() {
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TearDownSuite() {
+func (suite *ClientTester) TearDownSuite() {
 	//TODO: kill the go routine running the server
 }
 
-func (suite *WorkflowTester) assertNoData() {
+func (suite *ClientTester) assertNoData() {
 	t := suite.T()
 
 	var err error
@@ -104,7 +104,7 @@ func (suite *WorkflowTester) assertNoData() {
 	assert.Len(t, *xs, 0)
 }
 
-func (suite *WorkflowTester) createEventType(name string, items map[string]piazza.MappingElementTypeName) client.Ident {
+func (suite *ClientTester) createEventType(name string, items map[string]piazza.MappingElementTypeName) common.Ident {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -113,7 +113,7 @@ func (suite *WorkflowTester) createEventType(name string, items map[string]piazz
 		items = map[string]piazza.MappingElementTypeName{}
 	}
 
-	et := &client.EventType{Name: name, Items: items}
+	et := &common.EventType{Name: name, Items: items}
 	idResp, err := workflow.PostToEventTypes(et)
 	assert.NoError(err)
 	assert.NotNil(idResp)
@@ -122,70 +122,13 @@ func (suite *WorkflowTester) createEventType(name string, items map[string]piazz
 }
 
 func TestRunSuite(t *testing.T) {
-	s := new(WorkflowTester)
+	s := new(ClientTester)
 	suite.Run(t, s)
 }
 
 //---------------------------------------------------------------------------
 
-func (suite *WorkflowTester) TestEventDB() {
-	t := suite.T()
-	assert := assert.New(t)
-	workflow := suite.workflow
-
-	es := suite.sys.ElasticSearchService
-
-	et1 := suite.createEventType("eventtype-a", nil)
-	et2 := suite.createEventType("eventType-b", nil)
-
-	var a1 client.Event
-	a1.EventType = et1
-	a1.Date = time.Now()
-
-	var a2 client.Event
-	a2.EventType = et2
-	a2.Date = time.Now()
-
-	db, err := client.NewEventDB(es, "event", "Event")
-	assert.NoError(err)
-
-	a1Id, err := db.PostData(&a1, client.NewResourceID())
-	assert.NoError(err)
-	a2Id, err := db.PostData(&a2, client.NewResourceID())
-	assert.NoError(err)
-
-	{
-		raws, err := db.GetAll()
-		assert.NoError(err)
-		assert.Len(raws, 2)
-
-		objs, err := client.ConvertRawsToEvents(raws)
-		assert.NoError(err)
-
-		ok1 := (objs[0].EventType == a1.EventType) && (objs[1].EventType == a2.EventType)
-		ok2 := (objs[1].EventType == a1.EventType) && (objs[0].EventType == a2.EventType)
-		assert.True((ok1 || ok2) && !(ok1 && ok2))
-	}
-
-	var t2 client.Event
-	ok, err := db.GetById(a2Id, &t2)
-	assert.NoError(err)
-	assert.True(ok)
-	assert.EqualValues(a2.EventType, t2.EventType)
-
-	var t1 client.Event
-	ok, err = db.GetById(a1Id, &t1)
-	assert.NoError(err)
-	assert.True(ok)
-	assert.EqualValues(a1.EventType, t1.EventType)
-
-	err = workflow.DeleteOfEventType(et1)
-	assert.NoError(err)
-	err = workflow.DeleteOfEventType(et2)
-	assert.NoError(err)
-}
-
-func (suite *WorkflowTester) TestAlertResource() {
+func (suite *ClientTester) TestAlertResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -194,16 +137,16 @@ func (suite *WorkflowTester) TestAlertResource() {
 	workflow := suite.workflow
 
 	var err error
-	var idResponse *client.WorkflowIdResponse
+	var idResponse *common.WorkflowIdResponse
 
-	var a1 client.Alert
+	var a1 common.Alert
 	a1.TriggerId = "this is trigger 1"
 	idResponse, err = workflow.PostToAlerts(&a1)
 	assert.NoError(err)
 	a1ID := idResponse.ID
 	assert.EqualValues("A1", a1ID)
 
-	var a2 client.Alert
+	var a2 common.Alert
 	a2.TriggerId = "this is trigger 2"
 	idResponse, err = workflow.PostToAlerts(&a2)
 	assert.NoError(err)
@@ -246,7 +189,7 @@ func (suite *WorkflowTester) TestAlertResource() {
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TestTriggerResource() {
+func (suite *ClientTester) TestTriggerResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -255,18 +198,18 @@ func (suite *WorkflowTester) TestTriggerResource() {
 	workflow := suite.workflow
 
 	var err error
-	var idResponse *client.WorkflowIdResponse
+	var idResponse *common.WorkflowIdResponse
 
 	et3 := suite.createEventType("eventtype-c", nil)
 	et4 := suite.createEventType("eventType-d", nil)
 
-	x1 := client.Trigger{
+	x1 := common.Trigger{
 		Title: "the x1 trigger",
-		Condition: client.Condition{
+		Condition: common.Condition{
 			EventType: et3,
 			Query: "the x1 condition query",
 		},
-		Job: client.Job{
+		Job: common.Job{
 			Task: "the x1 task",
 		},
 	}
@@ -274,13 +217,13 @@ func (suite *WorkflowTester) TestTriggerResource() {
 	assert.NoError(err)
 	x1Id := idResponse.ID
 
-	x2 := client.Trigger{
+	x2 := common.Trigger{
 		Title: "the x2 trigger",
-		Condition: client.Condition{
+		Condition: common.Condition{
 			EventType: et4,
 			Query: "the x2 condition query",
 		},
-		Job: client.Job{
+		Job: common.Job{
 			Task: "the x2 task",
 		},
 	}
@@ -320,7 +263,7 @@ func (suite *WorkflowTester) TestTriggerResource() {
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TestEventResource() {
+func (suite *ClientTester) TestEventResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -328,12 +271,12 @@ func (suite *WorkflowTester) TestEventResource() {
 	suite.assertNoData()
 
 	var err error
-	var idResponse *client.WorkflowIdResponse
+	var idResponse *common.WorkflowIdResponse
 
 	et5 := suite.createEventType("eventtype-e", nil)
 	et6 := suite.createEventType("eventType-f", nil)
 
-	var e1 client.Event
+	var e1 common.Event
 	e1.EventType = et5
 	e1.Date = time.Now()
 	e1.Data = nil
@@ -342,7 +285,7 @@ func (suite *WorkflowTester) TestEventResource() {
 	e1ID := idResponse.ID
 	assert.EqualValues("E1", e1ID)
 
-	var e2 client.Event
+	var e2 common.Event
 	e2.EventType = et6
 	e2.Date = time.Now()
 	e2.Data = nil
@@ -379,7 +322,7 @@ func (suite *WorkflowTester) TestEventResource() {
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TestEventTypeResource() {
+func (suite *ClientTester) TestEventTypeResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -395,13 +338,13 @@ func (suite *WorkflowTester) TestEventTypeResource() {
 
 	et7 := suite.createEventType("eventtype-g", items)
 
-	assert.EqualValues("T5", et7)
+	assert.EqualValues("T3", et7)
 
 	es, err := workflow.GetFromEventTypes()
 	assert.NoError(err)
 	assert.Len(*es, 1)
 
-	assert.EqualValues("T5", et7)
+	assert.EqualValues("T3", et7)
 
 	err = workflow.DeleteOfEventType(et7)
 	assert.NoError(err)
@@ -409,7 +352,7 @@ func (suite *WorkflowTester) TestEventTypeResource() {
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TestTriggering() {
+func (suite *ClientTester) TestTriggering() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -419,7 +362,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	suite.assertNoData()
 
 	var err error
-	var idResponse *client.WorkflowIdResponse
+	var idResponse *common.WorkflowIdResponse
 
 	et8 := suite.createEventType("eventType-h", nil)
 	et9 := suite.createEventType("eventType-i", nil)
@@ -427,13 +370,13 @@ func (suite *WorkflowTester) TestTriggering() {
 
 	////////////////
 
-	x1 := client.Trigger{
+	x1 := common.Trigger{
 		Title: "the x1 trigger",
-		Condition: client.Condition{
+		Condition: common.Condition{
 			EventType: et8,
 			Query: "the x1 condition query",
 		},
-		Job: client.Job{
+		Job: common.Job{
 			Task: "the x1 task",
 		},
 	}
@@ -441,13 +384,13 @@ func (suite *WorkflowTester) TestTriggering() {
 	assert.NoError(err)
 	x1Id := idResponse.ID
 
-	x2 := client.Trigger{
+	x2 := common.Trigger{
 		Title: "the x2 trigger",
-		Condition: client.Condition{
+		Condition: common.Condition{
 			EventType: et9,
 			Query: "the x2 condition query",
 		},
-		Job: client.Job{
+		Job: common.Job{
 			Task: "the x2 task",
 		},
 	}
@@ -462,7 +405,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	/////////////////////
 
 	// will cause trigger X1
-	var e1 client.Event
+	var e1 common.Event
 	e1.EventType = et8
 	e1.Date = time.Now()
 	e1.Data = map[string]string{"file": "e1.tif"}
@@ -471,7 +414,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	e1Id := idResponse.ID
 
 	// will cause trigger X2
-	var e2 client.Event
+	var e2 common.Event
 	e2.EventType = et9
 	e2.Date = time.Now()
 	e2.Data = map[string]string{"file": "e2.tif"}
@@ -480,7 +423,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	e2Id := idResponse.ID
 
 	// will cause no triggers
-	var e3 client.Event
+	var e3 common.Event
 	e3.EventType = et10
 	e3.Date = time.Now()
 	idResponse, err = workflow.PostToEvents(&e3)
@@ -493,7 +436,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	assert.NoError(err)
 	assert.Len(*as, 2)
 
-	var list client.AlertList
+	var list common.AlertList
 	list = *as
 	alerts := list.ToSortedArray()
 	assert.Len(alerts, 2)
@@ -524,7 +467,7 @@ func (suite *WorkflowTester) TestTriggering() {
 	suite.assertNoData()
 }
 
-func (suite *WorkflowTester) TestAdmin() {
+func (suite *ClientTester) TestAdmin() {
 	t := suite.T()
 	assert := assert.New(t)
 

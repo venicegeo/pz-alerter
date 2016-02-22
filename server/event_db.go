@@ -12,28 +12,30 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package server
 
 import (
+	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 )
 
-var eventTypeID = 1
+var eventID = 1
 
-func NewEventTypeID() Ident {
-	id := NewIdentFromInt(eventTypeID)
-	eventTypeID++
-	return Ident("T" + string(id))
+func NewEventID() common.Ident {
+	id := common.NewIdentFromInt(eventID)
+	eventID++
+	return common.Ident("E" + string(id))
 }
 
 //---------------------------------------------------------------------------
 
 
-type EventTypeRDB struct {
+type EventRDB struct {
 	*ResourceDB
 }
 
-func NewEventTypeDB(es *piazza.EsClient, index string, typename string) (*EventTypeRDB, error) {
+func NewEventDB(es *piazza.EsClient, index string, typename string) (*EventRDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
@@ -41,6 +43,17 @@ func NewEventTypeDB(es *piazza.EsClient, index string, typename string) (*EventT
 	if err != nil {
 		return nil, err
 	}
-	etrdb := EventTypeRDB{ResourceDB: rdb}
-	return &etrdb, nil
+	erdb := EventRDB{ResourceDB: rdb}
+	return &erdb, nil
+}
+
+func ConvertRawsToEvents(raws []*json.RawMessage) ([]common.Event, error) {
+	objs := make([]common.Event, len(raws))
+	for i, _ := range raws {
+		err := json.Unmarshal(*raws[i], &objs[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return objs, nil
 }

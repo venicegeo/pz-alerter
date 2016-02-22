@@ -12,12 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package server
 
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
 	"log"
+	"github.com/venicegeo/pz-workflow/common"
 	"sync"
 )
 
@@ -27,20 +28,20 @@ var triggerID = 1
 
 var triggerIdLock sync.Mutex
 
-func NewTriggerIdent() Ident {
+func NewTriggerIdent() common.Ident {
 	triggerIdLock.Lock()
-	id := NewIdentFromInt(triggerID)
+	id := common.NewIdentFromInt(triggerID)
 	triggerID++
 	triggerIdLock.Unlock()
 	s := "X" + id.String()
-	return Ident(s)
+	return common.Ident(s)
 }
 
-func NewTrigger(title string, condition Condition, job Job) Trigger {
+func NewTrigger(title string, condition common.Condition, job common.Job) common.Trigger {
 
 	id := NewTriggerIdent()
 
-	return Trigger{
+	return common.Trigger{
 		ID:        id,
 		Condition: condition,
 		Job:       job,
@@ -65,8 +66,8 @@ func NewTriggerDB(es *piazza.EsClient, index string, typename string) (*TriggerD
 	return &ardb, nil
 }
 
-func ConvertRawsToTriggers(raws []*json.RawMessage) ([]Trigger, error) {
-	objs := make([]Trigger, len(raws))
+func ConvertRawsToTriggers(raws []*json.RawMessage) ([]common.Trigger, error) {
+	objs := make([]common.Trigger, len(raws))
 	for i, _ := range raws {
 		err := json.Unmarshal(*raws[i], &objs[i])
 		if err != nil {
@@ -76,7 +77,7 @@ func ConvertRawsToTriggers(raws []*json.RawMessage) ([]Trigger, error) {
 	return objs, nil
 }
 
-func (db *TriggerDB) CheckTriggers(event Event, alertDB *AlertRDB) error {
+func (db *TriggerDB) CheckTriggers(event common.Event, alertDB *AlertRDB) error {
 	tmp, err := db.GetAll()
 	if err != nil {
 		return err

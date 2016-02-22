@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 	"io/ioutil"
 	"net/http"
 )
@@ -31,7 +32,7 @@ type PzWorkflowService struct {
 }
 
 func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowService, error) {
-	var _ IWorkflowService = new(PzWorkflowService)
+	var _ common.IWorkflowService = new(PzWorkflowService)
 	var _ piazza.IService = new(PzWorkflowService)
 
 	var err error
@@ -62,7 +63,7 @@ func (c PzWorkflowService) GetAddress() string {
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *PzWorkflowService) GetFromEventTypes() (*[]EventType, error) {
+func (c *PzWorkflowService) GetFromEventTypes() (*[]common.EventType, error) {
 	resp, err := http.Get(c.url + "/eventtypes")
 	if err != nil {
 		return nil, err
@@ -77,7 +78,7 @@ func (c *PzWorkflowService) GetFromEventTypes() (*[]EventType, error) {
 	}
 	defer resp.Body.Close()
 
-	var x []EventType
+	var x []common.EventType
 	if len(d) > 0 {
 		err = json.Unmarshal(d, &x)
 		if err != nil {
@@ -88,7 +89,7 @@ func (c *PzWorkflowService) GetFromEventTypes() (*[]EventType, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) GetFromEventType(id Ident) (*EventType, error) {
+func (c *PzWorkflowService) GetFromEventType(id common.Ident) (*common.EventType, error) {
 
 	resp, err := http.Get(c.url + "/eventtypes/" + id.String())
 	if err != nil {
@@ -104,7 +105,7 @@ func (c *PzWorkflowService) GetFromEventType(id Ident) (*EventType, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var x EventType
+	var x common.EventType
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -117,7 +118,7 @@ func (c *PzWorkflowService) GetFromEventType(id Ident) (*EventType, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) PostToEventTypes(eventType *EventType) (*WorkflowIdResponse, error) {
+func (c *PzWorkflowService) PostToEventTypes(eventType *common.EventType) (*common.WorkflowIdResponse, error) {
 
 	body, err := json.Marshal(eventType)
 	if err != nil {
@@ -139,7 +140,7 @@ func (c *PzWorkflowService) PostToEventTypes(eventType *EventType) (*WorkflowIdR
 		return nil, err
 	}
 
-	result := new(WorkflowIdResponse)
+	result := new(common.WorkflowIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
 		return nil, err
@@ -148,7 +149,7 @@ func (c *PzWorkflowService) PostToEventTypes(eventType *EventType) (*WorkflowIdR
 	return result, nil
 }
 
-func (c *PzWorkflowService) DeleteOfEventType(id Ident) error {
+func (c *PzWorkflowService) DeleteOfEventType(id common.Ident) error {
 	resp, err := piazza.HTTPDelete(c.url + "/eventtypes/" + id.String())
 	if err != nil {
 		return err
@@ -162,7 +163,7 @@ func (c *PzWorkflowService) DeleteOfEventType(id Ident) error {
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *PzWorkflowService) GetFromEvents() (*[]Event, error) {
+func (c *PzWorkflowService) GetFromEvents() (*[]common.Event, error) {
 	resp, err := http.Get(c.url + "/events")
 	if err != nil {
 		return nil, err
@@ -177,7 +178,7 @@ func (c *PzWorkflowService) GetFromEvents() (*[]Event, error) {
 	}
 	defer resp.Body.Close()
 
-	var x []Event
+	var x []common.Event
 	if len(d) > 0 {
 		err = json.Unmarshal(d, &x)
 		if err != nil {
@@ -188,7 +189,7 @@ func (c *PzWorkflowService) GetFromEvents() (*[]Event, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) GetFromEvent(id Ident) (*Event, error) {
+func (c *PzWorkflowService) GetFromEvent(id common.Ident) (*common.Event, error) {
 
 	resp, err := http.Get(c.url + "/events/" + id.String())
 	if err != nil {
@@ -204,7 +205,7 @@ func (c *PzWorkflowService) GetFromEvent(id Ident) (*Event, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var x Event
+	var x common.Event
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -217,7 +218,7 @@ func (c *PzWorkflowService) GetFromEvent(id Ident) (*Event, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) PostToEvents(event *Event) (*WorkflowIdResponse, error) {
+func (c *PzWorkflowService) PostToEvents(event *common.Event) (*common.WorkflowIdResponse, error) {
 
 	body, err := json.Marshal(event)
 	if err != nil {
@@ -239,7 +240,7 @@ func (c *PzWorkflowService) PostToEvents(event *Event) (*WorkflowIdResponse, err
 		return nil, err
 	}
 
-	result := new(WorkflowIdResponse)
+	result := new(common.WorkflowIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
 		return nil, err
@@ -248,7 +249,7 @@ func (c *PzWorkflowService) PostToEvents(event *Event) (*WorkflowIdResponse, err
 	return result, nil
 }
 
-func (c *PzWorkflowService) DeleteOfEvent(id Ident) error {
+func (c *PzWorkflowService) DeleteOfEvent(id common.Ident) error {
 	resp, err := piazza.HTTPDelete(c.url + "/events/" + id.String())
 	if err != nil {
 		return err
@@ -261,7 +262,7 @@ func (c *PzWorkflowService) DeleteOfEvent(id Ident) error {
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *PzWorkflowService) GetFromAlerts() (*[]Alert, error) {
+func (c *PzWorkflowService) GetFromAlerts() (*[]common.Alert, error) {
 	resp, err := http.Get(c.url + "/alerts")
 	if err != nil {
 		return nil, err
@@ -276,7 +277,7 @@ func (c *PzWorkflowService) GetFromAlerts() (*[]Alert, error) {
 	}
 	defer resp.Body.Close()
 
-	var x []Alert
+	var x []common.Alert
 	if len(d) > 0 {
 		err = json.Unmarshal(d, &x)
 		if err != nil {
@@ -287,7 +288,7 @@ func (c *PzWorkflowService) GetFromAlerts() (*[]Alert, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) GetFromAlert(id Ident) (*Alert, error) {
+func (c *PzWorkflowService) GetFromAlert(id common.Ident) (*common.Alert, error) {
 
 	resp, err := http.Get(c.url + "/alerts/" + id.String())
 	if err != nil {
@@ -303,7 +304,7 @@ func (c *PzWorkflowService) GetFromAlert(id Ident) (*Alert, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	var x Alert
+	var x common.Alert
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -316,7 +317,7 @@ func (c *PzWorkflowService) GetFromAlert(id Ident) (*Alert, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) PostToAlerts(event *Alert) (*WorkflowIdResponse, error) {
+func (c *PzWorkflowService) PostToAlerts(event *common.Alert) (*common.WorkflowIdResponse, error) {
 
 	body, err := json.Marshal(event)
 	if err != nil {
@@ -338,7 +339,7 @@ func (c *PzWorkflowService) PostToAlerts(event *Alert) (*WorkflowIdResponse, err
 		return nil, err
 	}
 
-	result := new(WorkflowIdResponse)
+	result := new(common.WorkflowIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
 		return nil, err
@@ -347,7 +348,7 @@ func (c *PzWorkflowService) PostToAlerts(event *Alert) (*WorkflowIdResponse, err
 	return result, nil
 }
 
-func (c *PzWorkflowService) DeleteOfAlert(id Ident) error {
+func (c *PzWorkflowService) DeleteOfAlert(id common.Ident) error {
 	resp, err := piazza.HTTPDelete(c.url + "/alerts/" + id.String())
 	if err != nil {
 		return err
@@ -360,7 +361,7 @@ func (c *PzWorkflowService) DeleteOfAlert(id Ident) error {
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *PzWorkflowService) GetFromTriggers() (*[]Trigger, error) {
+func (c *PzWorkflowService) GetFromTriggers() (*[]common.Trigger, error) {
 	resp, err := http.Get(c.url + "/triggers")
 	if err != nil {
 		return nil, err
@@ -375,7 +376,7 @@ func (c *PzWorkflowService) GetFromTriggers() (*[]Trigger, error) {
 	}
 	defer resp.Body.Close()
 
-	var x []Trigger
+	var x []common.Trigger
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -384,7 +385,7 @@ func (c *PzWorkflowService) GetFromTriggers() (*[]Trigger, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) GetFromTrigger(id Ident) (*Trigger, error) {
+func (c *PzWorkflowService) GetFromTrigger(id common.Ident) (*common.Trigger, error) {
 	resp, err := http.Get(c.url + "/triggers/" + id.String())
 	if err != nil {
 		return nil, err
@@ -400,7 +401,7 @@ func (c *PzWorkflowService) GetFromTrigger(id Ident) (*Trigger, error) {
 	}
 	defer resp.Body.Close()
 
-	var x Trigger
+	var x common.Trigger
 	err = json.Unmarshal(d, &x)
 	if err != nil {
 		return nil, err
@@ -413,7 +414,7 @@ func (c *PzWorkflowService) GetFromTrigger(id Ident) (*Trigger, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) PostToTriggers(trigger *Trigger) (*WorkflowIdResponse, error) {
+func (c *PzWorkflowService) PostToTriggers(trigger *common.Trigger) (*common.WorkflowIdResponse, error) {
 	body, err := json.Marshal(trigger)
 	if err != nil {
 		return nil, err
@@ -433,7 +434,7 @@ func (c *PzWorkflowService) PostToTriggers(trigger *Trigger) (*WorkflowIdRespons
 		return nil, err
 	}
 
-	result := new(WorkflowIdResponse)
+	result := new(common.WorkflowIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
 		return nil, err
@@ -442,7 +443,7 @@ func (c *PzWorkflowService) PostToTriggers(trigger *Trigger) (*WorkflowIdRespons
 	return result, nil
 }
 
-func (c *PzWorkflowService) DeleteOfTrigger(id Ident) error {
+func (c *PzWorkflowService) DeleteOfTrigger(id common.Ident) error {
 	resp, err := piazza.HTTPDelete(c.url + "/triggers/" + id.String())
 	if err != nil {
 		return err
@@ -455,7 +456,7 @@ func (c *PzWorkflowService) DeleteOfTrigger(id Ident) error {
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
+func (c *PzWorkflowService) GetFromAdminStats() (*common.WorkflowAdminStats, error) {
 
 	resp, err := http.Get(c.url + "/admin/stats")
 	if err != nil {
@@ -468,7 +469,7 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 		return nil, err
 	}
 
-	stats := new(WorkflowAdminStats)
+	stats := new(common.WorkflowAdminStats)
 	err = json.Unmarshal(data, stats)
 	if err != nil {
 		return nil, err
@@ -477,7 +478,7 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 	return stats, nil
 }
 
-func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, error) {
+func (c *PzWorkflowService) GetFromAdminSettings() (*common.WorkflowAdminSettings, error) {
 
 	resp, err := http.Get(c.url + "/admin/settings")
 	if err != nil {
@@ -490,7 +491,7 @@ func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, erro
 		return nil, err
 	}
 
-	settings := new(WorkflowAdminSettings)
+	settings := new(common.WorkflowAdminSettings)
 	err = json.Unmarshal(data, settings)
 	if err != nil {
 		return nil, err
@@ -499,7 +500,7 @@ func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, erro
 	return settings, nil
 }
 
-func (c *PzWorkflowService) PostToAdminSettings(settings *WorkflowAdminSettings) error {
+func (c *PzWorkflowService) PostToAdminSettings(settings *common.WorkflowAdminSettings) error {
 
 	data, err := json.Marshal(settings)
 	if err != nil {

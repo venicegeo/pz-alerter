@@ -12,35 +12,36 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package server
 
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 	"sync"
 )
 
 var alertIdLock sync.Mutex
 var alertID = 1
 
-func NewAlertIdent() Ident {
+func NewAlertIdent() common.Ident {
 	alertIdLock.Lock()
-	id := NewIdentFromInt(alertID)
+	id := common.NewIdentFromInt(alertID)
 	alertID++
 	alertIdLock.Unlock()
 	s := "A" + id.String()
-	return Ident(s)
+	return common.Ident(s)
 }
 
 // newAlert makes an Alert, setting the ID for you.
-func NewAlert(triggerId Ident) Alert {
+func NewAlert(triggerId common.Ident) common.Alert {
 
-	id := NewIdentFromInt(alertID)
+	id := common.NewIdentFromInt(alertID)
 	alertID++
 	s := "A" + string(id)
 
-	return Alert{
-		ID:        Ident(s),
+	return common.Alert{
+		ID:        common.Ident(s),
 		TriggerId: triggerId,
 	}
 }
@@ -63,8 +64,8 @@ func NewAlertDB(es *piazza.EsClient, index string, typename string) (*AlertRDB, 
 	return &ardb, nil
 }
 
-func ConvertRawsToAlerts(raws []*json.RawMessage) ([]Alert, error) {
-	objs := make([]Alert, len(raws))
+func ConvertRawsToAlerts(raws []*json.RawMessage) ([]common.Alert, error) {
+	objs := make([]common.Alert, len(raws))
 	for i, _ := range raws {
 		err := json.Unmarshal(*raws[i], &objs[i])
 		if err != nil {
@@ -74,7 +75,7 @@ func ConvertRawsToAlerts(raws []*json.RawMessage) ([]Alert, error) {
 	return objs, nil
 }
 
-func (db *AlertRDB) GetByConditionID(conditionID string) ([]Alert, error) {
+func (db *AlertRDB) GetByConditionID(conditionID string) ([]common.Alert, error) {
 	searchResult, err := db.Esi.SearchByTermQuery("condition_id", conditionID)
 	if err != nil {
 		return nil, err
@@ -84,9 +85,9 @@ func (db *AlertRDB) GetByConditionID(conditionID string) ([]Alert, error) {
 		return nil, nil
 	}
 
-	var as []Alert
+	var as []common.Alert
 	for _, hit := range searchResult.Hits.Hits {
-		var a Alert
+		var a common.Alert
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
 			return nil, err

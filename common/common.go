@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package common
 
 import (
 	piazza "github.com/venicegeo/pz-gocommon"
@@ -66,6 +66,10 @@ func (id Ident) String() string {
 func NewIdentFromInt(id int) Ident {
 	s := strconv.Itoa(id)
 	return Ident(s)
+}
+
+type IIdentable interface {
+	GetId() Ident
 }
 
 /////////////////

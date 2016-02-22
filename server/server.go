@@ -16,7 +16,7 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-workflow/client"
+	"github.com/venicegeo/pz-workflow/common"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
@@ -28,14 +28,14 @@ import (
 
 type LockedAdminSettings struct {
 	sync.Mutex
-	client.WorkflowAdminSettings
+	common.WorkflowAdminSettings
 }
 
 var settings LockedAdminSettings
 
 type LockedAdminStats struct {
 	sync.Mutex
-	client.WorkflowAdminStats
+	common.WorkflowAdminStats
 }
 
 var stats LockedAdminStats
@@ -61,7 +61,7 @@ func handleGetAdminSettings(c *gin.Context) {
 }
 
 func handlePostAdminSettings(c *gin.Context) {
-	var s client.WorkflowAdminSettings
+	var s common.WorkflowAdminSettings
 	err := c.BindJSON(&s)
 	if err != nil {
 		c.Error(err)
@@ -81,22 +81,22 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	es := sys.ElasticSearchService
 
-	alertDB, err := client.NewAlertDB(es, "alerts", "Alert")
+	alertDB, err := NewAlertDB(es, "alerts", "Alert")
 	if err != nil {
 		return nil, err
 	}
 
-	triggerDB, err := client.NewTriggerDB(es, "triggers", "Triggers")
+	triggerDB, err := NewTriggerDB(es, "triggers", "Triggers")
 	if err != nil {
 		return nil, err
 	}
 
-	eventDB, err := client.NewEventDB(es, "events", "Events")
+	eventDB, err := NewEventDB(es, "events", "Events")
 	if err != nil {
 		return nil, err
 	}
 
-	eventTypeDB, err := client.NewEventTypeDB(es, "eventtypes", "EventTypes")
+	eventTypeDB, err := NewEventTypeDB(es, "eventtypes", "EventTypes")
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	// ****************** EVENTS ******************
 
 	router.POST("/v1/events", func(c *gin.Context) {
-		event := &client.Event{}
+		event := &common.Event{}
 		err := c.BindJSON(event)
 		if err != nil {
 			//pzService.Error("POST to /v1/events", err)
@@ -142,14 +142,14 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		event.ID = client.NewEventID()
+		event.ID = NewEventID()
 		id, err := eventDB.PostData(event, event.ID)
 		if err != nil {
 			c.Error(err)
 			return
 		}
 
-		a := client.WorkflowIdResponse{ID: id}
+		a := common.WorkflowIdResponse{ID: id}
 		c.IndentedJSON(http.StatusCreated, a)
 
 		triggerDB.CheckTriggers(*event, alertDB)
@@ -167,8 +167,8 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.GET("/v1/events/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var v client.Event
+		id := common.Ident(s)
+		var v common.Event
 		ok, err := eventDB.GetById(id, &v)
 		if err != nil {
 			c.Error(err)
@@ -198,7 +198,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	// ****************** EVENT TYPES ******************
 
 	router.POST("/v1/eventtypes", func(c *gin.Context) {
-		eventType := &client.EventType{}
+		eventType := &common.EventType{}
 		err := c.BindJSON(eventType)
 		if err != nil {
 			log.Printf("POST to /v1/eventtypes: %v", err)
@@ -206,14 +206,14 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		eventType.ID = client.NewEventTypeID()
+		eventType.ID = NewEventTypeID()
 		id, err := eventTypeDB.PostData(eventType, eventType.ID)
 		if err != nil {
 			c.Error(err)
 			return
 		}
 
-		a := client.WorkflowIdResponse{ID: id}
+		a := common.WorkflowIdResponse{ID: id}
 		c.IndentedJSON(http.StatusCreated, a)
 	})
 
@@ -229,8 +229,8 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var v client.Event
+		id := common.Ident(s)
+		var v common.Event
 		ok, err := eventTypeDB.GetById(id, &v)
 		if err != nil {
 			c.Error(err)
@@ -260,7 +260,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	// ****************** TRIGGERS ******************
 
 	router.POST("/v1/triggers", func(c *gin.Context) {
-		trigger := &client.Trigger{}
+		trigger := &common.Trigger{}
 		err := c.BindJSON(trigger)
 		if err != nil {
 			//pzService.Error("POST to /v1/events", err)
@@ -269,7 +269,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		trigger.ID = client.NewTriggerIdent()
+		trigger.ID = NewTriggerIdent()
 
 		_, err = triggerDB.PostData(trigger, trigger.ID)
 		if err != nil {
@@ -277,7 +277,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		a := client.WorkflowIdResponse{ID: trigger.ID}
+		a := common.WorkflowIdResponse{ID: trigger.ID}
 		c.IndentedJSON(http.StatusCreated, a)
 	})
 
@@ -294,8 +294,8 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.GET("/v1/triggers/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var v client.Trigger
+		id := common.Ident(s)
+		var v common.Trigger
 		ok, err := triggerDB.GetById(id, &v)
 		if err != nil {
 			c.Error(err)
@@ -352,8 +352,8 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.GET("/v1/alerts/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var alert client.Alert
+		id := common.Ident(s)
+		var alert common.Alert
 		ok, err := alertDB.GetById(id, &alert)
 		if err != nil {
 			c.Error(err)
@@ -367,7 +367,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	})
 
 	router.POST("/v1/alerts", func(c *gin.Context) {
-		var alert client.Alert
+		var alert common.Alert
 		err := c.BindJSON(&alert)
 		if err != nil {
 			c.Error(err)
@@ -375,7 +375,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		alert.ID = client.NewAlertIdent()
+		alert.ID = NewAlertIdent()
 
 		_, err = alertDB.PostData(&alert, alert.ID)
 		if err != nil {

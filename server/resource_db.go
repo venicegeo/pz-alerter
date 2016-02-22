@@ -12,19 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package server
 
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 )
 
 var resourceID = 1
 
-func NewResourceID() Ident {
-	id := NewIdentFromInt(resourceID)
+func NewResourceID() common.Ident {
+	id := common.NewIdentFromInt(resourceID)
 	resourceID++
-	return Ident("R" + string(id))
+	return common.Ident("R" + string(id))
 }
 
 //type Resource interface {
@@ -58,16 +59,16 @@ func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient, typename stri
 	return db, nil
 }
 
-func (db *ResourceDB) PostData(obj interface{}, id Ident) (Ident, error) {
+func (db *ResourceDB) PostData(obj interface{}, id common.Ident) (common.Ident, error) {
 
 	_, err := db.Esi.PostData(db.Typename, id.String(), obj)
 	if err != nil {
-		return NoIdent, err
+		return common.NoIdent, err
 	}
 
 	err = db.Esi.Flush()
 	if err != nil {
-		return NoIdent, err
+		return common.NoIdent, err
 	}
 
 	return id, nil
@@ -92,7 +93,7 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 	return raws, nil
 }
 
-func (db *ResourceDB) GetById(id Ident, obj interface{}) (bool, error) {
+func (db *ResourceDB) GetById(id common.Ident, obj interface{}) (bool, error) {
 
 	getResult, err := db.Esi.GetById(id.String())
 	if err != nil {
