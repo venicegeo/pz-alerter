@@ -15,7 +15,7 @@
 package common
 
 import (
-	piazza "github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon"
 	"sort"
 	"strconv"
 	"time"
@@ -72,20 +72,20 @@ type IIdentable interface {
 	GetId() Ident
 }
 
-/////////////////
+//---------------------------------------------------------------------------
 
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventType Ident `json:"type" binding:"required"`
-	Query     string    `json:"query" binding:"required"`
+	EventType Ident  `json:"type" binding:"required"`
+	Query     string `json:"query" binding:"required"`
 }
 
 type Job struct {
 	Task string
 }
 
-/////////////////
+//---------------------------------------------------------------------------
 
 // when the and'ed set of Conditions all are true, do Something
 // Events are the results of the Conditions queries
@@ -100,32 +100,33 @@ type Trigger struct {
 
 type TriggerList []Trigger
 
-/////////////////
+//---------------------------------------------------------------------------
 
 // posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 // TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
 	ID        Ident             `json:"id"`
-	EventType Ident         `json:"type" binding:"required"`
+	EventType Ident             `json:"type" binding:"required"`
 	Date      time.Time         `json:"date" binding:"required"`
 	Data      map[string]string `json:"data"`
 }
 
 type EventList []Event
 
-////////////////
+//---------------------------------------------------------------------------
 
+type EsJson string
 
 type EventType struct {
-	ID    Ident         `json:"id"`
-	Name  string `json:"type" binding:"required"`
-	Items map[string]piazza.MappingElementTypeName `json:"items" binding:"required"`
+	ID      Ident  `json:"id"`
+	Name    string `json:"name" binding:"required"`
+	Mapping EsJson `json:"mapping" binding:"required"`
 }
 
 type EventTypeList []EventType
 
-////////////////
+//---------------------------------------------------------------------------
 
 // a notification, automatically created when an Trigger happens
 type Alert struct {
@@ -159,7 +160,7 @@ func (list AlertList) ToSortedArray() []Alert {
 	return array
 }
 
-//////////////
+//---------------------------------------------------------------------------
 
 type WorkflowAdminStats struct {
 	Date          time.Time `json:"date"`

@@ -44,7 +44,7 @@ func init() {
 	stats.Date = time.Now()
 }
 
-///////////////////////////////////////////////////////////
+//---------------------------------------------------------------------------
 
 func handleGetAdminStats(c *gin.Context) {
 	stats.Lock()
@@ -123,14 +123,14 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	//router.Use(gin.Logger())
 	//router.Use(gin.Recovery())
 
-	//---------------------------------
+	//---------------------------------------------------------------
 
 	router.GET("/", func(c *gin.Context) {
 		log.Print("got health-check request")
 		c.String(http.StatusOK, "Hi. I'm pz-workflow.")
 	})
 
-	// ****************** EVENTS ******************
+	// ---------------------- EVENTS ----------------------
 
 	router.POST("/v1/events", func(c *gin.Context) {
 		event := &common.Event{}
@@ -195,7 +195,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	// ****************** EVENT TYPES ******************
+	// ---------------------- EVENT TYPES ----------------------
 
 	router.POST("/v1/eventtypes", func(c *gin.Context) {
 		eventType := &common.EventType{}
@@ -257,7 +257,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	// ****************** TRIGGERS ******************
+	// ---------------------- TRIGGERS ----------------------
 
 	router.POST("/v1/triggers", func(c *gin.Context) {
 		trigger := &common.Trigger{}
@@ -322,7 +322,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	// ****************** ALERTS ******************
+	// ---------------------- ALERTS ----------------------
 
 	router.GET("/v1/alerts", func(c *gin.Context) {
 
@@ -399,7 +399,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	//---------------------------------
+	//-----------------------------------------------------------------------
 
 	router.GET("/v1/admin/stats", func(c *gin.Context) { handleGetAdminStats(c) })
 

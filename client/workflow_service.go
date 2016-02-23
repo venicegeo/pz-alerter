@@ -120,7 +120,7 @@ func (c *PzWorkflowService) GetFromEventType(id common.Ident) (*common.EventType
 
 func (c *PzWorkflowService) PostToEventTypes(eventType *common.EventType) (*common.WorkflowIdResponse, error) {
 
-	body, err := json.Marshal(eventType)
+	body, err := json.Marshal(*eventType)
 	if err != nil {
 		return nil, err
 	}

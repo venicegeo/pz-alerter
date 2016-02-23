@@ -104,16 +104,23 @@ func (suite *ClientTester) assertNoData() {
 	assert.Len(t, *xs, 0)
 }
 
-func (suite *ClientTester) createEventType(name string, items map[string]piazza.MappingElementTypeName) common.Ident {
+func (suite *ClientTester) createEventType(name string, jsn common.EsJson) common.Ident {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
 
-	if items == nil {
-		items = map[string]piazza.MappingElementTypeName{}
+	if jsn == "" {
+		jsn = `{
+			"MyTestObj": {
+				"properties":{
+					"mysillystring": {"type": "string"}
+				}
+			}
+		}`
 	}
 
-	et := &common.EventType{Name: name, Items: items}
+
+	et := &common.EventType{Name: name, Mapping: jsn}
 	idResp, err := workflow.PostToEventTypes(et)
 	assert.NoError(err)
 	assert.NotNil(idResp)
@@ -200,8 +207,8 @@ func (suite *ClientTester) TestTriggerResource() {
 	var err error
 	var idResponse *common.WorkflowIdResponse
 
-	et3 := suite.createEventType("eventtype-c", nil)
-	et4 := suite.createEventType("eventType-d", nil)
+	et3 := suite.createEventType("eventtype-c", "")
+	et4 := suite.createEventType("eventType-d", "")
 
 	x1 := common.Trigger{
 		Title: "the x1 trigger",
@@ -273,8 +280,8 @@ func (suite *ClientTester) TestEventResource() {
 	var err error
 	var idResponse *common.WorkflowIdResponse
 
-	et5 := suite.createEventType("eventtype-e", nil)
-	et6 := suite.createEventType("eventType-f", nil)
+	et5 := suite.createEventType("eventtype-e", "")
+	et6 := suite.createEventType("eventtype-f", "")
 
 	var e1 common.Event
 	e1.EventType = et5
@@ -322,7 +329,7 @@ func (suite *ClientTester) TestEventResource() {
 	suite.assertNoData()
 }
 
-func (suite *ClientTester) TestEventTypeResource() {
+func (suite *ClientTester) TestAAAEventTypeResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -331,20 +338,23 @@ func (suite *ClientTester) TestEventTypeResource() {
 
 	var err error
 
-	items := map[string]piazza.MappingElementTypeName{
-		"int": piazza.MappingElementTypeInteger,
-		"str": piazza.MappingElementTypeString,
-	}
+	var jsn common.EsJson =
+	`{
+		"MyTestObj": {
+			"properties":{
+				"myint": {"type": "integer"},
+				"mystr": {"type": "string"}
+			}
+		}
+	}`
 
-	et7 := suite.createEventType("eventtype-g", items)
-
-	assert.EqualValues("T3", et7)
+	et7 := suite.createEventType("eventtype-g", jsn)
 
 	es, err := workflow.GetFromEventTypes()
 	assert.NoError(err)
 	assert.Len(*es, 1)
 
-	assert.EqualValues("T3", et7)
+	assert.EqualValues((*es)[0].ID, et7)
 
 	err = workflow.DeleteOfEventType(et7)
 	assert.NoError(err)
@@ -364,9 +374,9 @@ func (suite *ClientTester) TestTriggering() {
 	var err error
 	var idResponse *common.WorkflowIdResponse
 
-	et8 := suite.createEventType("eventType-h", nil)
-	et9 := suite.createEventType("eventType-i", nil)
-	et10 := suite.createEventType("eventType-j", nil)
+	et8 := suite.createEventType("eventType-h", "")
+	et9 := suite.createEventType("eventType-i", "")
+	et10 := suite.createEventType("eventType-j", "")
 
 	////////////////
 
