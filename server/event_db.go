@@ -47,6 +47,38 @@ func NewEventDB(es *piazza.EsClient, index string, typename string) (*EventRDB, 
 	return &erdb, nil
 }
 
+
+
+func (db *EventRDB) PostEventData(eventType string, obj interface{}, id common.Ident) (common.Ident, error) {
+
+	_, err := db.Esi.PostData(eventType, id.String(), obj)
+	if err != nil {
+		return common.NoIdent, err
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return common.NoIdent, err
+	}
+
+	return id, nil
+}
+
+func (db *EventRDB) DeleteByTypedID(eventTypeName string, id string) (bool, error) {
+	res, err := db.Esi.DeleteById(eventTypeName, id)
+	if err != nil {
+		return false, err
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+
+	return res.Found, nil
+}
+
+
 func ConvertRawsToEvents(raws []*json.RawMessage) ([]common.Event, error) {
 	objs := make([]common.Event, len(raws))
 	for i, _ := range raws {

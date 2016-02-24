@@ -15,7 +15,12 @@
 package common
 
 import (
+	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/venicegeo/pz-gocommon"
+	"io/ioutil"
+	"net/http"
 	"sort"
 	"strconv"
 	"time"
@@ -33,8 +38,8 @@ type IWorkflowService interface {
 
 	GetFromEvents() (*[]Event, error)
 	GetFromEvent(id Ident) (*Event, error)
-	PostToEvents(*Event) (*WorkflowIdResponse, error)
-	DeleteOfEvent(id Ident) error
+	PostToEvents(eventTypeName string, event *Event) (*WorkflowIdResponse, error)
+	DeleteOfEvent(eventTypeName string, id Ident) error
 
 	GetFromAlerts() (*[]Alert, error)
 	GetFromAlert(id Ident) (*Alert, error)
@@ -53,6 +58,40 @@ type IWorkflowService interface {
 
 type WorkflowIdResponse struct {
 	ID Ident `json:"id"`
+}
+
+type ErrorResponse struct {
+	Status  int    `json:"status"`
+	Message string `json:"message"`
+}
+
+func NewErrorResponseFromHttp(resp *http.Response) *ErrorResponse {
+	defer resp.Body.Close()
+	mssgBytes, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return &ErrorResponse{Status: 500, Message: "failed to parse error response: " + err.Error()}
+	}
+
+	var e ErrorResponse
+	err = json.Unmarshal(mssgBytes, &e)
+	if err != nil {
+		return &ErrorResponse{Status: 500, Message: "failed to parse error response: " + err.Error()}
+	}
+
+	return &e
+}
+
+func NewErrorFromHttp(resp *http.Response) error {
+	errResp := NewErrorResponseFromHttp(resp)
+	return errors.New(errResp.String())
+}
+
+func (e *ErrorResponse) String() string {
+	return fmt.Sprintf("[error response: %d: %s]", e.Status, e.Message)
+}
+
+func (e *ErrorResponse) Error() error {
+	return errors.New(e.String())
 }
 
 type Ident string
@@ -106,22 +145,20 @@ type TriggerList []Trigger
 // Data is specific to the event type
 // TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
-	ID        Ident             `json:"id"`
-	EventType Ident             `json:"type" binding:"required"`
-	Date      time.Time         `json:"date" binding:"required"`
-	Data      map[string]string `json:"data"`
+	ID        Ident                  `json:"id"`
+	EventType Ident                  `json:"type" binding:"required"`
+	Date      time.Time              `json:"date" binding:"required"`
+	Data      map[string]interface{} `json:"data"`
 }
 
 type EventList []Event
 
 //---------------------------------------------------------------------------
 
-type EsJson string
-
 type EventType struct {
-	ID      Ident  `json:"id"`
-	Name    string `json:"name" binding:"required"`
-	Mapping EsJson `json:"mapping" binding:"required"`
+	ID      Ident             `json:"id"`
+	Name    string            `json:"name" binding:"required"`
+	Mapping piazza.JsonString `json:"mapping" binding:"required"`
 }
 
 type EventTypeList []EventType

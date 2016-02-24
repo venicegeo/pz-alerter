@@ -127,11 +127,11 @@ func (c *PzWorkflowService) PostToEventTypes(eventType *common.EventType) (*comm
 
 	resp, err := http.Post(c.url+"/eventtypes", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return nil, common.NewErrorFromHttp(resp)
 	}
 
 	if resp.StatusCode != http.StatusCreated {
-		return nil, errors.New(resp.Status)
+		return nil, common.NewErrorFromHttp(resp)
 	}
 
 	defer resp.Body.Close()
@@ -218,14 +218,14 @@ func (c *PzWorkflowService) GetFromEvent(id common.Ident) (*common.Event, error)
 	return &x, nil
 }
 
-func (c *PzWorkflowService) PostToEvents(event *common.Event) (*common.WorkflowIdResponse, error) {
+func (c *PzWorkflowService) PostToEvents(eventTypeName string, event *common.Event) (*common.WorkflowIdResponse, error) {
 
 	body, err := json.Marshal(event)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(c.url+"/events", piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	resp, err := http.Post(c.url+"/events/" + eventTypeName, piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
 		return nil, err
 	}
@@ -249,8 +249,8 @@ func (c *PzWorkflowService) PostToEvents(event *common.Event) (*common.WorkflowI
 	return result, nil
 }
 
-func (c *PzWorkflowService) DeleteOfEvent(id common.Ident) error {
-	resp, err := piazza.HTTPDelete(c.url + "/events/" + id.String())
+func (c *PzWorkflowService) DeleteOfEvent(eventTypeName string, id common.Ident) error {
+	resp, err := piazza.HTTPDelete(c.url + "/events/" + eventTypeName + "/" + id.String())
 	if err != nil {
 		return err
 	}
@@ -259,6 +259,7 @@ func (c *PzWorkflowService) DeleteOfEvent(id common.Ident) error {
 	}
 	return nil
 }
+
 
 //////////////////////////////////////////////////////////////////////////////
 
