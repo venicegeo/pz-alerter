@@ -31,7 +31,7 @@ type ClientTester struct {
 	suite.Suite
 	logger     loggerPkg.ILoggerService
 	uuidgenner uuidgenPkg.IUuidGenService
-	workflow   common.IWorkflowService
+	workflow   *PzWorkflowService
 	sys        *piazza.System
 }
 
@@ -104,12 +104,19 @@ func (suite *ClientTester) assertNoData() {
 	assert.Len(t, *xs, 0)
 }
 
-func (suite *ClientTester) createEventType(name string, jsn piazza.JsonString) common.Ident {
+func (suite *ClientTester) createEventType(name string, mapping map[string]piazza.MappingElementTypeName) common.Ident {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
 
-	et := &common.EventType{Name: name, Mapping: jsn}
+	if mapping == nil {
+		mapping = map[string]piazza.MappingElementTypeName{
+			"int":  piazza.MappingElementTypeString,
+			"str": piazza.MappingElementTypeString,
+		}
+	}
+
+	et := &common.EventType{Name: name, Mapping: mapping}
 	idResp, err := workflow.PostToEventTypes(et)
 	assert.NoError(err)
 	assert.NotNil(idResp)
@@ -196,8 +203,8 @@ func (suite *ClientTester) TestTriggerResource() {
 	var err error
 	var idResponse *common.WorkflowIdResponse
 
-	et3 := suite.createEventType("EventTypeC", "")
-	et4 := suite.createEventType("EventTypeD", "")
+	et3 := suite.createEventType("EventTypeC", nil)
+	et4 := suite.createEventType("EventTypeD", nil)
 
 	x1 := common.Trigger{
 		Title: "the x1 trigger",
@@ -259,7 +266,7 @@ func (suite *ClientTester) TestTriggerResource() {
 	suite.assertNoData()
 }
 
-func (suite *ClientTester) TestAAAEventResource() {
+func (suite *ClientTester) TestEventResource() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -269,17 +276,16 @@ func (suite *ClientTester) TestAAAEventResource() {
 	var err error
 	var idResponse *common.WorkflowIdResponse
 
-	mappingE := make(map[string]piazza.MappingElementTypeName)
-	mappingE["myint"] = piazza.MappingElementTypeInteger
-	mappingE["mystr"] = piazza.MappingElementTypeString
-	mappingJsonE, err := piazza.ConstructMappingSchema("EventTypeE", mappingE)
+	mappingE := map[string]piazza.MappingElementTypeName{
+		"myint":  piazza.MappingElementTypeInteger,
+		"mystr": piazza.MappingElementTypeString,
+	}
+	mappingF := map[string]piazza.MappingElementTypeName{
+		"thestr": piazza.MappingElementTypeString,
+	}
 
-	mappingF := make(map[string]piazza.MappingElementTypeName)
-	mappingF["thestr"] = piazza.MappingElementTypeString
-	mappingJsonF, err := piazza.ConstructMappingSchema("EventTypeF", mappingF)
-
-	et5 := suite.createEventType("EventTypeE", mappingJsonE)
-	et6 := suite.createEventType("EventTypeF", mappingJsonF)
+	et5 := suite.createEventType("EventTypeE", mappingE)
+	et6 := suite.createEventType("EventTypeF", mappingF)
 
 	eventE := common.Event{EventType: "EventTypeE", Date: time.Now(),
 		Data: map[string]interface{}{"myint": 47, "mystr": "forty-seven"}}
@@ -337,16 +343,12 @@ func (suite *ClientTester) TestEventTypeResource() {
 
 	var err error
 
-	var jsn piazza.JsonString = `{
-		"MyTestObj": {
-			"properties":{
-				"myint": {"type": "integer"},
-				"mystr": {"type": "string"}
-			}
-		}
-	}`
+	mapping := map[string]piazza.MappingElementTypeName{
+		"myint":  piazza.MappingElementTypeString,
+		"mystr": piazza.MappingElementTypeString,
+	}
 
-	et7 := suite.createEventType("MyTestObj", jsn)
+	et7 := suite.createEventType("MyTestObj", mapping)
 
 	es, err := workflow.GetFromEventTypes()
 	assert.NoError(err)
@@ -360,7 +362,7 @@ func (suite *ClientTester) TestEventTypeResource() {
 	suite.assertNoData()
 }
 
-/*func (suite *ClientTester) TestTriggering() {
+func (suite *ClientTester) TestAAATriggering() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -372,9 +374,15 @@ func (suite *ClientTester) TestEventTypeResource() {
 	var err error
 	var idResponse *common.WorkflowIdResponse
 
-	et8 := suite.createEventType("EventTypeH", "")
-	et9 := suite.createEventType("EventTypeI", "")
-	et10 := suite.createEventType("EventTypeJ", "")
+	mapping := map[string]piazza.MappingElementTypeName{
+		"id": piazza.MappingElementTypeString,
+		"num":  piazza.MappingElementTypeInteger,
+		"str": piazza.MappingElementTypeString,
+	}
+
+	et8 := suite.createEventType("EventTypeH", mapping)
+	et9 := suite.createEventType("EventTypeI", mapping)
+	et10 := suite.createEventType("EventTypeJ", mapping)
 
 	////////////////
 
@@ -382,7 +390,16 @@ func (suite *ClientTester) TestEventTypeResource() {
 		Title: "the x1 trigger",
 		Condition: common.Condition{
 			EventType: et8,
-			Query:     "the x1 condition query",
+			Query:
+			`{
+				"query": {
+					"match": {
+						"str": {
+							"query": "quick"
+						}
+					}
+				}
+			}`,
 		},
 		Job: common.Job{
 			Task: "the x1 task",
@@ -396,7 +413,16 @@ func (suite *ClientTester) TestEventTypeResource() {
 		Title: "the x2 trigger",
 		Condition: common.Condition{
 			EventType: et9,
-			Query:     "the x2 condition query",
+			Query:
+			`{
+				"query": {
+					"match": {
+						"num": {
+							"query": 18
+						}
+					}
+				}
+			}`,
 		},
 		Job: common.Job{
 			Task: "the x2 task",
@@ -413,28 +439,44 @@ func (suite *ClientTester) TestEventTypeResource() {
 	/////////////////////
 
 	// will cause trigger X1
-	var e1 common.Event
-	e1.EventType = et8
-	e1.Date = time.Now()
-	e1.Data = map[string]string{"file": "e1.tif"}
-	idResponse, err = workflow.PostToEvents(&e1)
+	e1 := common.Event{
+		ID: "e1",
+		EventType: "EventTypeH",
+		Date: time.Now(),
+		Data: map[string]interface{}{
+			"num": 17,
+			"str": "quick",
+		},
+	}
+	idResponse, err = workflow.PostToEvents("EventTypeH", &e1)
 	assert.NoError(err)
 	e1Id := idResponse.ID
 
 	// will cause trigger X2
-	var e2 common.Event
-	e2.EventType = et9
-	e2.Date = time.Now()
-	e2.Data = map[string]string{"file": "e2.tif"}
-	idResponse, err = workflow.PostToEvents(&e2)
+	e2 := common.Event{
+		ID: "e2",
+		EventType: "EventTypeI",
+		Date: time.Now(),
+		Data: map[string]interface{}{
+			"num": 18,
+			"str": "brown",
+		},
+	}
+	idResponse, err = workflow.PostToEvents("EventTypeI", &e2)
 	assert.NoError(err)
 	e2Id := idResponse.ID
 
 	// will cause no triggers
-	var e3 common.Event
-	e3.EventType = et10
-	e3.Date = time.Now()
-	idResponse, err = workflow.PostToEvents(&e3)
+	e3 := common.Event{
+		ID: "e3",
+		EventType: "EventTypeJ",
+		Date: time.Now(),
+		Data: map[string]interface{}{
+			"num": 19,
+			"str": "fox",
+		},
+	}
+	idResponse, err = workflow.PostToEvents("EventTypeJ", &e3)
 	assert.NoError(err)
 	e3Id := idResponse.ID
 
@@ -459,9 +501,9 @@ func (suite *ClientTester) TestEventTypeResource() {
 
 	workflow.DeleteOfTrigger(x1Id)
 	workflow.DeleteOfTrigger(x2Id)
-	workflow.DeleteOfEvent(e1Id)
-	workflow.DeleteOfEvent(e2Id)
-	workflow.DeleteOfEvent(e3Id)
+	workflow.DeleteOfEvent("EventTypeH", e1Id)
+	workflow.DeleteOfEvent("EventTypeI", e2Id)
+	workflow.DeleteOfEvent("EventTypeJ", e3Id)
 	workflow.DeleteOfAlert(alerts[0].ID)
 	workflow.DeleteOfAlert(alerts[1].ID)
 
@@ -473,7 +515,7 @@ func (suite *ClientTester) TestEventTypeResource() {
 	assert.NoError(err)
 
 	suite.assertNoData()
-}*/
+}
 
 func (suite *ClientTester) TestAdmin() {
 	t := suite.T()

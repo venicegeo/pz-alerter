@@ -26,36 +26,6 @@ import (
 	"time"
 )
 
-type IWorkflowService interface {
-	GetName() piazza.ServiceName
-	GetAddress() string
-
-	// low-level interfaces
-	GetFromEventTypes() (*[]EventType, error)
-	GetFromEventType(id Ident) (*EventType, error)
-	PostToEventTypes(*EventType) (*WorkflowIdResponse, error)
-	DeleteOfEventType(id Ident) error
-
-	GetFromEvents() (*[]Event, error)
-	GetFromEvent(id Ident) (*Event, error)
-	PostToEvents(eventTypeName string, event *Event) (*WorkflowIdResponse, error)
-	DeleteOfEvent(eventTypeName string, id Ident) error
-
-	GetFromAlerts() (*[]Alert, error)
-	GetFromAlert(id Ident) (*Alert, error)
-	PostToAlerts(*Alert) (*WorkflowIdResponse, error)
-	DeleteOfAlert(id Ident) error
-
-	GetFromTriggers() (*[]Trigger, error)
-	GetFromTrigger(id Ident) (*Trigger, error)
-	PostToTriggers(*Trigger) (*WorkflowIdResponse, error)
-	DeleteOfTrigger(id Ident) error
-
-	GetFromAdminStats() (*WorkflowAdminStats, error)
-	GetFromAdminSettings() (*WorkflowAdminSettings, error)
-	PostToAdminSettings(*WorkflowAdminSettings) error
-}
-
 type WorkflowIdResponse struct {
 	ID Ident `json:"id"`
 }
@@ -156,9 +126,9 @@ type EventList []Event
 //---------------------------------------------------------------------------
 
 type EventType struct {
-	ID      Ident             `json:"id"`
-	Name    string            `json:"name" binding:"required"`
-	Mapping piazza.JsonString `json:"mapping" binding:"required"`
+	ID      Ident                                    `json:"id"`
+	Name    string                                   `json:"name" binding:"required"`
+	Mapping map[string]piazza.MappingElementTypeName `json:"mapping" binding:"required"`
 }
 
 type EventTypeList []EventType

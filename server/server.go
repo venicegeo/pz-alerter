@@ -293,7 +293,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		trigger.ID = NewTriggerIdent()
 
-		_, err = triggerDB.PostData(trigger, trigger.ID)
+		_, err = triggerDB.PostTrigger(trigger, trigger.ID)
 		if err != nil {
 			c.Error(err)
 			return

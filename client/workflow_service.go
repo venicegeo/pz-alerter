@@ -23,6 +23,7 @@ import (
 	"github.com/venicegeo/pz-workflow/common"
 	"io/ioutil"
 	"net/http"
+	"log"
 )
 
 type PzWorkflowService struct {
@@ -32,7 +33,6 @@ type PzWorkflowService struct {
 }
 
 func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowService, error) {
-	var _ common.IWorkflowService = new(PzWorkflowService)
 	var _ piazza.IService = new(PzWorkflowService)
 
 	var err error
@@ -423,24 +423,29 @@ func (c *PzWorkflowService) PostToTriggers(trigger *common.Trigger) (*common.Wor
 
 	resp, err := http.Post(c.url+"/triggers", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
+		log.Printf("AAA")
 		return nil, err
 	}
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
+		log.Printf("BBB")
 		return nil, errors.New(resp.Status)
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
+		log.Printf("CCC")
 		return nil, err
 	}
 
 	result := new(common.WorkflowIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
+		log.Printf("DDD: " + string(data))
 		return nil, err
 	}
 
+	log.Printf("EEE")
 	return result, nil
 }
 

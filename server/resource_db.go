@@ -126,10 +126,14 @@ func (db *ResourceDB) DeleteByID(id string) (bool, error) {
 	return res.Found, nil
 }
 
-func (db *ResourceDB) AddMapping(name string, jsn piazza.JsonString) (error) {
-	err := db.Esi.SetMapping(name, jsn)
+func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingElementTypeName) (error) {
+
+	jsn, err := piazza.ConstructMappingSchema(name, mapping)
+
+	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

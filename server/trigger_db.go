@@ -66,6 +66,27 @@ func NewTriggerDB(es *piazza.EsClient, index string, typename string) (*TriggerD
 	return &ardb, nil
 }
 
+func (db *TriggerDB) PostTrigger(trigger *common.Trigger, id common.Ident) (common.Ident, error) {
+
+	_, err := db.Esi.PostData(db.Typename, id.String(), trigger)
+	if err != nil {
+		return common.NoIdent, err
+	}
+
+	qid := string(trigger.ID)+"QQ"
+	_, err = db.Esi.AddPercolationQuery(qid, piazza.JsonString(trigger.Condition.Query))
+	if err != nil {
+		return common.NoIdent, err
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return common.NoIdent, err
+	}
+
+	return id, nil
+}
+
 func ConvertRawsToTriggers(raws []*json.RawMessage) ([]common.Trigger, error) {
 	objs := make([]common.Trigger, len(raws))
 	for i, _ := range raws {
