@@ -33,19 +33,6 @@ func NewAlertIdent() common.Ident {
 	return common.Ident(s)
 }
 
-// newAlert makes an Alert, setting the ID for you.
-func NewAlert(triggerId common.Ident) common.Alert {
-
-	id := common.NewIdentFromInt(alertID)
-	alertID++
-	s := "A" + string(id)
-
-	return common.Alert{
-		ID:        common.Ident(s),
-		TriggerId: triggerId,
-	}
-}
-
 //---------------------------------------------------------------------------
 
 type AlertRDB struct {

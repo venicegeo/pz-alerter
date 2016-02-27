@@ -30,7 +30,6 @@ func NewEventID() common.Ident {
 
 //---------------------------------------------------------------------------
 
-
 type EventRDB struct {
 	*ResourceDB
 }
@@ -47,37 +46,26 @@ func NewEventDB(es *piazza.EsClient, index string) (*EventRDB, error) {
 	return &erdb, nil
 }
 
-
-
-func (db *EventRDB) PostEventData(eventType string, data map[string]interface{}, id common.Ident) ([]common.Ident, error) {
+func (db *EventRDB) PostEventData(eventType string, data map[string]interface{}, id common.Ident, alertDB *AlertRDB) (*[]common.Ident, error) {
 
 	resp, err := db.Esi.AddPercolationDocument(eventType, data)
 	if err != nil {
 		return nil, err
 	}
 
+	// add the triggers to the alert queue
 	ids := make([]common.Ident, len(resp.Matches))
 	for i,v := range resp.Matches {
 		ids[i] = common.Ident(v.Id)
+		alert := common.Alert{ID: NewAlertIdent(), EventId: id, TriggerId: common.Ident(v.Id)}
+		_, err = alertDB.PostData("Alert", &alert, alert.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return ids, nil
+	return &ids, nil
 }
-
-func (db *EventRDB) DeleteByTypedID(eventTypeName string, id string) (bool, error) {
-	res, err := db.Esi.DeleteById(eventTypeName, id)
-	if err != nil {
-		return false, err
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
-	}
-
-	return res.Found, nil
-}
-
 
 func ConvertRawsToEvents(raws []*json.RawMessage) ([]common.Event, error) {
 	objs := make([]common.Event, len(raws))

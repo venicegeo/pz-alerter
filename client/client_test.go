@@ -84,44 +84,27 @@ func (suite *ClientTester) TearDownSuite() {
 
 func (suite *ClientTester) assertNoData() {
 	t := suite.T()
-
-	var err error
-
-	es, err := suite.workflow.GetFromEvents()
-	assert.NoError(t, err)
-	assert.Len(t, *es, 0)
-
-	ts, err := suite.workflow.GetFromEventTypes()
-	assert.NoError(t, err)
-	assert.Len(t, *ts, 0)
-
-	as, err := suite.workflow.GetFromAlerts()
-	assert.NoError(t, err)
-	assert.Len(t, *as, 0)
-
-	xs, err := suite.workflow.GetFromTriggers()
-	assert.NoError(t, err)
-	assert.Len(t, *xs, 0)
-}
-
-func (suite *ClientTester) createEventType(name string, mapping map[string]piazza.MappingElementTypeName) common.Ident {
-	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
 
-	if mapping == nil {
-		mapping = map[string]piazza.MappingElementTypeName{
-			"int":  piazza.MappingElementTypeInteger,
-			"str": piazza.MappingElementTypeString,
-		}
-	}
+	var err error
 
-	et := &common.EventType{Name: name, Mapping: mapping}
-	idResp, err := workflow.PostToEventTypes(et)
+	es, err := workflow.GetAllEvents()
 	assert.NoError(err)
-	assert.NotNil(idResp)
+	assert.Len(*es, 0)
 
-	return idResp.ID
+	ts, err := workflow.GetAllEventTypes()
+	assert.NoError(err)
+	assert.Len(*ts, 0)
+
+	as, err := workflow.GetAllAlerts()
+	assert.NoError(err)
+	assert.Len(*as, 0)
+
+	xs, err := workflow.GetAllTriggers()
+	assert.NoError(err)
+	assert.Len(*xs, 0)
+
 }
 
 func TestRunSuite(t *testing.T) {
@@ -131,6 +114,133 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
+func (suite *ClientTester) TestOne() {
+
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	suite.assertNoData()
+
+	var err error
+	var id common.Ident
+	var eventTypeName = "EventTypeA"
+
+	{
+		mapping := map[string]piazza.MappingElementTypeName{
+			"num": piazza.MappingElementTypeInteger,
+			"str": piazza.MappingElementTypeString,
+		}
+
+		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
+
+		id, err = workflow.PostEventType(eventType)
+		assert.NoError(err)
+		assert.EqualValues("ET1", id)
+	}
+
+	{
+		x1 := &common.Trigger{
+			Title: "the x1 trigger",
+			Condition: common.Condition{
+				EventType: "T1",
+				Query: `{
+					"query": {
+						"match": {
+							"num": 17
+						}
+					}
+				}`,
+			},
+			Job: common.Job{
+				Task: "the x1 task",
+			},
+		}
+
+		id, err = workflow.PostTrigger(x1)
+		assert.NoError(err)
+		assert.EqualValues("TRG1", id)
+	}
+
+	{
+		// will cause trigger TRG1
+		e1 := &common.Event{
+			ID:        "E1",
+			EventType: "ET1",
+			Date:      time.Now(),
+			Data: map[string]interface{}{
+				"num": 17,
+				"str": "quick",
+			},
+		}
+
+		id, err = workflow.PostEvent(eventTypeName, e1)
+		assert.NoError(err)
+		assert.EqualValues("E1", id)
+	}
+
+	{
+		// will cause no triggers
+		e1 := &common.Event{
+			ID:        "E2",
+			EventType: "ET1",
+			Date:      time.Now(),
+			Data: map[string]interface{}{
+				"num": 18,
+				"str": "brown",
+			},
+		}
+
+		id, err = workflow.PostEvent(eventTypeName, e1)
+		assert.NoError(err)
+		assert.EqualValues("E2", id)
+	}
+
+	{
+		alerts, err := workflow.GetAllAlerts()
+		assert.NoError(err)
+
+		assert.Len(*alerts, 1)
+		var alert0 common.Alert = (*alerts)[0]
+		assert.EqualValues("A1", alert0.ID)
+		assert.EqualValues("E1", alert0.EventId)
+		assert.EqualValues("TRG1", alert0.TriggerId)
+	}
+
+	{
+		err = workflow.DeleteEventType("ET1")
+		err = workflow.DeleteTrigger("TRG1")
+		err = workflow.DeleteEvent(eventTypeName, "E1")
+		err = workflow.DeleteEvent(eventTypeName, "E2")
+		err = workflow.DeleteAlert("A1")
+		suite.assertNoData()
+	}
+}
+
+func (suite *ClientTester) TestAdmin() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	workflow := suite.workflow
+
+	settings, err := workflow.GetFromAdminSettings()
+	assert.NoError(err)
+	if settings.Debug != false {
+		t.Error("settings not false")
+	}
+
+	settings.Debug = true
+	err = workflow.PostToAdminSettings(settings)
+	assert.NoError(err)
+
+	settings, err = workflow.GetFromAdminSettings()
+	assert.NoError(err)
+	if settings.Debug != true {
+		t.Error("settings not true")
+	}
+}
+
+/*
 func (suite *ClientTester) TestAlertResource() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -308,8 +418,6 @@ func (suite *ClientTester) TestEventResource() {
 	ok1 := false
 	ok2 := false
 	for _, v := range *es {
-		log.Printf("GOT EVENT: %#v", v)
-		log.Printf("%s: %s %s", v.ID, e1ID, e2ID)
 		if v.ID == e1ID {
 			ok1 = true
 		} else
@@ -387,10 +495,8 @@ func (suite *ClientTester) TestAAATriggering() {
 	{
 		types, err := workflow.GetFromEventTypes()
 		assert.NoError(err)
-		log.Printf("QQQQQQQQQ0 %#v", types)
 		events, err := workflow.GetFromEvents()
 		assert.NoError(err)
-		log.Printf("QQQQQQQQQ1 %#v", events)
 	}
 	////////////////
 
@@ -523,25 +629,4 @@ func (suite *ClientTester) TestAAATriggering() {
 	suite.assertNoData()
 }
 
-func (suite *ClientTester) TestAdmin() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	workflow := suite.workflow
-
-	settings, err := workflow.GetFromAdminSettings()
-	assert.NoError(err)
-	if settings.Debug != false {
-		t.Error("settings not false")
-	}
-
-	settings.Debug = true
-	err = workflow.PostToAdminSettings(settings)
-	assert.NoError(err)
-
-	settings, err = workflow.GetFromAdminSettings()
-	assert.NoError(err)
-	if settings.Debug != true {
-		t.Error("settings not true")
-	}
-}
+*/
