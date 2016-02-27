@@ -111,7 +111,7 @@ func (suite *ClientTester) createEventType(name string, mapping map[string]piazz
 
 	if mapping == nil {
 		mapping = map[string]piazza.MappingElementTypeName{
-			"int":  piazza.MappingElementTypeString,
+			"int":  piazza.MappingElementTypeInteger,
 			"str": piazza.MappingElementTypeString,
 		}
 	}
@@ -375,7 +375,7 @@ func (suite *ClientTester) TestAAATriggering() {
 	var idResponse *common.WorkflowIdResponse
 
 	mapping := map[string]piazza.MappingElementTypeName{
-		"id": piazza.MappingElementTypeString,
+		"id":      piazza.MappingElementTypeString,
 		"num":  piazza.MappingElementTypeInteger,
 		"str": piazza.MappingElementTypeString,
 	}
@@ -384,6 +384,14 @@ func (suite *ClientTester) TestAAATriggering() {
 	et9 := suite.createEventType("EventTypeI", mapping)
 	et10 := suite.createEventType("EventTypeJ", mapping)
 
+	{
+		types, err := workflow.GetFromEventTypes()
+		assert.NoError(err)
+		log.Printf("QQQQQQQQQ0 %#v", types)
+		events, err := workflow.GetFromEvents()
+		assert.NoError(err)
+		log.Printf("QQQQQQQQQ1 %#v", events)
+	}
 	////////////////
 
 	x1 := common.Trigger{
@@ -394,9 +402,7 @@ func (suite *ClientTester) TestAAATriggering() {
 			`{
 				"query": {
 					"match": {
-						"str": {
-							"query": "quick"
-						}
+						"str":  "quick"
 					}
 				}
 			}`,

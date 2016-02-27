@@ -30,6 +30,21 @@ type WorkflowIdResponse struct {
 	ID Ident `json:"id"`
 }
 
+func SuperConvert(src interface{}, dst interface{}) error {
+	jsn, err := json.Marshal(src)
+	if err != nil {
+		return err
+	}
+
+	err = json.Unmarshal(jsn, dst)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 type ErrorResponse struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`

@@ -28,22 +28,16 @@ func NewResourceID() common.Ident {
 	return common.Ident("R" + string(id))
 }
 
-//type Resource interface {
-//	GetId() Ident
-//	SetId(Ident)
-//}
 
 type ResourceDB struct {
 	Es       *piazza.EsClient
 	Esi      *piazza.EsIndexClient
-	Typename string
 }
 
-func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient, typename string) (*ResourceDB, error) {
+func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient) (*ResourceDB, error) {
 	db := &ResourceDB{
 		Es:       es,
 		Esi:       esi,
-		Typename: typename,
 	}
 
 	err := esi.Delete()
@@ -59,9 +53,9 @@ func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient, typename stri
 	return db, nil
 }
 
-func (db *ResourceDB) PostData(obj interface{}, id common.Ident) (common.Ident, error) {
+func (db *ResourceDB) PostData(mapping string, obj interface{}, id common.Ident) (common.Ident, error) {
 
-	_, err := db.Esi.PostData(db.Typename, id.String(), obj)
+	_, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
 		return common.NoIdent, err
 	}
@@ -112,8 +106,8 @@ func (db *ResourceDB) GetById(id common.Ident, obj interface{}) (bool, error) {
 	return true, nil
 }
 
-func (db *ResourceDB) DeleteByID(id string) (bool, error) {
-	res, err := db.Esi.DeleteById(db.Typename, id)
+func (db *ResourceDB) DeleteByID(mapping string, id string) (bool, error) {
+	res, err := db.Esi.DeleteById(mapping, id)
 	if err != nil {
 		return false, err
 	}
@@ -129,8 +123,17 @@ func (db *ResourceDB) DeleteByID(id string) (bool, error) {
 func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingElementTypeName) (error) {
 
 	jsn, err := piazza.ConstructMappingSchema(name, mapping)
-
 	err = db.Esi.SetMapping(name, jsn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ResourceDB) Flush() error {
+
+	err := db.Esi.Flush()
 	if err != nil {
 		return err
 	}

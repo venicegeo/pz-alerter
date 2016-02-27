@@ -23,14 +23,18 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"log"
 	"testing"
+	"net/http"
+	"bytes"
+	"encoding/json"
+	"io/ioutil"
+	"fmt"
 	"time"
 )
 
 type ServerTester struct {
 	suite.Suite
-	logger     loggerPkg.ILoggerService
-	uuidgenner uuidgenPkg.IUuidGenService
-	sys        *piazza.System
+	sys *piazza.System
+	url string
 }
 
 func (suite *ServerTester) SetupSuite() {
@@ -47,17 +51,17 @@ func (suite *ServerTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.logger, err = loggerPkg.NewMockLoggerService(sys)
+	theLogger, err := loggerPkg.NewMockLoggerService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	suite.uuidgenner, err = uuidgenPkg.NewMockUuidGenService(sys)
+	theUuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	routes, err := CreateHandlers(sys, suite.logger, suite.uuidgenner)
+	routes, err := CreateHandlers(sys, theLogger, theUuidgen)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -65,6 +69,8 @@ func (suite *ServerTester) SetupSuite() {
 	_ = sys.StartServer(routes)
 
 	suite.sys = sys
+
+	suite.url = fmt.Sprintf("http://%s/v1", sys.Config.GetBindToAddress())
 
 	assert.Len(sys.Services, 4)
 }
@@ -78,55 +84,157 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-//---------------------------------------------------------------------------
-
-func (suite *ServerTester) TestEventDB() {
+func (suite *ServerTester) Post(path string, body interface{}) interface{} {
 	t := suite.T()
 	assert := assert.New(t)
 
-	es := suite.sys.ElasticSearchService
-
-	et1 := common.Ident("T1")
-	et2 := common.Ident("T2")
-
-	var a1 common.Event
-	a1.EventType = et1
-	a1.Date = time.Now()
-
-	var a2 common.Event
-	a2.EventType = et2
-	a2.Date = time.Now()
-
-	db, err := NewEventDB(es, "event", "Event")
+	bodyBytes, err := json.Marshal(body)
 	assert.NoError(err)
 
-	a1Id, err := db.PostData(&a1, NewResourceID())
+	resp, err := http.Post(suite.url + path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
+	if err != nil {
+		log.Printf("XXX : %T %#v %#v", err, err, err.Error())
+	}
 	assert.NoError(err)
-	a2Id, err := db.PostData(&a2, NewResourceID())
+	assert.NotNil(resp)
+	assert.Equal(http.StatusCreated, resp.StatusCode)
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
 	assert.NoError(err)
+
+	var result interface{}
+	err = json.Unmarshal(data, &result)
+	assert.NoError(err)
+
+	return result
+}
+
+func (suite *ServerTester) Get(path string) interface{} {
+	t := suite.T()
+	assert := assert.New(t)
+
+	resp, err := http.Get(suite.url + path)
+	assert.NoError(err)
+	assert.NotNil(resp)
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	assert.NoError(err)
+
+	var result interface{}
+	err = json.Unmarshal(data, &result)
+	assert.NoError(err)
+
+	return result
+}
+
+
+//---------------------------------------------------------------------------
+
+func (suite *ServerTester) TestOne() {
+
+	t := suite.T()
+	assert := assert.New(t)
+
+	var err error
+	//var idResponse *common.WorkflowIdResponse
+
+	var eventTypeName = "EventTypeA"
 
 	{
-		raws, err := db.GetAll()
-		assert.NoError(err)
-		assert.Len(raws, 2)
+		mapping := map[string]piazza.MappingElementTypeName{
+			"num":  piazza.MappingElementTypeInteger,
+			"str": piazza.MappingElementTypeString,
+		}
 
-		objs, err := ConvertRawsToEvents(raws)
+		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
+
+		resp := suite.Post("/eventtypes", eventType)
+
+		resp2 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
 
-		ok1 := (objs[0].EventType == a1.EventType) && (objs[1].EventType == a2.EventType)
-		ok2 := (objs[1].EventType == a1.EventType) && (objs[0].EventType == a2.EventType)
-		assert.True((ok1 || ok2) && !(ok1 && ok2))
+		assert.EqualValues("ET1", resp2.ID)
 	}
 
-	var t2 common.Event
-	ok, err := db.GetById(a2Id, &t2)
-	assert.NoError(err)
-	assert.True(ok)
-	assert.EqualValues(a2.EventType, t2.EventType)
+	{
+		x1 := &common.Trigger{
+			Title: "the x1 trigger",
+			Condition: common.Condition{
+				EventType: "T1",
+				Query:
+				`{
+					"query": {
+						"match": {
+							"num": 17
+						}
+					}
+				}`,
+			},
+			Job: common.Job{
+				Task: "the x1 task",
+			},
+		}
 
-	var t1 common.Event
-	ok, err = db.GetById(a1Id, &t1)
-	assert.NoError(err)
-	assert.True(ok)
-	assert.EqualValues(a1.EventType, t1.EventType)
+		resp := suite.Post("/triggers", x1)
+		resp2 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp, resp2)
+		assert.NoError(err)
+
+		assert.EqualValues("TRG1", resp2.ID)
+	}
+
+	{
+		// will cause trigger TRG1
+		e1 := &common.Event{
+			ID: "E1",
+			EventType: "ET1",
+			Date: time.Now(),
+			Data: map[string]interface{}{
+				"num": 17,
+				"str": "quick",
+			},
+		}
+
+		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp2 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp, resp2)
+		assert.NoError(err)
+
+		assert.EqualValues("E1", resp2.ID)
+	}
+
+	{
+		// will cause no triggers
+		e1 := &common.Event{
+			ID: "E2",
+			EventType: "ET1",
+			Date: time.Now(),
+			Data: map[string]interface{}{
+				"num": 18,
+				"str": "brown",
+			},
+		}
+
+		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp2 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp, resp2)
+		assert.NoError(err)
+
+		assert.EqualValues("E2", resp2.ID)
+	}
+
+	{
+		resp := suite.Get("/alerts")
+
+		var alerts []common.Alert
+		common.SuperConvert(resp, &alerts)
+		assert.Len(alerts, 1)
+
+		alert0 := alerts[0]
+		assert.EqualValues("E1", alert0.EventId)
+		assert.EqualValues("TRG1", alert0.TriggerId)
+	}
 }

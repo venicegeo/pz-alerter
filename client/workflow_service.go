@@ -423,29 +423,24 @@ func (c *PzWorkflowService) PostToTriggers(trigger *common.Trigger) (*common.Wor
 
 	resp, err := http.Post(c.url+"/triggers", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
-		log.Printf("AAA")
 		return nil, err
 	}
 	if resp.StatusCode != http.StatusCreated && resp.StatusCode != http.StatusOK {
-		log.Printf("BBB")
 		return nil, errors.New(resp.Status)
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("CCC")
 		return nil, err
 	}
 
 	result := new(common.WorkflowIdResponse)
 	err = json.Unmarshal(data, result)
 	if err != nil {
-		log.Printf("DDD: " + string(data))
 		return nil, err
 	}
 
-	log.Printf("EEE")
 	return result, nil
 }
 

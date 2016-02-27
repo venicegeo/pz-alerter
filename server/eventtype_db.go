@@ -24,7 +24,7 @@ var eventTypeID = 1
 func NewEventTypeID() common.Ident {
 	id := common.NewIdentFromInt(eventTypeID)
 	eventTypeID++
-	return common.Ident("T" + string(id))
+	return common.Ident("ET" + string(id))
 }
 
 //---------------------------------------------------------------------------
@@ -34,11 +34,11 @@ type EventTypeRDB struct {
 	*ResourceDB
 }
 
-func NewEventTypeDB(es *piazza.EsClient, index string, typename string) (*EventTypeRDB, error) {
+func NewEventTypeDB(es *piazza.EsClient, index string) (*EventTypeRDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
-	rdb, err := NewResourceDB(es, esi, typename)
+	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
 		return nil, err
 	}

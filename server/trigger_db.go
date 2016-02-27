@@ -15,9 +15,7 @@
 package server
 
 import (
-	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
-	"log"
 	"github.com/venicegeo/pz-workflow/common"
 	"sync"
 )
@@ -33,7 +31,7 @@ func NewTriggerIdent() common.Ident {
 	id := common.NewIdentFromInt(triggerID)
 	triggerID++
 	triggerIdLock.Unlock()
-	s := "X" + id.String()
+	s := "TRG" + id.String()
 	return common.Ident(s)
 }
 
@@ -54,11 +52,11 @@ type TriggerDB struct {
 	*ResourceDB
 }
 
-func NewTriggerDB(es *piazza.EsClient, index string, typename string) (*TriggerDB, error) {
+func NewTriggerDB(es *piazza.EsClient, index string) (*TriggerDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
-	rdb, err := NewResourceDB(es, esi, typename)
+	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -66,15 +64,14 @@ func NewTriggerDB(es *piazza.EsClient, index string, typename string) (*TriggerD
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(trigger *common.Trigger, id common.Ident) (common.Ident, error) {
+func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id common.Ident, eventDB *EventRDB) (common.Ident, error) {
 
-	_, err := db.Esi.PostData(db.Typename, id.String(), trigger)
+	_, err := db.Esi.PostData(mapping, id.String(), trigger)
 	if err != nil {
 		return common.NoIdent, err
 	}
 
-	qid := string(trigger.ID)+"QQ"
-	_, err = db.Esi.AddPercolationQuery(qid, piazza.JsonString(trigger.Condition.Query))
+	_, err = eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(trigger.Condition.Query))
 	if err != nil {
 		return common.NoIdent, err
 	}
@@ -85,47 +82,4 @@ func (db *TriggerDB) PostTrigger(trigger *common.Trigger, id common.Ident) (comm
 	}
 
 	return id, nil
-}
-
-func ConvertRawsToTriggers(raws []*json.RawMessage) ([]common.Trigger, error) {
-	objs := make([]common.Trigger, len(raws))
-	for i, _ := range raws {
-		err := json.Unmarshal(*raws[i], &objs[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return objs, nil
-}
-
-func (db *TriggerDB) CheckTriggers(event common.Event, alertDB *AlertRDB) error {
-	tmp, err := db.GetAll()
-	if err != nil {
-		return err
-	}
-
-	triggers, err := ConvertRawsToTriggers(tmp)
-	if err != nil {
-		return err
-	}
-
-	for _, trigger := range triggers {
-		cond := trigger.Condition
-
-		match := (cond.EventType == event.EventType)
-
-		if match {
-			alert := NewAlert(NewAlertIdent())
-			alert.TriggerId = trigger.ID
-			alert.EventId = event.ID
-			_, err := alertDB.PostData(&alert, alert.ID)
-			if err != nil {
-				return err
-			}
-			log.Printf("INFO: Hit! event %s fired trigger %s", event.ID, trigger.ID)
-			log.Printf("      Created alert %s", alert.ID)
-			log.Printf("      Started task: %s", trigger.Job.Task)
-		}
-	}
-	return nil
 }

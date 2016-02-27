@@ -35,11 +35,11 @@ type EventRDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(es *piazza.EsClient, index string, typename string) (*EventRDB, error) {
+func NewEventDB(es *piazza.EsClient, index string) (*EventRDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
-	rdb, err := NewResourceDB(es, esi, typename)
+	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -49,19 +49,19 @@ func NewEventDB(es *piazza.EsClient, index string, typename string) (*EventRDB, 
 
 
 
-func (db *EventRDB) PostEventData(eventType string, obj interface{}, id common.Ident) (common.Ident, error) {
+func (db *EventRDB) PostEventData(eventType string, data map[string]interface{}, id common.Ident) ([]common.Ident, error) {
 
-	_, err := db.Esi.PostData(eventType, id.String(), obj)
+	resp, err := db.Esi.AddPercolationDocument(eventType, data)
 	if err != nil {
-		return common.NoIdent, err
+		return nil, err
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return common.NoIdent, err
+	ids := make([]common.Ident, len(resp.Matches))
+	for i,v := range resp.Matches {
+		ids[i] = common.Ident(v.Id)
 	}
 
-	return id, nil
+	return ids, nil
 }
 
 func (db *EventRDB) DeleteByTypedID(eventTypeName string, id string) (bool, error) {

@@ -52,11 +52,11 @@ type AlertRDB struct {
 	*ResourceDB
 }
 
-func NewAlertDB(es *piazza.EsClient, index string, typename string) (*AlertRDB, error) {
+func NewAlertDB(es *piazza.EsClient, index string) (*AlertRDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
-	rdb, err := NewResourceDB(es, esi, typename)
+	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
 		return nil, err
 	}
