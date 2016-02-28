@@ -120,6 +120,7 @@ type Trigger struct {
 	Title     string    `json:"title" binding:"required"`
 	Condition Condition `json:"condition" binding:"required"`
 	Job       Job       `json:"job" binding:"required"`
+	PercolationID Ident `json:"percolation_id"`
 }
 
 type TriggerList []Trigger

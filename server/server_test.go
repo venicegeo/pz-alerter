@@ -92,9 +92,6 @@ func (suite *ServerTester) Post(path string, body interface{}) interface{} {
 	assert.NoError(err)
 
 	resp, err := http.Post(suite.url + path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		log.Printf("XXX : %T %#v %#v", err, err, err.Error())
-	}
 	assert.NoError(err)
 	assert.NotNil(resp)
 	assert.Equal(http.StatusCreated, resp.StatusCode)
@@ -142,6 +139,7 @@ func (suite *ServerTester) TestOne() {
 
 	var eventTypeName = "EventTypeA"
 
+	var et1Id common.Ident
 	{
 		mapping := map[string]piazza.MappingElementTypeName{
 			"num":  piazza.MappingElementTypeInteger,
@@ -156,14 +154,15 @@ func (suite *ServerTester) TestOne() {
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
 
-		assert.EqualValues("ET1", resp2.ID)
+		et1Id = resp2.ID
 	}
 
+	var t1Id common.Ident
 	{
 		x1 := &common.Trigger{
 			Title: "the x1 trigger",
 			Condition: common.Condition{
-				EventType: "T1",
+				EventType: et1Id,
 				Query:
 				`{
 					"query": {
@@ -183,14 +182,14 @@ func (suite *ServerTester) TestOne() {
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
 
-		assert.EqualValues("TRG1", resp2.ID)
+		t1Id = resp2.ID
 	}
 
+	var e1Id common.Ident
 	{
 		// will cause trigger TRG1
 		e1 := &common.Event{
-			ID: "E1",
-			EventType: "ET1",
+			EventType: et1Id,
 			Date: time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
@@ -203,14 +202,13 @@ func (suite *ServerTester) TestOne() {
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
 
-		assert.EqualValues("E1", resp2.ID)
+		e1Id = resp2.ID
 	}
 
 	{
 		// will cause no triggers
 		e1 := &common.Event{
-			ID: "E2",
-			EventType: "ET1",
+			EventType: et1Id,
 			Date: time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
@@ -222,8 +220,6 @@ func (suite *ServerTester) TestOne() {
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
-
-		assert.EqualValues("E2", resp2.ID)
 	}
 
 	{
@@ -234,7 +230,7 @@ func (suite *ServerTester) TestOne() {
 		assert.Len(alerts, 1)
 
 		alert0 := alerts[0]
-		assert.EqualValues("E1", alert0.EventId)
-		assert.EqualValues("TRG1", alert0.TriggerId)
+		assert.EqualValues(e1Id, alert0.EventId)
+		assert.EqualValues(t1Id, alert0.TriggerId)
 	}
 }

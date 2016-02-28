@@ -87,9 +87,9 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 	return raws, nil
 }
 
-func (db *ResourceDB) GetById(id common.Ident, obj interface{}) (bool, error) {
+func (db *ResourceDB) GetById(mapping string, id common.Ident, obj interface{}) (bool, error) {
 
-	getResult, err := db.Esi.GetById(id.String())
+	getResult, err := db.Esi.GetById(mapping, id.String())
 	if err != nil {
 		return false, err
 	}
@@ -103,6 +103,7 @@ func (db *ResourceDB) GetById(id common.Ident, obj interface{}) (bool, error) {
 	if err != nil {
 		return true, err
 	}
+
 	return true, nil
 }
 

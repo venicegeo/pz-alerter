@@ -46,7 +46,7 @@ func NewEventDB(es *piazza.EsClient, index string) (*EventRDB, error) {
 	return &erdb, nil
 }
 
-func (db *EventRDB) PostEventData(eventType string, data map[string]interface{}, id common.Ident, alertDB *AlertRDB) (*[]common.Ident, error) {
+func (db *EventRDB) PercolateEventData(eventType string, data map[string]interface{}, id common.Ident, alertDB *AlertRDB) (*[]common.Ident, error) {
 
 	resp, err := db.Esi.AddPercolationDocument(eventType, data)
 	if err != nil {

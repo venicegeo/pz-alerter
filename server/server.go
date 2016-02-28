@@ -147,7 +147,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		}
 
 		event.ID = NewEventID()
-		_, err = eventDB.PostData(eventType, event.Data, event.ID)
+		_, err = eventDB.PostData(eventType, event, event.ID)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -163,7 +163,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		{
 			// TODO: this should be done asynchronously
-			_, err := eventDB.PostEventData(eventType, event.Data, event.ID, alertDB)
+			_, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
 			if err != nil {
 				Status(c, 400, err.Error())
 				return
@@ -182,12 +182,13 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, m)
 	})
 
-	router.GET("/v1/events/:id", func(c *gin.Context) {
+	router.GET("/v1/events/:eventType/:id", func(c *gin.Context) {
+		eventType := c.Param("eventType")
 		s := c.Param("id")
 
 		id := common.Ident(s)
 		var v common.Event
-		ok, err := eventDB.GetById(id, &v)
+		ok, err := eventDB.GetById(eventType, id, &v)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -209,7 +210,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			Status(c, 400, "event id not found?")
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -270,13 +271,13 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		id := common.Ident(s)
 		var v common.Event
-		ok, err := eventTypeDB.GetById(id, &v)
+		ok, err := eventTypeDB.GetById("EventType", id, &v)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
-			Status(c, 400, err.Error())
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 		c.IndentedJSON(http.StatusOK, v)
@@ -290,7 +291,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			Status(c, 400, "eventtype id not found?")
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -347,7 +348,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		id := common.Ident(s)
 		var v common.Trigger
-		ok, err := triggerDB.GetById(id, &v)
+		ok, err := triggerDB.GetById("Trigger", id, &v)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -361,13 +362,13 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.DELETE("/v1/triggers/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := triggerDB.DeleteByID("Trigger", id)
+		ok, err := triggerDB.DeleteTrigger("Trigger", common.Ident(id), eventDB)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
-			Status(c, 400, "trigger id not found?")
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -412,13 +413,13 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		id := common.Ident(s)
 		var alert common.Alert
-		ok, err := alertDB.GetById(id, &alert)
+		ok, err := alertDB.GetById("Alert", id, &alert)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
-			Status(c, 400, err.Error())
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 		c.IndentedJSON(http.StatusOK, alert)
@@ -457,7 +458,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			Status(c, 400, "alert id not found?")
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 

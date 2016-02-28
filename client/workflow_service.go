@@ -298,85 +298,46 @@ func (c *PzWorkflowService) DeleteTrigger(id common.Ident) error {
 	return nil
 }
 
-//---------------------------------------------------------------------------
+func (c *PzWorkflowService) PostAlert(event *common.Alert) (common.Ident, error) {
 
-/*
-
-func (c *PzWorkflowService) GetFromEventType(id common.Ident) (*common.EventType, error) {
-
-	resp, err := http.Get(c.url + "/eventtypes/" + id.String())
+	body, err := json.Marshal(event)
 	if err != nil {
-		return nil, err
+		return common.NoIdent, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
-	}
-
-	d, err := ioutil.ReadAll(resp.Body)
+	resp, err := http.Post(c.url+"/alerts", piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
-		return nil, err
+		return common.NoIdent, common.NewErrorFromHttp(resp)
 	}
+
+	if resp.StatusCode != http.StatusCreated {
+		return common.NoIdent, common.NewErrorFromHttp(resp)
+	}
+
 	defer resp.Body.Close()
-	var x common.EventType
-	err = json.Unmarshal(d, &x)
+	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, err
+		return common.NoIdent, err
 	}
 
-	if id != x.ID {
-		return nil, errors.New("internal error, eventtype ID mismatch")
+	result := new(common.WorkflowIdResponse)
+	err = json.Unmarshal(data, result)
+	if err != nil {
+		return common.NoIdent, err
 	}
 
-	return &x, nil
+	return result.ID, nil
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-
-func (c *PzWorkflowService) GetFromEvent(id common.Ident) (*common.Event, error) {
-
-	resp, err := http.Get(c.url + "/events/" + id.String())
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
-	}
-
-	d, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var x common.Event
-	err = json.Unmarshal(d, &x)
-	if err != nil {
-		return nil, err
-	}
-
-	if id != x.ID {
-		return nil, errors.New("internal error, event ID mismatch")
-	}
-
-	return &x, nil
-}
-
-
-//////////////////////////////////////////////////////////////////////////////
-
-func (c *PzWorkflowService) GetFromAlert(id common.Ident) (*common.Alert, error) {
+func (c *PzWorkflowService) GetAlert(id common.Ident) (*common.Alert, error) {
 
 	resp, err := http.Get(c.url + "/alerts/" + id.String())
 	if err != nil {
-		return nil, err
+		return nil, common.NewErrorFromHttp(resp)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
+		return nil, common.NewErrorFromHttp(resp)
 	}
 
 	d, err := ioutil.ReadAll(resp.Body)
@@ -390,54 +351,42 @@ func (c *PzWorkflowService) GetFromAlert(id common.Ident) (*common.Alert, error)
 		return nil, err
 	}
 
-	if id != x.ID {
-		return nil, errors.New("internal error, alert ID mismatch")
+	return &x, nil
+}
+
+func (c *PzWorkflowService) GetEventType(id common.Ident) (*common.EventType, error) {
+
+	resp, err := http.Get(c.url + "/eventtypes/" + id.String())
+	if err != nil {
+		return nil, common.NewErrorFromHttp(resp)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, common.NewErrorFromHttp(resp)
+	}
+
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var x common.EventType
+	err = json.Unmarshal(d, &x)
+	if err != nil {
+		return nil, err
 	}
 
 	return &x, nil
 }
 
-func (c *PzWorkflowService) PostToAlerts(event *common.Alert) (*common.WorkflowIdResponse, error) {
-
-	body, err := json.Marshal(event)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := http.Post(c.url+"/alerts", piazza.ContentTypeJSON, bytes.NewBuffer(body))
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode != http.StatusCreated {
-		return nil, errors.New(resp.Status)
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	result := new(common.WorkflowIdResponse)
-	err = json.Unmarshal(data, result)
-	if err != nil {
-		return nil, err
-	}
-
-	return result, nil
-}
-
-//////////////////////////////////////////////////////////////////////////////
-
-func (c *PzWorkflowService) GetFromTrigger(id common.Ident) (*common.Trigger, error) {
+func (c *PzWorkflowService) GetTrigger(id common.Ident) (*common.Trigger, error) {
 	resp, err := http.Get(c.url + "/triggers/" + id.String())
 	if err != nil {
-		return nil, err
+		return nil, common.NewErrorFromHttp(resp)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, errors.New(resp.Status)
+		return nil, common.NewErrorFromHttp(resp)
 	}
 
 	d, err := ioutil.ReadAll(resp.Body)
@@ -452,15 +401,33 @@ func (c *PzWorkflowService) GetFromTrigger(id common.Ident) (*common.Trigger, er
 		return nil, err
 	}
 
-	if id != x.ID {
-		return nil, errors.New("internal error, trigger ID mismatch")
+	return &x, nil
+}
+
+func (c *PzWorkflowService) GetEvent(eventType string, id common.Ident) (*common.Event, error) {
+
+	resp, err := http.Get(c.url + "/events/" + eventType + "/" + id.String())
+	if err != nil {
+		return nil, common.NewErrorFromHttp(resp)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, common.NewErrorFromHttp(resp)
+	}
+
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	var x common.Event
+	err = json.Unmarshal(d, &x)
+	if err != nil {
+		return nil, err
 	}
 
 	return &x, nil
 }
-
-
-*/
 
 //////////////////////////////////////////////////////////////////////////////
 

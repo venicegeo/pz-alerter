@@ -51,17 +51,6 @@ func NewAlertDB(es *piazza.EsClient, index string) (*AlertRDB, error) {
 	return &ardb, nil
 }
 
-func ConvertRawsToAlerts(raws []*json.RawMessage) ([]common.Alert, error) {
-	objs := make([]common.Alert, len(raws))
-	for i, _ := range raws {
-		err := json.Unmarshal(*raws[i], &objs[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return objs, nil
-}
-
 func (db *AlertRDB) GetByConditionID(conditionID string) ([]common.Alert, error) {
 	searchResult, err := db.Esi.SearchByTermQuery("condition_id", conditionID)
 	if err != nil {

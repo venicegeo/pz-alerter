@@ -18,6 +18,7 @@ import (
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-workflow/common"
 	"sync"
+	"errors"
 )
 
 //---------------------------------------------------------------------------
@@ -66,12 +67,14 @@ func NewTriggerDB(es *piazza.EsClient, index string) (*TriggerDB, error) {
 
 func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id common.Ident, eventDB *EventRDB) (common.Ident, error) {
 
-	_, err := db.Esi.PostData(mapping, id.String(), trigger)
+	indexResult, err := eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(trigger.Condition.Query))
 	if err != nil {
 		return common.NoIdent, err
 	}
 
-	_, err = eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(trigger.Condition.Query))
+	trigger.PercolationID = common.Ident(indexResult.Id)
+
+	_, err = db.Esi.PostData(mapping, id.String(), trigger)
 	if err != nil {
 		return common.NoIdent, err
 	}
@@ -82,4 +85,32 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id com
 	}
 
 	return id, nil
+}
+
+func (db *TriggerDB) DeleteTrigger(mapping string, id common.Ident, eventDB *EventRDB) (bool, error) {
+
+	var obj common.Trigger
+	ok, err := db.GetById(mapping, id, &obj)
+	if err != nil {
+		return false, err
+	}
+	if !ok {
+		return false, errors.New("unable to get trigger by id")
+	}
+
+	res, err := db.Esi.DeleteById(mapping, string(id))
+	if err != nil {
+		return false, err
+	}
+
+	deleteResult, err := eventDB.Esi.DeletePercolationQuery(string(obj.PercolationID))
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+	if !deleteResult.Found {
+		return false, errors.New("unable to delete percolation")
+	}
+
+	return res.Found, nil
 }
