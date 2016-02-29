@@ -16,11 +16,10 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-workflow/client"
+	"github.com/venicegeo/pz-workflow/common"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -28,14 +27,14 @@ import (
 
 type LockedAdminSettings struct {
 	sync.Mutex
-	client.WorkflowAdminSettings
+	common.WorkflowAdminSettings
 }
 
 var settings LockedAdminSettings
 
 type LockedAdminStats struct {
 	sync.Mutex
-	client.WorkflowAdminStats
+	common.WorkflowAdminStats
 }
 
 var stats LockedAdminStats
@@ -44,7 +43,7 @@ func init() {
 	stats.Date = time.Now()
 }
 
-///////////////////////////////////////////////////////////
+//---------------------------------------------------------------------------
 
 func handleGetAdminStats(c *gin.Context) {
 	stats.Lock()
@@ -61,7 +60,7 @@ func handleGetAdminSettings(c *gin.Context) {
 }
 
 func handlePostAdminSettings(c *gin.Context) {
-	var s client.WorkflowAdminSettings
+	var s common.WorkflowAdminSettings
 	err := c.BindJSON(&s)
 	if err != nil {
 		c.Error(err)
@@ -77,34 +76,49 @@ func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
+func Status(c *gin.Context, code int, mssg string) {
+	e := common.ErrorResponse{Status: code, Message: mssg}
+	c.JSON(code, e)
+}
+
+
 func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
 	es := sys.ElasticSearchService
 
-	alertDB, err := client.NewAlertDB(es, "alerts", "Alert")
+	alertDB, err := NewAlertDB(es, "alerts")
 	if err != nil {
 		return nil, err
 	}
 
-	triggerDB, err := client.NewTriggerDB(es, "triggers", "Triggers")
+	triggerDB, err := NewTriggerDB(es, "triggers")
 	if err != nil {
 		return nil, err
 	}
 
-	eventDB, err := client.NewResourceDB(es, "events", "Events")
+	eventDB, err := NewEventDB(es, "events")
 	if err != nil {
 		return nil, err
 	}
 
-	err = es.FlushIndex("events")
+	eventTypeDB, err := NewEventTypeDB(es, "eventtypes")
+	if err != nil {
+		return nil, err
+	}
+
+	err = alertDB.Esi.Flush()
 	if err != nil {
 		return nil,err
 	}
-	err = es.FlushIndex("alerts")
+	err = triggerDB.Esi.Flush()
 	if err != nil {
 		return nil,err
 	}
-	err = es.FlushIndex("triggers")
+	err = alertDB.Esi.Flush()
+	if err != nil {
+		return nil,err
+	}
+	err = triggerDB.Esi.Flush()
 	if err != nil {
 		return nil,err
 	}
@@ -114,55 +128,69 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	//router.Use(gin.Logger())
 	//router.Use(gin.Recovery())
 
-	//---------------------------------
+	//---------------------------------------------------------------
 
 	router.GET("/", func(c *gin.Context) {
-		log.Print("got health-check request")
 		c.String(http.StatusOK, "Hi. I'm pz-workflow.")
 	})
 
-	//---------------------------------
+	// ---------------------- EVENTS ----------------------
 
-	router.POST("/v1/events", func(c *gin.Context) {
-		event := &client.Event{}
-		err := c.BindJSON(event)
+	router.POST("/v1/events/:eventType", func(c *gin.Context) {
+		eventType := c.Param("eventType")
+
+		var event common.Event
+		err := c.BindJSON(&event)
 		if err != nil {
-			//pzService.Error("POST to /v1/events", err)
-			log.Printf("POST to /v1/events: %v", err)
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 
-		event.ID = client.NewEventID()
-		id, err := eventDB.PostData(event, event.ID)
+		event.ID = NewEventID()
+		_, err = eventDB.PostData(eventType, event, event.ID)
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 
-		a := client.WorkflowIdResponse{ID: id}
-		c.IndentedJSON(http.StatusCreated, a)
+		retId := common.WorkflowIdResponse{ID: event.ID}
 
-		triggerDB.CheckTriggers(*event, alertDB)
+		err = eventDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
+		{
+			// TODO: this should be done asynchronously
+			_, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
+			if err != nil {
+				Status(c, 400, err.Error())
+				return
+			}
+		}
+
+		c.IndentedJSON(http.StatusCreated, retId)
 	})
 
 	router.GET("/v1/events", func(c *gin.Context) {
 		m, err := eventDB.GetAll()
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 		c.IndentedJSON(http.StatusOK, m)
 	})
 
-	router.GET("/v1/events/:id", func(c *gin.Context) {
+	router.GET("/v1/events/:eventType/:id", func(c *gin.Context) {
+		eventType := c.Param("eventType")
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var v client.Event
-		ok, err := eventDB.GetById(id, &v)
+		id := common.Ident(s)
+		var v common.Event
+		ok, err := eventDB.GetById(eventType, id, &v)
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
@@ -172,48 +200,143 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		c.IndentedJSON(http.StatusOK, v)
 	})
 
-	router.DELETE("/v1/events/:id", func(c *gin.Context) {
+	router.DELETE("/v1/events/:eventType/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := eventDB.DeleteByID(id)
+		eventType := c.Param("eventType")
+
+		ok, err := eventDB.DeleteByID(eventType, id)
 		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
+
+		err = eventDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	//---------------------------------
+	// ---------------------- EVENT TYPES ----------------------
+
+	router.POST("/v1/eventtypes", func(c *gin.Context) {
+		eventType := &common.EventType{}
+		err := c.BindJSON(eventType)
+		if err != nil {
+			Status(c, 403, err.Error())
+			return
+		}
+
+		eventType.ID = NewEventTypeID()
+		id, err := eventTypeDB.PostData("EventType", eventType, eventType.ID)
+		if err != nil {
+			Status(c, 401, err.Error())
+			return
+		}
+
+		err = eventDB.AddMapping(eventType.Name, eventType.Mapping)
+		if err != nil {
+			Status(c, 402, err.Error())
+			return
+		}
+
+		retId := common.WorkflowIdResponse{ID: id}
+
+		err = eventTypeDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
+		c.IndentedJSON(http.StatusCreated, retId)
+	})
+
+	router.GET("/v1/eventtypes", func(c *gin.Context) {
+		m, err := eventTypeDB.GetAll()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+		c.IndentedJSON(http.StatusOK, m)
+	})
+
+	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
+		s := c.Param("id")
+
+		id := common.Ident(s)
+		var v common.Event
+		ok, err := eventTypeDB.GetById("EventType", id, &v)
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+		if !ok {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+		c.IndentedJSON(http.StatusOK, v)
+	})
+
+	router.DELETE("/v1/eventtypes/:id", func(c *gin.Context) {
+		id := c.Param("id")
+		ok, err := eventTypeDB.DeleteByID("EventType", id)
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+		if !ok {
+			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			return
+		}
+
+		err = eventTypeDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
+		c.IndentedJSON(http.StatusOK, nil)
+	})
+
+	// ---------------------- TRIGGERS ----------------------
 
 	router.POST("/v1/triggers", func(c *gin.Context) {
-		trigger := &client.Trigger{}
+		trigger := &common.Trigger{}
 		err := c.BindJSON(trigger)
 		if err != nil {
-			//pzService.Error("POST to /v1/events", err)
-			log.Printf("POST to /v1/triggers: %v", err)
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 
-		trigger.ID = client.NewTriggerIdent()
+		trigger.ID = NewTriggerIdent()
 
-		_, err = triggerDB.PostData(trigger, trigger.ID)
+		_, err = triggerDB.PostTrigger("Trigger", trigger, trigger.ID, eventDB)
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 
-		a := client.WorkflowIdResponse{ID: trigger.ID}
+		a := common.WorkflowIdResponse{ID: trigger.ID}
+
+		err = triggerDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
 		c.IndentedJSON(http.StatusCreated, a)
 	})
 
 	router.GET("/v1/triggers", func(c *gin.Context) {
 		m, err := triggerDB.GetAll()
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -223,11 +346,11 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.GET("/v1/triggers/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var v client.Trigger
-		ok, err := triggerDB.GetById(id, &v)
+		id := common.Ident(s)
+		var v common.Trigger
+		ok, err := triggerDB.GetById("Trigger", id, &v)
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
@@ -239,19 +362,26 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	router.DELETE("/v1/triggers/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := triggerDB.DeleteByID(id)
+		ok, err := triggerDB.DeleteTrigger("Trigger", common.Ident(id), eventDB)
 		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
+
+		err = triggerDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	//---------------------------------
+	// ---------------------- ALERTS ----------------------
 
 	router.GET("/v1/alerts", func(c *gin.Context) {
 
@@ -259,11 +389,11 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		if conditionID != "" {
 			v, err := alertDB.GetByConditionID(conditionID)
 			if err != nil {
-				c.IndentedJSON(http.StatusInternalServerError, gin.H{"condition_id": conditionID})
+				Status(c, 400, err.Error())
 				return
 			}
 			if v == nil {
-				c.IndentedJSON(http.StatusNotFound, gin.H{"condition_id": conditionID})
+				Status(c, 400, err.Error())
 				return
 			}
 			c.IndentedJSON(http.StatusOK, v)
@@ -272,7 +402,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 		all, err := alertDB.GetAll()
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 		c.IndentedJSON(http.StatusOK, all)
@@ -281,11 +411,11 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.GET("/v1/alerts/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := client.Ident(s)
-		var alert client.Alert
-		ok, err := alertDB.GetById(id, &alert)
+		id := common.Ident(s)
+		var alert common.Alert
+		ok, err := alertDB.GetById("Alert", id, &alert)
 		if err != nil {
-			c.Error(err)
+			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
@@ -296,39 +426,52 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	})
 
 	router.POST("/v1/alerts", func(c *gin.Context) {
-		var alert client.Alert
+		var alert common.Alert
 		err := c.BindJSON(&alert)
 		if err != nil {
-			c.Error(err)
-			log.Printf("ERROR: POST to /v1/alerts %v", err)
+			Status(c, 400, err.Error())
 			return
 		}
 
-		alert.ID = client.NewAlertIdent()
+		alert.ID = NewAlertIdent()
 
-		_, err = alertDB.PostData(&alert, alert.ID)
+		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
-			c.AbortWithError(499, err)
+			Status(c, 400, err.Error())
 			return
 		}
+
+		err = alertDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
 		c.IndentedJSON(http.StatusCreated, gin.H{"id": alert.ID})
 	})
 
 	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := alertDB.DeleteByID(id)
+		ok, err := alertDB.DeleteByID("Alert", id)
 		if err != nil {
-			c.IndentedJSON(http.StatusInternalServerError, gin.H{"id": id})
+			Status(c, 400, err.Error())
 			return
 		}
 		if !ok {
 			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
+
+		err = alertDB.Flush()
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
 		c.IndentedJSON(http.StatusOK, nil)
 	})
 
-	//---------------------------------
+	//-----------------------------------------------------------------------
 
 	router.GET("/v1/admin/stats", func(c *gin.Context) { handleGetAdminStats(c) })
 

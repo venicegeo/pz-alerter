@@ -12,37 +12,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package server
 
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 	"sync"
 )
 
 var alertIdLock sync.Mutex
 var alertID = 1
 
-func NewAlertIdent() Ident {
+func NewAlertIdent() common.Ident {
 	alertIdLock.Lock()
-	id := NewIdentFromInt(alertID)
+	id := common.NewIdentFromInt(alertID)
 	alertID++
 	alertIdLock.Unlock()
 	s := "A" + id.String()
-	return Ident(s)
-}
-
-// newAlert makes an Alert, setting the ID for you.
-func NewAlert(triggerId Ident) Alert {
-
-	id := NewIdentFromInt(alertID)
-	alertID++
-	s := "A" + string(id)
-
-	return Alert{
-		ID:        Ident(s),
-		TriggerId: triggerId,
-	}
+	return common.Ident(s)
 }
 
 //---------------------------------------------------------------------------
@@ -51,8 +39,11 @@ type AlertRDB struct {
 	*ResourceDB
 }
 
-func NewAlertDB(es *piazza.ElasticSearchService, index string, typename string) (*AlertRDB, error) {
-	rdb, err := NewResourceDB(es, index, typename)
+func NewAlertDB(es *piazza.EsClient, index string) (*AlertRDB, error) {
+
+	esi := piazza.NewEsIndexClient(es, index)
+
+	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -60,19 +51,8 @@ func NewAlertDB(es *piazza.ElasticSearchService, index string, typename string) 
 	return &ardb, nil
 }
 
-func ConvertRawsToAlerts(raws []*json.RawMessage) ([]Alert, error) {
-	objs := make([]Alert, len(raws))
-	for i, _ := range raws {
-		err := json.Unmarshal(*raws[i], &objs[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return objs, nil
-}
-
-func (db *AlertRDB) GetByConditionID(conditionID string) ([]Alert, error) {
-	searchResult, err := db.es.SearchByTermQuery(db.index, "condition_id", conditionID)
+func (db *AlertRDB) GetByConditionID(conditionID string) ([]common.Alert, error) {
+	searchResult, err := db.Esi.SearchByTermQuery("condition_id", conditionID)
 	if err != nil {
 		return nil, err
 	}
@@ -81,9 +61,9 @@ func (db *AlertRDB) GetByConditionID(conditionID string) ([]Alert, error) {
 		return nil, nil
 	}
 
-	var as []Alert
+	var as []common.Alert
 	for _, hit := range searchResult.Hits.Hits {
-		var a Alert
+		var a common.Alert
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
 			return nil, err

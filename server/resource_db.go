@@ -12,68 +12,64 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package client
+package server
 
 import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 )
 
 var resourceID = 1
 
-func NewResourceID() Ident {
-	id := NewIdentFromInt(resourceID)
+func NewResourceID() common.Ident {
+	id := common.NewIdentFromInt(resourceID)
 	resourceID++
-	return Ident("R" + string(id))
+	return common.Ident("R" + string(id))
 }
 
-//type Resource interface {
-//	GetId() Ident
-//	SetId(Ident)
-//}
 
 type ResourceDB struct {
-	es       *piazza.ElasticSearchService
-	index    string
-	typename string
+	Es       *piazza.EsClient
+	Esi      *piazza.EsIndexClient
 }
 
-func NewResourceDB(es *piazza.ElasticSearchService, index string, typename string) (*ResourceDB, error) {
+func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient) (*ResourceDB, error) {
 	db := &ResourceDB{
-		es:       es,
-		index:    index,
-		typename: typename,
+		Es:       es,
+		Esi:       esi,
 	}
 
-	err := es.DeleteIndex(index)
+	err := esi.Delete()
 	if err != nil {
 		return nil, err
 	}
 
-	err = es.CreateIndex(index)
+	err = esi.Create()
 	if err != nil {
 		return nil, err
 	}
+
 	return db, nil
 }
 
-func (db *ResourceDB) PostData(obj interface{}, id Ident) (Ident, error) {
+func (db *ResourceDB) PostData(mapping string, obj interface{}, id common.Ident) (common.Ident, error) {
 
-	_, err := db.es.PostData(db.index, db.typename, id.String(), obj)
+	_, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
-		return NoIdent, err
+		return common.NoIdent, err
 	}
 
-	err = db.es.FlushIndex(db.index)
+	err = db.Esi.Flush()
 	if err != nil {
-		return NoIdent, err
+		return common.NoIdent, err
 	}
 
 	return id, nil
 }
 
 func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
-	searchResult, err := db.es.SearchByMatchAll(db.index)
+	searchResult, err := db.Esi.SearchByMatchAll()
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +78,7 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 		return nil, nil
 	}
 
-	raws := make([]*json.RawMessage,searchResult.TotalHits())
+	raws := make([]*json.RawMessage, searchResult.TotalHits())
 
 	for i, hit := range searchResult.Hits.Hits {
 		raws[i] = hit.Source
@@ -91,9 +87,9 @@ func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
 	return raws, nil
 }
 
-func (db *ResourceDB) GetById(id Ident, obj interface{}) (bool, error) {
+func (db *ResourceDB) GetById(mapping string, id common.Ident, obj interface{}) (bool, error) {
 
-	getResult, err := db.es.GetById(db.index, id.String())
+	getResult, err := db.Esi.GetById(mapping, id.String())
 	if err != nil {
 		return false, err
 	}
@@ -107,19 +103,41 @@ func (db *ResourceDB) GetById(id Ident, obj interface{}) (bool, error) {
 	if err != nil {
 		return true, err
 	}
+
 	return true, nil
 }
 
-func (db *ResourceDB) DeleteByID(id string) (bool, error) {
-	res, err := db.es.DeleteById(db.index, db.typename, id)
+func (db *ResourceDB) DeleteByID(mapping string, id string) (bool, error) {
+	res, err := db.Esi.DeleteById(mapping, id)
 	if err != nil {
 		return false, err
 	}
 
-	err = db.es.FlushIndex(db.index)
+	err = db.Esi.Flush()
 	if err != nil {
 		return false, err
 	}
 
 	return res.Found, nil
+}
+
+func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingElementTypeName) (error) {
+
+	jsn, err := piazza.ConstructMappingSchema(name, mapping)
+	err = db.Esi.SetMapping(name, jsn)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *ResourceDB) Flush() error {
+
+	err := db.Esi.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -15,9 +15,11 @@ go get github.com/venicegeo/pz-workflow
 
 go get github.com/stretchr/testify/assert
 go get github.com/stretchr/testify/suite
-go test -v github.com/venicegeo/pz-workflow
+go test -v github.com/venicegeo/pz-workflow/server
+go test -v github.com/venicegeo/pz-workflow/client
 
-go install github.com/venicegeo/pz-workflow
+go install github.com/venicegeo/pz-workflow/server
+go install github.com/venicegeo/pz-workflow/client
 
 ###
 
