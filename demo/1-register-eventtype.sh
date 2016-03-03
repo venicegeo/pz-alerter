@@ -1,12 +1,12 @@
-#/bin/sh
+#!/bin/sh
 
 json=`cat <<foo
 {
     "name": "USData",
     "mapping": {
-        "itemId":   "string",  
-        "severity": "integer", 
-        "problem":  "string"   
+        "itemId":   "string",
+        "severity": "integer",
+        "problem":  "string"
     }
 }
 foo`
