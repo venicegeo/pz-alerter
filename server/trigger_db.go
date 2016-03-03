@@ -18,6 +18,7 @@ import (
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-workflow/common"
 	"sync"
+	"encoding/json"
 	"errors"
 )
 
@@ -67,7 +68,13 @@ func NewTriggerDB(es *piazza.EsClient, index string) (*TriggerDB, error) {
 
 func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id common.Ident, eventDB *EventRDB) (common.Ident, error) {
 
-	indexResult, err := eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(trigger.Condition.Query))
+	ifaceObj := trigger.Condition.Query
+	body, err := json.Marshal(ifaceObj)
+	if err != nil {
+		return common.NoIdent, err
+	}
+
+	indexResult, err := eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
 	if err != nil {
 		return common.NoIdent, err
 	}

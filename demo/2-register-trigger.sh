@@ -3,23 +3,27 @@
 etId=$1
 
 #query='{\"query\" : {\"bool\": {\"must\": [{\"match\" : {\"severity\" : 4}},{\"match\" : {\"problem\" : \"us-bbox\"}}]}}}'
+#echo $query
 
-query='{\"query\" :  {\"match\" : {\"problem\" : \"us-bbox\"}}}'
 
-echo $query
-
-cat > t <<foo
+cat > tmp <<foo
 {
     "title": "my found-a-bad-telephone-number trigger",
     "condition": {
         "type": "$etId",
-        "query": " $query ",
+        "query": {
+            "query": {
+                "match": {
+                    "severity": 2
+                }
+            }
+        },
         "job": "do the thing!"
     }
 }
 foo
 
-json=`cat t`
+json=`cat tmp`
 
 echo POST /triggers
 echo "$json"

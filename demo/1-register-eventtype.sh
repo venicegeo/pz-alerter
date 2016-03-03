@@ -1,6 +1,6 @@
 #!/bin/sh
 
-json=`cat <<foo
+cat > tmp <<foo
 {
     "name": "USData",
     "mapping": {
@@ -9,7 +9,9 @@ json=`cat <<foo
         "problem":  "string"
     }
 }
-foo`
+foo
+
+json=`cat tmp`
 
 echo POST:
 echo "$json"

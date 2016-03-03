@@ -102,7 +102,7 @@ type IIdentable interface {
 // Query is specific to the event type
 type Condition struct {
 	EventType Ident  `json:"type" binding:"required"`
-	Query     string `json:"query" binding:"required"`
+	Query     map[string]interface{} `json:"query" binding:"required"`
 }
 
 type Job struct {

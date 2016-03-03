@@ -163,14 +163,13 @@ func (suite *ServerTester) TestOne() {
 			Title: "the x1 trigger",
 			Condition: common.Condition{
 				EventType: et1Id,
-				Query:
-				`{
-					"query": {
-						"match": {
-							"num": 17
-						}
-					}
-				}`,
+				Query: map[string]interface{}{
+					"query": map[string]interface{}{
+						"match": map[string]interface{}{
+							"num": 17,
+						},
+					},
+				},
 			},
 			Job: common.Job{
 				Task: "the x1 task",

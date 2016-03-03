@@ -2,7 +2,7 @@
 
 etId=$1
 
-cat > t <<foo
+cat > tmp <<foo
 {
     "type": "$etId",
     "date": "2007-05-05T14:30:00Z",
@@ -14,7 +14,7 @@ cat > t <<foo
 }
 foo
 
-json=`cat t`
+json=`cat tmp`
 
 echo POST /events/$etId
 echo "$json"

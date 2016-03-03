@@ -144,13 +144,13 @@ func (suite *ClientTester) TestOne() {
 			Title: "the x1 trigger",
 			Condition: common.Condition{
 				EventType: etId,
-				Query: `{
-					"query": {
-						"match": {
-							"num": 17
-						}
-					}
-				}`,
+				Query: map[string]interface{}{
+					"query": map[string]interface{}{
+						"match": map[string]interface{}{
+							"num": 17,
+						},
+					},
+				},
 			},
 			Job: common.Job{
 				Task: "the x1 task",
@@ -379,13 +379,13 @@ func (suite *ClientTester) TestTriggerResource() {
 		Title: "the x1 trigger",
 		Condition: common.Condition{
 			EventType: etId,
-			Query: `{
-				"query": {
-					"match": {
-						"myint": 17
-					}
-				}
-			}`,
+			Query: map[string]interface{}{
+				"query": map[string]interface{}{
+					"match": map[string]interface{}{
+						"myint": 17,
+					},
+				},
+			},
 		},
 		Job: common.Job{
 			Task: "the x1 task",
@@ -411,7 +411,7 @@ func (suite *ClientTester) TestTriggerResource() {
 	suite.assertNoData()
 }
 
-func (suite *ClientTester) TestTriggering() {
+func (suite *ClientTester) TestAAATriggering() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -423,21 +423,20 @@ func (suite *ClientTester) TestTriggering() {
 
 	//-----------------------------------------------------
 
-	var etHId, etIId, etJId common.Ident
+	var etC, etD, etE common.Ident
 	{
 		mapping := map[string]piazza.MappingElementTypeName{
-			"id":  piazza.MappingElementTypeString,
 			"num": piazza.MappingElementTypeInteger,
 			"str": piazza.MappingElementTypeString,
 		}
-		eventTypeH := &common.EventType{Name: "EventTypeH", Mapping: mapping}
-		eventTypeI := &common.EventType{Name: "EventTypeI", Mapping: mapping}
-		eventTypeJ := &common.EventType{Name: "EventTypeJ", Mapping: mapping}
-		etHId, err = workflow.PostEventType(eventTypeH)
+		eventTypeC := &common.EventType{Name: "EventType C", Mapping: mapping}
+		eventTypeD := &common.EventType{Name: "EventType D", Mapping: mapping}
+		eventTypeE := &common.EventType{Name: "EventType E", Mapping: mapping}
+		etC, err = workflow.PostEventType(eventTypeC)
 		assert.NoError(err)
-		etIId, err = workflow.PostEventType(eventTypeI)
+		etD, err = workflow.PostEventType(eventTypeD)
 		assert.NoError(err)
-		etJId, err = workflow.PostEventType(eventTypeJ)
+		etE, err = workflow.PostEventType(eventTypeE)
 		assert.NoError(err)
 
 		eventTypes, err := workflow.GetAllEventTypes()
@@ -447,46 +446,44 @@ func (suite *ClientTester) TestTriggering() {
 
 	////////////////
 
-	var t1Id, t2Id common.Ident
+	var tA, tB common.Ident
 	{
 		t1 := &common.Trigger{
-			Title: "the x1 trigger",
+			Title: "Trigger A",
 			Condition: common.Condition{
-				EventType: etHId,
-				Query: `{
-				"query": {
-					"match": {
-						"str":  "quick"
-					}
-				}
-			}`,
+				EventType: etC,
+				Query: map[string]interface{}{
+					"query": map[string]interface{}{
+						"match": map[string]interface{}{
+							"str":  "quick",
+						},
+					},
+				},
 			},
 			Job: common.Job{
-				Task: "the x1 task",
+				Task: "Trigger A task",
 			},
 		}
-		t1Id, err = workflow.PostTrigger(t1)
+		tA, err = workflow.PostTrigger(t1)
 		assert.NoError(err)
 
 		t2 := &common.Trigger{
-			Title: "the x2 trigger",
+			Title: "Trigger B",
 			Condition: common.Condition{
-				EventType: etIId,
-				Query: `{
-				"query": {
-					"match": {
-						"num": {
-							"query": 18
-						}
-					}
-				}
-			}`,
+				EventType: etD,
+				Query: map[string]interface{}{
+					"query": map[string]interface{}{
+						"match": map[string]interface{}{
+							"num": 18,
+						},
+					},
+				},
 			},
 			Job: common.Job{
-				Task: "the x2 task",
+				Task: "Trigger B task",
 			},
 		}
-		t2Id, err = workflow.PostTrigger(t2)
+		tB, err = workflow.PostTrigger(t2)
 		assert.NoError(err)
 
 		triggers, err := workflow.GetAllTriggers()
@@ -494,46 +491,46 @@ func (suite *ClientTester) TestTriggering() {
 		assert.Len(*triggers, 2)
 	}
 
-	var e1Id, e2Id, e3Id common.Ident
+	var eF, eG, eH common.Ident
 	{
-		// will cause trigger X1
+		// will cause trigger TA
 		e1 := common.Event{
-			EventType: etHId,
+			EventType: etC,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
 			},
 		}
-		e1Id, err = workflow.PostEvent("EventTypeH", &e1)
+		eF, err = workflow.PostEvent("EventType C", &e1)
 		assert.NoError(err)
 
-		// will cause trigger X2
+		// will cause trigger TB
 		e2 := common.Event{
-			EventType: etIId,
+			EventType: etD,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
 			},
 		}
-		e2Id, err = workflow.PostEvent("EventTypeI", &e2)
+		eG, err = workflow.PostEvent("EventType D", &e2)
 		assert.NoError(err)
 
 		// will cause no triggers
 		e3 := common.Event{
-			EventType: etJId,
+			EventType: etE,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 19,
 				"str": "fox",
 			},
 		}
-		e3Id, err = workflow.PostEvent("EventTypeJ", &e3)
+		eH, err = workflow.PostEvent("EventType E", &e3)
 		assert.NoError(err)
 	}
 
-	var a1Id, a2Id common.Ident
+	var aI, aJ common.Ident
 	{
 		alerts, err := workflow.GetAllAlerts()
 		assert.NoError(err)
@@ -541,30 +538,43 @@ func (suite *ClientTester) TestTriggering() {
 
 		var alertList common.AlertList
 		alertList = *alerts
-		alerts2 := alertList.ToSortedArray()
-		assert.Len(alerts2, 2)
+		tmp := alertList.ToSortedArray()
+		assert.Len(tmp, 2)
+		alert0 := tmp[0]
+		alert1 := tmp[1]
 
-		a1Id = alerts2[0].ID
-		a2Id = alerts2[1].ID
+		aI = alert0.ID
+		aJ = alert1.ID
 
-		assert.EqualValues(alerts2[0].TriggerId, t1Id)
-		assert.EqualValues(alerts2[1].TriggerId, t2Id)
+		assert.EqualValues(alert0.TriggerId, tA)
+		assert.EqualValues(alert0.EventId, eF)
+		assert.EqualValues(alert1.TriggerId, tB)
+		assert.EqualValues(alert1.EventId, eG)
 	}
 
 	{
-		workflow.DeleteTrigger(t1Id)
-		workflow.DeleteTrigger(t2Id)
-		workflow.DeleteEvent("EventTypeH", e1Id)
-		workflow.DeleteEvent("EventTypeI", e2Id)
-		workflow.DeleteEvent("EventTypeJ", e3Id)
-		workflow.DeleteAlert(a1Id)
-		workflow.DeleteAlert(a2Id)
+		err = workflow.DeleteEventType(etC)
+		assert.NoError(err)
+		err = workflow.DeleteEventType(etD)
+		assert.NoError(err)
+		err = workflow.DeleteEventType(etE)
+		assert.NoError(err)
 
-		err = workflow.DeleteEventType(etHId)
+		workflow.DeleteTrigger(tA)
 		assert.NoError(err)
-		err = workflow.DeleteEventType(etIId)
+		workflow.DeleteTrigger(tB)
 		assert.NoError(err)
-		err = workflow.DeleteEventType(etJId)
+
+		workflow.DeleteEvent("EventType C", eF)
+		assert.NoError(err)
+		workflow.DeleteEvent("EventType D", eG)
+		assert.NoError(err)
+		workflow.DeleteEvent("EventType E", eH)
+		assert.NoError(err)
+
+		workflow.DeleteAlert(aI)
+		assert.NoError(err)
+		workflow.DeleteAlert(aJ)
 		assert.NoError(err)
 	}
 
