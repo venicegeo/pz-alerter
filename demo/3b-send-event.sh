@@ -9,19 +9,21 @@ cat > tmp <<foo
     "type": "$etId",
     "date": "2007-05-05T14:30:00Z",
     "data": {
-        "itemId": "e38ad2", 
-        "severity": 4,
-        "problem": "us-phone"
+        "filename": "dataset-b",
+        "severity": 2,
+        "code": "PHONE"
     }
 }
 foo
 
 json=`cat tmp`
 
-echo POST /events/USData
+echo
+echo POST /events/USDataEvent
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/events/USData`
+ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/events/USDataEvent`
 
 echo RETURN:
 echo $ret
+echo

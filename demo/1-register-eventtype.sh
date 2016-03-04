@@ -4,21 +4,23 @@ source 0-setup.sh
 
 cat > tmp <<foo
 {
-    "name": "USData",
+    "name": "USDataEvent",
     "mapping": {
-        "itemId":   "string",
-        "severity": "integer",
-        "problem":  "string"
+        "filename": "string",
+        "code":     "string",
+        "severity": "integer"
     }
 }
 foo
 
 json=`cat tmp`
 
-echo POST:
+echo
+echo POST $WHOST/v1/eventtypes
 echo "$json"
 
 ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/eventtypes`
 
 echo RETURN:
 echo $ret
+echo

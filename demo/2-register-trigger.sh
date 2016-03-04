@@ -4,29 +4,29 @@ source 0-setup.sh
 
 etId=$1
 
-#query='{\"query\" : {\"bool\": {\"must\": [{\"match\" : {\"severity\" : 4}},{\"match\" : {\"problem\" : \"us-bbox\"}}]}}}'
-#echo $query
-
-
 cat > tmp <<foo
 {
-    "title": "my found-a-bad-telephone-number trigger",
+    "title": "High Severity",
     "condition": {
         "type": "$etId",
         "query": {
             "query": {
-                "match": {
-                    "severity": 2
+                "bool": {
+                    "must": [
+                        { "match": {"severity": 5} },
+                        { "match": {"code": "PHONE"} }
+                    ]
                 }
             }
-        },
-        "job": "do the thing!"
-    }
+        }
+     },
+    "job": { "task": "alert the user" }
 }
 foo
 
 json=`cat tmp`
 
+echo
 echo POST /triggers
 echo "$json"
 
@@ -34,3 +34,4 @@ ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/triggers`
 
 echo RETURN:
 echo $ret
+echo
