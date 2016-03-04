@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"sort"
 	"strconv"
+	"sync"
 	"time"
 )
 
@@ -83,13 +84,25 @@ type Ident string
 
 const NoIdent Ident = ""
 
-func (id Ident) String() string {
-	return string(id)
+var globalIdLock sync.Mutex
+var globalID = 1
+var debugIds = true
+
+func NewIdent() Ident {
+	if debugIds {
+		globalIdLock.Lock()
+		s := strconv.Itoa(globalID)
+		globalID++
+		globalIdLock.Unlock()
+		id := "W" + s
+		return Ident(id)
+	} else {
+		panic(12345)
+	}
 }
 
-func NewIdentFromInt(id int) Ident {
-	s := strconv.Itoa(id)
-	return Ident(s)
+func (id Ident) String() string {
+	return string(id)
 }
 
 type IIdentable interface {

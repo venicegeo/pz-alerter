@@ -20,21 +20,12 @@ import (
 	"github.com/venicegeo/pz-workflow/common"
 )
 
-var eventID = 1
 
-func NewEventID() common.Ident {
-	id := common.NewIdentFromInt(eventID)
-	eventID++
-	return common.Ident("E" + string(id))
-}
-
-//---------------------------------------------------------------------------
-
-type EventRDB struct {
+type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(es *piazza.EsClient, index string) (*EventRDB, error) {
+func NewEventDB(es *piazza.EsClient, index string) (*EventDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
@@ -42,11 +33,11 @@ func NewEventDB(es *piazza.EsClient, index string) (*EventRDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	erdb := EventRDB{ResourceDB: rdb}
+	erdb := EventDB{ResourceDB: rdb}
 	return &erdb, nil
 }
 
-func (db *EventRDB) PercolateEventData(eventType string, data map[string]interface{}, id common.Ident, alertDB *AlertRDB) (*[]common.Ident, error) {
+func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id common.Ident, alertDB *AlertDB) (*[]common.Ident, error) {
 
 	resp, err := db.Esi.AddPercolationDocument(eventType, data)
 	if err != nil {
@@ -57,7 +48,7 @@ func (db *EventRDB) PercolateEventData(eventType string, data map[string]interfa
 	ids := make([]common.Ident, len(resp.Matches))
 	for i,v := range resp.Matches {
 		ids[i] = common.Ident(v.Id)
-		alert := common.Alert{ID: NewAlertIdent(), EventId: id, TriggerId: common.Ident(v.Id)}
+		alert := common.Alert{ID: common.NewIdent(), EventId: id, TriggerId: common.Ident(v.Id)}
 		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
 			return nil, err
@@ -67,8 +58,7 @@ func (db *EventRDB) PercolateEventData(eventType string, data map[string]interfa
 	return &ids, nil
 }
 
-
-func (db *EventRDB) GetByMapping(mapping string) ([]common.Event, error) {
+func (db *EventDB) GetByMapping(mapping string) ([]common.Event, error) {
 
 	searchResult, err := db.Esi.SearchByMatchAllWithMapping(mapping)
 	if err != nil {
@@ -90,16 +80,4 @@ func (db *EventRDB) GetByMapping(mapping string) ([]common.Event, error) {
 		ary[i] = tmp
 	}
 	return ary, nil
-}
-
-
-func ConvertRawsToEvents(raws []*json.RawMessage) ([]common.Event, error) {
-	objs := make([]common.Event, len(raws))
-	for i, _ := range raws {
-		err := json.Unmarshal(*raws[i], &objs[i])
-		if err != nil {
-			return nil, err
-		}
-	}
-	return objs, nil
 }

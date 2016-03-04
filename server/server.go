@@ -146,7 +146,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		event.ID = NewEventID()
+		event.ID = common.NewIdent()
 		_, err = eventDB.PostData(eventType, event, event.ID)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -248,7 +248,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		eventType.ID = NewEventTypeID()
+		eventType.ID = common.NewIdent()
 		id, err := eventTypeDB.PostData("EventType", eventType, eventType.ID)
 		if err != nil {
 			Status(c, 401, err.Error())
@@ -329,7 +329,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		trigger.ID = NewTriggerIdent()
+		trigger.ID = common.NewIdent()
 
 		_, err = triggerDB.PostTrigger("Trigger", trigger, trigger.ID, eventDB)
 		if err != nil {
@@ -448,7 +448,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		alert.ID = NewAlertIdent()
+		alert.ID = common.NewIdent()
 
 		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {

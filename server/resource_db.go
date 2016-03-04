@@ -20,15 +20,6 @@ import (
 	"github.com/venicegeo/pz-workflow/common"
 )
 
-var resourceID = 1
-
-func NewResourceID() common.Ident {
-	id := common.NewIdentFromInt(resourceID)
-	resourceID++
-	return common.Ident("R" + string(id))
-}
-
-
 type ResourceDB struct {
 	Es       *piazza.EsClient
 	Esi      *piazza.EsIndexClient
