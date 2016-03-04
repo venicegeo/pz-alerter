@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source 0-setup.sh
+
 etId=$1
 
 cat > tmp <<foo
@@ -19,7 +21,7 @@ json=`cat tmp`
 echo POST /events/USData
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" http://pz-workflow.cf.piazzageo.io/v1/events/USData`
+ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/events/USData`
 
 echo RETURN:
 echo $ret

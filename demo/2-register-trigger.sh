@@ -1,5 +1,7 @@
 #!/bin/sh
 
+source 0-setup.sh
+
 etId=$1
 
 #query='{\"query\" : {\"bool\": {\"must\": [{\"match\" : {\"severity\" : 4}},{\"match\" : {\"problem\" : \"us-bbox\"}}]}}}'
@@ -28,7 +30,7 @@ json=`cat tmp`
 echo POST /triggers
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" http://pz-workflow.cf.piazzageo.io/v1/triggers`
+ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/triggers`
 
 echo RETURN:
 echo $ret
