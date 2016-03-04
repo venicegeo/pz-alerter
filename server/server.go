@@ -170,7 +170,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			}
 		}
 
-		c.IndentedJSON(http.StatusCreated, retId)
+		c.JSON(http.StatusCreated, retId)
 	})
 
 	router.GET("/v1/events", func(c *gin.Context) {
@@ -179,7 +179,22 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			Status(c, 400, err.Error())
 			return
 		}
-		c.IndentedJSON(http.StatusOK, m)
+		c.JSON(http.StatusOK, m)
+	})
+
+	router.GET("/v1/events/:eventType", func(c *gin.Context) {
+		eventType := c.Param("eventType")
+
+		ary, err := eventDB.GetByMapping(eventType)
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+		if len(ary)==0 {
+			c.JSON(http.StatusNotFound, ary)
+			return
+		}
+		c.JSON(http.StatusOK, ary)
 	})
 
 	router.GET("/v1/events/:eventType/:id", func(c *gin.Context) {
@@ -194,10 +209,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, v)
+		c.JSON(http.StatusOK, v)
 	})
 
 	router.DELETE("/v1/events/:eventType/:id", func(c *gin.Context) {
@@ -210,7 +225,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -220,7 +235,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, nil)
 	})
 
 	// ---------------------- EVENT TYPES ----------------------
@@ -254,7 +269,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusCreated, retId)
+		c.JSON(http.StatusCreated, retId)
 	})
 
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
@@ -263,7 +278,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			Status(c, 400, err.Error())
 			return
 		}
-		c.IndentedJSON(http.StatusOK, m)
+		c.JSON(http.StatusOK, m)
 	})
 
 	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
@@ -277,10 +292,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, v)
+		c.JSON(http.StatusOK, v)
 	})
 
 	router.DELETE("/v1/eventtypes/:id", func(c *gin.Context) {
@@ -291,7 +306,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -301,7 +316,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, nil)
 	})
 
 	// ---------------------- TRIGGERS ----------------------
@@ -330,7 +345,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusCreated, a)
+		c.JSON(http.StatusCreated, a)
 	})
 
 	router.GET("/v1/triggers", func(c *gin.Context) {
@@ -340,7 +355,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusOK, m)
+		c.JSON(http.StatusOK, m)
 	})
 
 	router.GET("/v1/triggers/:id", func(c *gin.Context) {
@@ -354,10 +369,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, v)
+		c.JSON(http.StatusOK, v)
 	})
 
 	router.DELETE("/v1/triggers/:id", func(c *gin.Context) {
@@ -368,7 +383,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -378,7 +393,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, nil)
 	})
 
 	// ---------------------- ALERTS ----------------------
@@ -396,7 +411,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 				Status(c, 400, err.Error())
 				return
 			}
-			c.IndentedJSON(http.StatusOK, v)
+			c.JSON(http.StatusOK, v)
 			return
 		}
 
@@ -405,7 +420,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			Status(c, 400, err.Error())
 			return
 		}
-		c.IndentedJSON(http.StatusOK, all)
+		c.JSON(http.StatusOK, all)
 	})
 
 	router.GET("/v1/alerts/:id", func(c *gin.Context) {
@@ -419,10 +434,10 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, alert)
+		c.JSON(http.StatusOK, alert)
 	})
 
 	router.POST("/v1/alerts", func(c *gin.Context) {
@@ -447,7 +462,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusCreated, gin.H{"id": alert.ID})
+		c.JSON(http.StatusCreated, gin.H{"id": alert.ID})
 	})
 
 	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
@@ -458,7 +473,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 		if !ok {
-			c.IndentedJSON(http.StatusNotFound, gin.H{"id": id})
+			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
 
@@ -468,7 +483,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		c.IndentedJSON(http.StatusOK, nil)
+		c.JSON(http.StatusOK, nil)
 	})
 
 	//-----------------------------------------------------------------------

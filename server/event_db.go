@@ -67,6 +67,32 @@ func (db *EventRDB) PercolateEventData(eventType string, data map[string]interfa
 	return &ids, nil
 }
 
+
+func (db *EventRDB) GetByMapping(mapping string) ([]common.Event, error) {
+
+	searchResult, err := db.Esi.SearchByMatchAllWithMapping(mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	if searchResult.Hits == nil {
+		return nil, nil
+	}
+
+	ary := make([]common.Event, searchResult.TotalHits())
+
+	for i, hit := range searchResult.Hits.Hits {
+		var tmp common.Event
+		err = json.Unmarshal([]byte(*hit.Source), tmp)
+		if err != nil {
+			return nil, err
+		}
+		ary[i] = tmp
+	}
+	return ary, nil
+}
+
+
 func ConvertRawsToEvents(raws []*json.RawMessage) ([]common.Event, error) {
 	objs := make([]common.Event, len(raws))
 	for i, _ := range raws {

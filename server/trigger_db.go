@@ -102,7 +102,7 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id common.Ident, eventDB *Eve
 		return false, err
 	}
 	if !ok {
-		return false, errors.New("unable to get trigger by id")
+		return false, nil
 	}
 
 	res, err := db.Esi.DeleteById(mapping, string(id))
