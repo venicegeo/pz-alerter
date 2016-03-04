@@ -2,4 +2,4 @@
 
 WHOST=http://pz-workflow.cf.piazzageo.io
 
-WHOST=localhost:12342
+#WHOST=localhost:12342
