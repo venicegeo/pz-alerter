@@ -15,10 +15,10 @@
 package main
 
 import (
-	"github.com/venicegeo/pz-workflow/server"
 	piazza "github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
+	"github.com/venicegeo/pz-workflow/server"
 	"log"
 )
 

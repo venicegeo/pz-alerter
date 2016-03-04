@@ -455,7 +455,7 @@ func (suite *ClientTester) TestAAATriggering() {
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
-							"str":  "quick",
+							"str": "quick",
 						},
 					},
 				},

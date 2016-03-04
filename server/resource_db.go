@@ -21,14 +21,14 @@ import (
 )
 
 type ResourceDB struct {
-	Es       *piazza.EsClient
-	Esi      *piazza.EsIndexClient
+	Es  *piazza.EsClient
+	Esi *piazza.EsIndexClient
 }
 
 func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient) (*ResourceDB, error) {
 	db := &ResourceDB{
-		Es:       es,
-		Esi:       esi,
+		Es:  es,
+		Esi: esi,
 	}
 
 	err := esi.Delete()
@@ -112,7 +112,7 @@ func (db *ResourceDB) DeleteByID(mapping string, id string) (bool, error) {
 	return res.Found, nil
 }
 
-func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingElementTypeName) (error) {
+func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingElementTypeName) error {
 
 	jsn, err := piazza.ConstructMappingSchema(name, mapping)
 	err = db.Esi.SetMapping(name, jsn)

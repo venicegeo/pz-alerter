@@ -15,19 +15,19 @@
 package server
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/venicegeo/pz-workflow/common"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"log"
-	"testing"
-	"net/http"
-	"bytes"
-	"encoding/json"
+	"github.com/venicegeo/pz-workflow/common"
 	"io/ioutil"
-	"fmt"
+	"log"
+	"net/http"
+	"testing"
 	"time"
 )
 
@@ -91,7 +91,7 @@ func (suite *ServerTester) Post(path string, body interface{}) interface{} {
 	bodyBytes, err := json.Marshal(body)
 	assert.NoError(err)
 
-	resp, err := http.Post(suite.url + path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
+	resp, err := http.Post(suite.url+path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
 	assert.NoError(err)
 	assert.NotNil(resp)
 	assert.Equal(http.StatusCreated, resp.StatusCode)
@@ -126,7 +126,6 @@ func (suite *ServerTester) Get(path string) interface{} {
 	return result
 }
 
-
 //---------------------------------------------------------------------------
 
 func (suite *ServerTester) TestOne() {
@@ -142,7 +141,7 @@ func (suite *ServerTester) TestOne() {
 	var et1Id common.Ident
 	{
 		mapping := map[string]piazza.MappingElementTypeName{
-			"num":  piazza.MappingElementTypeInteger,
+			"num": piazza.MappingElementTypeInteger,
 			"str": piazza.MappingElementTypeString,
 		}
 
@@ -189,14 +188,14 @@ func (suite *ServerTester) TestOne() {
 		// will cause trigger TRG1
 		e1 := &common.Event{
 			EventType: et1Id,
-			Date: time.Now(),
+			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
 			},
 		}
 
-		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp := suite.Post("/events/"+eventTypeName, e1)
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
@@ -208,14 +207,14 @@ func (suite *ServerTester) TestOne() {
 		// will cause no triggers
 		e1 := &common.Event{
 			EventType: et1Id,
-			Date: time.Now(),
+			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
 			},
 		}
 
-		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp := suite.Post("/events/"+eventTypeName, e1)
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)

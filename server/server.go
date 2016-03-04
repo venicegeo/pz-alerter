@@ -16,10 +16,10 @@ package server
 
 import (
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-workflow/common"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
+	"github.com/venicegeo/pz-workflow/common"
 	"net/http"
 	"sync"
 	"time"
@@ -81,7 +81,6 @@ func Status(c *gin.Context, code int, mssg string) {
 	c.JSON(code, e)
 }
 
-
 func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
 	es := sys.ElasticSearchService
@@ -108,19 +107,19 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 
 	err = alertDB.Esi.Flush()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	err = triggerDB.Esi.Flush()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	err = alertDB.Esi.Flush()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 	err = triggerDB.Esi.Flush()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
 	gin.SetMode(gin.ReleaseMode)
@@ -190,7 +189,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			Status(c, 400, err.Error())
 			return
 		}
-		if len(ary)==0 {
+		if len(ary) == 0 {
 			c.JSON(http.StatusNotFound, ary)
 			return
 		}

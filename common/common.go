@@ -45,7 +45,6 @@ func SuperConvert(src interface{}, dst interface{}) error {
 	return nil
 }
 
-
 type ErrorResponse struct {
 	Status  int    `json:"status"`
 	Message string `json:"message"`
@@ -114,7 +113,7 @@ type IIdentable interface {
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventType Ident  `json:"type" binding:"required"`
+	EventType Ident                  `json:"type" binding:"required"`
 	Query     map[string]interface{} `json:"query" binding:"required"`
 }
 
@@ -129,11 +128,11 @@ type Job struct {
 // Job is the JobMessage to submit back to Pz
 // TODO: some sort of mapping from the event info into the Job string
 type Trigger struct {
-	ID        Ident     `json:"id"`
-	Title     string    `json:"title" binding:"required"`
-	Condition Condition `json:"condition" binding:"required"`
-	Job       Job       `json:"job" binding:"required"`
-	PercolationID Ident `json:"percolation_id"`
+	ID            Ident     `json:"id"`
+	Title         string    `json:"title" binding:"required"`
+	Condition     Condition `json:"condition" binding:"required"`
+	Job           Job       `json:"job" binding:"required"`
+	PercolationID Ident     `json:"percolation_id"`
 }
 
 type TriggerList []Trigger
