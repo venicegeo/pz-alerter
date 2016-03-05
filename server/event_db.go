@@ -47,7 +47,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	ids := make([]common.Ident, len(resp.Matches))
 	for i, v := range resp.Matches {
 		ids[i] = common.Ident(v.Id)
-		alert := common.Alert{ID: common.NewIdent(), EventId: id, TriggerId: common.Ident(v.Id)}
+		alert := common.Alert{ID: NewIdent(), EventId: id, TriggerId: common.Ident(v.Id)}
 		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
 			return nil, err

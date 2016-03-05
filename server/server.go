@@ -81,7 +81,29 @@ func Status(c *gin.Context, code int, mssg string) {
 	c.JSON(code, e)
 }
 
+var NewIdent func() common.Ident
+
 func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
+
+	var debugIds = true
+
+	NewIdent = func() common.Ident {
+		var uuid string
+		var err error
+
+		if debugIds {
+			uuid, err = uuidgenner.GetDebugUuid("W")
+			if err != nil {
+				panic("uuidgen failed")
+			}
+		} else {
+			uuid, err = uuidgenner.GetUuid()
+			if err != nil {
+				panic("uuidgen failed")
+			}
+		}
+		return common.Ident(uuid)
+	}
 
 	es := sys.ElasticSearchService
 
@@ -145,7 +167,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		event.ID = common.NewIdent()
+		event.ID = NewIdent()
 		_, err = eventDB.PostData(eventType, event, event.ID)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -247,7 +269,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		eventType.ID = common.NewIdent()
+		eventType.ID = NewIdent()
 		id, err := eventTypeDB.PostData("EventType", eventType, eventType.ID)
 		if err != nil {
 			Status(c, 401, err.Error())
@@ -328,7 +350,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		trigger.ID = common.NewIdent()
+		trigger.ID = NewIdent()
 
 		_, err = triggerDB.PostTrigger("Trigger", trigger, trigger.ID, eventDB)
 		if err != nil {
@@ -447,7 +469,7 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 			return
 		}
 
-		alert.ID = common.NewIdent()
+		alert.ID = NewIdent()
 
 		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
