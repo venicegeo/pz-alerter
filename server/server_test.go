@@ -233,3 +233,10 @@ func (suite *ServerTester) TestOne() {
 		assert.EqualValues(t1Id, alert0.TriggerId)
 	}
 }
+
+func (suite *ServerTester) TestTwo() {
+	t := suite.T()
+	assert := assert.New(t)
+	assert.Equal(17, 10 + 7)	
+}
+
