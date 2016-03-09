@@ -18,28 +18,13 @@ import (
 	"encoding/json"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-workflow/common"
-	"sync"
 )
 
-var alertIdLock sync.Mutex
-var alertID = 1
-
-func NewAlertIdent() common.Ident {
-	alertIdLock.Lock()
-	id := common.NewIdentFromInt(alertID)
-	alertID++
-	alertIdLock.Unlock()
-	s := "A" + id.String()
-	return common.Ident(s)
-}
-
-//---------------------------------------------------------------------------
-
-type AlertRDB struct {
+type AlertDB struct {
 	*ResourceDB
 }
 
-func NewAlertDB(es *piazza.EsClient, index string) (*AlertRDB, error) {
+func NewAlertDB(es *piazza.EsClient, index string) (*AlertDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
@@ -47,11 +32,11 @@ func NewAlertDB(es *piazza.EsClient, index string) (*AlertRDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	ardb := AlertRDB{ResourceDB: rdb}
+	ardb := AlertDB{ResourceDB: rdb}
 	return &ardb, nil
 }
 
-func (db *AlertRDB) GetByConditionID(conditionID string) ([]common.Alert, error) {
+func (db *AlertDB) GetByConditionID(conditionID string) ([]common.Alert, error) {
 	searchResult, err := db.Esi.SearchByTermQuery("condition_id", conditionID)
 	if err != nil {
 		return nil, err

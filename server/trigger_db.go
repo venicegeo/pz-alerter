@@ -15,40 +15,11 @@
 package server
 
 import (
-	"github.com/venicegeo/pz-gocommon"
-	"github.com/venicegeo/pz-workflow/common"
-	"sync"
 	"encoding/json"
 	"errors"
+	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-workflow/common"
 )
-
-//---------------------------------------------------------------------------
-
-var triggerID = 1
-
-var triggerIdLock sync.Mutex
-
-func NewTriggerIdent() common.Ident {
-	triggerIdLock.Lock()
-	id := common.NewIdentFromInt(triggerID)
-	triggerID++
-	triggerIdLock.Unlock()
-	s := "TRG" + id.String()
-	return common.Ident(s)
-}
-
-func NewTrigger(title string, condition common.Condition, job common.Job) common.Trigger {
-
-	id := NewTriggerIdent()
-
-	return common.Trigger{
-		ID:        id,
-		Condition: condition,
-		Job:       job,
-	}
-}
-
-//---------------------------------------------------------------------------
 
 type TriggerDB struct {
 	*ResourceDB
@@ -66,7 +37,7 @@ func NewTriggerDB(es *piazza.EsClient, index string) (*TriggerDB, error) {
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id common.Ident, eventDB *EventRDB) (common.Ident, error) {
+func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id common.Ident, eventDB *EventDB) (common.Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
 	body, err := json.Marshal(ifaceObj)
@@ -94,7 +65,7 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id com
 	return id, nil
 }
 
-func (db *TriggerDB) DeleteTrigger(mapping string, id common.Ident, eventDB *EventRDB) (bool, error) {
+func (db *TriggerDB) DeleteTrigger(mapping string, id common.Ident, eventDB *EventDB) (bool, error) {
 
 	var obj common.Trigger
 	ok, err := db.GetById(mapping, id, &obj)

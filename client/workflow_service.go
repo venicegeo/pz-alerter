@@ -128,7 +128,7 @@ func (c *PzWorkflowService) PostEvent(eventTypeName string, event *common.Event)
 		return common.NoIdent, err
 	}
 
-	resp, err := http.Post(c.url+"/events/" + eventTypeName, piazza.ContentTypeJSON, bytes.NewBuffer(body))
+	resp, err := http.Post(c.url+"/events/"+eventTypeName, piazza.ContentTypeJSON, bytes.NewBuffer(body))
 	if err != nil {
 		return common.NoIdent, common.NewErrorFromHttp(resp)
 	}

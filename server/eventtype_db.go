@@ -16,25 +16,15 @@ package server
 
 import (
 	"github.com/venicegeo/pz-gocommon"
-	"github.com/venicegeo/pz-workflow/common"
 )
-
-var eventTypeID = 1
-
-func NewEventTypeID() common.Ident {
-	id := common.NewIdentFromInt(eventTypeID)
-	eventTypeID++
-	return common.Ident("ET" + string(id))
-}
 
 //---------------------------------------------------------------------------
 
-
-type EventTypeRDB struct {
+type EventTypeDB struct {
 	*ResourceDB
 }
 
-func NewEventTypeDB(es *piazza.EsClient, index string) (*EventTypeRDB, error) {
+func NewEventTypeDB(es *piazza.EsClient, index string) (*EventTypeDB, error) {
 
 	esi := piazza.NewEsIndexClient(es, index)
 
@@ -42,6 +32,6 @@ func NewEventTypeDB(es *piazza.EsClient, index string) (*EventTypeRDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	etrdb := EventTypeRDB{ResourceDB: rdb}
+	etrdb := EventTypeDB{ResourceDB: rdb}
 	return &etrdb, nil
 }
