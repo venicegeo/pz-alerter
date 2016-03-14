@@ -291,6 +291,8 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		}
 
 		c.JSON(http.StatusCreated, retId)
+
+		logger.Info("EventType %s registered: %s", eventType.Name, string(retId.ID))
 	})
 
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
