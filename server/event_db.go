@@ -43,6 +43,8 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 		return nil, err
 	}
 
+	db.Flush()
+
 	// add the triggers to the alert queue
 	ids := make([]common.Ident, len(resp.Matches))
 	for i, v := range resp.Matches {
@@ -53,6 +55,8 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 			return nil, err
 		}
 	}
+
+	alertDB.Flush()
 
 	return &ids, nil
 }

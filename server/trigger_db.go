@@ -81,13 +81,19 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id common.Ident, eventDB *Eve
 		return false, err
 	}
 
-	deleteResult, err := eventDB.Esi.DeletePercolationQuery(string(obj.PercolationID))
 	err = db.Esi.Flush()
 	if err != nil {
 		return false, err
 	}
+
+	deleteResult, err := eventDB.Esi.DeletePercolationQuery(string(obj.PercolationID))
 	if !deleteResult.Found {
 		return false, errors.New("unable to delete percolation")
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
 	}
 
 	return res.Found, nil

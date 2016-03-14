@@ -120,6 +120,11 @@ func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingE
 		return err
 	}
 
+	err = db.Esi.Flush()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
