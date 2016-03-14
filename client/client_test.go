@@ -121,6 +121,7 @@ func (suite *ClientTester) TestOne() {
 	workflow := suite.workflow
 
 	suite.assertNoData()
+	defer suite.assertNoData()
 
 	var err error
 	var eventTypeName = "EventTypeA"
@@ -136,6 +137,11 @@ func (suite *ClientTester) TestOne() {
 
 		etId, err = workflow.PostEventType(eventType)
 		assert.NoError(err)
+
+		defer func() {
+			err := workflow.DeleteEventType(etId)
+			assert.NoError(err)
+		}()
 	}
 
 	var tId common.Ident
@@ -159,6 +165,11 @@ func (suite *ClientTester) TestOne() {
 
 		tId, err = workflow.PostTrigger(x1)
 		assert.NoError(err)
+
+		defer func() {
+			err := workflow.DeleteTrigger(tId)
+			assert.NoError(err)
+		}()
 	}
 
 	var e1Id common.Ident
@@ -166,7 +177,7 @@ func (suite *ClientTester) TestOne() {
 		// will cause trigger t1Id
 		e1 := &common.Event{
 			EventTypeId: etId,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
@@ -175,6 +186,11 @@ func (suite *ClientTester) TestOne() {
 
 		e1Id, err = workflow.PostEvent(eventTypeName, e1)
 		assert.NoError(err)
+
+		defer func() {
+			err := workflow.DeleteEvent(eventTypeName, e1Id)
+			assert.NoError(err)
+		}()
 	}
 
 	var e2Id common.Ident
@@ -182,7 +198,7 @@ func (suite *ClientTester) TestOne() {
 		// will cause no triggers
 		e2 := &common.Event{
 			EventTypeId: etId,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -191,6 +207,11 @@ func (suite *ClientTester) TestOne() {
 
 		e2Id, err = workflow.PostEvent(eventTypeName, e2)
 		assert.NoError(err)
+
+		defer func() {
+			err := workflow.DeleteEvent(eventTypeName, e2Id)
+			assert.NoError(err)
+		}()
 	}
 
 	var aId common.Ident
@@ -203,15 +224,11 @@ func (suite *ClientTester) TestOne() {
 		assert.EqualValues(tId, alert0.TriggerId)
 
 		aId = alert0.ID
-	}
 
-	{
-		err = workflow.DeleteEventType(etId)
-		err = workflow.DeleteTrigger(tId)
-		err = workflow.DeleteEvent(eventTypeName, e1Id)
-		err = workflow.DeleteEvent(eventTypeName, e2Id)
-		err = workflow.DeleteAlert(aId)
-		suite.assertNoData()
+		defer func() {
+			err := workflow.DeleteAlert(aId)
+			assert.NoError(err)
+		}()
 	}
 }
 
@@ -244,6 +261,7 @@ func (suite *ClientTester) TestAlertResource() {
 	workflow := suite.workflow
 
 	suite.assertNoData()
+	defer suite.assertNoData()
 
 	var err error
 
@@ -265,11 +283,11 @@ func (suite *ClientTester) TestAlertResource() {
 	alert, err = workflow.GetAlert("nosuchalert1")
 	assert.Error(err)
 
-	err = workflow.DeleteAlert(id)
-	assert.NoError(err)
-
 	err = workflow.DeleteAlert("nosuchalert2")
 	assert.Error(err)
+
+	err = workflow.DeleteAlert(id)
+	assert.NoError(err)
 
 	alert, err = workflow.GetAlert(id)
 	assert.Error(err)
@@ -278,8 +296,6 @@ func (suite *ClientTester) TestAlertResource() {
 	alerts, err = workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 0)
-
-	suite.assertNoData()
 }
 
 func (suite *ClientTester) TestEventTypeResource() {
@@ -288,6 +304,7 @@ func (suite *ClientTester) TestEventTypeResource() {
 	workflow := suite.workflow
 
 	suite.assertNoData()
+	defer suite.assertNoData()
 
 	var err error
 
@@ -297,6 +314,10 @@ func (suite *ClientTester) TestEventTypeResource() {
 	}
 	eventType := &common.EventType{Name: "typnam", Mapping: mapping}
 	id, err := workflow.PostEventType(eventType)
+	defer func() {
+		err = workflow.DeleteEventType(id)
+		assert.NoError(err)
+	}()
 
 	eventTypes, err := workflow.GetAllEventTypes()
 	assert.NoError(err)
@@ -306,11 +327,6 @@ func (suite *ClientTester) TestEventTypeResource() {
 	tmp, err := workflow.GetEventType(id)
 	assert.NoError(err)
 	assert.EqualValues(id, tmp.ID)
-
-	err = workflow.DeleteEventType(id)
-	assert.NoError(err)
-
-	suite.assertNoData()
 }
 
 func (suite *ClientTester) TestEventResource() {
@@ -319,6 +335,7 @@ func (suite *ClientTester) TestEventResource() {
 	workflow := suite.workflow
 
 	suite.assertNoData()
+	defer suite.assertNoData()
 
 	var err error
 
@@ -329,10 +346,15 @@ func (suite *ClientTester) TestEventResource() {
 	eventTypeName := "mytype"
 	eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
 	etId, err := workflow.PostEventType(eventType)
+	assert.NoError(err)
+	defer func() {
+		err = workflow.DeleteEventType(etId)
+		assert.NoError(err)
+	}()
 
 	event := &common.Event{
 		EventTypeId: etId,
-		Date:      time.Now(),
+		Date:        time.Now(),
 		Data: map[string]interface{}{
 			"myint": 17,
 			"mystr": "quick",
@@ -340,6 +362,11 @@ func (suite *ClientTester) TestEventResource() {
 	}
 	eId, err := workflow.PostEvent(eventTypeName, event)
 	assert.NoError(err)
+
+	defer func() {
+		err = workflow.DeleteEvent(eventTypeName, eId)
+		assert.NoError(err)
+	}()
 
 	events, err := workflow.GetAllEvents()
 	assert.NoError(err)
@@ -349,14 +376,6 @@ func (suite *ClientTester) TestEventResource() {
 	tmp, err := workflow.GetEvent(eventTypeName, eId)
 	assert.NoError(err)
 	assert.EqualValues(eId, tmp.ID)
-
-	err = workflow.DeleteEvent(eventTypeName, eId)
-	assert.NoError(err)
-
-	err = workflow.DeleteEventType(etId)
-	assert.NoError(err)
-
-	suite.assertNoData()
 }
 
 func (suite *ClientTester) TestTriggerResource() {
@@ -365,6 +384,7 @@ func (suite *ClientTester) TestTriggerResource() {
 	workflow := suite.workflow
 
 	suite.assertNoData()
+	defer suite.assertNoData()
 
 	var err error
 
@@ -374,6 +394,11 @@ func (suite *ClientTester) TestTriggerResource() {
 	}
 	eventType := &common.EventType{Name: "typnam", Mapping: mapping}
 	etId, err := workflow.PostEventType(eventType)
+
+	defer func() {
+		err = workflow.DeleteEventType(etId)
+		assert.NoError(err)
+	}()
 
 	t1 := common.Trigger{
 		Title: "the x1 trigger",
@@ -394,6 +419,11 @@ func (suite *ClientTester) TestTriggerResource() {
 	t1Id, err := workflow.PostTrigger(&t1)
 	assert.NoError(err)
 
+	defer func() {
+		err = workflow.DeleteTrigger(t1Id)
+		assert.NoError(err)
+	}()
+
 	triggers, err := workflow.GetAllTriggers()
 	assert.NoError(err)
 	assert.Len(*triggers, 1)
@@ -402,13 +432,6 @@ func (suite *ClientTester) TestTriggerResource() {
 	tmp, err := workflow.GetTrigger(t1Id)
 	assert.NoError(err)
 	assert.EqualValues(t1Id, tmp.ID)
-
-	err = workflow.DeleteTrigger(t1Id)
-	assert.NoError(err)
-	err = workflow.DeleteEventType(etId)
-	assert.NoError(err)
-
-	suite.assertNoData()
 }
 
 func (suite *ClientTester) TestAAATriggering() {
@@ -418,6 +441,7 @@ func (suite *ClientTester) TestAAATriggering() {
 	workflow := suite.workflow
 
 	suite.assertNoData()
+	defer suite.assertNoData()
 
 	var err error
 
@@ -443,6 +467,14 @@ func (suite *ClientTester) TestAAATriggering() {
 		assert.NoError(err)
 		assert.Len(*eventTypes, 3)
 	}
+	defer func() {
+		workflow.DeleteEventType(etC)
+		assert.NoError(err)
+		workflow.DeleteEventType(etD)
+		assert.NoError(err)
+		workflow.DeleteEventType(etE)
+		assert.NoError(err)
+	}()
 
 	////////////////
 
@@ -466,6 +498,10 @@ func (suite *ClientTester) TestAAATriggering() {
 		}
 		tA, err = workflow.PostTrigger(t1)
 		assert.NoError(err)
+		defer func() {
+			workflow.DeleteTrigger(tA)
+			assert.NoError(err)
+		}()
 
 		t2 := &common.Trigger{
 			Title: "Trigger B",
@@ -485,6 +521,10 @@ func (suite *ClientTester) TestAAATriggering() {
 		}
 		tB, err = workflow.PostTrigger(t2)
 		assert.NoError(err)
+		defer func() {
+			workflow.DeleteTrigger(tB)
+			assert.NoError(err)
+		}()
 
 		triggers, err := workflow.GetAllTriggers()
 		assert.NoError(err)
@@ -496,7 +536,7 @@ func (suite *ClientTester) TestAAATriggering() {
 		// will cause trigger TA
 		e1 := common.Event{
 			EventTypeId: etC,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
@@ -504,11 +544,15 @@ func (suite *ClientTester) TestAAATriggering() {
 		}
 		eF, err = workflow.PostEvent("EventType C", &e1)
 		assert.NoError(err)
+		defer func() {
+			workflow.DeleteEvent("EventType C", eF)
+			assert.NoError(err)
+		}()
 
 		// will cause trigger TB
 		e2 := common.Event{
 			EventTypeId: etD,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -516,11 +560,15 @@ func (suite *ClientTester) TestAAATriggering() {
 		}
 		eG, err = workflow.PostEvent("EventType D", &e2)
 		assert.NoError(err)
+		defer func() {
+			workflow.DeleteEvent("EventType D", eG)
+			assert.NoError(err)
+		}()
 
 		// will cause no triggers
 		e3 := common.Event{
 			EventTypeId: etE,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 19,
 				"str": "fox",
@@ -528,6 +576,10 @@ func (suite *ClientTester) TestAAATriggering() {
 		}
 		eH, err = workflow.PostEvent("EventType E", &e3)
 		assert.NoError(err)
+		defer func() {
+			workflow.DeleteEvent("EventType E", eH)
+			assert.NoError(err)
+		}()
 	}
 
 	var aI, aJ common.Ident
@@ -550,33 +602,14 @@ func (suite *ClientTester) TestAAATriggering() {
 		assert.EqualValues(alert0.EventId, eF)
 		assert.EqualValues(alert1.TriggerId, tB)
 		assert.EqualValues(alert1.EventId, eG)
+
+		defer func() {
+			workflow.DeleteAlert(aI)
+			assert.NoError(err)
+		}()
+		defer func() {
+			workflow.DeleteAlert(aJ)
+			assert.NoError(err)
+		}()
 	}
-
-	{
-		err = workflow.DeleteEventType(etC)
-		assert.NoError(err)
-		err = workflow.DeleteEventType(etD)
-		assert.NoError(err)
-		err = workflow.DeleteEventType(etE)
-		assert.NoError(err)
-
-		workflow.DeleteTrigger(tA)
-		assert.NoError(err)
-		workflow.DeleteTrigger(tB)
-		assert.NoError(err)
-
-		workflow.DeleteEvent("EventType C", eF)
-		assert.NoError(err)
-		workflow.DeleteEvent("EventType D", eG)
-		assert.NoError(err)
-		workflow.DeleteEvent("EventType E", eH)
-		assert.NoError(err)
-
-		workflow.DeleteAlert(aI)
-		assert.NoError(err)
-		workflow.DeleteAlert(aJ)
-		assert.NoError(err)
-	}
-
-	suite.assertNoData()
 }
