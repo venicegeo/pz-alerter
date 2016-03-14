@@ -43,13 +43,15 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var tmp loggerPkg.ILoggerService = logger
+	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, config.GetAddress())
 
 	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys, sys.DiscoverService.GetDataForService(piazza.PzUuidgen).Host)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	routes, err := server.CreateHandlers(sys, logger, uuidgenner)
+	routes, err := server.CreateHandlers(sys, clogger, uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,6 +59,9 @@ func main() {
 	if len(sys.Services) != 4 {
 		log.Fatalf("internal error: services expected (%d) != actual (%d)", 4, len(sys.Services))
 	}
+
+	clogger.Info("pz-workflow starting...")
+
 	done := sys.StartServer(routes)
 
 	err = <-done
