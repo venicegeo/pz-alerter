@@ -90,8 +90,8 @@ func (id Ident) String() string {
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventType Ident                  `json:"type" binding:"required"`
-	Query     map[string]interface{} `json:"query" binding:"required"`
+	EventId Ident                  `json:"event_id" binding:"required"`
+	Query   map[string]interface{} `json:"query" binding:"required"`
 }
 
 type Job struct {

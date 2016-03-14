@@ -161,7 +161,7 @@ func (suite *ServerTester) TestOne() {
 		x1 := &common.Trigger{
 			Title: "the x1 trigger",
 			Condition: common.Condition{
-				EventType: et1Id,
+				EventId: et1Id,
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{

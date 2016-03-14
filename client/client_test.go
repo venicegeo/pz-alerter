@@ -143,7 +143,7 @@ func (suite *ClientTester) TestOne() {
 		x1 := &common.Trigger{
 			Title: "the x1 trigger",
 			Condition: common.Condition{
-				EventType: etId,
+				EventId: etId,
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -378,7 +378,7 @@ func (suite *ClientTester) TestTriggerResource() {
 	t1 := common.Trigger{
 		Title: "the x1 trigger",
 		Condition: common.Condition{
-			EventType: etId,
+			EventId: etId,
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -451,7 +451,7 @@ func (suite *ClientTester) TestAAATriggering() {
 		t1 := &common.Trigger{
 			Title: "Trigger A",
 			Condition: common.Condition{
-				EventType: etC,
+				EventId: etC,
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -470,7 +470,7 @@ func (suite *ClientTester) TestAAATriggering() {
 		t2 := &common.Trigger{
 			Title: "Trigger B",
 			Condition: common.Condition{
-				EventType: etD,
+				EventId: etD,
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
