@@ -126,6 +126,15 @@ func (suite *ServerTester) Get(path string) interface{} {
 	return result
 }
 
+func (suite *ServerTester) Delete(path string) {
+	t := suite.T()
+	assert := assert.New(t)
+
+	resp, err := piazza.HTTPDelete(suite.url + path)
+	assert.NoError(err)
+	assert.NotNil(resp)
+}
+
 //---------------------------------------------------------------------------
 
 func (suite *ServerTester) TestOne() {
@@ -148,6 +157,7 @@ func (suite *ServerTester) TestOne() {
 		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
 
 		resp := suite.Post("/eventtypes", eventType)
+		defer piazza.HTTPDelete("/eventtypes/" + string(eventType.ID))
 
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
@@ -176,6 +186,7 @@ func (suite *ServerTester) TestOne() {
 		}
 
 		resp := suite.Post("/triggers", x1)
+		defer piazza.HTTPDelete("/triggers/" + string(x1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
@@ -195,7 +206,8 @@ func (suite *ServerTester) TestOne() {
 			},
 		}
 
-		resp := suite.Post("/events/"+eventTypeName, e1)
+		resp := suite.Post("/events/" + eventTypeName, e1)
+		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
@@ -214,7 +226,8 @@ func (suite *ServerTester) TestOne() {
 			},
 		}
 
-		resp := suite.Post("/events/"+eventTypeName, e1)
+		resp := suite.Post("/events/" + eventTypeName, e1)
+		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
 		assert.NoError(err)
