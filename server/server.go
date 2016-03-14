@@ -85,7 +85,7 @@ func Status(c *gin.Context, code int, mssg string) {
 
 var NewIdent func() common.Ident
 
-func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
+func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
 	var debugIds = true
 
@@ -331,6 +331,8 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 		}
 
 		c.JSON(http.StatusCreated, retId)
+
+		logger.Info("EventType %s registered: %s", eventType.Name, string(retId.ID))
 	})
 
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
@@ -555,6 +557,8 @@ func CreateHandlers(sys *piazza.System, logger loggerPkg.ILoggerService, uuidgen
 	router.POST("/v1/admin/settings", func(c *gin.Context) { handlePostAdminSettings(c) })
 
 	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
+
+	logger.Info("handlers set")
 
 	return router, nil
 }

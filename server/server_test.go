@@ -55,13 +55,15 @@ func (suite *ServerTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var tmp loggerPkg.ILoggerService = theLogger
+	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, config.GetAddress())
 
 	theUuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	routes, err := CreateHandlers(sys, theLogger, theUuidgen)
+	routes, err := CreateHandlers(sys, clogger, theUuidgen)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -207,7 +209,7 @@ func (suite *ServerTester) TestOne() {
 		// will cause trigger TRG1
 		e1 := &common.Event{
 			EventTypeId: et1Id,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
@@ -218,7 +220,7 @@ func (suite *ServerTester) TestOne() {
 			},
 		}
 
-		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp := suite.Post("/events/"+eventTypeName, e1)
 		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
@@ -231,7 +233,7 @@ func (suite *ServerTester) TestOne() {
 		// will cause no triggers
 		e1 := &common.Event{
 			EventTypeId: et1Id,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -243,7 +245,7 @@ func (suite *ServerTester) TestOne() {
 			},
 		}
 
-		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp := suite.Post("/events/"+eventTypeName, e1)
 		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
@@ -266,6 +268,5 @@ func (suite *ServerTester) TestOne() {
 func (suite *ServerTester) TestTwo() {
 	t := suite.T()
 	assert := assert.New(t)
-	assert.Equal(17, 10 + 7)	
+	assert.Equal(17, 10+7)
 }
-
