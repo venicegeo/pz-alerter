@@ -21,8 +21,11 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
+	loggerPkg "github.com/venicegeo/pz-logger/client"
+	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -52,13 +55,15 @@ func (suite *ServerTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var tmp loggerPkg.ILoggerService = theLogger
+	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, config.GetAddress())
 
 	theUuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	routes, err := CreateHandlers(sys, theLogger, theUuidgen)
+	routes, err := CreateHandlers(sys, clogger, theUuidgen)
 	if err != nil {
 		log.Fatal(err)
 	}

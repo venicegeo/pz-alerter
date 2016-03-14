@@ -53,13 +53,15 @@ func (suite *ClientTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	var tmp loggerPkg.ILoggerService = suite.logger
+	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, config.GetAddress())
 
 	suite.uuidgenner, err = uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	routes, err := _server.CreateHandlers(sys, suite.logger, suite.uuidgenner)
+	routes, err := _server.CreateHandlers(sys, clogger, suite.uuidgenner)
 	if err != nil {
 		log.Fatal(err)
 	}
