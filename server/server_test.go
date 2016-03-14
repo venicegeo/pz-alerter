@@ -187,7 +187,7 @@ func (suite *ServerTester) TestOne() {
 	{
 		// will cause trigger TRG1
 		e1 := &common.Event{
-			EventType: et1Id,
+			EventTypeId: et1Id,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
@@ -206,7 +206,7 @@ func (suite *ServerTester) TestOne() {
 	{
 		// will cause no triggers
 		e1 := &common.Event{
-			EventType: et1Id,
+			EventTypeId: et1Id,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,

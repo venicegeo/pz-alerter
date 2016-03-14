@@ -6,7 +6,7 @@ etId=$1
 
 cat > tmp <<foo
 {
-    "type": "$etId",
+    "eventtype_id": "$etId",
     "date": "2007-05-05T14:30:00Z",
     "data": {
         "filename": "dataset-a",

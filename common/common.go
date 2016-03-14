@@ -120,10 +120,10 @@ type TriggerList []Trigger
 // Data is specific to the event type
 // TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
-	ID        Ident                  `json:"id"`
-	EventType Ident                  `json:"type" binding:"required"`
-	Date      time.Time              `json:"date" binding:"required"`
-	Data      map[string]interface{} `json:"data"`
+	ID          Ident                  `json:"id"`
+	EventTypeId Ident                  `json:"eventtype_id" binding:"required"`
+	Date        time.Time              `json:"date" binding:"required"`
+	Data        map[string]interface{} `json:"data"`
 }
 
 type EventList []Event
