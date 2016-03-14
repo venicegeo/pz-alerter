@@ -21,11 +21,8 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
-	loggerPkg "github.com/venicegeo/pz-logger/client"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"testing"
 	"time"
@@ -199,14 +196,14 @@ func (suite *ServerTester) TestOne() {
 		// will cause trigger TRG1
 		e1 := &common.Event{
 			EventTypeId: et1Id,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
 			},
 		}
 
-		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp := suite.Post("/events/"+eventTypeName, e1)
 		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
@@ -219,14 +216,14 @@ func (suite *ServerTester) TestOne() {
 		// will cause no triggers
 		e1 := &common.Event{
 			EventTypeId: et1Id,
-			Date:      time.Now(),
+			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
 			},
 		}
 
-		resp := suite.Post("/events/" + eventTypeName, e1)
+		resp := suite.Post("/events/"+eventTypeName, e1)
 		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
 		resp2 := &common.WorkflowIdResponse{}
 		err = common.SuperConvert(resp, resp2)
@@ -249,6 +246,5 @@ func (suite *ServerTester) TestOne() {
 func (suite *ServerTester) TestTwo() {
 	t := suite.T()
 	assert := assert.New(t)
-	assert.Equal(17, 10 + 7)	
+	assert.Equal(17, 10+7)
 }
-

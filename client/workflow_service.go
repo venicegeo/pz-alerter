@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/venicegeo/pz-gocommon"
+	logger "github.com/venicegeo/pz-logger/client"
 	"github.com/venicegeo/pz-workflow/common"
 	"io/ioutil"
 	"net/http"
@@ -28,6 +29,7 @@ type PzWorkflowService struct {
 	name    piazza.ServiceName
 	address string
 	url     string
+	logger  *logger.CustomLogger
 }
 
 func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowService, error) {
@@ -35,10 +37,14 @@ func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowServic
 
 	var err error
 
+	var x piazza.IService = sys.Services[piazza.PzLogger]
+	var y logger.ILoggerService = x.(logger.ILoggerService)
+
 	service := &PzWorkflowService{
 		url:     fmt.Sprintf("http://%s/v1", address),
 		name:    piazza.PzWorkflow,
 		address: address,
+		logger:  logger.NewCustomLogger(&y, piazza.PzLogger, address),
 	}
 
 	err = sys.WaitForService(service)
@@ -47,6 +53,8 @@ func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowServic
 	}
 
 	sys.Services[piazza.PzWorkflow] = service
+
+	service.logger.Info("PzWorkflowService started")
 
 	return service, nil
 }
