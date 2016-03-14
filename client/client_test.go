@@ -165,7 +165,7 @@ func (suite *ClientTester) TestOne() {
 	{
 		// will cause trigger t1Id
 		e1 := &common.Event{
-			EventType: etId,
+			EventTypeId: etId,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
@@ -181,7 +181,7 @@ func (suite *ClientTester) TestOne() {
 	{
 		// will cause no triggers
 		e2 := &common.Event{
-			EventType: etId,
+			EventTypeId: etId,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
@@ -331,7 +331,7 @@ func (suite *ClientTester) TestEventResource() {
 	etId, err := workflow.PostEventType(eventType)
 
 	event := &common.Event{
-		EventType: etId,
+		EventTypeId: etId,
 		Date:      time.Now(),
 		Data: map[string]interface{}{
 			"myint": 17,
@@ -495,7 +495,7 @@ func (suite *ClientTester) TestAAATriggering() {
 	{
 		// will cause trigger TA
 		e1 := common.Event{
-			EventType: etC,
+			EventTypeId: etC,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 17,
@@ -507,7 +507,7 @@ func (suite *ClientTester) TestAAATriggering() {
 
 		// will cause trigger TB
 		e2 := common.Event{
-			EventType: etD,
+			EventTypeId: etD,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
@@ -519,7 +519,7 @@ func (suite *ClientTester) TestAAATriggering() {
 
 		// will cause no triggers
 		e3 := common.Event{
-			EventType: etE,
+			EventTypeId: etE,
 			Date:      time.Now(),
 			Data: map[string]interface{}{
 				"num": 19,
