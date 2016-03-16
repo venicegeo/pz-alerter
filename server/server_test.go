@@ -154,10 +154,8 @@ func (suite *ServerTester) TestOne() {
 		mapping := map[string]piazza.MappingElementTypeName{
 			"num": piazza.MappingElementTypeInteger,
 			"str": piazza.MappingElementTypeString,
-			// SCOTTIE - START
 			"apiKey": piazza.MappingElementTypeString,
 			"jobId": piazza.MappingElementTypeString,			
-			// SCOTTIE - END
 		}
 
 		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
@@ -187,11 +185,9 @@ func (suite *ServerTester) TestOne() {
 				},
 			},
 			Job: common.Job{
-				// SCOTTIE - START
 				//Task: "the x1 task",
 				// Using a GetJob call as it is as close to a 'noop' as I could find.
 				Task:  `{"apiKey": "$apiKey", "jobType": {"type": "get", "jobId": "$jobId"}}`,
-				// SCOTTIE - END
 			},
 		}
 
@@ -213,10 +209,8 @@ func (suite *ServerTester) TestOne() {
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
-				// SCOTTIE - START
 				"apiKey": "my-api-key-38n987",
 				"jobId": "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
-				// SCOTTIE - END
 			},
 		}
 
@@ -237,11 +231,9 @@ func (suite *ServerTester) TestOne() {
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
-				// SCOTTIE - START
 				// Probably don't need the following as job shouldn't be executed.
 				"apiKey": "my-api-key-38n987",  
 				"jobId": "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
-				// SCOTTIE - END
 			},
 		}
 

@@ -186,7 +186,6 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		}
 
 		{
-			// SCOTTIE - START
 			// TODO: this should be done asynchronously
 			fmt.Printf("event:\n")
 			fmt.Printf("\tID: %v\n", event.ID)				
@@ -228,7 +227,6 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 			    // Figure out how to post the jobInstance to job manager server.
 			}
-			// SCOTTIE - END
 		}
 
 		c.JSON(http.StatusCreated, retId)
