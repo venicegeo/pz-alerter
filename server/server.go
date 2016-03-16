@@ -15,12 +15,14 @@
 package server
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -158,6 +160,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	// ---------------------- EVENTS ----------------------
 
 	router.POST("/v1/events/:eventType", func(c *gin.Context) {
+
 		eventType := c.Param("eventType")
 
 		var event common.Event
@@ -184,10 +187,45 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		{
 			// TODO: this should be done asynchronously
-			_, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
+			fmt.Printf("event:\n")
+			fmt.Printf("\tID: %v\n", event.ID)				
+			fmt.Printf("\tType: %v\n", eventType)				
+			fmt.Printf("\tData: %v\n", event.Data)				
+
+			// Find triggers associated with event
+			triggerIds, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
 			if err != nil {
 				Status(c, 400, err.Error())
 				return
+			}
+
+			// For each trigger,  apply the event data and submit job
+			for _, triggerId := range *triggerIds {
+				fmt.Printf("\ntriggerId: %v\n", triggerId)
+				var trigger common.Trigger
+
+				ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
+				if err != nil {
+					Status(c, 400, err.Error())
+					return
+				}
+				if !ok {
+					c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
+					return
+				}	
+				fmt.Printf("trigger: %v\n", trigger)
+				fmt.Printf("\tJob: %v\n\n", trigger.Job.Task)
+
+				var jobInstance string = string(trigger.Job.Task)
+
+				//  Not very robust,  need to find a better way
+				for key, value := range event.Data {
+					jobInstance = strings.Replace(jobInstance, "$" + key, fmt.Sprintf("%v", value), 1)	
+			    }
+
+			    fmt.Printf("jobInstance: %s\n\n", jobInstance)
+
+			    // Figure out how to post the jobInstance to job manager server.
 			}
 		}
 
