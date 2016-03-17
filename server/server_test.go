@@ -18,17 +18,18 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
+	"testing"
+	"time"
+
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
-	"io/ioutil"
-	"log"
-	"net/http"
-	"testing"
-	"time"
 )
 
 type ServerTester struct {

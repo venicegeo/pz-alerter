@@ -15,14 +15,15 @@
 package server
 
 import (
+	"net/http"
+	"sync"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
-	"net/http"
-	"sync"
-	"time"
 )
 
 type LockedAdminSettings struct {

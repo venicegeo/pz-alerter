@@ -15,6 +15,10 @@
 package client
 
 import (
+	"log"
+	"testing"
+	"time"
+
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
@@ -22,9 +26,6 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
 	_server "github.com/venicegeo/pz-workflow/server"
-	"log"
-	"testing"
-	"time"
 )
 
 type ClientTester struct {

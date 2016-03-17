@@ -15,16 +15,17 @@
 package main
 
 import (
+	"log"
+
 	piazza "github.com/venicegeo/pz-gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/server"
-	"log"
 )
 
 func main() {
 
-	var mode piazza.ConfigMode = piazza.ConfigModeCloud
+	var mode = piazza.ConfigModeCloud
 	if piazza.IsLocalConfig() {
 		mode = piazza.ConfigModeLocal
 	}
