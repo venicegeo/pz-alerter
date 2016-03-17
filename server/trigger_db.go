@@ -17,6 +17,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-workflow/common"
 )

@@ -18,11 +18,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/venicegeo/pz-gocommon"
 	"io/ioutil"
 	"net/http"
 	"sort"
 	"time"
+
+	"github.com/venicegeo/pz-gocommon"
 )
 
 type WorkflowIdResponse struct {

@@ -18,11 +18,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/venicegeo/pz-gocommon"
 	logger "github.com/venicegeo/pz-logger/client"
 	"github.com/venicegeo/pz-workflow/common"
-	"io/ioutil"
-	"net/http"
 )
 
 type PzWorkflowService struct {
