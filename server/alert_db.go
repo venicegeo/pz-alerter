@@ -17,7 +17,7 @@ package server
 import (
 	"encoding/json"
 
-	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-workflow/common"
 )
 
@@ -25,9 +25,9 @@ type AlertDB struct {
 	*ResourceDB
 }
 
-func NewAlertDB(es *piazza.EsClient, index string) (*AlertDB, error) {
+func NewAlertDB(es *elasticsearch.ElasticsearchClient, index string) (*AlertDB, error) {
 
-	esi := piazza.NewEsIndexClient(es, index)
+	esi := elasticsearch.NewElasticsearchIndex(es, index)
 
 	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
@@ -37,8 +37,8 @@ func NewAlertDB(es *piazza.EsClient, index string) (*AlertDB, error) {
 	return &ardb, nil
 }
 
-func (db *AlertDB) GetByConditionID(conditionID string) ([]common.Alert, error) {
-	searchResult, err := db.Esi.SearchByTermQuery("condition_id", conditionID)
+func (db *AlertDB) GetByConditionID(mapping string, conditionID string) ([]common.Alert, error) {
+	searchResult, err := db.Esi.FilterByTermQuery(mapping, "condition_id", conditionID)
 	if err != nil {
 		return nil, err
 	}

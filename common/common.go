@@ -23,7 +23,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
 type WorkflowIdResponse struct {
@@ -132,9 +132,9 @@ type EventList []Event
 //---------------------------------------------------------------------------
 
 type EventType struct {
-	ID      Ident                                    `json:"id"`
-	Name    string                                   `json:"name" binding:"required"`
-	Mapping map[string]piazza.MappingElementTypeName `json:"mapping" binding:"required"`
+	ID      Ident                                           `json:"id"`
+	Name    string                                          `json:"name" binding:"required"`
+	Mapping map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
 }
 
 type EventTypeList []EventType

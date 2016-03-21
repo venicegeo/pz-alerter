@@ -15,6 +15,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
@@ -108,7 +110,14 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		return common.Ident(uuid)
 	}
 
-	es := sys.ElasticSearchService
+	esx := sys.Services[piazza.PzElasticSearch]
+	if esx == nil {
+		return nil, errors.New("internal error: elasticsearch not registered")
+	}
+	es, ok := esx.(*elasticsearch.ElasticsearchClient)
+	if !ok {
+		return nil, errors.New("internl error")
+	}
 
 	alertDB, err := NewAlertDB(es, "alerts")
 	if err != nil {
@@ -233,14 +242,14 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		c.JSON(http.StatusCreated, retId)
 	})
 
-	router.GET("/v1/events", func(c *gin.Context) {
+	/*router.GET("/v1/events", func(c *gin.Context) {
 		m, err := eventDB.GetAll()
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
 		c.JSON(http.StatusOK, m)
-	})
+	})*/
 
 	router.GET("/v1/events/:eventType", func(c *gin.Context) {
 		eventType := c.Param("eventType")
@@ -335,7 +344,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		m, err := eventTypeDB.GetAll()
+		m, err := eventTypeDB.GetAll("EventType")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -411,7 +420,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/triggers", func(c *gin.Context) {
-		m, err := triggerDB.GetAll()
+		m, err := triggerDB.GetAll("Triggers")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -464,7 +473,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		conditionID := c.Query("condition")
 		if conditionID != "" {
-			v, err := alertDB.GetByConditionID(conditionID)
+			v, err := alertDB.GetByConditionID("Alert", conditionID)
 			if err != nil {
 				Status(c, 400, err.Error())
 				return
@@ -477,7 +486,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		all, err := alertDB.GetAll()
+		all, err := alertDB.GetAll("Alert")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return

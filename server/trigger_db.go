@@ -19,6 +19,7 @@ import (
 	"errors"
 
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-workflow/common"
 )
 
@@ -26,9 +27,9 @@ type TriggerDB struct {
 	*ResourceDB
 }
 
-func NewTriggerDB(es *piazza.EsClient, index string) (*TriggerDB, error) {
+func NewTriggerDB(es *elasticsearch.ElasticsearchClient, index string) (*TriggerDB, error) {
 
-	esi := piazza.NewEsIndexClient(es, index)
+	esi := elasticsearch.NewElasticsearchIndex(es, index)
 
 	rdb, err := NewResourceDB(es, esi)
 	if err != nil {

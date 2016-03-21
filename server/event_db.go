@@ -17,7 +17,7 @@ package server
 import (
 	"encoding/json"
 
-	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-workflow/common"
 )
 
@@ -25,9 +25,9 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(es *piazza.EsClient, index string) (*EventDB, error) {
+func NewEventDB(es *elasticsearch.ElasticsearchClient, index string) (*EventDB, error) {
 
-	esi := piazza.NewEsIndexClient(es, index)
+	esi := elasticsearch.NewElasticsearchIndex(es, index)
 
 	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
@@ -64,7 +64,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 
 func (db *EventDB) GetByMapping(mapping string) ([]common.Event, error) {
 
-	searchResult, err := db.Esi.SearchByMatchAllWithMapping(mapping)
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
 	if err != nil {
 		return nil, err
 	}

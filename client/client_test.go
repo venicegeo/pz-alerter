@@ -22,6 +22,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
@@ -61,6 +62,12 @@ func (suite *ClientTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	es, err := elasticsearch.NewElasticsearchClient(sys, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sys.Services[piazza.PzElasticSearch] = es
 
 	routes, err := _server.CreateHandlers(sys, clogger, suite.uuidgenner)
 	if err != nil {
@@ -131,9 +138,9 @@ func (suite *ClientTester) TestOne() {
 
 	var etId common.Ident
 	{
-		mapping := map[string]piazza.MappingElementTypeName{
-			"num": piazza.MappingElementTypeInteger,
-			"str": piazza.MappingElementTypeString,
+		mapping := map[string]elasticsearch.MappingElementTypeName{
+			"num": elasticsearch.MappingElementTypeInteger,
+			"str": elasticsearch.MappingElementTypeString,
 		}
 
 		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
@@ -311,9 +318,9 @@ func (suite *ClientTester) TestEventTypeResource() {
 
 	var err error
 
-	mapping := map[string]piazza.MappingElementTypeName{
-		"myint": piazza.MappingElementTypeString,
-		"mystr": piazza.MappingElementTypeString,
+	mapping := map[string]elasticsearch.MappingElementTypeName{
+		"myint": elasticsearch.MappingElementTypeString,
+		"mystr": elasticsearch.MappingElementTypeString,
 	}
 	eventType := &common.EventType{Name: "typnam", Mapping: mapping}
 	id, err := workflow.PostEventType(eventType)
@@ -342,9 +349,9 @@ func (suite *ClientTester) TestEventResource() {
 
 	var err error
 
-	mapping := map[string]piazza.MappingElementTypeName{
-		"myint": piazza.MappingElementTypeString,
-		"mystr": piazza.MappingElementTypeString,
+	mapping := map[string]elasticsearch.MappingElementTypeName{
+		"myint": elasticsearch.MappingElementTypeString,
+		"mystr": elasticsearch.MappingElementTypeString,
 	}
 	eventTypeName := "mytype"
 	eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
@@ -391,9 +398,9 @@ func (suite *ClientTester) TestTriggerResource() {
 
 	var err error
 
-	mapping := map[string]piazza.MappingElementTypeName{
-		"myint": piazza.MappingElementTypeString,
-		"mystr": piazza.MappingElementTypeString,
+	mapping := map[string]elasticsearch.MappingElementTypeName{
+		"myint": elasticsearch.MappingElementTypeString,
+		"mystr": elasticsearch.MappingElementTypeString,
 	}
 	eventType := &common.EventType{Name: "typnam", Mapping: mapping}
 	etId, err := workflow.PostEventType(eventType)
@@ -452,9 +459,9 @@ func (suite *ClientTester) TestAAATriggering() {
 
 	var etC, etD, etE common.Ident
 	{
-		mapping := map[string]piazza.MappingElementTypeName{
-			"num": piazza.MappingElementTypeInteger,
-			"str": piazza.MappingElementTypeString,
+		mapping := map[string]elasticsearch.MappingElementTypeName{
+			"num": elasticsearch.MappingElementTypeInteger,
+			"str": elasticsearch.MappingElementTypeString,
 		}
 		eventTypeC := &common.EventType{Name: "EventType C", Mapping: mapping}
 		eventTypeD := &common.EventType{Name: "EventType D", Mapping: mapping}

@@ -14,9 +14,7 @@
 
 package server
 
-import (
-	"github.com/venicegeo/pz-gocommon"
-)
+import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 //---------------------------------------------------------------------------
 
@@ -24,9 +22,9 @@ type EventTypeDB struct {
 	*ResourceDB
 }
 
-func NewEventTypeDB(es *piazza.EsClient, index string) (*EventTypeDB, error) {
+func NewEventTypeDB(es *elasticsearch.ElasticsearchClient, index string) (*EventTypeDB, error) {
 
-	esi := piazza.NewEsIndexClient(es, index)
+	esi := elasticsearch.NewElasticsearchIndex(es, index)
 
 	rdb, err := NewResourceDB(es, esi)
 	if err != nil {

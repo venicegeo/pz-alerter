@@ -27,6 +27,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
@@ -63,6 +64,12 @@ func (suite *ServerTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	es, err := elasticsearch.NewElasticsearchClient(sys, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+    sys.Services[piazza.PzElasticSearch] = es
 
 	routes, err := CreateHandlers(sys, clogger, theUuidgen)
 	if err != nil {
@@ -152,11 +159,11 @@ func (suite *ServerTester) TestOne() {
 
 	var et1Id common.Ident
 	{
-		mapping := map[string]piazza.MappingElementTypeName{
-			"num": piazza.MappingElementTypeInteger,
-			"str": piazza.MappingElementTypeString,
-			"apiKey": piazza.MappingElementTypeString,
-			"jobId": piazza.MappingElementTypeString,			
+		mapping := map[string]elasticsearch.MappingElementTypeName{
+			"num":    elasticsearch.MappingElementTypeInteger,
+			"str":    elasticsearch.MappingElementTypeString,
+			"apiKey": elasticsearch.MappingElementTypeString,
+			"jobId":  elasticsearch.MappingElementTypeString,
 		}
 
 		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
@@ -188,7 +195,7 @@ func (suite *ServerTester) TestOne() {
 			Job: common.Job{
 				//Task: "the x1 task",
 				// Using a GetJob call as it is as close to a 'noop' as I could find.
-				Task:  `{"apiKey": "$apiKey", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+				Task: `{"apiKey": "$apiKey", "jobType": {"type": "get", "jobId": "$jobId"}}`,
 			},
 		}
 
@@ -208,10 +215,10 @@ func (suite *ServerTester) TestOne() {
 			EventTypeId: et1Id,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
-				"num": 17,
-				"str": "quick",
+				"num":    17,
+				"str":    "quick",
 				"apiKey": "my-api-key-38n987",
-				"jobId": "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
+				"jobId":  "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
 			},
 		}
 
@@ -233,8 +240,8 @@ func (suite *ServerTester) TestOne() {
 				"num": 18,
 				"str": "brown",
 				// Probably don't need the following as job shouldn't be executed.
-				"apiKey": "my-api-key-38n987",  
-				"jobId": "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
+				"apiKey": "my-api-key-38n987",
+				"jobId":  "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
 			},
 		}
 

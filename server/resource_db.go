@@ -17,16 +17,16 @@ package server
 import (
 	"encoding/json"
 
-	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-workflow/common"
 )
 
 type ResourceDB struct {
-	Es  *piazza.EsClient
-	Esi *piazza.EsIndexClient
+	Es  *elasticsearch.ElasticsearchClient
+	Esi *elasticsearch.ElasticsearchIndex
 }
 
-func NewResourceDB(es *piazza.EsClient, esi *piazza.EsIndexClient) (*ResourceDB, error) {
+func NewResourceDB(es *elasticsearch.ElasticsearchClient, esi *elasticsearch.ElasticsearchIndex) (*ResourceDB, error) {
 	db := &ResourceDB{
 		Es:  es,
 		Esi: esi,
@@ -60,8 +60,8 @@ func (db *ResourceDB) PostData(mapping string, obj interface{}, id common.Ident)
 	return id, nil
 }
 
-func (db *ResourceDB) GetAll() ([]*json.RawMessage, error) {
-	searchResult, err := db.Esi.SearchByMatchAll()
+func (db *ResourceDB) GetAll(mapping string) ([]*json.RawMessage, error) {
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
 	if err != nil {
 		return nil, err
 	}
@@ -113,9 +113,9 @@ func (db *ResourceDB) DeleteByID(mapping string, id string) (bool, error) {
 	return res.Found, nil
 }
 
-func (db *ResourceDB) AddMapping(name string, mapping map[string]piazza.MappingElementTypeName) error {
+func (db *ResourceDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
 
-	jsn, err := piazza.ConstructMappingSchema(name, mapping)
+	jsn, err := elasticsearch.ConstructMappingSchema(name, mapping)
 	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
 		return err
