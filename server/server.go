@@ -344,7 +344,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		m, err := eventTypeDB.GetAll("EventType")
+		m, err := eventTypeDB.GetAll("")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
