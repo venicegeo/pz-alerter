@@ -14,7 +14,12 @@
 
 package server
 
-import "github.com/venicegeo/pz-gocommon/elasticsearch"
+import (
+	"log"
+
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-workflow/common"
+)
 
 //---------------------------------------------------------------------------
 
@@ -32,4 +37,26 @@ func NewEventTypeDB(es *elasticsearch.ElasticsearchClient, index string) (*Event
 	}
 	etrdb := EventTypeDB{ResourceDB: rdb}
 	return &etrdb, nil
+}
+
+func (db *EventTypeDB) GetAllIds() (*[]common.Ident, error) {
+	log.Printf("GetAllIds start")
+
+	resp, err := db.GetAll("EventType")
+	if err != nil {
+		return nil, err
+	}
+
+	var typs []common.Ident
+	common.SuperConvert(resp, &typs)
+	log.Printf("!!! %#v", typs)
+
+	//	log.Printf("!!! %#v", result)
+
+	results := make([]common.Ident, 0)
+	log.Printf("!!! %#v", results)
+
+	log.Printf("GetAllIds end")
+
+	return &results, nil
 }

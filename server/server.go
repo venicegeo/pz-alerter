@@ -17,6 +17,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -338,20 +339,40 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		c.JSON(http.StatusCreated, retId)
+		{
+			id := common.Ident(retId.ID)
+			var v common.EventType
+			ok, err := eventTypeDB.GetById("EventType", id, &v)
+			if err != nil {
+				Status(c, 400, err.Error())
+				return
+			}
+			if !ok {
+				Status(c, 410, err.Error())
+				return
+			}
+			if v.ID != retId.ID {
+				log.Printf("*************** %s %s ************", v.ID, retId.ID)
+				panic(1)
+			}
+		}
 
-		logger.Info("EventType %s registered: %s", eventType.Name, string(retId.ID))
+		c.JSON(http.StatusCreated, retId)
 	})
 
+	// returns a list of all IDs
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		m, err := eventTypeDB.GetAll("EventType")
+		log.Printf("server start")
+		m, err := eventTypeDB.GetAllIds()
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
+		log.Printf("server end")
 		c.JSON(http.StatusOK, m)
 	})
 
+	// returns info on a given ID
 	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
@@ -521,11 +542,13 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		alert.ID = NewIdent()
 
-		_, err = alertDB.PostData("Alert", &alert, alert.ID)
+		id, err := alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
+
+		retId := common.WorkflowIdResponse{ID: id}
 
 		err = alertDB.Flush()
 		if err != nil {
@@ -533,7 +556,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		c.JSON(http.StatusCreated, gin.H{"id": alert.ID})
+		c.JSON(http.StatusCreated, retId)
 	})
 
 	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
