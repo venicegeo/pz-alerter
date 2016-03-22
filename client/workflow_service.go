@@ -213,8 +213,11 @@ func (c *PzWorkflowService) GetAllEventTypes() (*[]common.EventType, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) GetAllEvents() (*[]common.Event, error) {
-	resp, err := http.Get(c.url + "/events")
+func (c *PzWorkflowService) GetAllEvents(typ string) (*[]common.Event, error) {
+	if typ != "" {
+		typ = "/" + typ
+	}
+	resp, err := http.Get(c.url + "/events" + typ)
 	if err != nil {
 		return nil, common.NewErrorFromHttp(resp)
 	}

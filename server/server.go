@@ -242,28 +242,24 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		c.JSON(http.StatusCreated, retId)
 	})
 
-	/*router.GET("/v1/events", func(c *gin.Context) {
-		m, err := eventDB.GetAll()
+	router.GET("/v1/events", func(c *gin.Context) {
+		m, err := eventDB.GetAll("")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
 		c.JSON(http.StatusOK, m)
-	})*/
+	})
 
 	router.GET("/v1/events/:eventType", func(c *gin.Context) {
 		eventType := c.Param("eventType")
 
-		ary, err := eventDB.GetByMapping(eventType)
+		m, err := eventDB.GetAll(eventType)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		if len(ary) == 0 {
-			c.JSON(http.StatusNotFound, ary)
-			return
-		}
-		c.JSON(http.StatusOK, ary)
+		c.JSON(http.StatusOK, m)
 	})
 
 	router.GET("/v1/events/:eventType/:id", func(c *gin.Context) {
@@ -420,7 +416,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/triggers", func(c *gin.Context) {
-		m, err := triggerDB.GetAll("Triggers")
+		m, err := triggerDB.GetAll("Trigger")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return

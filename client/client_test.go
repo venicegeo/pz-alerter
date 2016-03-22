@@ -99,7 +99,7 @@ func (suite *ClientTester) assertNoData() {
 
 	var err error
 
-	es, err := workflow.GetAllEvents()
+	es, err := workflow.GetAllEvents("")
 	assert.NoError(err)
 	assert.Len(*es, 0)
 
@@ -123,6 +123,152 @@ func TestRunSuite(t *testing.T) {
 }
 
 //---------------------------------------------------------------------------
+
+func (suite *ClientTester) TestAdmin() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	workflow := suite.workflow
+
+	settings, err := workflow.GetFromAdminSettings()
+	assert.NoError(err)
+	if settings.Debug != false {
+		t.Error("settings not false")
+	}
+
+	settings.Debug = true
+	err = workflow.PostToAdminSettings(settings)
+	assert.NoError(err)
+
+	settings, err = workflow.GetFromAdminSettings()
+	assert.NoError(err)
+	if settings.Debug != true {
+		t.Error("settings not true")
+	}
+}
+
+func (suite *ClientTester) TestAlertResource() {
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	suite.assertNoData()
+	defer suite.assertNoData()
+
+	var err error
+
+	a1 := common.Alert{TriggerId: "dummyT1", EventId: "dummyE1"}
+	id, err := workflow.PostAlert(&a1)
+	assert.NoError(err)
+
+	alerts, err := workflow.GetAllAlerts()
+	assert.NoError(err)
+	assert.Len(*alerts, 1)
+	assert.EqualValues(id, (*alerts)[0].ID)
+	assert.EqualValues("dummyT1", (*alerts)[0].TriggerId)
+	assert.EqualValues("dummyE1", (*alerts)[0].EventId)
+
+	alert, err := workflow.GetAlert(id)
+	assert.NoError(err)
+	assert.EqualValues(id, alert.ID)
+
+	alert, err = workflow.GetAlert("nosuchalert1")
+	assert.Error(err)
+
+	err = workflow.DeleteAlert("nosuchalert2")
+	assert.Error(err)
+
+	err = workflow.DeleteAlert(id)
+	assert.NoError(err)
+
+	alert, err = workflow.GetAlert(id)
+	assert.Error(err)
+	assert.Nil(alert)
+
+	alerts, err = workflow.GetAllAlerts()
+	assert.NoError(err)
+	assert.Len(*alerts, 0)
+}
+
+func (suite *ClientTester) TestEventResource() {
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	suite.assertNoData()
+	defer suite.assertNoData()
+
+	var err error
+
+	mapping := map[string]elasticsearch.MappingElementTypeName{
+		"myint": elasticsearch.MappingElementTypeString,
+		"mystr": elasticsearch.MappingElementTypeString,
+	}
+	eventTypeName := "mytype"
+	eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
+	etId, err := workflow.PostEventType(eventType)
+	assert.NoError(err)
+	defer func() {
+		err = workflow.DeleteEventType(etId)
+		assert.NoError(err)
+	}()
+
+	event := &common.Event{
+		EventTypeId: etId,
+		Date:        time.Now(),
+		Data: map[string]interface{}{
+			"myint": 17,
+			"mystr": "quick",
+		},
+	}
+	eId, err := workflow.PostEvent(eventTypeName, event)
+	assert.NoError(err)
+
+	defer func() {
+		err = workflow.DeleteEvent(eventTypeName, eId)
+		assert.NoError(err)
+	}()
+
+	events, err := workflow.GetAllEvents(eventTypeName)
+	assert.NoError(err)
+	assert.Len(*events, 1)
+	assert.EqualValues(eId, (*events)[0].ID)
+
+	tmp, err := workflow.GetEvent(eventTypeName, eId)
+	assert.NoError(err)
+	assert.EqualValues(eId, tmp.ID)
+}
+
+func (suite *ClientTester) TestEventTypeResource() {
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	suite.assertNoData()
+	defer suite.assertNoData()
+
+	var err error
+
+	mapping := map[string]elasticsearch.MappingElementTypeName{
+		"myint": elasticsearch.MappingElementTypeString,
+		"mystr": elasticsearch.MappingElementTypeString,
+	}
+	eventType := &common.EventType{Name: "typnam", Mapping: mapping}
+	id, err := workflow.PostEventType(eventType)
+	defer func() {
+		err = workflow.DeleteEventType(id)
+		assert.NoError(err)
+	}()
+
+	eventTypes, err := workflow.GetAllEventTypes()
+	assert.NoError(err)
+	assert.Len(*eventTypes, 1)
+	assert.EqualValues(id, (*eventTypes)[0].ID)
+
+	tmp, err := workflow.GetEventType(id)
+	assert.NoError(err)
+	assert.EqualValues(id, tmp.ID)
+}
 
 func (suite *ClientTester) TestOne() {
 
@@ -224,6 +370,12 @@ func (suite *ClientTester) TestOne() {
 		}()
 	}
 
+	{
+		ary, err := workflow.GetAllEvents(eventTypeName)
+		assert.NoError(err)
+		assert.Len(*ary, 2)
+	}
+
 	var aId common.Ident
 	{
 		alerts, err := workflow.GetAllAlerts()
@@ -240,152 +392,6 @@ func (suite *ClientTester) TestOne() {
 			assert.NoError(err)
 		}()
 	}
-}
-
-func (suite *ClientTester) TestAdmin() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	workflow := suite.workflow
-
-	settings, err := workflow.GetFromAdminSettings()
-	assert.NoError(err)
-	if settings.Debug != false {
-		t.Error("settings not false")
-	}
-
-	settings.Debug = true
-	err = workflow.PostToAdminSettings(settings)
-	assert.NoError(err)
-
-	settings, err = workflow.GetFromAdminSettings()
-	assert.NoError(err)
-	if settings.Debug != true {
-		t.Error("settings not true")
-	}
-}
-
-func (suite *ClientTester) TestAlertResource() {
-	t := suite.T()
-	assert := assert.New(t)
-	workflow := suite.workflow
-
-	suite.assertNoData()
-	defer suite.assertNoData()
-
-	var err error
-
-	a1 := common.Alert{TriggerId: "dummyT1", EventId: "dummyE1"}
-	id, err := workflow.PostAlert(&a1)
-	assert.NoError(err)
-
-	alerts, err := workflow.GetAllAlerts()
-	assert.NoError(err)
-	assert.Len(*alerts, 1)
-	assert.EqualValues(id, (*alerts)[0].ID)
-	assert.EqualValues("dummyT1", (*alerts)[0].TriggerId)
-	assert.EqualValues("dummyE1", (*alerts)[0].EventId)
-
-	alert, err := workflow.GetAlert(id)
-	assert.NoError(err)
-	assert.EqualValues(id, alert.ID)
-
-	alert, err = workflow.GetAlert("nosuchalert1")
-	assert.Error(err)
-
-	err = workflow.DeleteAlert("nosuchalert2")
-	assert.Error(err)
-
-	err = workflow.DeleteAlert(id)
-	assert.NoError(err)
-
-	alert, err = workflow.GetAlert(id)
-	assert.Error(err)
-	assert.Nil(alert)
-
-	alerts, err = workflow.GetAllAlerts()
-	assert.NoError(err)
-	assert.Len(*alerts, 0)
-}
-
-func (suite *ClientTester) TestEventTypeResource() {
-	t := suite.T()
-	assert := assert.New(t)
-	workflow := suite.workflow
-
-	suite.assertNoData()
-	defer suite.assertNoData()
-
-	var err error
-
-	mapping := map[string]elasticsearch.MappingElementTypeName{
-		"myint": elasticsearch.MappingElementTypeString,
-		"mystr": elasticsearch.MappingElementTypeString,
-	}
-	eventType := &common.EventType{Name: "typnam", Mapping: mapping}
-	id, err := workflow.PostEventType(eventType)
-	defer func() {
-		err = workflow.DeleteEventType(id)
-		assert.NoError(err)
-	}()
-
-	eventTypes, err := workflow.GetAllEventTypes()
-	assert.NoError(err)
-	assert.Len(*eventTypes, 1)
-	assert.EqualValues(id, (*eventTypes)[0].ID)
-
-	tmp, err := workflow.GetEventType(id)
-	assert.NoError(err)
-	assert.EqualValues(id, tmp.ID)
-}
-
-func (suite *ClientTester) TestEventResource() {
-	t := suite.T()
-	assert := assert.New(t)
-	workflow := suite.workflow
-
-	suite.assertNoData()
-	defer suite.assertNoData()
-
-	var err error
-
-	mapping := map[string]elasticsearch.MappingElementTypeName{
-		"myint": elasticsearch.MappingElementTypeString,
-		"mystr": elasticsearch.MappingElementTypeString,
-	}
-	eventTypeName := "mytype"
-	eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
-	etId, err := workflow.PostEventType(eventType)
-	assert.NoError(err)
-	defer func() {
-		err = workflow.DeleteEventType(etId)
-		assert.NoError(err)
-	}()
-
-	event := &common.Event{
-		EventTypeId: etId,
-		Date:        time.Now(),
-		Data: map[string]interface{}{
-			"myint": 17,
-			"mystr": "quick",
-		},
-	}
-	eId, err := workflow.PostEvent(eventTypeName, event)
-	assert.NoError(err)
-
-	defer func() {
-		err = workflow.DeleteEvent(eventTypeName, eId)
-		assert.NoError(err)
-	}()
-
-	events, err := workflow.GetAllEvents()
-	assert.NoError(err)
-	assert.Len(*events, 1)
-	assert.EqualValues(eId, (*events)[0].ID)
-
-	tmp, err := workflow.GetEvent(eventTypeName, eId)
-	assert.NoError(err)
-	assert.EqualValues(eId, tmp.ID)
 }
 
 func (suite *ClientTester) TestTriggerResource() {
@@ -434,17 +440,17 @@ func (suite *ClientTester) TestTriggerResource() {
 		assert.NoError(err)
 	}()
 
+	tmp, err := workflow.GetTrigger(t1Id)
+	assert.NoError(err)
+	assert.EqualValues(t1Id, tmp.ID)
+
 	triggers, err := workflow.GetAllTriggers()
 	assert.NoError(err)
 	assert.Len(*triggers, 1)
 	assert.EqualValues(t1Id, (*triggers)[0].ID)
-
-	tmp, err := workflow.GetTrigger(t1Id)
-	assert.NoError(err)
-	assert.EqualValues(t1Id, tmp.ID)
 }
 
-func (suite *ClientTester) TestAAATriggering() {
+func (suite *ClientTester) TestTriggering() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -598,12 +604,14 @@ func (suite *ClientTester) TestAAATriggering() {
 		assert.NoError(err)
 		assert.Len(*alerts, 2)
 
-		var alertList common.AlertList
-		alertList = *alerts
-		tmp := alertList.ToSortedArray()
-		assert.Len(tmp, 2)
-		alert0 := tmp[0]
-		alert1 := tmp[1]
+		var alert0, alert1 *common.Alert
+		if (*alerts)[0].EventId == eF {
+			alert0 = &(*alerts)[0]
+			alert1 = &(*alerts)[1]
+		} else {
+			alert0 = &(*alerts)[1]
+			alert1 = &(*alerts)[0]
+		}
 
 		aI = alert0.ID
 		aJ = alert1.ID
