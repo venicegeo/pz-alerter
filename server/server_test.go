@@ -129,8 +129,6 @@ func (suite *ServerTester) Get(path string) interface{} {
 	data, err := ioutil.ReadAll(resp.Body)
 	assert.NoError(err)
 
-	//log.Printf("UUU %s: %s", path, string(data))
-
 	var result interface{}
 	err = json.Unmarshal(data, &result)
 	assert.NoError(err)
@@ -332,7 +330,6 @@ func (suite *ServerTester) TestEventMapping() {
 		}
 		x := suite.Get("/events" + typ)
 		y := x.([]interface{})
-		log.Printf("=== %d", len(y))
 		assert.Len(y, expected)
 	}
 
@@ -345,14 +342,12 @@ func (suite *ServerTester) TestEventMapping() {
 	{
 		x := suite.Get("/eventtypes")
 		y := x.([]interface{})
-		log.Printf("=== %d", len(y))
 		assert.Len(y, 2)
 	}
 
 	{
 		x := suite.Get("/eventtypes/" + string(et1Id))
 		y := x.(map[string]interface{})
-		log.Printf("=== %#v", y)
 		assert.EqualValues(string(et1Id), string(y["id"].(string)))
 	}
 

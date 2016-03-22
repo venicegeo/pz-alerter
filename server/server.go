@@ -17,7 +17,6 @@ package server
 import (
 	"errors"
 	"fmt"
-    "log"
 	"net/http"
 	"strings"
 	"sync"
@@ -198,10 +197,10 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		{
 			// TODO: this should be done asynchronously
-			log.Printf("event:\n")
-			log.Printf("\tID: %v\n", event.ID)
-			log.Printf("\tType: %v\n", eventType)
-			log.Printf("\tData: %v\n", event.Data)
+			///log.Printf("event:\n")
+			///log.Printf("\tID: %v\n", event.ID)
+			///log.Printf("\tType: %v\n", eventType)
+			///log.Printf("\tData: %v\n", event.Data)
 
 			// Find triggers associated with event
 			triggerIds, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
@@ -212,35 +211,35 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 			// For each trigger,  apply the event data and submit job
 			for _, triggerId := range *triggerIds {
-                go func (triggerId common.Ident)  {
-                    
-                    log.Printf("\ntriggerId: %v\n", triggerId)
-                    var trigger common.Trigger
+				go func(triggerId common.Ident) {
 
-                    ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
-                    if err != nil {
-                        Status(c, 400, err.Error())
-                        return
-                    }
-                    if !ok {
-                        c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
-                        return
-                    }
-                    log.Printf("trigger: %v\n", trigger)
-                    log.Printf("\tJob: %v\n\n", trigger.Job.Task)
+					///log.Printf("\ntriggerId: %v\n", triggerId)
+					var trigger common.Trigger
 
-                    var jobInstance = trigger.Job.Task
+					ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
+					if err != nil {
+						Status(c, 400, err.Error())
+						return
+					}
+					if !ok {
+						c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
+						return
+					}
+					///log.Printf("trigger: %v\n", trigger)
+					///log.Printf("\tJob: %v\n\n", trigger.Job.Task)
 
-                    //  Not very robust,  need to find a better way
-                    for key, value := range event.Data {
-                        jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
-                    }
+					var jobInstance = trigger.Job.Task
 
-                    log.Printf("jobInstance: %s\n\n", jobInstance)
-  
-                    // Figure out how to post the jobInstance to job manager server.
-                
-                }(triggerId)
+					//  Not very robust,  need to find a better way
+					for key, value := range event.Data {
+						jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
+					}
+
+					//log.Printf("jobInstance: %s\n\n", jobInstance)
+
+					// Figure out how to post the jobInstance to job manager server.
+
+				}(triggerId)
 			}
 		}
 
