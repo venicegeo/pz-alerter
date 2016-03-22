@@ -15,6 +15,7 @@
 package server
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -23,6 +24,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
@@ -108,7 +110,14 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		return common.Ident(uuid)
 	}
 
-	es := sys.ElasticSearchService
+	esx := sys.Services[piazza.PzElasticSearch]
+	if esx == nil {
+		return nil, errors.New("internal error: elasticsearch not registered")
+	}
+	es, ok := esx.(*elasticsearch.ElasticsearchClient)
+	if !ok {
+		return nil, errors.New("internl error")
+	}
 
 	alertDB, err := NewAlertDB(es, "alerts")
 	if err != nil {
@@ -188,10 +197,10 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		{
 			// TODO: this should be done asynchronously
-			fmt.Printf("event:\n")
-			fmt.Printf("\tID: %v\n", event.ID)
-			fmt.Printf("\tType: %v\n", eventType)
-			fmt.Printf("\tData: %v\n", event.Data)
+			///log.Printf("event:\n")
+			///log.Printf("\tID: %v\n", event.ID)
+			///log.Printf("\tType: %v\n", eventType)
+			///log.Printf("\tData: %v\n", event.Data)
 
 			// Find triggers associated with event
 			triggerIds, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
@@ -202,31 +211,35 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 			// For each trigger,  apply the event data and submit job
 			for _, triggerId := range *triggerIds {
-				fmt.Printf("\ntriggerId: %v\n", triggerId)
-				var trigger common.Trigger
+				go func(triggerId common.Ident) {
 
-				ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
-				if err != nil {
-					Status(c, 400, err.Error())
-					return
-				}
-				if !ok {
-					c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
-					return
-				}
-				fmt.Printf("trigger: %v\n", trigger)
-				fmt.Printf("\tJob: %v\n\n", trigger.Job.Task)
+					///log.Printf("\ntriggerId: %v\n", triggerId)
+					var trigger common.Trigger
 
-				var jobInstance string = string(trigger.Job.Task)
+					ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
+					if err != nil {
+						Status(c, 400, err.Error())
+						return
+					}
+					if !ok {
+						c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
+						return
+					}
+					///log.Printf("trigger: %v\n", trigger)
+					///log.Printf("\tJob: %v\n\n", trigger.Job.Task)
 
-				//  Not very robust,  need to find a better way
-				for key, value := range event.Data {
-					jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
-				}
+					var jobInstance = trigger.Job.Task
 
-				fmt.Printf("jobInstance: %s\n\n", jobInstance)
+					//  Not very robust,  need to find a better way
+					for key, value := range event.Data {
+						jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
+					}
 
-				// Figure out how to post the jobInstance to job manager server.
+					//log.Printf("jobInstance: %s\n\n", jobInstance)
+
+					// Figure out how to post the jobInstance to job manager server.
+
+				}(triggerId)
 			}
 		}
 
@@ -234,7 +247,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/events", func(c *gin.Context) {
-		m, err := eventDB.GetAll()
+		m, err := eventDB.GetAll("")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -245,16 +258,12 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	router.GET("/v1/events/:eventType", func(c *gin.Context) {
 		eventType := c.Param("eventType")
 
-		ary, err := eventDB.GetByMapping(eventType)
+		m, err := eventDB.GetAll(eventType)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		if len(ary) == 0 {
-			c.JSON(http.StatusNotFound, ary)
-			return
-		}
-		c.JSON(http.StatusOK, ary)
+		c.JSON(http.StatusOK, m)
 	})
 
 	router.GET("/v1/events/:eventType/:id", func(c *gin.Context) {
@@ -335,7 +344,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		m, err := eventTypeDB.GetAll()
+		m, err := eventTypeDB.GetAll("EventType")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -411,7 +420,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/triggers", func(c *gin.Context) {
-		m, err := triggerDB.GetAll()
+		m, err := triggerDB.GetAll("Trigger")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -464,7 +473,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		conditionID := c.Query("condition")
 		if conditionID != "" {
-			v, err := alertDB.GetByConditionID(conditionID)
+			v, err := alertDB.GetByConditionID("Alert", conditionID)
 			if err != nil {
 				Status(c, 400, err.Error())
 				return
@@ -477,7 +486,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		all, err := alertDB.GetAll()
+		all, err := alertDB.GetAll("Alert")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return

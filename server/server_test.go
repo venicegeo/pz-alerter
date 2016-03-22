@@ -27,6 +27,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/common"
@@ -63,6 +64,12 @@ func (suite *ServerTester) SetupSuite() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	es, err := elasticsearch.NewElasticsearchClient(sys, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	sys.Services[piazza.PzElasticSearch] = es
 
 	routes, err := CreateHandlers(sys, clogger, theUuidgen)
 	if err != nil {
@@ -152,11 +159,11 @@ func (suite *ServerTester) TestOne() {
 
 	var et1Id common.Ident
 	{
-		mapping := map[string]piazza.MappingElementTypeName{
-			"num": piazza.MappingElementTypeInteger,
-			"str": piazza.MappingElementTypeString,
-			"apiKey": piazza.MappingElementTypeString,
-			"jobId": piazza.MappingElementTypeString,			
+		mapping := map[string]elasticsearch.MappingElementTypeName{
+			"num":    elasticsearch.MappingElementTypeInteger,
+			"str":    elasticsearch.MappingElementTypeString,
+			"apiKey": elasticsearch.MappingElementTypeString,
+			"jobId":  elasticsearch.MappingElementTypeString,
 		}
 
 		eventType := &common.EventType{Name: eventTypeName, Mapping: mapping}
@@ -188,7 +195,7 @@ func (suite *ServerTester) TestOne() {
 			Job: common.Job{
 				//Task: "the x1 task",
 				// Using a GetJob call as it is as close to a 'noop' as I could find.
-				Task:  `{"apiKey": "$apiKey", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+				Task: `{"apiKey": "$apiKey", "jobType": {"type": "get", "jobId": "$jobId"}}`,
 			},
 		}
 
@@ -208,10 +215,10 @@ func (suite *ServerTester) TestOne() {
 			EventTypeId: et1Id,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
-				"num": 17,
-				"str": "quick",
+				"num":    17,
+				"str":    "quick",
 				"apiKey": "my-api-key-38n987",
-				"jobId": "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
+				"jobId":  "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
 			},
 		}
 
@@ -233,8 +240,8 @@ func (suite *ServerTester) TestOne() {
 				"num": 18,
 				"str": "brown",
 				// Probably don't need the following as job shouldn't be executed.
-				"apiKey": "my-api-key-38n987",  
-				"jobId": "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
+				"apiKey": "my-api-key-38n987",
+				"jobId":  "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
 			},
 		}
 
@@ -256,6 +263,111 @@ func (suite *ServerTester) TestOne() {
 		assert.EqualValues(e1Id, alert0.EventId)
 		assert.EqualValues(t1Id, alert0.TriggerId)
 	}
+}
+
+func (suite *ServerTester) TestEventMapping() {
+
+	t := suite.T()
+	assert := assert.New(t)
+
+	var err error
+
+	var eventTypeName1 = "Type1"
+	var eventTypeName2 = "Type2"
+
+	eventtypeF := func(typ string) common.Ident {
+		mapping := map[string]elasticsearch.MappingElementTypeName{
+			"num": elasticsearch.MappingElementTypeInteger,
+		}
+
+		eventType := &common.EventType{Name: typ, Mapping: mapping}
+
+		resp1 := suite.Post("/eventtypes", eventType)
+		defer piazza.HTTPDelete("/eventtypes/" + string(eventType.ID))
+
+		resp2 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp1, resp2)
+		assert.NoError(err)
+
+		resp3 := suite.Get("/eventtypes/" + string(resp2.ID))
+		resp4 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp3, resp4)
+		assert.NoError(err)
+
+		assert.EqualValues(resp4.ID, resp2.ID)
+
+		return resp2.ID
+	}
+
+	eventF := func(typeId common.Ident, typ string, value int) common.Ident {
+		e1 := &common.Event{
+			EventTypeId: typeId,
+			Date:        time.Now(),
+			Data: map[string]interface{}{
+				"num": value,
+			},
+		}
+
+		resp1 := suite.Post("/events/"+typ, e1)
+		defer piazza.HTTPDelete("/events/" + typ + "/" + string(e1.ID))
+		resp2 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp1, resp2)
+		assert.NoError(err)
+
+		resp3 := suite.Get("/events/" + typ + "/" + string(resp2.ID))
+		resp4 := &common.WorkflowIdResponse{}
+		err = common.SuperConvert(resp3, resp4)
+		assert.NoError(err)
+
+		assert.EqualValues(resp4.ID, resp2.ID)
+
+		return resp2.ID
+	}
+
+	dump := func(typ string, expected int) {
+		if typ != "" {
+			typ = "/" + typ
+		}
+		x := suite.Get("/events" + typ)
+		y := x.([]interface{})
+		assert.Len(y, expected)
+	}
+
+	et1Id := eventtypeF(eventTypeName1)
+	et2Id := eventtypeF(eventTypeName2)
+
+	dump(eventTypeName1, 0)
+	dump("", 0)
+
+	{
+		x := suite.Get("/eventtypes")
+		y := x.([]interface{})
+		assert.Len(y, 2)
+	}
+
+	{
+		x := suite.Get("/eventtypes/" + string(et1Id))
+		y := x.(map[string]interface{})
+		assert.EqualValues(string(et1Id), string(y["id"].(string)))
+	}
+
+	e1Id := eventF(et1Id, eventTypeName1, 17)
+	dump(eventTypeName1, 1)
+
+	e2Id := eventF(et1Id, eventTypeName1, 18)
+	dump(eventTypeName1, 2)
+
+	e3Id := eventF(et2Id, eventTypeName2, 19)
+	dump(eventTypeName2, 1)
+
+	dump("", 3)
+
+	suite.Delete("/events/" + eventTypeName1 + "/" + string(e1Id))
+	suite.Delete("/events/" + eventTypeName1 + "/" + string(e2Id))
+	suite.Delete("/events/" + eventTypeName2 + "/" + string(e3Id))
+
+	suite.Delete("/eventtypes/" + string(et1Id))
+	suite.Delete("/eventtypes/" + string(et2Id))
 }
 
 func (suite *ServerTester) TestTwo() {
