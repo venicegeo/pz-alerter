@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	"github.com/venicegeo/pz-workflow/common"
 )
 
 type ResourceDB struct {
@@ -45,16 +44,16 @@ func NewResourceDB(es *elasticsearch.ElasticsearchClient, esi *elasticsearch.Ela
 	return db, nil
 }
 
-func (db *ResourceDB) PostData(mapping string, obj interface{}, id common.Ident) (common.Ident, error) {
+func (db *ResourceDB) PostData(mapping string, obj interface{}, id Ident) (Ident, error) {
 
 	_, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
-		return common.NoIdent, err
+		return NoIdent, err
 	}
 
 	err = db.Esi.Flush()
 	if err != nil {
-		return common.NoIdent, err
+		return NoIdent, err
 	}
 
 	return id, nil
@@ -79,7 +78,7 @@ func (db *ResourceDB) GetAll(mapping string) ([]*json.RawMessage, error) {
 	return raws, nil
 }
 
-func (db *ResourceDB) GetById(mapping string, id common.Ident, obj interface{}) (bool, error) {
+func (db *ResourceDB) GetById(mapping string, id Ident, obj interface{}) (bool, error) {
 
 	getResult, err := db.Esi.GetById(mapping, id.String())
 	if err != nil {

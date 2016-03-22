@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	"github.com/venicegeo/pz-workflow/common"
 )
 
 type AlertDB struct {
@@ -37,7 +36,7 @@ func NewAlertDB(es *elasticsearch.ElasticsearchClient, index string) (*AlertDB, 
 	return &ardb, nil
 }
 
-func (db *AlertDB) GetByConditionID(mapping string, conditionID string) ([]common.Alert, error) {
+func (db *AlertDB) GetByConditionID(mapping string, conditionID string) ([]Alert, error) {
 	searchResult, err := db.Esi.FilterByTermQuery(mapping, "condition_id", conditionID)
 	if err != nil {
 		return nil, err
@@ -47,9 +46,9 @@ func (db *AlertDB) GetByConditionID(mapping string, conditionID string) ([]commo
 		return nil, nil
 	}
 
-	var as []common.Alert
+	var as []Alert
 	for _, hit := range searchResult.Hits.Hits {
-		var a common.Alert
+		var a Alert
 		err := json.Unmarshal(*hit.Source, &a)
 		if err != nil {
 			return nil, err

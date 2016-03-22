@@ -20,7 +20,6 @@ import (
 
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	"github.com/venicegeo/pz-workflow/common"
 )
 
 type TriggerDB struct {
@@ -39,37 +38,37 @@ func NewTriggerDB(es *elasticsearch.ElasticsearchClient, index string) (*Trigger
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(mapping string, trigger *common.Trigger, id common.Ident, eventDB *EventDB) (common.Ident, error) {
+func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident, eventDB *EventDB) (Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
 	body, err := json.Marshal(ifaceObj)
 	if err != nil {
-		return common.NoIdent, err
+		return NoIdent, err
 	}
 
 	indexResult, err := eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
 	if err != nil {
-		return common.NoIdent, err
+		return NoIdent, err
 	}
 
-	trigger.PercolationID = common.Ident(indexResult.Id)
+	trigger.PercolationID = Ident(indexResult.Id)
 
 	_, err = db.Esi.PostData(mapping, id.String(), trigger)
 	if err != nil {
-		return common.NoIdent, err
+		return NoIdent, err
 	}
 
 	err = db.Esi.Flush()
 	if err != nil {
-		return common.NoIdent, err
+		return NoIdent, err
 	}
 
 	return id, nil
 }
 
-func (db *TriggerDB) DeleteTrigger(mapping string, id common.Ident, eventDB *EventDB) (bool, error) {
+func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (bool, error) {
 
-	var obj common.Trigger
+	var obj Trigger
 	ok, err := db.GetById(mapping, id, &obj)
 	if err != nil {
 		return false, err
