@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	"github.com/venicegeo/pz-workflow/common"
 )
 
 type EventDB struct {
@@ -37,7 +36,7 @@ func NewEventDB(es *elasticsearch.ElasticsearchClient, index string) (*EventDB, 
 	return &erdb, nil
 }
 
-func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id common.Ident, alertDB *AlertDB) (*[]common.Ident, error) {
+func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident, alertDB *AlertDB) (*[]Ident, error) {
 
 	resp, err := db.Esi.AddPercolationDocument(eventType, data)
 	if err != nil {
@@ -47,10 +46,10 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	db.Flush()
 
 	// add the triggers to the alert queue
-	ids := make([]common.Ident, len(resp.Matches))
+	ids := make([]Ident, len(resp.Matches))
 	for i, v := range resp.Matches {
-		ids[i] = common.Ident(v.Id)
-		alert := common.Alert{ID: NewIdent(), EventId: id, TriggerId: common.Ident(v.Id)}
+		ids[i] = Ident(v.Id)
+		alert := Alert{ID: NewIdent(), EventId: id, TriggerId: Ident(v.Id)}
 		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
 			return nil, err
@@ -62,7 +61,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	return &ids, nil
 }
 
-func (db *EventDB) GetByMapping(mapping string) ([]common.Event, error) {
+func (db *EventDB) GetByMapping(mapping string) ([]Event, error) {
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping)
 	if err != nil {
@@ -73,10 +72,10 @@ func (db *EventDB) GetByMapping(mapping string) ([]common.Event, error) {
 		return nil, nil
 	}
 
-	ary := make([]common.Event, searchResult.TotalHits())
+	ary := make([]Event, searchResult.TotalHits())
 
 	for i, hit := range searchResult.Hits.Hits {
-		var tmp common.Event
+		var tmp Event
 		err = json.Unmarshal([]byte(*hit.Source), tmp)
 		if err != nil {
 			return nil, err

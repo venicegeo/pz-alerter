@@ -28,19 +28,18 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"github.com/venicegeo/pz-workflow/common"
 )
 
 type LockedAdminSettings struct {
 	sync.Mutex
-	common.WorkflowAdminSettings
+	WorkflowAdminSettings
 }
 
 var settings LockedAdminSettings
 
 type LockedAdminStats struct {
 	sync.Mutex
-	common.WorkflowAdminStats
+	WorkflowAdminStats
 }
 
 var stats LockedAdminStats
@@ -66,7 +65,7 @@ func handleGetAdminSettings(c *gin.Context) {
 }
 
 func handlePostAdminSettings(c *gin.Context) {
-	var s common.WorkflowAdminSettings
+	var s WorkflowAdminSettings
 	err := c.BindJSON(&s)
 	if err != nil {
 		c.Error(err)
@@ -83,17 +82,17 @@ func handlePostAdminShutdown(c *gin.Context) {
 }
 
 func Status(c *gin.Context, code int, mssg string) {
-	e := common.ErrorResponse{Status: code, Message: mssg}
+	e := ErrorResponse{Status: code, Message: mssg}
 	c.JSON(code, e)
 }
 
-var NewIdent func() common.Ident
+var NewIdent func() Ident
 
 func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
 
 	var debugIds = true
 
-	NewIdent = func() common.Ident {
+	NewIdent = func() Ident {
 		var uuid string
 		var err error
 
@@ -108,7 +107,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 				panic("uuidgen failed")
 			}
 		}
-		return common.Ident(uuid)
+		return Ident(uuid)
 	}
 
 	esx := sys.Services[piazza.PzElasticSearch]
@@ -174,7 +173,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		eventType := c.Param("eventType")
 
-		var event common.Event
+		var event Event
 		err := c.BindJSON(&event)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -188,7 +187,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		retId := common.WorkflowIdResponse{ID: event.ID}
+		retId := WorkflowIdResponse{ID: event.ID}
 
 		err = eventDB.Flush()
 		if err != nil {
@@ -212,10 +211,10 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 			// For each trigger,  apply the event data and submit job
 			for _, triggerId := range *triggerIds {
-				go func(triggerId common.Ident) {
+				go func(triggerId Ident) {
 
 					///log.Printf("\ntriggerId: %v\n", triggerId)
-					var trigger common.Trigger
+					var trigger Trigger
 
 					ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
 					if err != nil {
@@ -271,8 +270,8 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		eventType := c.Param("eventType")
 		s := c.Param("id")
 
-		id := common.Ident(s)
-		var v common.Event
+		id := Ident(s)
+		var v Event
 		ok, err := eventDB.GetById(eventType, id, &v)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -311,7 +310,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	// ---------------------- EVENT TYPES ----------------------
 
 	router.POST("/v1/eventtypes", func(c *gin.Context) {
-		eventType := &common.EventType{}
+		eventType := &EventType{}
 		err := c.BindJSON(eventType)
 		if err != nil {
 			Status(c, 403, err.Error())
@@ -331,7 +330,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		retId := common.WorkflowIdResponse{ID: id}
+		retId := WorkflowIdResponse{ID: id}
 
 		err = eventTypeDB.Flush()
 		if err != nil {
@@ -340,8 +339,8 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		}
 
 		{
-			id := common.Ident(retId.ID)
-			var v common.EventType
+			id := Ident(retId.ID)
+			var v EventType
 			ok, err := eventTypeDB.GetById("EventType", id, &v)
 			if err != nil {
 				Status(c, 400, err.Error())
@@ -374,8 +373,8 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := common.Ident(s)
-		var v common.Event
+		id := Ident(s)
+		var v Event
 		ok, err := eventTypeDB.GetById("EventType", id, &v)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -412,7 +411,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	// ---------------------- TRIGGERS ----------------------
 
 	router.POST("/v1/triggers", func(c *gin.Context) {
-		trigger := &common.Trigger{}
+		trigger := &Trigger{}
 		err := c.BindJSON(trigger)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -427,7 +426,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		a := common.WorkflowIdResponse{ID: trigger.ID}
+		a := WorkflowIdResponse{ID: trigger.ID}
 
 		err = triggerDB.Flush()
 		if err != nil {
@@ -451,8 +450,8 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	router.GET("/v1/triggers/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := common.Ident(s)
-		var v common.Trigger
+		id := Ident(s)
+		var v Trigger
 		ok, err := triggerDB.GetById("Trigger", id, &v)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -467,7 +466,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 	router.DELETE("/v1/triggers/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := triggerDB.DeleteTrigger("Trigger", common.Ident(id), eventDB)
+		ok, err := triggerDB.DeleteTrigger("Trigger", Ident(id), eventDB)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -516,8 +515,8 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	router.GET("/v1/alerts/:id", func(c *gin.Context) {
 		s := c.Param("id")
 
-		id := common.Ident(s)
-		var alert common.Alert
+		id := Ident(s)
+		var alert Alert
 		ok, err := alertDB.GetById("Alert", id, &alert)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -531,7 +530,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.POST("/v1/alerts", func(c *gin.Context) {
-		var alert common.Alert
+		var alert Alert
 		err := c.BindJSON(&alert)
 		if err != nil {
 			Status(c, 400, err.Error())
@@ -546,7 +545,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		retId := common.WorkflowIdResponse{ID: id}
+		retId := WorkflowIdResponse{ID: id}
 
 		err = alertDB.Flush()
 		if err != nil {
