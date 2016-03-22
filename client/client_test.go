@@ -104,13 +104,13 @@ func (suite *ClientTester) assertNoData() {
 		log.Printf("***** %#v ***** %#v *****", ts, err)
 	}
 
-	es, err := workflow.GetAllEvents("")
-	assert.NoError(err)
-	assert.Len(*es, 0)
-
 	ts, err := workflow.GetAllEventTypes()
 	assert.NoError(err)
 	assert.Len(*ts, 0)
+
+	es, err := workflow.GetAllEvents("")
+	assert.NoError(err)
+	assert.Len(*es, 0)
 
 	as, err := workflow.GetAllAlerts()
 	assert.NoError(err)
