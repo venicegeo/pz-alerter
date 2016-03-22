@@ -214,15 +214,13 @@ func (suite *ServerTester) getAllEvents() []common.Event {
 	return events
 }
 
-func (suite *ServerTester) postOneEvent() common.Ident {
+func (suite *ServerTester) postOneEvent(typId common.Ident) common.Ident {
 	t := suite.T()
 	assert := assert.New(t)
 	var err error
 
-	tid := suite.postOneType()
-
 	event := &common.Event{
-		EventTypeId: tid,
+		EventTypeId: typId,
 		Date:        time.Now(),
 		Data: map[string]interface{}{
 			"num": 17,
@@ -269,17 +267,15 @@ func (suite *ServerTester) getAllTriggers() []common.Trigger {
 	return triggers
 }
 
-func (suite *ServerTester) postOneTrigger() common.Ident {
+func (suite *ServerTester) postOneTrigger(typId common.Ident) common.Ident {
 	t := suite.T()
 	assert := assert.New(t)
 	var err error
 
-	tid := suite.postOneType()
-
 	trigger := &common.Trigger{
 		Title: "MY TRIGGER TITLEr",
 		Condition: common.Condition{
-			EventId: tid,
+			EventId: typId,
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -332,17 +328,14 @@ func (suite *ServerTester) getAllAlerts() []common.Alert {
 	return alerts
 }
 
-func (suite *ServerTester) postOneAlert() common.Ident {
+func (suite *ServerTester) postOneAlert(eventId, triggerId common.Ident) common.Ident {
 	t := suite.T()
 	assert := assert.New(t)
 	var err error
 
-	eid := suite.postOneEvent()
-	tid := suite.postOneTrigger()
-
 	alert := &common.Alert{
-		TriggerId: tid,
-		EventId:   eid,
+		TriggerId: triggerId,
+		EventId:   eventId,
 	}
 
 	resp := suite.Post("/alerts", alert)
@@ -372,7 +365,7 @@ func (suite *ServerTester) deleteOneAlert(id common.Ident) {
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) Test_1_EventType() {
+func (suite *ServerTester) Test_01_EventType() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -393,14 +386,16 @@ func (suite *ServerTester) Test_1_EventType() {
 	assert.Len(typs, 0)
 }
 
-func (suite *ServerTester) Test_2_Event() {
+func (suite *ServerTester) Test_02_Event() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	events := suite.getAllEvents()
 	assert.Len(events, 0)
 
-	id := suite.postOneEvent()
+	typId := suite.postOneType()
+
+	id := suite.postOneEvent(typId)
 
 	events = suite.getAllEvents()
 	assert.Len(events, 1)
@@ -412,16 +407,20 @@ func (suite *ServerTester) Test_2_Event() {
 
 	events = suite.getAllEvents()
 	assert.Len(events, 0)
+
+	suite.deleteOneType(typId)
 }
 
-func (suite *ServerTester) Test_3_Trigger() {
+func (suite *ServerTester) Test_03_Trigger() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	triggers := suite.getAllTriggers()
 	assert.Len(triggers, 0)
 
-	id := suite.postOneTrigger()
+	typId := suite.postOneType()
+
+	id := suite.postOneTrigger(typId)
 
 	triggers = suite.getAllTriggers()
 	assert.Len(triggers, 1)
@@ -433,16 +432,22 @@ func (suite *ServerTester) Test_3_Trigger() {
 
 	triggers = suite.getAllTriggers()
 	assert.Len(triggers, 0)
+
+	suite.deleteOneType(typId)
 }
 
-func (suite *ServerTester) Test_4_Alert() {
+func (suite *ServerTester) Test_04_Alert() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	alerts := suite.getAllAlerts()
 	assert.Len(alerts, 0)
 
-	id := suite.postOneAlert()
+	typId := suite.postOneType()
+	eventId := suite.postOneEvent(typId)
+	triggerId := suite.postOneTrigger(typId)
+
+	id := suite.postOneAlert(eventId, triggerId)
 
 	alerts = suite.getAllAlerts()
 	assert.Len(alerts, 1)
@@ -454,22 +459,15 @@ func (suite *ServerTester) Test_4_Alert() {
 
 	alerts = suite.getAllAlerts()
 	assert.Len(alerts, 0)
+
+	suite.deleteOneType(typId)
+	suite.deleteOneEvent(eventId)
+	suite.deleteOneTrigger(triggerId)
 }
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) xTestAAAEmptyEventType() {
-
-	t := suite.T()
-	assert := assert.New(t)
-
-	resp := suite.Get("/eventtypes")
-	log.Printf("++ %#v ++", resp)
-	resp2 := resp.([]interface{})
-	assert.Len(resp2, 0)
-}
-
-func (suite *ServerTester) xTestOne() {
+func (suite *ServerTester) Test_06_Workflow() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -587,7 +585,7 @@ func (suite *ServerTester) xTestOne() {
 	}
 }
 
-func (suite *ServerTester) xTestEventMapping() {
+func (suite *ServerTester) Test_05_EventMapping() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -660,7 +658,6 @@ func (suite *ServerTester) xTestEventMapping() {
 
 	{
 		resp := suite.Get("/eventtypes")
-		log.Printf("++ %#v ++", resp)
 		resp2 := resp.([]interface{})
 		assert.Len(resp2, 2)
 	}
@@ -699,7 +696,7 @@ func (suite *ServerTester) xTestEventMapping() {
 	suite.Delete("/eventtypes/" + string(et2Id))
 }
 
-func (suite *ServerTester) xestTwo() {
+func (suite *ServerTester) Test_99_Noop() {
 	t := suite.T()
 	assert := assert.New(t)
 	assert.Equal(17, 10+7)

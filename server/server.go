@@ -362,13 +362,11 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 	// returns a list of all IDs
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		log.Printf("server start")
-		m, err := eventTypeDB.GetAllIds()
+		m, err := eventTypeDB.GetAll("EventType")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		log.Printf("server end")
 		c.JSON(http.StatusOK, m)
 	})
 

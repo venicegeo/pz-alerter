@@ -187,42 +187,30 @@ func (c *PzWorkflowService) GetAllAlerts() (*[]common.Alert, error) {
 	return &x, nil
 }
 
-func (c *PzWorkflowService) GetAllEventTypeNames() ([]string, error) {
-
-	typs, err := esi.GetIndexTypes()
+func (c *PzWorkflowService) GetAllEventTypes() (*[]common.EventType, error) {
+	resp, err := http.Get(c.url + "/eventtypes")
 	if err != nil {
 		return nil, common.NewErrorFromHttp(resp)
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, common.NewErrorFromHttp(resp)
+	}
 
-	results := make([]string, 0)
-	for _, typ := range typs {
-		resp, err := http.Get(c.url + "/eventtypes/" + typ)
-		if err != nil {
-			return nil, common.NewErrorFromHttp(resp)
-		}
-		if resp.StatusCode != http.StatusOK {
-			return nil, common.NewErrorFromHttp(resp)
-		}
+	d, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
 
-		d, err := ioutil.ReadAll(resp.Body)
+	var x []common.EventType
+	if len(d) > 0 {
+		err = json.Unmarshal(d, &x)
 		if err != nil {
 			return nil, err
 		}
-		defer resp.Body.Close()
-
-		var x []string
-		if len(d) > 0 {
-			err = json.Unmarshal(d, &x)
-			if err != nil {
-				return nil, err
-			}
-			for _, vv := range x {
-				results = append(results, vv)
-			}
-		}
 	}
 
-	return results, nil
+	return &x, nil
 }
 
 func (c *PzWorkflowService) GetAllEvents(typ string) (*[]common.Event, error) {
