@@ -147,12 +147,12 @@ func (suite *ServerTester) Delete(path string) {
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) TestAnEmptyEvent() {
+func (suite *ServerTester) TestAAAEmptyEventType() {
 
 	//t := suite.T()
 	//assert := assert.New(t)
 
-	resp := suite.Get("/events")
+	resp := suite.Get("/eventtypes")
 	log.Printf("++ %#v ++", resp)
 }
 
