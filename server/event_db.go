@@ -36,6 +36,49 @@ func NewEventDB(es *elasticsearch.ElasticsearchClient, index string) (*EventDB, 
 	return &erdb, nil
 }
 
+func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	events := make([]Event, 0)
+
+	if searchResult.Hits != nil {
+
+		for _, hit := range searchResult.Hits.Hits {
+			var event Event
+			err := json.Unmarshal(*hit.Source, &event)
+			if err != nil {
+				return nil, err
+			}
+			events = append(events, event)
+		}
+	}
+	return &events, nil
+}
+
+func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
+
+	getResult, err := db.Esi.GetById(mapping, id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if !getResult.Found {
+		return nil, nil
+	}
+
+	src := getResult.Source
+	var event Event
+	err = json.Unmarshal(*src, &event)
+	if err != nil {
+		return nil, err
+	}
+
+	return &event, nil
+}
+
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident, alertDB *AlertDB) (*[]Ident, error) {
 
 	resp, err := db.Esi.AddPercolationDocument(eventType, data)
@@ -59,28 +102,4 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	alertDB.Flush()
 
 	return &ids, nil
-}
-
-func (db *EventDB) GetByMapping(mapping string) ([]Event, error) {
-
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
-	if err != nil {
-		return nil, err
-	}
-
-	if searchResult.Hits == nil {
-		return nil, nil
-	}
-
-	ary := make([]Event, searchResult.TotalHits())
-
-	for i, hit := range searchResult.Hits.Hits {
-		var tmp Event
-		err = json.Unmarshal([]byte(*hit.Source), tmp)
-		if err != nil {
-			return nil, err
-		}
-		ary[i] = tmp
-	}
-	return ary, nil
 }

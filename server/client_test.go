@@ -226,7 +226,7 @@ func (suite *ClientTester) TestEventResource() {
 		assert.NoError(err)
 	}()
 
-	events, err := workflow.GetAllEvents(eventTypeName)
+	events, err := workflow.GetAllEvents("")
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	assert.EqualValues(eId, (*events)[0].ID)
@@ -368,7 +368,7 @@ func (suite *ClientTester) TestOne() {
 	}
 
 	{
-		ary, err := workflow.GetAllEvents(eventTypeName)
+		ary, err := workflow.GetAllEvents("")
 		assert.NoError(err)
 		assert.Len(*ary, 2)
 	}

@@ -14,11 +14,7 @@
 
 package server
 
-import (
-	"encoding/json"
-
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
-)
+import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 type ResourceDB struct {
 	Es  *elasticsearch.ElasticsearchClient
@@ -46,6 +42,7 @@ func NewResourceDB(es *elasticsearch.ElasticsearchClient, esi *elasticsearch.Ela
 
 func (db *ResourceDB) PostData(mapping string, obj interface{}, id Ident) (Ident, error) {
 
+	// TODO: check IndexResult return value
 	_, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
 		return NoIdent, err
@@ -59,47 +56,8 @@ func (db *ResourceDB) PostData(mapping string, obj interface{}, id Ident) (Ident
 	return id, nil
 }
 
-func (db *ResourceDB) GetAll(mapping string) ([]*json.RawMessage, error) {
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
-	if err != nil {
-		return nil, err
-	}
-
-	if searchResult.Hits == nil {
-		return nil, nil
-	}
-
-	raws := make([]*json.RawMessage, searchResult.TotalHits())
-
-	for i, hit := range searchResult.Hits.Hits {
-		raws[i] = hit.Source
-	}
-
-	return raws, nil
-}
-
-func (db *ResourceDB) GetById(mapping string, id Ident, obj interface{}) (bool, error) {
-
-	getResult, err := db.Esi.GetById(mapping, id.String())
-	if err != nil {
-		return false, err
-	}
-
-	if !getResult.Found {
-		return false, nil
-	}
-
-	src := getResult.Source
-	err = json.Unmarshal(*src, obj)
-	if err != nil {
-		return true, err
-	}
-
-	return true, nil
-}
-
-func (db *ResourceDB) DeleteByID(mapping string, id string) (bool, error) {
-	res, err := db.Esi.DeleteById(mapping, id)
+func (db *ResourceDB) DeleteByID(mapping string, id Ident) (bool, error) {
+	res, err := db.Esi.DeleteById(mapping, string(id))
 	if err != nil {
 		return false, err
 	}

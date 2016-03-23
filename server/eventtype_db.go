@@ -15,7 +15,7 @@
 package server
 
 import (
-	"log"
+	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
@@ -38,18 +38,45 @@ func NewEventTypeDB(es *elasticsearch.ElasticsearchClient, index string) (*Event
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) GetAllIds() (*[]Ident, error) {
-	log.Printf("GetAllIds start")
-
-	resp, err := db.GetAll("EventType")
+func (db *EventTypeDB) GetAll(mapping string) (*[]EventType, error) {
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
 	if err != nil {
 		return nil, err
 	}
 
-	var typs []Ident
-	SuperConvert(resp, &typs)
+	eventTypes := make([]EventType, 0)
 
-	results := make([]Ident, 0)
+	if searchResult.Hits != nil {
+		for _, hit := range searchResult.Hits.Hits {
+			var eventType EventType
+			err := json.Unmarshal(*hit.Source, &eventType)
+			if err != nil {
+				return nil, err
+			}
+			eventTypes = append(eventTypes, eventType)
+		}
+	}
 
-	return &results, nil
+	return &eventTypes, nil
+}
+
+func (db *EventTypeDB) GetOne(mapping string, id Ident) (*EventType, error) {
+
+	getResult, err := db.Esi.GetById(mapping, id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if !getResult.Found {
+		return nil, nil
+	}
+
+	src := getResult.Source
+	var eventType EventType
+	err = json.Unmarshal(*src, &eventType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &eventType, nil
 }

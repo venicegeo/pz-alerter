@@ -220,8 +220,13 @@ func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Id
 	return resp2.ID, nil
 }
 
-func (c *PzWorkflowService) GetAllEvents(typ string) (*[]Event, error) {
-	ret := c.Get("/events")
+func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error) {
+	url := "/events"
+	if eventTypeName != "" {
+		url += "/" + eventTypeName
+	}
+
+	ret := c.Get(url)
 	if ret.Err != nil {
 		return nil, ret.Err
 	}
