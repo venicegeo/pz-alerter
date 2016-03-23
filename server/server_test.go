@@ -29,15 +29,11 @@ import (
 
 type ServerTester struct {
 	suite.Suite
-	sys *piazza.System
-	//url string
+	sys      *piazza.System
 	workflow *PzWorkflowService
 }
 
-func (suite *ServerTester) SetupSuite() {
-	t := suite.T()
-	assert := assert.New(t)
-
+func startServer() *piazza.System {
 	config, err := piazza.NewConfig(piazza.PzWorkflow, piazza.ConfigModeTest)
 	if err != nil {
 		log.Fatal(err)
@@ -73,27 +69,54 @@ func (suite *ServerTester) SetupSuite() {
 
 	_ = sys.StartServer(routes)
 
-	suite.workflow, err = NewPzWorkflowService(sys, sys.Config.GetBindToAddress())
+	return sys
+}
+
+func assertNoData(t *testing.T, workflow *PzWorkflowService) {
+	assert := assert.New(t)
+
+	var err error
+
+	ts, err := workflow.GetAllEventTypes()
+	assert.NoError(err)
+	assert.Len(*ts, 0)
+
+	es, err := workflow.GetAllEvents("")
+	assert.NoError(err)
+	assert.Len(*es, 0)
+
+	as, err := workflow.GetAllAlerts()
+	assert.NoError(err)
+	assert.Len(*as, 0)
+
+	xs, err := workflow.GetAllTriggers()
+	assert.NoError(err)
+	assert.Len(*xs, 0)
+}
+
+func TestRunSuite(t *testing.T) {
+
+	sys := startServer()
+
+	workflow, err := NewPzWorkflowService(sys, sys.Config.GetBindToAddress())
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	suite.sys = sys
+	serverTester := &ServerTester{workflow: workflow, sys: sys}
+	suite.Run(t, serverTester)
 
-	//suite.url = fmt.Sprintf("http://%s/v1", sys.Config.GetBindToAddress())
-
-	assert.Len(sys.Services, 5)
+	clientTester := &ClientTester{workflow: workflow, sys: sys}
+	suite.Run(t, clientTester)
 }
 
+//---------------------------------------------------------------------------
+
+func (suite *ServerTester) SetupSuite() {
+	assertNoData(suite.T(), suite.workflow)
+}
 func (suite *ServerTester) TearDownSuite() {
-	//TODO: kill the go routine running the server
-}
-
-func TestRunSuite(t *testing.T) {
-	s := new(ServerTester)
-	suite.Run(t, s)
-	c := new(ClientTester)
-	suite.Run(t, c)
+	assertNoData(suite.T(), suite.workflow)
 }
 
 //---------------------------------------------------------------------------
@@ -148,6 +171,9 @@ func (suite *ServerTester) Test_01_EventType() {
 	assert := assert.New(t)
 	workflow := suite.workflow
 
+	assertNoData(suite.T(), suite.workflow)
+	defer assertNoData(suite.T(), suite.workflow)
+
 	typs, err := workflow.GetAllEventTypes()
 	assert.NoError(err)
 	assert.Len(*typs, 0)
@@ -173,10 +199,13 @@ func (suite *ServerTester) Test_01_EventType() {
 	assert.Len(*typs, 0)
 }
 
-func (suite *ServerTester) Test_02_Event() {
+func (suite *ServerTester) xTest_02_Event() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
+
+	assertNoData(suite.T(), suite.workflow)
+	defer assertNoData(suite.T(), suite.workflow)
 
 	events, err := workflow.GetAllEvents("")
 	assert.NoError(err)
@@ -211,10 +240,13 @@ func (suite *ServerTester) Test_02_Event() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) Test_03_Trigger() {
+func (suite *ServerTester) xTest_03_Trigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
+
+	assertNoData(suite.T(), suite.workflow)
+	defer assertNoData(suite.T(), suite.workflow)
 
 	triggers, err := workflow.GetAllTriggers()
 	assert.NoError(err)
@@ -248,10 +280,13 @@ func (suite *ServerTester) Test_03_Trigger() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) Test_04_Alert() {
+func (suite *ServerTester) xTest_04_Alert() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
+
+	assertNoData(suite.T(), suite.workflow)
+	defer assertNoData(suite.T(), suite.workflow)
 
 	alerts, err := workflow.GetAllAlerts()
 	assert.NoError(err)
@@ -303,11 +338,14 @@ func (suite *ServerTester) Test_04_Alert() {
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) Test_05_EventMapping() {
+func (suite *ServerTester) xTest_05_EventMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
 	var err error
+
+	assertNoData(suite.T(), suite.workflow)
+	defer assertNoData(suite.T(), suite.workflow)
 
 	var eventTypeName1 = "Type1"
 	var eventTypeName2 = "Type2"
@@ -406,11 +444,14 @@ func (suite *ServerTester) Test_05_EventMapping() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) Test_06_Workflow() {
+func (suite *ServerTester) xTest_06_Workflow() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
 	var err error
+
+	assertNoData(suite.T(), suite.workflow)
+	defer assertNoData(suite.T(), suite.workflow)
 
 	var eventTypeName = "EventTypeA"
 
@@ -502,7 +543,7 @@ func (suite *ServerTester) Test_06_Workflow() {
 	}
 }
 
-func (suite *ServerTester) Test_99_Noop() {
+func (suite *ServerTester) xTest_99_Noop() {
 	t := suite.T()
 	assert := assert.New(t)
 	assert.Equal(17, 10+7)
