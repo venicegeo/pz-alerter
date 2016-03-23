@@ -36,24 +36,46 @@ func NewAlertDB(es *elasticsearch.ElasticsearchClient, index string) (*AlertDB, 
 	return &ardb, nil
 }
 
-func (db *AlertDB) GetByConditionID(mapping string, conditionID string) ([]Alert, error) {
-	searchResult, err := db.Esi.FilterByTermQuery(mapping, "condition_id", conditionID)
+func (db *AlertDB) GetAll(mapping string) (*[]Alert, error) {
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+
 	if err != nil {
 		return nil, err
 	}
 
-	if searchResult.Hits == nil {
+	alerts := make([]Alert, 0)
+
+	if searchResult.Hits != nil {
+		for _, hit := range searchResult.Hits.Hits {
+			var alert Alert
+			err := json.Unmarshal(*hit.Source, &alert)
+			if err != nil {
+				return nil, err
+			}
+			alerts = append(alerts, alert)
+		}
+	}
+
+	return &alerts, nil
+}
+
+func (db *AlertDB) GetOne(mapping string, id Ident) (*Alert, error) {
+
+	getResult, err := db.Esi.GetById(mapping, id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if !getResult.Found {
 		return nil, nil
 	}
 
-	var as []Alert
-	for _, hit := range searchResult.Hits.Hits {
-		var a Alert
-		err := json.Unmarshal(*hit.Source, &a)
-		if err != nil {
-			return nil, err
-		}
-		as = append(as, a)
+	src := getResult.Source
+	var alert Alert
+	err = json.Unmarshal(*src, &alert)
+	if err != nil {
+		return nil, err
 	}
-	return as, nil
+
+	return &alert, nil
 }

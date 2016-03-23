@@ -15,12 +15,7 @@
 package server
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"testing"
 	"time"
 
@@ -35,7 +30,8 @@ import (
 type ServerTester struct {
 	suite.Suite
 	sys *piazza.System
-	url string
+	//url string
+	workflow *PzWorkflowService
 }
 
 func (suite *ServerTester) SetupSuite() {
@@ -77,11 +73,16 @@ func (suite *ServerTester) SetupSuite() {
 
 	_ = sys.StartServer(routes)
 
+	suite.workflow, err = NewPzWorkflowService(sys, sys.Config.GetBindToAddress())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	suite.sys = sys
 
-	suite.url = fmt.Sprintf("http://%s/v1", sys.Config.GetBindToAddress())
+	//suite.url = fmt.Sprintf("http://%s/v1", sys.Config.GetBindToAddress())
 
-	assert.Len(sys.Services, 4)
+	assert.Len(sys.Services, 5)
 }
 
 func (suite *ServerTester) TearDownSuite() {
@@ -95,235 +96,146 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, c)
 }
 
-func (suite *ServerTester) Post(path string, body interface{}) interface{} {
+//---------------------------------------------------------------------------
+
+func (suite *ServerTester) getAllEventTypes() *[]EventType {
 	t := suite.T()
 	assert := assert.New(t)
+	workflow := suite.workflow
 
-	bodyBytes, err := json.Marshal(body)
+	eventTypes, err := workflow.GetAllEventTypes()
 	assert.NoError(err)
 
-	resp, err := http.Post(suite.url+path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
-	assert.NoError(err)
-	assert.NotNil(resp)
-	assert.Equal(http.StatusCreated, resp.StatusCode)
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	assert.NoError(err)
-
-	var result interface{}
-	err = json.Unmarshal(data, &result)
-	assert.NoError(err)
-
-	return result
+	return eventTypes
 }
 
-func (suite *ServerTester) Get(path string) interface{} {
+func (suite *ServerTester) postOneEventType(eventType *EventType) Ident {
 	t := suite.T()
 	assert := assert.New(t)
+	workflow := suite.workflow
 
-	resp, err := http.Get(suite.url + path)
-	assert.NoError(err)
-	assert.NotNil(resp)
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	id, err := workflow.PostOneEventType(eventType)
 	assert.NoError(err)
 
-	var result interface{}
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		log.Printf("--- %s: %s", path, string(data))
-	}
-	assert.NoError(err)
-
-	return result
+	return id
 }
 
-func (suite *ServerTester) Delete(path string) {
+func (suite *ServerTester) getOneEventType(id Ident) *EventType {
 	t := suite.T()
 	assert := assert.New(t)
+	workflow := suite.workflow
 
-	resp, err := piazza.HTTPDelete(suite.url + path)
+	eventType, err := workflow.GetOneEventType(id)
 	assert.NoError(err)
-	assert.NotNil(resp)
+
+	return eventType
+}
+
+func (suite *ServerTester) deleteOneEventType(id Ident) {
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	err := workflow.DeleteOneEventType(id)
+	assert.NoError(err)
 }
 
 //---------------------------------------------------------------------------
 
-var eventTypeName = "MYTYPE"
-
-func (suite *ServerTester) getAllTypes() []EventType {
+func (suite *ServerTester) getAllEvents(eventTypeName string) *[]Event {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	resp := suite.Get("/eventtypes")
-	var typs []EventType
-	err = SuperConvert(resp, &typs)
-	assert.NoError(err)
-
-	return typs
-}
-
-func (suite *ServerTester) postOneType() Ident {
-	t := suite.T()
-	assert := assert.New(t)
-	var err error
-
-	mapping := map[string]elasticsearch.MappingElementTypeName{
-		"num": elasticsearch.MappingElementTypeInteger,
-	}
-	eventType := &EventType{Name: eventTypeName, Mapping: mapping}
-
-	resp := suite.Post("/eventtypes", eventType)
-	resp2 := &WorkflowIdResponse{}
-	err = SuperConvert(resp, resp2)
-	assert.NoError(err)
-
-	return resp2.ID
-}
-
-func (suite *ServerTester) getOneType(id Ident) EventType {
-	t := suite.T()
-	assert := assert.New(t)
-	var err error
-
-	resp := suite.Get("/eventtypes/" + string(id))
-	resp2 := EventType{}
-	err = SuperConvert(resp, &resp2)
-	assert.NoError(err)
-	return resp2
-}
-
-func (suite *ServerTester) deleteOneType(id Ident) {
-	suite.Delete("/eventtypes/" + string(id))
-}
-
-//---------------------------------------------------------------------------
-
-func (suite *ServerTester) getAllEvents() []Event {
-	t := suite.T()
-	assert := assert.New(t)
-	var err error
-
-	resp := suite.Get("/events")
-	var events []Event
-	err = SuperConvert(resp, &events)
+	events, err := workflow.GetAllEvents(eventTypeName)
 	assert.NoError(err)
 
 	return events
 }
 
-func (suite *ServerTester) postOneEvent(typId Ident) Ident {
+func (suite *ServerTester) postOneEvent(eventTypeName string, event *Event) Ident {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	event := &Event{
-		EventTypeId: typId,
-		Date:        time.Now(),
-		Data: map[string]interface{}{
-			"num": 17,
-		},
-	}
-
-	resp := suite.Post("/events/"+eventTypeName, event)
-
-	resp2 := &WorkflowIdResponse{}
-	err = SuperConvert(resp, resp2)
+	id, err := workflow.PostOneEvent(eventTypeName, event)
 	assert.NoError(err)
 
-	return resp2.ID
+	return id
 }
 
-func (suite *ServerTester) getOneEvent(id Ident) Event {
+func (suite *ServerTester) getOneEvent(eventTypeName string, id Ident) *Event {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	resp := suite.Get("/events/" + eventTypeName + "/" + string(id))
-	resp2 := Event{}
-	err = SuperConvert(resp, &resp2)
+	event, err := workflow.GetOneEvent(eventTypeName, id)
 	assert.NoError(err)
-	return resp2
+
+	return event
 }
 
-func (suite *ServerTester) deleteOneEvent(id Ident) {
-	suite.Delete("/events/" + eventTypeName + "/" + string(id))
+func (suite *ServerTester) deleteOneEvent(eventTypeName string, id Ident) {
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	err := workflow.DeleteOneEvent(eventTypeName, id)
+	assert.NoError(err)
 }
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) getAllTriggers() []Trigger {
+func (suite *ServerTester) getAllTriggers() *[]Trigger {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	resp := suite.Get("/triggers")
-	var triggers []Trigger
-	err = SuperConvert(resp, &triggers)
+	triggers, err := workflow.GetAllTriggers()
 	assert.NoError(err)
 
 	return triggers
 }
 
-func (suite *ServerTester) postOneTrigger(typId Ident) Ident {
+func (suite *ServerTester) postOneTrigger(trigger *Trigger) Ident {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	trigger := &Trigger{
-		Title: "MY TRIGGER TITLEr",
-		Condition: Condition{
-			EventId: typId,
-			Query: map[string]interface{}{
-				"query": map[string]interface{}{
-					"match": map[string]interface{}{
-						"num": 17,
-					},
-				},
-			},
-		},
-		Job: Job{
-			Task: "MY TASK",
-		},
-	}
-
-	resp := suite.Post("/triggers", trigger)
-	resp2 := &WorkflowIdResponse{}
-	err = SuperConvert(resp, resp2)
+	id, err := workflow.PostOneTrigger(trigger)
 	assert.NoError(err)
 
-	return resp2.ID
+	return id
 }
 
-func (suite *ServerTester) getOneTrigger(id Ident) Trigger {
+func (suite *ServerTester) getOneTrigger(id Ident) *Trigger {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	resp := suite.Get("/triggers/" + string(id))
-	resp2 := Trigger{}
-	err = SuperConvert(resp, &resp2)
+	trigger, err := workflow.GetOneTrigger(id)
 	assert.NoError(err)
-	return resp2
+
+	return trigger
 }
 
 func (suite *ServerTester) deleteOneTrigger(id Ident) {
-	suite.Delete("/triggers/" + string(id))
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	err := workflow.DeleteOneTrigger(id)
+	assert.NoError(err)
 }
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) getAllAlerts() []Alert {
+func (suite *ServerTester) getAllAlerts() *[]Alert {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	resp := suite.Get("/alerts")
-	var alerts []Alert
-	err = SuperConvert(resp, &alerts)
+	alerts, err := workflow.GetAllAlerts()
 	assert.NoError(err)
 
 	return alerts
@@ -332,35 +244,81 @@ func (suite *ServerTester) getAllAlerts() []Alert {
 func (suite *ServerTester) postOneAlert(eventId, triggerId Ident) Ident {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
 	alert := &Alert{
 		TriggerId: triggerId,
 		EventId:   eventId,
 	}
 
-	resp := suite.Post("/alerts", alert)
-	resp2 := &WorkflowIdResponse{}
-	err = SuperConvert(resp, resp2)
+	id, err := workflow.PostOneAlert(alert)
 	assert.NoError(err)
 
-	return resp2.ID
+	return id
 }
 
-func (suite *ServerTester) getOneAlert(id Ident) Alert {
+func (suite *ServerTester) getOneAlert(id Ident) *Alert {
 	t := suite.T()
 	assert := assert.New(t)
-	var err error
+	workflow := suite.workflow
 
-	resp := suite.Get("/alerts/" + string(id))
-	resp2 := Alert{}
-	err = SuperConvert(resp, &resp2)
+	alert, err := workflow.GetOneAlert(id)
 	assert.NoError(err)
-	return resp2
+
+	return alert
 }
 
 func (suite *ServerTester) deleteOneAlert(id Ident) {
-	suite.Delete("/alerts/" + string(id))
+	t := suite.T()
+	assert := assert.New(t)
+	workflow := suite.workflow
+
+	err := workflow.DeleteOneAlert(id)
+	assert.NoError(err)
+}
+
+//---------------------------------------------------------------------------
+
+func makeTestEventTypeName() string {
+	return "MYTYPE"
+}
+
+func makeTestEventType(eventTypeName string) *EventType {
+	mapping := map[string]elasticsearch.MappingElementTypeName{
+		"num": elasticsearch.MappingElementTypeInteger,
+	}
+	return &EventType{Name: eventTypeName, Mapping: mapping}
+}
+
+func makeTestEvent(eventTypeId Ident) *Event {
+	event := &Event{
+		EventTypeId: eventTypeId,
+		Date:        time.Now(),
+		Data: map[string]interface{}{
+			"num": 17,
+		},
+	}
+	return event
+}
+
+func makeTestTrigger(eventTypeId Ident) *Trigger {
+	trigger := &Trigger{
+		Title: "MY TRIGGER TITLE",
+		Condition: Condition{
+			EventId: eventTypeId,
+			Query: map[string]interface{}{
+				"query": map[string]interface{}{
+					"match": map[string]interface{}{
+						"num": 31,
+					},
+				},
+			},
+		},
+		Job: Job{
+			Task: "MY TASK",
+		},
+	}
+	return trigger
 }
 
 //---------------------------------------------------------------------------
@@ -370,46 +328,52 @@ func (suite *ServerTester) Test_01_EventType() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	typs := suite.getAllTypes()
-	assert.Len(typs, 0)
+	typs := suite.getAllEventTypes()
+	assert.Len(*typs, 0)
 
-	id := suite.postOneType()
+	eventTypeName := makeTestEventTypeName()
+	eventType := makeTestEventType(eventTypeName)
+	id := suite.postOneEventType(eventType)
 
-	typs = suite.getAllTypes()
-	assert.Len(typs, 1)
+	typs = suite.getAllEventTypes()
+	assert.Len(*typs, 1)
 
-	typ := suite.getOneType(id)
+	typ := suite.getOneEventType(id)
 	assert.EqualValues(string(id), string(typ.ID))
 
-	suite.deleteOneType(id)
+	suite.deleteOneEventType(id)
 
-	typs = suite.getAllTypes()
-	assert.Len(typs, 0)
+	typs = suite.getAllEventTypes()
+	assert.Len(*typs, 0)
 }
 
 func (suite *ServerTester) Test_02_Event() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	events := suite.getAllEvents()
-	assert.Len(events, 0)
+	events := suite.getAllEvents("")
+	assert.Len(*events, 0)
 
-	typId := suite.postOneType()
+	eventTypeName := makeTestEventTypeName()
+	eventType := makeTestEventType(eventTypeName)
 
-	id := suite.postOneEvent(typId)
+	eventTypeId := suite.postOneEventType(eventType)
 
-	events = suite.getAllEvents()
-	assert.Len(events, 1)
+	event := makeTestEvent(eventTypeId)
+	id := suite.postOneEvent(eventTypeName, event)
 
-	event := suite.getOneEvent(id)
+	events = suite.getAllEvents(eventTypeName)
+	assert.Len(*events, 1)
+
+	event = suite.getOneEvent(eventTypeName, id)
 	assert.EqualValues(string(id), string(event.ID))
 
-	suite.deleteOneEvent(id)
+	suite.deleteOneEvent(eventTypeName, id)
 
-	events = suite.getAllEvents()
-	assert.Len(events, 0)
+	events = suite.getAllEvents(eventTypeName)
+	assert.Len(*events, 0)
 
-	suite.deleteOneType(typId)
+	suite.deleteOneEventType(eventTypeId)
 }
 
 func (suite *ServerTester) Test_03_Trigger() {
@@ -417,24 +381,28 @@ func (suite *ServerTester) Test_03_Trigger() {
 	assert := assert.New(t)
 
 	triggers := suite.getAllTriggers()
-	assert.Len(triggers, 0)
+	assert.Len(*triggers, 0)
 
-	typId := suite.postOneType()
+	eventTypeName := makeTestEventTypeName()
+	eventType := makeTestEventType(eventTypeName)
 
-	id := suite.postOneTrigger(typId)
+	eventTypeId := suite.postOneEventType(eventType)
+
+	trigger := makeTestTrigger(eventTypeId)
+	id := suite.postOneTrigger(trigger)
 
 	triggers = suite.getAllTriggers()
-	assert.Len(triggers, 1)
+	assert.Len(*triggers, 1)
 
-	trigger := suite.getOneTrigger(id)
+	trigger = suite.getOneTrigger(id)
 	assert.EqualValues(string(id), string(trigger.ID))
 
 	suite.deleteOneTrigger(id)
 
 	triggers = suite.getAllTriggers()
-	assert.Len(triggers, 0)
+	assert.Len(*triggers, 0)
 
-	suite.deleteOneType(typId)
+	suite.deleteOneEventType(eventTypeId)
 }
 
 func (suite *ServerTester) Test_04_Alert() {
@@ -442,16 +410,22 @@ func (suite *ServerTester) Test_04_Alert() {
 	assert := assert.New(t)
 
 	alerts := suite.getAllAlerts()
-	assert.Len(alerts, 0)
+	assert.Len(*alerts, 0)
 
-	typId := suite.postOneType()
-	eventId := suite.postOneEvent(typId)
-	triggerId := suite.postOneTrigger(typId)
+	eventTypeName := makeTestEventTypeName()
+	eventType := makeTestEventType(eventTypeName)
+
+	eventTypeId := suite.postOneEventType(eventType)
+
+	trigger := makeTestTrigger(eventTypeId)
+	triggerId := suite.postOneTrigger(trigger)
+	event := makeTestEvent(eventTypeId)
+	eventId := suite.postOneEvent(eventTypeName, event)
 
 	id := suite.postOneAlert(eventId, triggerId)
 
 	alerts = suite.getAllAlerts()
-	assert.Len(alerts, 1)
+	assert.Len(*alerts, 1)
 
 	alert := suite.getOneAlert(id)
 	assert.EqualValues(string(id), string(alert.ID))
@@ -459,10 +433,10 @@ func (suite *ServerTester) Test_04_Alert() {
 	suite.deleteOneAlert(id)
 
 	alerts = suite.getAllAlerts()
-	assert.Len(alerts, 0)
+	assert.Len(*alerts, 0)
 
-	suite.deleteOneType(typId)
-	suite.deleteOneEvent(eventId)
+	suite.deleteOneEventType(eventTypeId)
+	suite.deleteOneEvent(eventTypeName, eventId)
 	suite.deleteOneTrigger(triggerId)
 }
 
@@ -472,9 +446,6 @@ func (suite *ServerTester) Test_06_Workflow() {
 
 	t := suite.T()
 	assert := assert.New(t)
-
-	var err error
-	//var idResponse *WorkflowIdResponse
 
 	var eventTypeName = "EventTypeA"
 
@@ -489,19 +460,13 @@ func (suite *ServerTester) Test_06_Workflow() {
 
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 
-		resp := suite.Post("/eventtypes", eventType)
-		defer piazza.HTTPDelete("/eventtypes/" + string(eventType.ID))
-
-		resp2 := &WorkflowIdResponse{}
-		err = SuperConvert(resp, resp2)
-		assert.NoError(err)
-
-		et1Id = resp2.ID
+		et1Id = suite.postOneEventType(eventType)
+		defer piazza.HTTPDelete("/eventtypes/" + string(et1Id))
 	}
 
 	var t1Id Ident
 	{
-		x1 := &Trigger{
+		trigger := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
 				EventId: et1Id,
@@ -520,19 +485,13 @@ func (suite *ServerTester) Test_06_Workflow() {
 			},
 		}
 
-		resp := suite.Post("/triggers", x1)
-		defer piazza.HTTPDelete("/triggers/" + string(x1.ID))
-		resp2 := &WorkflowIdResponse{}
-		err = SuperConvert(resp, resp2)
-		assert.NoError(err)
-
-		t1Id = resp2.ID
+		t1Id = suite.postOneTrigger(trigger)
 	}
 
 	var e1Id Ident
 	{
 		// will cause trigger TRG1
-		e1 := &Event{
+		event := &Event{
 			EventTypeId: et1Id,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
@@ -543,18 +502,12 @@ func (suite *ServerTester) Test_06_Workflow() {
 			},
 		}
 
-		resp := suite.Post("/events/"+eventTypeName, e1)
-		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
-		resp2 := &WorkflowIdResponse{}
-		err = SuperConvert(resp, resp2)
-		assert.NoError(err)
-
-		e1Id = resp2.ID
+		e1Id = suite.postOneEvent(eventTypeName, event)
 	}
 
 	{
 		// will cause no triggers
-		e1 := &Event{
+		event := &Event{
 			EventTypeId: et1Id,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
@@ -566,21 +519,14 @@ func (suite *ServerTester) Test_06_Workflow() {
 			},
 		}
 
-		resp := suite.Post("/events/"+eventTypeName, e1)
-		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(e1.ID))
-		resp2 := &WorkflowIdResponse{}
-		err = SuperConvert(resp, resp2)
-		assert.NoError(err)
+		_ = suite.postOneEvent(eventTypeName, event)
 	}
 
 	{
-		resp := suite.Get("/alerts")
+		alerts := suite.getAllAlerts()
+		assert.Len(*alerts, 1)
 
-		var alerts []Alert
-		SuperConvert(resp, &alerts)
-		assert.Len(alerts, 1)
-
-		alert0 := alerts[0]
+		alert0 := (*alerts)[0]
 		assert.EqualValues(e1Id, alert0.EventId)
 		assert.EqualValues(t1Id, alert0.TriggerId)
 	}
@@ -590,8 +536,6 @@ func (suite *ServerTester) Test_05_EventMapping() {
 
 	t := suite.T()
 	assert := assert.New(t)
-
-	var err error
 
 	var eventTypeName1 = "Type1"
 	var eventTypeName2 = "Type2"
@@ -603,79 +547,59 @@ func (suite *ServerTester) Test_05_EventMapping() {
 
 		eventType := &EventType{Name: typ, Mapping: mapping}
 
-		resp1 := suite.Post("/eventtypes", eventType)
+		eventTypeId := suite.postOneEventType(eventType)
 		defer piazza.HTTPDelete("/eventtypes/" + string(eventType.ID))
 
-		resp2 := &WorkflowIdResponse{}
-		err = SuperConvert(resp1, resp2)
-		assert.NoError(err)
+		eventTypeX := suite.getOneEventType(eventTypeId)
 
-		resp3 := suite.Get("/eventtypes/" + string(resp2.ID))
-		resp4 := &WorkflowIdResponse{}
-		err = SuperConvert(resp3, resp4)
-		assert.NoError(err)
+		assert.EqualValues(eventTypeId, eventTypeX.ID)
 
-		assert.EqualValues(resp4.ID, resp2.ID)
-
-		return resp2.ID
+		return eventTypeId
 	}
 
-	eventF := func(typeId Ident, typ string, value int) Ident {
-		e1 := &Event{
-			EventTypeId: typeId,
+	eventF := func(eventTypeId Ident, eventTypeName string, value int) Ident {
+		event := &Event{
+			EventTypeId: eventTypeId,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": value,
 			},
 		}
 
-		resp1 := suite.Post("/events/"+typ, e1)
-		defer piazza.HTTPDelete("/events/" + typ + "/" + string(e1.ID))
-		resp2 := &WorkflowIdResponse{}
-		err = SuperConvert(resp1, resp2)
-		assert.NoError(err)
+		eventId := suite.postOneEvent(eventTypeName, event)
+		defer piazza.HTTPDelete("/events/" + eventTypeName + "/" + string(eventId))
 
-		resp3 := suite.Get("/events/" + typ + "/" + string(resp2.ID))
-		resp4 := &WorkflowIdResponse{}
-		err = SuperConvert(resp3, resp4)
-		assert.NoError(err)
+		eventX := suite.getOneEvent(eventTypeName, eventId)
 
-		assert.EqualValues(resp4.ID, resp2.ID)
+		assert.EqualValues(eventId, eventX.ID)
 
-		return resp2.ID
+		return eventId
 	}
 
-	dump := func(typ string, expected int) {
-		if typ != "" {
-			typ = "/" + typ
-		}
-		x := suite.Get("/events" + typ)
-		y := x.([]interface{})
-		assert.Len(y, expected)
+	dump := func(eventTypeName string, expected int) {
+		x := suite.getAllEvents(eventTypeName)
+		assert.Len(*x, expected)
 	}
 
 	et1Id := eventtypeF(eventTypeName1)
 	et2Id := eventtypeF(eventTypeName2)
 
 	{
-		resp := suite.Get("/eventtypes")
-		resp2 := resp.([]interface{})
-		assert.Len(resp2, 2)
+		x := suite.getAllEventTypes()
+		assert.Len(*x, 2)
 	}
 
 	dump(eventTypeName1, 0)
 	dump("", 0)
 
 	{
-		x := suite.Get("/eventtypes")
-		y := x.([]interface{})
-		assert.Len(y, 2)
+		x := suite.getAllEventTypes()
+		assert.Len(*x, 2)
 	}
 
 	{
-		x := suite.Get("/eventtypes/" + string(et1Id))
-		y := x.(map[string]interface{})
-		assert.EqualValues(string(et1Id), string(y["id"].(string)))
+		x := suite.getOneEventType(et1Id)
+		assert.EqualValues(string(et1Id), string((*x).ID))
 	}
 
 	e1Id := eventF(et1Id, eventTypeName1, 17)
@@ -689,12 +613,12 @@ func (suite *ServerTester) Test_05_EventMapping() {
 
 	dump("", 3)
 
-	suite.Delete("/events/" + eventTypeName1 + "/" + string(e1Id))
-	suite.Delete("/events/" + eventTypeName1 + "/" + string(e2Id))
-	suite.Delete("/events/" + eventTypeName2 + "/" + string(e3Id))
+	suite.deleteOneEvent(eventTypeName1, e1Id)
+	suite.deleteOneEvent(eventTypeName1, e2Id)
+	suite.deleteOneEvent(eventTypeName2, e3Id)
 
-	suite.Delete("/eventtypes/" + string(et1Id))
-	suite.Delete("/eventtypes/" + string(et2Id))
+	suite.deleteOneEventType(et1Id)
+	suite.deleteOneEventType(et2Id)
 }
 
 func (suite *ServerTester) Test_99_Noop() {

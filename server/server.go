@@ -214,14 +214,12 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 				go func(triggerId Ident) {
 
 					///log.Printf("\ntriggerId: %v\n", triggerId)
-					var trigger Trigger
-
-					ok, err := triggerDB.GetById("Trigger", triggerId, &trigger)
+					trigger, err := triggerDB.GetOne("Trigger", triggerId)
 					if err != nil {
 						Status(c, 400, err.Error())
 						return
 					}
-					if !ok {
+					if trigger == nil {
 						c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
 						return
 					}
@@ -271,24 +269,23 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		s := c.Param("id")
 
 		id := Ident(s)
-		var v Event
-		ok, err := eventDB.GetById(eventType, id, &v)
+		event, err := eventDB.GetOne(eventType, id)
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		if !ok {
+		if event == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, v)
+		c.JSON(http.StatusOK, event)
 	})
 
 	router.DELETE("/v1/events/:eventType/:id", func(c *gin.Context) {
 		id := c.Param("id")
 		eventType := c.Param("eventType")
 
-		ok, err := eventDB.DeleteByID(eventType, id)
+		ok, err := eventDB.DeleteByID(eventType, Ident(id))
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -338,21 +335,24 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
+		// TODO: remove this block
 		{
 			id := Ident(retId.ID)
-			var v EventType
-			ok, err := eventTypeDB.GetById("EventType", id, &v)
+			eventType, err := eventTypeDB.GetOne("EventType", id)
 			if err != nil {
 				Status(c, 400, err.Error())
 				return
 			}
-			if !ok {
+			if eventType == nil {
 				Status(c, 410, err.Error())
 				return
 			}
-			if v.ID != retId.ID {
-				log.Printf("*************** %s %s ************", v.ID, retId.ID)
-				panic(1)
+			{
+				// TODO: remove this check
+				if eventType.ID != retId.ID {
+					log.Printf("*************** %s %s ************", eventType.ID, retId.ID)
+					panic(1)
+				}
 			}
 		}
 
@@ -361,35 +361,33 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 	// returns a list of all IDs
 	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		m, err := eventTypeDB.GetAll("EventType")
+		ets, err := eventTypeDB.GetAll("EventType")
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		c.JSON(http.StatusOK, m)
+		c.JSON(http.StatusOK, ets)
 	})
 
 	// returns info on a given ID
 	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
-		s := c.Param("id")
+		id := c.Param("id")
 
-		id := Ident(s)
-		var v Event
-		ok, err := eventTypeDB.GetById("EventType", id, &v)
+		event, err := eventTypeDB.GetOne("EventType", Ident(id))
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		if !ok {
+		if event == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, v)
+		c.JSON(http.StatusOK, event)
 	})
 
 	router.DELETE("/v1/eventtypes/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := eventTypeDB.DeleteByID("EventType", id)
+		ok, err := eventTypeDB.DeleteByID("EventType", Ident(id))
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
@@ -448,20 +446,18 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/triggers/:id", func(c *gin.Context) {
-		s := c.Param("id")
+		id := c.Param("id")
 
-		id := Ident(s)
-		var v Trigger
-		ok, err := triggerDB.GetById("Trigger", id, &v)
+		trigger, err := triggerDB.GetOne("Trigger", Ident(id))
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		if !ok {
+		if trigger == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
-		c.JSON(http.StatusOK, v)
+		c.JSON(http.StatusOK, trigger)
 	})
 
 	router.DELETE("/v1/triggers/:id", func(c *gin.Context) {
@@ -488,21 +484,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	// ---------------------- ALERTS ----------------------
 
 	router.GET("/v1/alerts", func(c *gin.Context) {
-
-		conditionID := c.Query("condition")
-		if conditionID != "" {
-			v, err := alertDB.GetByConditionID("Alert", conditionID)
-			if err != nil {
-				Status(c, 400, err.Error())
-				return
-			}
-			if v == nil {
-				Status(c, 400, err.Error())
-				return
-			}
-			c.JSON(http.StatusOK, v)
-			return
-		}
+		// TODO: conditionID := c.Query("condition")
 
 		all, err := alertDB.GetAll("Alert")
 		if err != nil {
@@ -513,16 +495,14 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	})
 
 	router.GET("/v1/alerts/:id", func(c *gin.Context) {
-		s := c.Param("id")
+		id := c.Param("id")
 
-		id := Ident(s)
-		var alert Alert
-		ok, err := alertDB.GetById("Alert", id, &alert)
+		alert, err := alertDB.GetOne("Alert", Ident(id))
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
 		}
-		if !ok {
+		if alert == nil {
 			c.JSON(http.StatusNotFound, gin.H{"id": id})
 			return
 		}
@@ -533,7 +513,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		var alert Alert
 		err := c.BindJSON(&alert)
 		if err != nil {
-			Status(c, 400, err.Error())
+			Status(c, 401, err.Error())
 			return
 		}
 
@@ -541,7 +521,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		id, err := alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
-			Status(c, 400, err.Error())
+			Status(c, 402, err.Error())
 			return
 		}
 
@@ -549,7 +529,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		err = alertDB.Flush()
 		if err != nil {
-			Status(c, 400, err.Error())
+			Status(c, 403, err.Error())
 			return
 		}
 
@@ -558,7 +538,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
 		id := c.Param("id")
-		ok, err := alertDB.DeleteByID("Alert", id)
+		ok, err := alertDB.DeleteByID("Alert", Ident(id))
 		if err != nil {
 			Status(c, 400, err.Error())
 			return

@@ -68,12 +68,11 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident, eve
 
 func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (bool, error) {
 
-	var obj Trigger
-	ok, err := db.GetById(mapping, id, &obj)
+	trigger, err := db.GetOne(mapping, id)
 	if err != nil {
 		return false, err
 	}
-	if !ok {
+	if trigger == nil {
 		return false, nil
 	}
 
@@ -87,7 +86,7 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (
 		return false, err
 	}
 
-	deleteResult, err := eventDB.Esi.DeletePercolationQuery(string(obj.PercolationID))
+	deleteResult, err := eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
 	if !deleteResult.Found {
 		return false, errors.New("unable to delete percolation")
 	}
@@ -98,4 +97,47 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (
 	}
 
 	return res.Found, nil
+}
+
+func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+	if err != nil {
+		return nil, err
+	}
+
+	triggers := make([]Trigger, 0)
+
+	if searchResult.Hits != nil {
+
+		for _, hit := range searchResult.Hits.Hits {
+			var trigger Trigger
+			err := json.Unmarshal(*hit.Source, &trigger)
+			if err != nil {
+				return nil, err
+			}
+			triggers = append(triggers, trigger)
+		}
+	}
+	return &triggers, nil
+}
+
+func (db *TriggerDB) GetOne(mapping string, id Ident) (*Trigger, error) {
+
+	getResult, err := db.Esi.GetById(mapping, id.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if !getResult.Found {
+		return nil, nil
+	}
+
+	src := getResult.Source
+	var obj Trigger
+	err = json.Unmarshal(*src, &obj)
+	if err != nil {
+		return nil, err
+	}
+
+	return &obj, nil
 }
