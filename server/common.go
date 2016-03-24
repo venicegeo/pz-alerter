@@ -26,7 +26,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
-type WorkflowIdResponse struct {
+type WorkflowIDResponse struct {
 	ID Ident `json:"id"`
 }
 
@@ -49,7 +49,7 @@ type ErrorResponse struct {
 	Message string `json:"message"`
 }
 
-func NewErrorResponseFromHttp(resp *http.Response) *ErrorResponse {
+func NewErrorResponseFromHTTP(resp *http.Response) *ErrorResponse {
 	defer resp.Body.Close()
 	mssgBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
@@ -65,8 +65,8 @@ func NewErrorResponseFromHttp(resp *http.Response) *ErrorResponse {
 	return &e
 }
 
-func NewErrorFromHttp(resp *http.Response) error {
-	errResp := NewErrorResponseFromHttp(resp)
+func NewErrorFromHTTP(resp *http.Response) error {
+	errResp := NewErrorResponseFromHTTP(resp)
 	return errors.New(errResp.String())
 }
 
@@ -91,8 +91,8 @@ func (id Ident) String() string {
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventId Ident                  `json:"event_id" binding:"required"`
-	Query   map[string]interface{} `json:"query" binding:"required"`
+	EventTypeID Ident                  `json:"eventtype_id" binding:"required"`
+	Query       map[string]interface{} `json:"query" binding:"required"`
 }
 
 type Job struct {
@@ -122,7 +122,7 @@ type TriggerList []Trigger
 // TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
 	ID          Ident                  `json:"id"`
-	EventTypeId Ident                  `json:"eventtype_id" binding:"required"`
+	EventTypeID Ident                  `json:"eventtype_id" binding:"required"`
 	Date        time.Time              `json:"date" binding:"required"`
 	Data        map[string]interface{} `json:"data"`
 }
@@ -144,21 +144,21 @@ type EventTypeList []EventType
 // a notification, automatically created when an Trigger happens
 type Alert struct {
 	ID        Ident `json:"id"`
-	TriggerId Ident `json:"trigger_id"`
-	EventId   Ident `json:"event_id"`
+	TriggerID Ident `json:"trigger_id"`
+	EventID   Ident `json:"event_id"`
 }
 
 type AlertList []Alert
 
-type AlertListById []Alert
+type AlertListByID []Alert
 
-func (a AlertListById) Len() int {
+func (a AlertListByID) Len() int {
 	return len(a)
 }
-func (a AlertListById) Swap(i, j int) {
+func (a AlertListByID) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
-func (a AlertListById) Less(i, j int) bool {
+func (a AlertListByID) Less(i, j int) bool {
 	return a[i].ID < a[j].ID
 }
 
@@ -169,7 +169,7 @@ func (list AlertList) ToSortedArray() []Alert {
 		array[i] = v
 		i++
 	}
-	sort.Sort(AlertListById(array))
+	sort.Sort(AlertListByID(array))
 	return array
 }
 

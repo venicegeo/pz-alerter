@@ -15,10 +15,17 @@ go get github.com/venicegeo/pz-workflow
 
 go get github.com/stretchr/testify/assert
 go get github.com/stretchr/testify/suite
+
 go version
+
 go test -v github.com/venicegeo/pz-gocommon
+echo ; echo ; echo ; echo 
+
 go test -v github.com/venicegeo/pz-gocommon/elasticsearch
+echo ; echo ; echo ; echo 
+
 go test -v github.com/venicegeo/pz-workflow/server
+echo ; echo ; echo ; echo 
 
 go install github.com/venicegeo/pz-workflow/server
 
