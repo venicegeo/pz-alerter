@@ -44,7 +44,7 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 
 	var events []Event
 
-	if searchResult.Hits != nil {
+	if searchResult != nil && searchResult.Hits != nil {
 
 		for _, hit := range searchResult.Hits.Hits {
 			var event Event
@@ -65,7 +65,7 @@ func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
 		return nil, err
 	}
 
-	if !getResult.Found {
+	if getResult == nil || !getResult.Found {
 		return nil, nil
 	}
 

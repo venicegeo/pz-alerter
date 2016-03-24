@@ -38,14 +38,13 @@ func NewAlertDB(es *elasticsearch.Client, index string) (*AlertDB, error) {
 
 func (db *AlertDB) GetAll(mapping string) (*[]Alert, error) {
 	searchResult, err := db.Esi.FilterByMatchAll(mapping)
-
 	if err != nil {
 		return nil, err
 	}
 
 	var alerts []Alert
 
-	if searchResult.Hits != nil {
+	if searchResult != nil && searchResult.Hits != nil {
 		for _, hit := range searchResult.Hits.Hits {
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
@@ -66,7 +65,7 @@ func (db *AlertDB) GetOne(mapping string, id Ident) (*Alert, error) {
 		return nil, err
 	}
 
-	if !getResult.Found {
+	if getResult == nil || !getResult.Found {
 		return nil, nil
 	}
 

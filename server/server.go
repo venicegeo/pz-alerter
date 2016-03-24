@@ -17,7 +17,6 @@ package server
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -310,20 +309,20 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		eventType := &EventType{}
 		err := c.BindJSON(eventType)
 		if err != nil {
-			Status(c, 403, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
 		eventType.ID = NewIdent()
 		id, err := eventTypeDB.PostData("EventType", eventType, eventType.ID)
 		if err != nil {
-			Status(c, 401, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
 		err = eventDB.AddMapping(eventType.Name, eventType.Mapping)
 		if err != nil {
-			Status(c, 402, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -333,27 +332,6 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		if err != nil {
 			Status(c, 400, err.Error())
 			return
-		}
-
-		// TODO: remove this block
-		{
-			id := Ident(retID.ID)
-			eventType, err := eventTypeDB.GetOne("EventType", id)
-			if err != nil {
-				Status(c, 400, err.Error())
-				return
-			}
-			if eventType == nil {
-				Status(c, 410, err.Error())
-				return
-			}
-			{
-				// TODO: remove this check
-				if eventType.ID != retID.ID {
-					log.Printf("*************** %s %s ************", eventType.ID, retID.ID)
-					panic(1)
-				}
-			}
 		}
 
 		c.JSON(http.StatusCreated, retID)
@@ -513,7 +491,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		var alert Alert
 		err := c.BindJSON(&alert)
 		if err != nil {
-			Status(c, 401, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -521,7 +499,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		id, err := alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
-			Status(c, 402, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -529,7 +507,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		err = alertDB.Flush()
 		if err != nil {
-			Status(c, 403, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 

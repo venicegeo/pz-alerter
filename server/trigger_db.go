@@ -107,7 +107,7 @@ func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
 
 	var triggers []Trigger
 
-	if searchResult.Hits != nil {
+	if searchResult != nil && searchResult.Hits != nil {
 
 		for _, hit := range searchResult.Hits.Hits {
 			var trigger Trigger
@@ -128,7 +128,7 @@ func (db *TriggerDB) GetOne(mapping string, id Ident) (*Trigger, error) {
 		return nil, err
 	}
 
-	if !getResult.Found {
+	if getResult == nil || !getResult.Found {
 		return nil, nil
 	}
 

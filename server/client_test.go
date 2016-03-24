@@ -43,7 +43,7 @@ func (suite *ClientTester) TearDownSuite() {
 
 //---------------------------------------------------------------------------
 
-func (suite *ClientTester) xTestAdmin() {
+func (suite *ClientTester) Test01Admin() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -66,7 +66,7 @@ func (suite *ClientTester) xTestAdmin() {
 	}
 }
 
-func (suite *ClientTester) xTestAlertResource() {
+func (suite *ClientTester) Test02AlertResource() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -109,7 +109,7 @@ func (suite *ClientTester) xTestAlertResource() {
 	assert.Len(*alerts, 0)
 }
 
-func (suite *ClientTester) xTestEventResource() {
+func (suite *ClientTester) Test03EventResource() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -158,7 +158,7 @@ func (suite *ClientTester) xTestEventResource() {
 	assert.EqualValues(eID, tmp.ID)
 }
 
-func (suite *ClientTester) xTestEventTypeResource() {
+func (suite *ClientTester) Test04EventTypeResource() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -189,7 +189,7 @@ func (suite *ClientTester) xTestEventTypeResource() {
 	assert.EqualValues(id, tmp.ID)
 }
 
-func (suite *ClientTester) xTestOne() {
+func (suite *ClientTester) Test05One() {
 
 	t := suite.T()
 	assert := assert.New(t)
@@ -313,7 +313,7 @@ func (suite *ClientTester) xTestOne() {
 	}
 }
 
-func (suite *ClientTester) xTestTriggerResource() {
+func (suite *ClientTester) Test06TriggerResource() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -369,7 +369,7 @@ func (suite *ClientTester) xTestTriggerResource() {
 	assert.EqualValues(t1ID, (*triggers)[0].ID)
 }
 
-func (suite *ClientTester) xTestTriggering() {
+func (suite *ClientTester) Test07Triggering() {
 
 	t := suite.T()
 	assert := assert.New(t)

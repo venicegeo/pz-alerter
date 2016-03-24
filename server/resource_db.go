@@ -27,12 +27,9 @@ func NewResourceDB(es *elasticsearch.Client, esi *elasticsearch.Index) (*Resourc
 		Esi: esi,
 	}
 
-	err := esi.Delete()
-	if err != nil {
-		return nil, err
-	}
+	_ = esi.Delete()
 
-	err = esi.Create()
+	err := esi.Create()
 	if err != nil {
 		return nil, err
 	}

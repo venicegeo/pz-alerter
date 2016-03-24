@@ -46,7 +46,7 @@ func (db *EventTypeDB) GetAll(mapping string) (*[]EventType, error) {
 
 	var eventTypes []EventType
 
-	if searchResult.Hits != nil {
+	if searchResult != nil && searchResult.Hits != nil {
 		for _, hit := range searchResult.Hits.Hits {
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
@@ -67,7 +67,7 @@ func (db *EventTypeDB) GetOne(mapping string, id Ident) (*EventType, error) {
 		return nil, err
 	}
 
-	if !getResult.Found {
+	if getResult == nil || !getResult.Found {
 		return nil, nil
 	}
 
