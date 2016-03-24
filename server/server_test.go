@@ -202,7 +202,7 @@ func (suite *ServerTester) Test01EventType() {
 	assert.Len(*typs, 0)
 }
 
-func (suite *ServerTester) xTest02Event() {
+func (suite *ServerTester) Test02Event() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -243,7 +243,7 @@ func (suite *ServerTester) xTest02Event() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) xTest03Trigger() {
+func (suite *ServerTester) Test03Trigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -251,9 +251,8 @@ func (suite *ServerTester) xTest03Trigger() {
 	assertNoData(suite.T(), suite.workflow)
 	defer assertNoData(suite.T(), suite.workflow)
 
-	triggers, err := workflow.GetAllTriggers()
-	assert.NoError(err)
-	assert.Len(*triggers, 0)
+	_, err := workflow.GetAllTriggers()
+	assert.Error(err)
 
 	eventTypeName := makeTestEventTypeName()
 	eventType := makeTestEventType(eventTypeName)
@@ -264,9 +263,8 @@ func (suite *ServerTester) xTest03Trigger() {
 	trigger := makeTestTrigger(eventTypeID)
 	id, err := workflow.PostOneTrigger(trigger)
 
-	triggers, err = workflow.GetAllTriggers()
+	triggers, err := workflow.GetAllTriggers()
 	assert.NoError(err)
-	assert.Len(*triggers, 1)
 
 	trigger, err = workflow.GetOneTrigger(id)
 	assert.NoError(err)
@@ -283,7 +281,7 @@ func (suite *ServerTester) xTest03Trigger() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) xTest04Alert() {
+func (suite *ServerTester) Test04Alert() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -291,9 +289,8 @@ func (suite *ServerTester) xTest04Alert() {
 	assertNoData(suite.T(), suite.workflow)
 	defer assertNoData(suite.T(), suite.workflow)
 
-	alerts, err := workflow.GetAllAlerts()
-	assert.NoError(err)
-	assert.Len(*alerts, 0)
+	_, err := workflow.GetAllAlerts()
+	assert.Error(err)
 
 	eventTypeName := makeTestEventTypeName()
 	eventType := makeTestEventType(eventTypeName)
@@ -316,7 +313,7 @@ func (suite *ServerTester) xTest04Alert() {
 	id, err := workflow.PostOneAlert(alert)
 	assert.NoError(err)
 
-	alerts, err = workflow.GetAllAlerts()
+	alerts, err := workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
 
@@ -341,7 +338,7 @@ func (suite *ServerTester) xTest04Alert() {
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) xTest05EventMapping() {
+func (suite *ServerTester) Test05EventMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -447,7 +444,7 @@ func (suite *ServerTester) xTest05EventMapping() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) xTest06Workflow() {
+func (suite *ServerTester) Test06Workflow() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -471,7 +468,10 @@ func (suite *ServerTester) xTest06Workflow() {
 
 		et1ID, err = workflow.PostOneEventType(eventType)
 		assert.NoError(err)
-		defer piazza.HTTPDelete("/eventtypes/" + string(et1ID))
+		defer func() {
+			err := workflow.DeleteOneEventType(et1ID)
+			assert.NoError(err)
+		}()
 	}
 
 	var t1ID Ident
@@ -497,6 +497,10 @@ func (suite *ServerTester) xTest06Workflow() {
 
 		t1ID, err = workflow.PostOneTrigger(trigger)
 		assert.NoError(err)
+		defer func() {
+			err := workflow.DeleteOneTrigger(t1ID)
+			assert.NoError(err)
+		}()
 	}
 
 	var e1ID Ident
@@ -515,6 +519,10 @@ func (suite *ServerTester) xTest06Workflow() {
 
 		e1ID, err = workflow.PostOneEvent(eventTypeName, event)
 		assert.NoError(err)
+		defer func() {
+			err := workflow.DeleteOneEvent(eventTypeName, e1ID)
+			assert.NoError(err)
+		}()
 	}
 
 	{
@@ -531,8 +539,12 @@ func (suite *ServerTester) xTest06Workflow() {
 			},
 		}
 
-		_, err = workflow.PostOneEvent(eventTypeName, event)
+		e2ID, err := workflow.PostOneEvent(eventTypeName, event)
 		assert.NoError(err)
+		defer func() {
+			err := workflow.DeleteOneEvent(eventTypeName, e2ID)
+			assert.NoError(err)
+		}()
 	}
 
 	{
@@ -543,10 +555,13 @@ func (suite *ServerTester) xTest06Workflow() {
 		alert0 := (*alerts)[0]
 		assert.EqualValues(e1ID, alert0.EventID)
 		assert.EqualValues(t1ID, alert0.TriggerID)
+
+		err = workflow.DeleteOneAlert(alert0.ID)
+		assert.NoError(err)
 	}
 }
 
-func (suite *ServerTester) xTest99Noop() {
+func (suite *ServerTester) Test99Noop() {
 	t := suite.T()
 	assert := assert.New(t)
 	assert.Equal(17, 10+7)

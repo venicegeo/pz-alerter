@@ -38,7 +38,6 @@ func NewAlertDB(es *elasticsearch.Client, index string) (*AlertDB, error) {
 
 func (db *AlertDB) GetAll(mapping string) (*[]Alert, error) {
 	searchResult, err := db.Esi.FilterByMatchAll(mapping)
-
 	if err != nil {
 		return nil, err
 	}

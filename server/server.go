@@ -309,20 +309,20 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		eventType := &EventType{}
 		err := c.BindJSON(eventType)
 		if err != nil {
-			Status(c, 403, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
 		eventType.ID = NewIdent()
 		id, err := eventTypeDB.PostData("EventType", eventType, eventType.ID)
 		if err != nil {
-			Status(c, 401, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
 		err = eventDB.AddMapping(eventType.Name, eventType.Mapping)
 		if err != nil {
-			Status(c, 402, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -491,7 +491,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		var alert Alert
 		err := c.BindJSON(&alert)
 		if err != nil {
-			Status(c, 401, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -499,7 +499,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		id, err := alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
-			Status(c, 402, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
@@ -507,7 +507,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 		err = alertDB.Flush()
 		if err != nil {
-			Status(c, 403, err.Error())
+			Status(c, 400, err.Error())
 			return
 		}
 
