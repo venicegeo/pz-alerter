@@ -17,7 +17,6 @@ package server
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -114,7 +113,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 	if esx == nil {
 		return nil, errors.New("internal error: elasticsearch not registered")
 	}
-	es, ok := esx.(*elasticsearch.ElasticsearchClient)
+	es, ok := esx.(*elasticsearch.Client)
 	if !ok {
 		return nil, errors.New("internl error")
 	}
@@ -187,7 +186,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		retId := WorkflowIdResponse{ID: event.ID}
+		retID := WorkflowIDResponse{ID: event.ID}
 
 		err = eventDB.Flush()
 		if err != nil {
@@ -203,24 +202,24 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			///log.Printf("\tData: %v\n", event.Data)
 
 			// Find triggers associated with event
-			triggerIds, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
+			triggerIDs, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
 			if err != nil {
 				Status(c, 400, err.Error())
 				return
 			}
 
 			// For each trigger,  apply the event data and submit job
-			for _, triggerId := range *triggerIds {
-				go func(triggerId Ident) {
+			for _, triggerID := range *triggerIDs {
+				go func(triggerID Ident) {
 
-					///log.Printf("\ntriggerId: %v\n", triggerId)
-					trigger, err := triggerDB.GetOne("Trigger", triggerId)
+					///log.Printf("\ntriggerID: %v\n", triggerID)
+					trigger, err := triggerDB.GetOne("Trigger", triggerID)
 					if err != nil {
 						Status(c, 400, err.Error())
 						return
 					}
 					if trigger == nil {
-						c.JSON(http.StatusNotFound, gin.H{"id": triggerId})
+						c.JSON(http.StatusNotFound, gin.H{"id": triggerID})
 						return
 					}
 					///log.Printf("trigger: %v\n", trigger)
@@ -237,11 +236,11 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 					// Figure out how to post the jobInstance to job manager server.
 
-				}(triggerId)
+				}(triggerID)
 			}
 		}
 
-		c.JSON(http.StatusCreated, retId)
+		c.JSON(http.StatusCreated, retID)
 	})
 
 	router.GET("/v1/events", func(c *gin.Context) {
@@ -327,7 +326,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		retId := WorkflowIdResponse{ID: id}
+		retID := WorkflowIDResponse{ID: id}
 
 		err = eventTypeDB.Flush()
 		if err != nil {
@@ -335,28 +334,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		// TODO: remove this block
-		{
-			id := Ident(retId.ID)
-			eventType, err := eventTypeDB.GetOne("EventType", id)
-			if err != nil {
-				Status(c, 400, err.Error())
-				return
-			}
-			if eventType == nil {
-				Status(c, 410, err.Error())
-				return
-			}
-			{
-				// TODO: remove this check
-				if eventType.ID != retId.ID {
-					log.Printf("*************** %s %s ************", eventType.ID, retId.ID)
-					panic(1)
-				}
-			}
-		}
-
-		c.JSON(http.StatusCreated, retId)
+		c.JSON(http.StatusCreated, retID)
 	})
 
 	// returns a list of all IDs
@@ -424,7 +402,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		a := WorkflowIdResponse{ID: trigger.ID}
+		a := WorkflowIDResponse{ID: trigger.ID}
 
 		err = triggerDB.Flush()
 		if err != nil {
@@ -525,7 +503,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		retId := WorkflowIdResponse{ID: id}
+		retID := WorkflowIDResponse{ID: id}
 
 		err = alertDB.Flush()
 		if err != nil {
@@ -533,7 +511,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 			return
 		}
 
-		c.JSON(http.StatusCreated, retId)
+		c.JSON(http.StatusCreated, retID)
 	})
 
 	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {

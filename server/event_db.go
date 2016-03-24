@@ -24,9 +24,9 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(es *elasticsearch.ElasticsearchClient, index string) (*EventDB, error) {
+func NewEventDB(es *elasticsearch.Client, index string) (*EventDB, error) {
 
-	esi := elasticsearch.NewElasticsearchIndex(es, index)
+	esi := elasticsearch.NewIndex(es, index)
 
 	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
@@ -42,9 +42,9 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 		return nil, err
 	}
 
-	events := make([]Event, 0)
+	var events []Event
 
-	if searchResult.Hits != nil {
+	if searchResult != nil && searchResult.Hits != nil {
 
 		for _, hit := range searchResult.Hits.Hits {
 			var event Event
@@ -60,12 +60,12 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 
 func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
 
-	getResult, err := db.Esi.GetById(mapping, id.String())
+	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
 		return nil, err
 	}
 
-	if !getResult.Found {
+	if getResult == nil || !getResult.Found {
 		return nil, nil
 	}
 
@@ -92,7 +92,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	ids := make([]Ident, len(resp.Matches))
 	for i, v := range resp.Matches {
 		ids[i] = Ident(v.Id)
-		alert := Alert{ID: NewIdent(), EventId: id, TriggerId: Ident(v.Id)}
+		alert := Alert{ID: NewIdent(), EventID: id, TriggerID: Ident(v.Id)}
 		_, err = alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
 			return nil, err
