@@ -26,9 +26,9 @@ type TriggerDB struct {
 	*ResourceDB
 }
 
-func NewTriggerDB(es *elasticsearch.ElasticsearchClient, index string) (*TriggerDB, error) {
+func NewTriggerDB(es *elasticsearch.Client, index string) (*TriggerDB, error) {
 
-	esi := elasticsearch.NewElasticsearchIndex(es, index)
+	esi := elasticsearch.NewIndex(es, index)
 
 	rdb, err := NewResourceDB(es, esi)
 	if err != nil {
@@ -76,7 +76,7 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (
 		return false, nil
 	}
 
-	res, err := db.Esi.DeleteById(mapping, string(id))
+	res, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
 		return false, err
 	}
@@ -105,7 +105,7 @@ func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
 		return nil, err
 	}
 
-	triggers := make([]Trigger, 0)
+	var triggers []Trigger
 
 	if searchResult.Hits != nil {
 
@@ -123,7 +123,7 @@ func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
 
 func (db *TriggerDB) GetOne(mapping string, id Ident) (*Trigger, error) {
 
-	getResult, err := db.Esi.GetById(mapping, id.String())
+	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
 		return nil, err
 	}

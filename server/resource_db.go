@@ -17,11 +17,11 @@ package server
 import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 type ResourceDB struct {
-	Es  *elasticsearch.ElasticsearchClient
-	Esi *elasticsearch.ElasticsearchIndex
+	Es  *elasticsearch.Client
+	Esi *elasticsearch.Index
 }
 
-func NewResourceDB(es *elasticsearch.ElasticsearchClient, esi *elasticsearch.ElasticsearchIndex) (*ResourceDB, error) {
+func NewResourceDB(es *elasticsearch.Client, esi *elasticsearch.Index) (*ResourceDB, error) {
 	db := &ResourceDB{
 		Es:  es,
 		Esi: esi,
@@ -57,7 +57,7 @@ func (db *ResourceDB) PostData(mapping string, obj interface{}, id Ident) (Ident
 }
 
 func (db *ResourceDB) DeleteByID(mapping string, id Ident) (bool, error) {
-	res, err := db.Esi.DeleteById(mapping, string(id))
+	res, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
 		return false, err
 	}

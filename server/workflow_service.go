@@ -38,8 +38,8 @@ func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowServic
 
 	var err error
 
-	var x piazza.IService = sys.Services[piazza.PzLogger]
-	var y logger.ILoggerService = x.(logger.ILoggerService)
+	var x = sys.Services[piazza.PzLogger]
+	var y = x.(logger.ILoggerService)
 
 	service := &PzWorkflowService{
 		url:     fmt.Sprintf("http://%s/v1", address),
@@ -70,66 +70,66 @@ func (c PzWorkflowService) GetAddress() string {
 
 //---------------------------------------------------------------------------
 
-type HttpReturn struct {
+type HTTPReturn struct {
 	Code   int
 	Status string
 	Data   interface{}
 	Err    error
 }
 
-func (c *PzWorkflowService) Post(path string, body interface{}) *HttpReturn {
+func (c *PzWorkflowService) Post(path string, body interface{}) *HTTPReturn {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return &HttpReturn{Err: err}
+		return &HTTPReturn{Err: err}
 	}
 
 	resp, err := http.Post(c.url+path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		return &HttpReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
+		return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return &HttpReturn{Err: err}
+		return &HTTPReturn{Err: err}
 	}
 
 	var result interface{}
 	err = json.Unmarshal(data, &result)
 	if err != nil {
-		return &HttpReturn{Err: err}
+		return &HTTPReturn{Err: err}
 	}
 
-	return &HttpReturn{Code: resp.StatusCode, Status: resp.Status, Data: result}
+	return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Data: result}
 }
 
-func (c *PzWorkflowService) Get(path string) *HttpReturn {
+func (c *PzWorkflowService) Get(path string) *HTTPReturn {
 	resp, err := http.Get(c.url + path)
 	if err != nil {
-		return &HttpReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
+		return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return &HttpReturn{Err: err}
+		return &HTTPReturn{Err: err}
 	}
 
 	var result interface{}
 	err = json.Unmarshal(data, &result)
 	if err != nil {
-		return &HttpReturn{Err: err}
+		return &HTTPReturn{Err: err}
 	}
 
-	return &HttpReturn{Code: resp.StatusCode, Status: resp.Status, Data: result}
+	return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Data: result}
 }
 
-func (c *PzWorkflowService) Delete(path string) *HttpReturn {
+func (c *PzWorkflowService) Delete(path string) *HTTPReturn {
 	resp, err := piazza.HTTPDelete(c.url + path)
 	if err != nil {
-		return &HttpReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
+		return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
 	}
-	return &HttpReturn{Code: resp.StatusCode, Status: resp.Status}
+	return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status}
 }
 
 //---------------------------------------------------------------------------
@@ -143,7 +143,7 @@ func (c *PzWorkflowService) PostOneEventType(eventType *EventType) (Ident, error
 		return NoIdent, errors.New(ret.Status)
 	}
 
-	resp2 := &WorkflowIdResponse{}
+	resp2 := &WorkflowIDResponse{}
 	err := SuperConvert(ret.Data, resp2)
 	if err != nil {
 		return NoIdent, err
@@ -211,7 +211,7 @@ func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Id
 		return NoIdent, errors.New(ret.Status)
 	}
 
-	resp2 := &WorkflowIdResponse{}
+	resp2 := &WorkflowIDResponse{}
 	err := SuperConvert(ret.Data, resp2)
 	if err != nil {
 		return NoIdent, nil
@@ -284,7 +284,7 @@ func (c *PzWorkflowService) PostOneTrigger(trigger *Trigger) (Ident, error) {
 		return NoIdent, errors.New(ret.Status)
 	}
 
-	resp2 := &WorkflowIdResponse{}
+	resp2 := &WorkflowIDResponse{}
 	err := SuperConvert(ret.Data, resp2)
 	if err != nil {
 		return NoIdent, err
@@ -352,7 +352,7 @@ func (c *PzWorkflowService) PostOneAlert(alert *Alert) (Ident, error) {
 		return NoIdent, errors.New(ret.Status)
 	}
 
-	resp2 := &WorkflowIdResponse{}
+	resp2 := &WorkflowIDResponse{}
 	err := SuperConvert(ret.Data, resp2)
 	if err != nil {
 		return NoIdent, err
@@ -415,7 +415,7 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
 	resp, err := http.Get(c.url + "/admin/stats")
 	if err != nil {
-		return nil, NewErrorFromHttp(resp)
+		return nil, NewErrorFromHTTP(resp)
 	}
 
 	defer resp.Body.Close()
@@ -437,7 +437,7 @@ func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, erro
 
 	resp, err := http.Get(c.url + "/admin/settings")
 	if err != nil {
-		return nil, NewErrorFromHttp(resp)
+		return nil, NewErrorFromHTTP(resp)
 	}
 
 	defer resp.Body.Close()
@@ -464,11 +464,11 @@ func (c *PzWorkflowService) PostToAdminSettings(settings *WorkflowAdminSettings)
 
 	resp, err := http.Post(c.url+"/admin/settings", piazza.ContentTypeJSON, bytes.NewBuffer(data))
 	if err != nil {
-		return NewErrorFromHttp(resp)
+		return NewErrorFromHTTP(resp)
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return NewErrorFromHttp(resp)
+		return NewErrorFromHTTP(resp)
 	}
 
 	return nil
