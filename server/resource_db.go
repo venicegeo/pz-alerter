@@ -17,14 +17,16 @@ package server
 import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 type ResourceDB struct {
-	Es  *elasticsearch.Client
-	Esi *elasticsearch.Index
+	server *Server
+	Es     *elasticsearch.Client
+	Esi    *elasticsearch.Index
 }
 
-func NewResourceDB(es *elasticsearch.Client, esi *elasticsearch.Index) (*ResourceDB, error) {
+func NewResourceDB(server *Server, es *elasticsearch.Client, esi *elasticsearch.Index) (*ResourceDB, error) {
 	db := &ResourceDB{
-		Es:  es,
-		Esi: esi,
+		server: server,
+		Es:     es,
+		Esi:    esi,
 	}
 
 	_ = esi.Delete()

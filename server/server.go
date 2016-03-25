@@ -47,6 +47,89 @@ func init() {
 	stats.Date = time.Now()
 }
 
+func Status(c *gin.Context, code int, mssg string) {
+	e := ErrorResponse{Status: code, Message: mssg}
+	c.JSON(code, e)
+}
+
+//---------------------------------------------------------------------------
+
+type Server struct {
+	eventTypeDB *EventTypeDB
+	eventDB     *EventDB
+	triggerDB   *TriggerDB
+	alertDB     *AlertDB
+
+	uuidgen uuidgenPkg.IUuidGenService
+}
+
+var server *Server
+
+func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
+	var s Server
+	var err error
+
+	s.uuidgen = uuidgen
+
+	s.eventTypeDB, err = NewEventTypeDB(&s, es, "eventtypes")
+	if err != nil {
+		return nil, err
+	}
+	err = s.eventTypeDB.Esi.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	s.eventDB, err = NewEventDB(&s, es, "events")
+	if err != nil {
+		return nil, err
+	}
+	err = s.eventDB.Esi.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	s.triggerDB, err = NewTriggerDB(&s, es, "triggers")
+	if err != nil {
+		return nil, err
+	}
+	err = s.triggerDB.Esi.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	s.alertDB, err = NewAlertDB(&s, es, "alerts")
+	if err != nil {
+		return nil, err
+	}
+	err = s.alertDB.Esi.Flush()
+	if err != nil {
+		return nil, err
+	}
+
+	return &s, nil
+}
+
+func (s *Server) NewIdent() Ident {
+	var debugIds = true
+
+	var uuid string
+	var err error
+
+	if debugIds {
+		uuid, err = s.uuidgen.GetDebugUuid("W")
+		if err != nil {
+			panic("uuidgen failed")
+		}
+	} else {
+		uuid, err = s.uuidgen.GetUuid()
+		if err != nil {
+			panic("uuidgen failed")
+		}
+	}
+	return Ident(uuid)
+}
+
 //---------------------------------------------------------------------------
 
 func handleGetAdminStats(c *gin.Context) {
@@ -80,34 +163,372 @@ func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
-func Status(c *gin.Context, code int, mssg string) {
-	e := ErrorResponse{Status: code, Message: mssg}
-	c.JSON(code, e)
+func handeGetEventByID(c *gin.Context) {
+	eventType := c.Param("eventType")
+	s := c.Param("id")
+
+	id := Ident(s)
+	event, err := server.eventDB.GetOne(eventType, id)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if event == nil {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+	c.JSON(http.StatusOK, event)
 }
 
-var NewIdent func() Ident
-
-func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenner uuidgenPkg.IUuidGenService) (http.Handler, error) {
-
-	var debugIds = true
-
-	NewIdent = func() Ident {
-		var uuid string
-		var err error
-
-		if debugIds {
-			uuid, err = uuidgenner.GetDebugUuid("W")
-			if err != nil {
-				panic("uuidgen failed")
-			}
-		} else {
-			uuid, err = uuidgenner.GetUuid()
-			if err != nil {
-				panic("uuidgen failed")
-			}
-		}
-		return Ident(uuid)
+func handleDeleteAlertByID(c *gin.Context) {
+	id := c.Param("id")
+	ok, err := server.alertDB.DeleteByID("Alert", Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
 	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+
+	err = server.alertDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func handlePostAlert(c *gin.Context) {
+	var alert Alert
+	err := c.BindJSON(&alert)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	alert.ID = server.NewIdent()
+
+	id, err := server.alertDB.PostData("Alert", &alert, alert.ID)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	retID := WorkflowIDResponse{ID: id}
+
+	err = server.alertDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusCreated, retID)
+}
+
+func handleGetAlertByID(c *gin.Context) {
+	id := c.Param("id")
+
+	alert, err := server.alertDB.GetOne("Alert", Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if alert == nil {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+	c.JSON(http.StatusOK, alert)
+}
+
+func handleGetAlerts(c *gin.Context) {
+	// TODO: conditionID := c.Query("condition")
+
+	all, err := server.alertDB.GetAll("Alert")
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, all)
+}
+
+func handleDeleteTriggerByID(c *gin.Context) {
+	id := c.Param("id")
+	ok, err := server.triggerDB.DeleteTrigger("Trigger", Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+
+	err = server.triggerDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func handleGetTriggerByID(c *gin.Context) {
+	id := c.Param("id")
+
+	trigger, err := server.triggerDB.GetOne("Trigger", Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if trigger == nil {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+	c.JSON(http.StatusOK, trigger)
+}
+
+func handleGetTriggers(c *gin.Context) {
+	m, err := server.triggerDB.GetAll("Trigger")
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, m)
+}
+
+func handlePostTrigger(c *gin.Context) {
+	trigger := &Trigger{}
+	err := c.BindJSON(trigger)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	trigger.ID = server.NewIdent()
+
+	_, err = server.triggerDB.PostTrigger("Trigger", trigger, trigger.ID)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	a := WorkflowIDResponse{ID: trigger.ID}
+
+	err = server.triggerDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusCreated, a)
+}
+
+func handleDeleteEventTypeById(c *gin.Context) {
+	id := c.Param("id")
+	ok, err := server.eventTypeDB.DeleteByID("EventType", Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+
+	err = server.eventTypeDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func handleGetEventTypeByID(c *gin.Context) {
+	id := c.Param("id")
+
+	event, err := server.eventTypeDB.GetOne("EventType", Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if event == nil {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+	c.JSON(http.StatusOK, event)
+}
+
+func handleGetEventTypes(c *gin.Context) {
+	ets, err := server.eventTypeDB.GetAll("EventType")
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, ets)
+}
+
+func handlePostEventType(c *gin.Context) {
+	eventType := &EventType{}
+	err := c.BindJSON(eventType)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	eventType.ID = server.NewIdent()
+	id, err := server.eventTypeDB.PostData("EventType", eventType, eventType.ID)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	err = server.eventDB.AddMapping(eventType.Name, eventType.Mapping)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	retID := WorkflowIDResponse{ID: id}
+
+	err = server.eventTypeDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusCreated, retID)
+}
+
+func handeDeleteEventByID(c *gin.Context) {
+	id := c.Param("id")
+	eventType := c.Param("eventType")
+
+	ok, err := server.eventDB.DeleteByID(eventType, Ident(id))
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	if !ok {
+		c.JSON(http.StatusNotFound, gin.H{"id": id})
+		return
+	}
+
+	err = server.eventDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	c.JSON(http.StatusOK, nil)
+}
+
+func handleGetEvents(c *gin.Context) {
+	m, err := server.eventDB.GetAll("")
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, m)
+}
+
+func handleGetEventsByEventType(c *gin.Context) {
+	eventType := c.Param("eventType")
+
+	m, err := server.eventDB.GetAll(eventType)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+	c.JSON(http.StatusOK, m)
+}
+
+func handlePostEvent(c *gin.Context) {
+
+	eventType := c.Param("eventType")
+
+	var event Event
+	err := c.BindJSON(&event)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	event.ID = server.NewIdent()
+	_, err = server.eventDB.PostData(eventType, event, event.ID)
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	retID := WorkflowIDResponse{ID: event.ID}
+
+	err = server.eventDB.Flush()
+	if err != nil {
+		Status(c, 400, err.Error())
+		return
+	}
+
+	{
+		// TODO: this should be done asynchronously
+		///log.Printf("event:\n")
+		///log.Printf("\tID: %v\n", event.ID)
+		///log.Printf("\tType: %v\n", eventType)
+		///log.Printf("\tData: %v\n", event.Data)
+
+		// Find triggers associated with event
+		triggerIDs, err := server.eventDB.PercolateEventData(eventType, event.Data, event.ID)
+		if err != nil {
+			Status(c, 400, err.Error())
+			return
+		}
+
+		// For each trigger,  apply the event data and submit job
+		for _, triggerID := range *triggerIDs {
+			go func(triggerID Ident) {
+
+				///log.Printf("\ntriggerID: %v\n", triggerID)
+				trigger, err := server.triggerDB.GetOne("Trigger", triggerID)
+				if err != nil {
+					Status(c, 400, err.Error())
+					return
+				}
+				if trigger == nil {
+					c.JSON(http.StatusNotFound, gin.H{"id": triggerID})
+					return
+				}
+				///log.Printf("trigger: %v\n", trigger)
+				///log.Printf("\tJob: %v\n\n", trigger.Job.Task)
+
+				var jobInstance = trigger.Job.Task
+
+				//  Not very robust,  need to find a better way
+				for key, value := range event.Data {
+					jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
+				}
+
+				//log.Printf("jobInstance: %s\n\n", jobInstance)
+
+				// Figure out how to post the jobInstance to job manager server.
+
+			}(triggerID)
+		}
+	}
+
+	c.JSON(http.StatusCreated, retID)
+}
+
+func handleHealthCheck(c *gin.Context) {
+	c.String(http.StatusOK, "Hi. I'm pz-workflow.")
+}
+
+func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgen uuidgenPkg.IUuidGenService) (http.Handler, error) {
+
+	var err error
 
 	esx := sys.Services[piazza.PzElasticSearch]
 	if esx == nil {
@@ -118,41 +539,9 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 		return nil, errors.New("internl error")
 	}
 
-	alertDB, err := NewAlertDB(es, "alerts")
+	server, err = NewServer(es, uuidgen)
 	if err != nil {
-		return nil, err
-	}
-
-	triggerDB, err := NewTriggerDB(es, "triggers")
-	if err != nil {
-		return nil, err
-	}
-
-	eventDB, err := NewEventDB(es, "events")
-	if err != nil {
-		return nil, err
-	}
-
-	eventTypeDB, err := NewEventTypeDB(es, "eventtypes")
-	if err != nil {
-		return nil, err
-	}
-
-	err = alertDB.Esi.Flush()
-	if err != nil {
-		return nil, err
-	}
-	err = triggerDB.Esi.Flush()
-	if err != nil {
-		return nil, err
-	}
-	err = alertDB.Esi.Flush()
-	if err != nil {
-		return nil, err
-	}
-	err = triggerDB.Esi.Flush()
-	if err != nil {
-		return nil, err
+		return nil, errors.New("internal error: server context failed to initialize")
 	}
 
 	gin.SetMode(gin.ReleaseMode)
@@ -162,387 +551,33 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgenn
 
 	//---------------------------------------------------------------
 
-	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "Hi. I'm pz-workflow.")
-	})
-
-	// ---------------------- EVENTS ----------------------
-
-	router.POST("/v1/events/:eventType", func(c *gin.Context) {
-
-		eventType := c.Param("eventType")
-
-		var event Event
-		err := c.BindJSON(&event)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		event.ID = NewIdent()
-		_, err = eventDB.PostData(eventType, event, event.ID)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		retID := WorkflowIDResponse{ID: event.ID}
-
-		err = eventDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		{
-			// TODO: this should be done asynchronously
-			///log.Printf("event:\n")
-			///log.Printf("\tID: %v\n", event.ID)
-			///log.Printf("\tType: %v\n", eventType)
-			///log.Printf("\tData: %v\n", event.Data)
-
-			// Find triggers associated with event
-			triggerIDs, err := eventDB.PercolateEventData(eventType, event.Data, event.ID, alertDB)
-			if err != nil {
-				Status(c, 400, err.Error())
-				return
-			}
-
-			// For each trigger,  apply the event data and submit job
-			for _, triggerID := range *triggerIDs {
-				go func(triggerID Ident) {
-
-					///log.Printf("\ntriggerID: %v\n", triggerID)
-					trigger, err := triggerDB.GetOne("Trigger", triggerID)
-					if err != nil {
-						Status(c, 400, err.Error())
-						return
-					}
-					if trigger == nil {
-						c.JSON(http.StatusNotFound, gin.H{"id": triggerID})
-						return
-					}
-					///log.Printf("trigger: %v\n", trigger)
-					///log.Printf("\tJob: %v\n\n", trigger.Job.Task)
-
-					var jobInstance = trigger.Job.Task
-
-					//  Not very robust,  need to find a better way
-					for key, value := range event.Data {
-						jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
-					}
-
-					//log.Printf("jobInstance: %s\n\n", jobInstance)
-
-					// Figure out how to post the jobInstance to job manager server.
-
-				}(triggerID)
-			}
-		}
-
-		c.JSON(http.StatusCreated, retID)
-	})
-
-	router.GET("/v1/events", func(c *gin.Context) {
-		m, err := eventDB.GetAll("")
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, m)
-	})
-
-	router.GET("/v1/events/:eventType", func(c *gin.Context) {
-		eventType := c.Param("eventType")
-
-		m, err := eventDB.GetAll(eventType)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, m)
-	})
-
-	router.GET("/v1/events/:eventType/:id", func(c *gin.Context) {
-		eventType := c.Param("eventType")
-		s := c.Param("id")
-
-		id := Ident(s)
-		event, err := eventDB.GetOne(eventType, id)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if event == nil {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-		c.JSON(http.StatusOK, event)
-	})
-
-	router.DELETE("/v1/events/:eventType/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		eventType := c.Param("eventType")
-
-		ok, err := eventDB.DeleteByID(eventType, Ident(id))
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-
-		err = eventDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusOK, nil)
-	})
-
-	// ---------------------- EVENT TYPES ----------------------
-
-	router.POST("/v1/eventtypes", func(c *gin.Context) {
-		eventType := &EventType{}
-		err := c.BindJSON(eventType)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		eventType.ID = NewIdent()
-		id, err := eventTypeDB.PostData("EventType", eventType, eventType.ID)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		err = eventDB.AddMapping(eventType.Name, eventType.Mapping)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		retID := WorkflowIDResponse{ID: id}
-
-		err = eventTypeDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusCreated, retID)
-	})
-
-	// returns a list of all IDs
-	router.GET("/v1/eventtypes", func(c *gin.Context) {
-		ets, err := eventTypeDB.GetAll("EventType")
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, ets)
-	})
-
-	// returns info on a given ID
-	router.GET("/v1/eventtypes/:id", func(c *gin.Context) {
-		id := c.Param("id")
-
-		event, err := eventTypeDB.GetOne("EventType", Ident(id))
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if event == nil {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-		c.JSON(http.StatusOK, event)
-	})
-
-	router.DELETE("/v1/eventtypes/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		ok, err := eventTypeDB.DeleteByID("EventType", Ident(id))
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-
-		err = eventTypeDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusOK, nil)
-	})
-
-	// ---------------------- TRIGGERS ----------------------
-
-	router.POST("/v1/triggers", func(c *gin.Context) {
-		trigger := &Trigger{}
-		err := c.BindJSON(trigger)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		trigger.ID = NewIdent()
-
-		_, err = triggerDB.PostTrigger("Trigger", trigger, trigger.ID, eventDB)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		a := WorkflowIDResponse{ID: trigger.ID}
-
-		err = triggerDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusCreated, a)
-	})
-
-	router.GET("/v1/triggers", func(c *gin.Context) {
-		m, err := triggerDB.GetAll("Trigger")
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusOK, m)
-	})
-
-	router.GET("/v1/triggers/:id", func(c *gin.Context) {
-		id := c.Param("id")
-
-		trigger, err := triggerDB.GetOne("Trigger", Ident(id))
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if trigger == nil {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-		c.JSON(http.StatusOK, trigger)
-	})
-
-	router.DELETE("/v1/triggers/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		ok, err := triggerDB.DeleteTrigger("Trigger", Ident(id), eventDB)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-
-		err = triggerDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusOK, nil)
-	})
-
-	// ---------------------- ALERTS ----------------------
-
-	router.GET("/v1/alerts", func(c *gin.Context) {
-		// TODO: conditionID := c.Query("condition")
-
-		all, err := alertDB.GetAll("Alert")
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, all)
-	})
-
-	router.GET("/v1/alerts/:id", func(c *gin.Context) {
-		id := c.Param("id")
-
-		alert, err := alertDB.GetOne("Alert", Ident(id))
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if alert == nil {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-		c.JSON(http.StatusOK, alert)
-	})
-
-	router.POST("/v1/alerts", func(c *gin.Context) {
-		var alert Alert
-		err := c.BindJSON(&alert)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		alert.ID = NewIdent()
-
-		id, err := alertDB.PostData("Alert", &alert, alert.ID)
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		retID := WorkflowIDResponse{ID: id}
-
-		err = alertDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusCreated, retID)
-	})
-
-	router.DELETE("/v1/alerts/:id", func(c *gin.Context) {
-		id := c.Param("id")
-		ok, err := alertDB.DeleteByID("Alert", Ident(id))
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-		if !ok {
-			c.JSON(http.StatusNotFound, gin.H{"id": id})
-			return
-		}
-
-		err = alertDB.Flush()
-		if err != nil {
-			Status(c, 400, err.Error())
-			return
-		}
-
-		c.JSON(http.StatusOK, nil)
-	})
-
-	//-----------------------------------------------------------------------
-
-	router.GET("/v1/admin/stats", func(c *gin.Context) { handleGetAdminStats(c) })
-
-	router.GET("/v1/admin/settings", func(c *gin.Context) { handleGetAdminSettings(c) })
-	router.POST("/v1/admin/settings", func(c *gin.Context) { handlePostAdminSettings(c) })
-
-	router.POST("/v1/admin/shutdown", func(c *gin.Context) { handlePostAdminShutdown(c) })
+	router.GET("/", handleHealthCheck)
+
+	router.POST("/v1/events/:eventType", handlePostEvent)
+	router.GET("/v1/events", handleGetEvents)
+	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
+	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
+	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
+
+	router.POST("/v1/eventtypes", handlePostEventType)
+	router.GET("/v1/eventtypes", handleGetEventTypes)
+	router.GET("/v1/eventtypes/:id", handleGetEventTypeByID)
+	router.DELETE("/v1/eventtypes/:id", handleDeleteEventTypeById)
+
+	router.POST("/v1/triggers", handlePostTrigger)
+	router.GET("/v1/triggers", handleGetTriggers)
+	router.GET("/v1/triggers/:id", handleGetTriggerByID)
+	router.DELETE("/v1/triggers/:id", handleDeleteTriggerByID)
+
+	router.POST("/v1/alerts", handlePostAlert)
+	router.GET("/v1/alerts", handleGetAlerts)
+	router.GET("/v1/alerts/:id", handleGetAlertByID)
+	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
+
+	router.POST("/v1/admin/settings", handlePostAdminSettings)
+	router.POST("/v1/admin/shutdown", handlePostAdminShutdown)
+	router.GET("/v1/admin/stats", handleGetAdminStats)
+	router.GET("/v1/admin/settings", handleGetAdminSettings)
 
 	logger.Info("handlers set")
 

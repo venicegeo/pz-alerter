@@ -24,11 +24,11 @@ type AlertDB struct {
 	*ResourceDB
 }
 
-func NewAlertDB(es *elasticsearch.Client, index string) (*AlertDB, error) {
+func NewAlertDB(server *Server, es *elasticsearch.Client, index string) (*AlertDB, error) {
 
 	esi := elasticsearch.NewIndex(es, index)
 
-	rdb, err := NewResourceDB(es, esi)
+	rdb, err := NewResourceDB(server, es, esi)
 	if err != nil {
 		return nil, err
 	}
