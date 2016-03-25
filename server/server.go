@@ -327,7 +327,7 @@ func handlePostTrigger(c *gin.Context) {
 	c.JSON(http.StatusCreated, a)
 }
 
-func handleDeleteEventTypeById(c *gin.Context) {
+func handleDeleteEventTypeByID(c *gin.Context) {
 	id := c.Param("id")
 	ok, err := server.eventTypeDB.DeleteByID("EventType", Ident(id))
 	if err != nil {
@@ -562,7 +562,7 @@ func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgen 
 	router.POST("/v1/eventtypes", handlePostEventType)
 	router.GET("/v1/eventtypes", handleGetEventTypes)
 	router.GET("/v1/eventtypes/:id", handleGetEventTypeByID)
-	router.DELETE("/v1/eventtypes/:id", handleDeleteEventTypeById)
+	router.DELETE("/v1/eventtypes/:id", handleDeleteEventTypeByID)
 
 	router.POST("/v1/triggers", handlePostTrigger)
 	router.GET("/v1/triggers", handleGetTriggers)
