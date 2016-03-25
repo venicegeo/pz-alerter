@@ -24,11 +24,11 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(es *elasticsearch.Client, index string) (*EventDB, error) {
+func NewEventDB(server *Server, es *elasticsearch.Client, index string) (*EventDB, error) {
 
 	esi := elasticsearch.NewIndex(es, index)
 
-	rdb, err := NewResourceDB(es, esi)
+	rdb, err := NewResourceDB(server, es, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
 	return &event, nil
 }
 
-func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident, alertDB *AlertDB) (*[]Ident, error) {
+func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
 
 	resp, err := db.Esi.AddPercolationDocument(eventType, data)
 	if err != nil {
@@ -92,14 +92,14 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	ids := make([]Ident, len(resp.Matches))
 	for i, v := range resp.Matches {
 		ids[i] = Ident(v.Id)
-		alert := Alert{ID: NewIdent(), EventID: id, TriggerID: Ident(v.Id)}
-		_, err = alertDB.PostData("Alert", &alert, alert.ID)
+		alert := Alert{ID: db.server.NewIdent(), EventID: id, TriggerID: Ident(v.Id)}
+		_, err = db.server.alertDB.PostData("Alert", &alert, alert.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	alertDB.Flush()
+	db.server.alertDB.Flush()
 
 	return &ids, nil
 }

@@ -26,11 +26,11 @@ type TriggerDB struct {
 	*ResourceDB
 }
 
-func NewTriggerDB(es *elasticsearch.Client, index string) (*TriggerDB, error) {
+func NewTriggerDB(server *Server, es *elasticsearch.Client, index string) (*TriggerDB, error) {
 
 	esi := elasticsearch.NewIndex(es, index)
 
-	rdb, err := NewResourceDB(es, esi)
+	rdb, err := NewResourceDB(server, es, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func NewTriggerDB(es *elasticsearch.Client, index string) (*TriggerDB, error) {
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident, eventDB *EventDB) (Ident, error) {
+func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident) (Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
 	body, err := json.Marshal(ifaceObj)
@@ -46,7 +46,7 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident, eve
 		return NoIdent, err
 	}
 
-	indexResult, err := eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
+	indexResult, err := db.server.eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
 	if err != nil {
 		return NoIdent, err
 	}
@@ -66,7 +66,7 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident, eve
 	return id, nil
 }
 
-func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (bool, error) {
+func (db *TriggerDB) DeleteTrigger(mapping string, id Ident) (bool, error) {
 
 	trigger, err := db.GetOne(mapping, id)
 	if err != nil {
@@ -86,7 +86,7 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id Ident, eventDB *EventDB) (
 		return false, err
 	}
 
-	deleteResult, err := eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
+	deleteResult, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
 	if !deleteResult.Found {
 		return false, errors.New("unable to delete percolation")
 	}

@@ -26,11 +26,11 @@ type EventTypeDB struct {
 	*ResourceDB
 }
 
-func NewEventTypeDB(es *elasticsearch.Client, index string) (*EventTypeDB, error) {
+func NewEventTypeDB(server *Server, es *elasticsearch.Client, index string) (*EventTypeDB, error) {
 
 	esi := elasticsearch.NewIndex(es, index)
 
-	rdb, err := NewResourceDB(es, esi)
+	rdb, err := NewResourceDB(server, es, esi)
 	if err != nil {
 		return nil, err
 	}
