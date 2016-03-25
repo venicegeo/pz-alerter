@@ -1,8 +1,0 @@
-applications:
-- name: pz-workflow
-  host: pz-workflow
-  memory: 512M
-  instances: 1
-  timeout: 80
-  command: ./pz-workflow
-  buildpack: binary_buildpack

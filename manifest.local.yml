@@ -1,0 +1,9 @@
+applications:
+- name: pz-workflow
+  host: pz-workflow
+  command: ./pz-workflow.bin
+  buildpack: binary_buildpack
+  domain: test.geointservices.io
+  memory: 512M
+  instances: 1
+  timeout: 180
