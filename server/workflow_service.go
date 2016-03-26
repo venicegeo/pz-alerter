@@ -23,6 +23,7 @@ import (
 	"net/http"
 
 	"github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	logger "github.com/venicegeo/pz-logger/client"
 )
 
@@ -33,27 +34,27 @@ type PzWorkflowService struct {
 	logger  *logger.CustomLogger
 }
 
-func NewPzWorkflowService(sys *piazza.System, address string) (*PzWorkflowService, error) {
+func NewPzWorkflowService(sys *piazza.SystemConfig,
+	logger *logger.CustomLogger,
+	es *elasticsearch.Client) (*PzWorkflowService, error) {
+
 	var _ piazza.IService = new(PzWorkflowService)
 
 	var err error
 
-	var x = sys.Services[piazza.PzLogger]
-	var y = x.(logger.ILoggerService)
+	address := sys.Endpoints[piazza.PzWorkflow]
 
 	service := &PzWorkflowService{
 		url:     fmt.Sprintf("http://%s/v1", address),
 		name:    piazza.PzWorkflow,
 		address: address,
-		logger:  logger.NewCustomLogger(&y, piazza.PzLogger, address),
+		logger:  logger,
 	}
 
-	err = sys.WaitForService(service)
+	err = piazza.WaitForService(piazza.PzWorkflow, address)
 	if err != nil {
 		return nil, err
 	}
-
-	sys.Services[piazza.PzWorkflow] = service
 
 	service.logger.Info("PzWorkflowService started")
 

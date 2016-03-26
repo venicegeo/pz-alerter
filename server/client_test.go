@@ -30,7 +30,7 @@ type ClientTester struct {
 	logger     loggerPkg.ILoggerService
 	uuidgenner uuidgenPkg.IUuidGenService
 	workflow   *PzWorkflowService
-	sys        *piazza.System
+	sys        *piazza.SystemConfig
 }
 
 func (suite *ClientTester) SetupSuite() {

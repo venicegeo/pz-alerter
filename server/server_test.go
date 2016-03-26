@@ -29,47 +29,8 @@ import (
 
 type ServerTester struct {
 	suite.Suite
-	sys      *piazza.System
+	sys      *piazza.SystemConfig
 	workflow *PzWorkflowService
-}
-
-func startServer() *piazza.System {
-	config, err := piazza.NewConfig(piazza.PzWorkflow, piazza.ConfigModeTest)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	sys, err := piazza.NewSystem(config)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	theLogger, err := loggerPkg.NewMockLoggerService(sys)
-	if err != nil {
-		log.Fatal(err)
-	}
-	var tmp = theLogger
-	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, config.GetAddress())
-
-	theUuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	es, err := elasticsearch.NewClient(sys, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	sys.Services[piazza.PzElasticSearch] = es
-
-	routes, err := CreateHandlers(sys, clogger, theUuidgen)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_ = sys.StartServer(routes)
-
-	return sys
 }
 
 func assertNoData(t *testing.T, workflow *PzWorkflowService) {
@@ -100,9 +61,43 @@ func assertNoData(t *testing.T, workflow *PzWorkflowService) {
 
 func TestRunSuite(t *testing.T) {
 
-	sys := startServer()
+	endpoints := &piazza.ServicesMap{
+		piazza.PzElasticSearch: "https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com",
+		piazza.PzLogger:        "",
+	}
 
-	workflow, err := NewPzWorkflowService(sys, sys.Config.GetBindToAddress())
+	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, endpoints)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	logger, err := loggerPkg.NewMockLoggerService(sys)
+	if err != nil {
+		log.Fatal(err)
+	}
+	clogger := loggerPkg.NewCustomLogger(&logger, piazza.PzWorkflow, sys.Address)
+
+	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	es, err := elasticsearch.NewClient(sys, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// start server
+	{
+		routes, err := CreateHandlers(sys, clogger, uuidgen, es)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_ = sys.StartServer(routes)
+	}
+
+	workflow, err := NewPzWorkflowService(sys, clogger, es)
 	if err != nil {
 		log.Fatal(err)
 	}

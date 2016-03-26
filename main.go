@@ -18,6 +18,7 @@ import (
 	"log"
 
 	piazza "github.com/venicegeo/pz-gocommon"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/server"
@@ -25,43 +26,42 @@ import (
 
 func main() {
 
-	var mode = piazza.ConfigModeCloud
-	if piazza.IsLocalConfig() {
-		mode = piazza.ConfigModeLocal
+	endpoints := &piazza.ServicesMap{
+		piazza.PzElasticSearch: "https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com",
+		piazza.PzLogger:        "",
 	}
 
-	config, err := piazza.NewConfig(piazza.PzWorkflow, mode)
+	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, endpoints)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sys, err := piazza.NewSystem(config)
+	theLogger, err := loggerPkg.NewMockLoggerService(sys)
+	if err != nil {
+		log.Fatal(err)
+	}
+	var tmp = theLogger
+	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, sys.Address)
+
+	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewPzLoggerService(sys, sys.DiscoverService.GetDataForService(piazza.PzLogger).Host)
+	es, err := elasticsearch.NewClient(sys, true)
 	if err != nil {
 		log.Fatal(err)
-	}
-	var tmp loggerPkg.ILoggerService = logger
-	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, config.GetAddress())
-
-	uuidgenner, err := uuidgenPkg.NewPzUuidGenService(sys, sys.DiscoverService.GetDataForService(piazza.PzUuidgen).Host)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	routes, err := server.CreateHandlers(sys, clogger, uuidgenner)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if len(sys.Services) != 4 {
-		log.Fatalf("internal error: services expected (%d) != actual (%d)", 4, len(sys.Services))
 	}
 
 	clogger.Info("pz-workflow starting...")
+
+	// start server
+	routes, err := server.CreateHandlers(sys, clogger, uuidgen, es)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = sys.StartServer(routes)
 
 	done := sys.StartServer(routes)
 
