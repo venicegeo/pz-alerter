@@ -532,18 +532,12 @@ func handleHealthCheck(c *gin.Context) {
 	c.String(http.StatusOK, "Hi. I'm pz-workflow.")
 }
 
-func CreateHandlers(sys *piazza.System, logger *loggerPkg.CustomLogger, uuidgen uuidgenPkg.IUuidGenService) (http.Handler, error) {
+func CreateHandlers(sys *piazza.SystemConfig,
+	logger *loggerPkg.CustomLogger,
+	uuidgen uuidgenPkg.IUuidGenService,
+	es *elasticsearch.Client) (http.Handler, error) {
 
 	var err error
-
-	esx := sys.Services[piazza.PzElasticSearch]
-	if esx == nil {
-		return nil, errors.New("internal error: elasticsearch not registered")
-	}
-	es, ok := esx.(*elasticsearch.Client)
-	if !ok {
-		return nil, errors.New("internl error")
-	}
 
 	server, err = NewServer(es, uuidgen)
 	if err != nil {
