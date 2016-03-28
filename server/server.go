@@ -17,6 +17,7 @@ package server
 import (
 	"errors"
 	"fmt"
+    "log"
 	"net/http"
 	"strings"
 	"sync"
@@ -474,11 +475,10 @@ func handlePostEvent(c *gin.Context) {
 	}
 
 	{
-		// TODO: this should be done asynchronously
-		///log.Printf("event:\n")
-		///log.Printf("\tID: %v\n", event.ID)
-		///log.Printf("\tType: %v\n", eventType)
-		///log.Printf("\tData: %v\n", event.Data)
+		log.Printf("event:\n")
+		log.Printf("\tID: %v\n", event.ID)
+		log.Printf("\tType: %v\n", eventType)
+		log.Printf("\tData: %v\n", event.Data)
 
 		// Find triggers associated with event
 		triggerIDs, err := server.eventDB.PercolateEventData(eventType, event.Data, event.ID)
@@ -488,10 +488,14 @@ func handlePostEvent(c *gin.Context) {
 		}
 
 		// For each trigger,  apply the event data and submit job
+        var waitGroup sync.WaitGroup
+        
 		for _, triggerID := range *triggerIDs {
+            waitGroup.Add(1)
 			go func(triggerID Ident) {
-
-				///log.Printf("\ntriggerID: %v\n", triggerID)
+                defer waitGroup.Done()
+                
+				log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := server.triggerDB.GetOne("Trigger", triggerID)
 				if err != nil {
 					Status(c, 400, err.Error())
@@ -501,8 +505,8 @@ func handlePostEvent(c *gin.Context) {
 					c.JSON(http.StatusNotFound, gin.H{"id": triggerID})
 					return
 				}
-				///log.Printf("trigger: %v\n", trigger)
-				///log.Printf("\tJob: %v\n\n", trigger.Job.Task)
+				log.Printf("trigger: %v\n", trigger)
+				log.Printf("\tJob: %v\n\n", trigger.Job.Task)
 
 				var jobInstance = trigger.Job.Task
 
@@ -511,12 +515,14 @@ func handlePostEvent(c *gin.Context) {
 					jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
 				}
 
-				//log.Printf("jobInstance: %s\n\n", jobInstance)
+				log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				// Figure out how to post the jobInstance to job manager server.
 
 			}(triggerID)
 		}
+        
+        waitGroup.Wait()
 	}
 
 	c.JSON(http.StatusCreated, retID)
