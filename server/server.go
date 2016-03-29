@@ -67,6 +67,7 @@ type Server struct {
 }
 
 var server *Server
+var sysConfig *piazza.SystemConfig
 
 func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
 	var s Server
@@ -520,11 +521,11 @@ func handlePostEvent(c *gin.Context) {
 				// log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				// Figure out how to post the jobInstance to job manager server.
-                url := "http://pz-gateway.cf.piazzageo.io/job"
+                url := fmt.Sprintf("%s/job", sysConfig.Endpoints[piazza.PzGateway])
                 log.Println("URL:>", url)
 
                 req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(jobInstance)))
-                req.Header.Set("X-Custom-Header", "myvalue")
+                // req.Header.Set("X-Custom-Header", "myvalue")
                 req.Header.Set("Content-Type", "application/json")
 
                 client := &http.Client{}
@@ -558,6 +559,8 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	var err error
 
+    sysConfig = sys
+    
 	server, err = NewServer(es, uuidgen)
 	if err != nil {
 		return nil, errors.New("internal error: server context failed to initialize")
