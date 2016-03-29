@@ -15,11 +15,11 @@
 package server
 
 import (
-    "bytes"
+	"bytes"
 	"errors"
 	"fmt"
-    "io/ioutil"
-    "log"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -296,7 +296,7 @@ func handleGetTriggerByID(c *gin.Context) {
 func handleGetTriggers(c *gin.Context) {
 	m, err := server.triggerDB.GetAll("Trigger")
 	if err != nil {
-		Status(c, 400, err.Error())
+		c.String(http.StatusBadRequest, "%s", err)
 		return
 	}
 
@@ -490,13 +490,13 @@ func handlePostEvent(c *gin.Context) {
 		}
 
 		// For each trigger,  apply the event data and submit job
-        var waitGroup sync.WaitGroup
-        
+		var waitGroup sync.WaitGroup
+
 		for _, triggerID := range *triggerIDs {
-            waitGroup.Add(1)
+			waitGroup.Add(1)
 			go func(triggerID Ident) {
-                defer waitGroup.Done()
-                
+				defer waitGroup.Done()
+
 				// log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := server.triggerDB.GetOne("Trigger", triggerID)
 				if err != nil {
@@ -520,28 +520,28 @@ func handlePostEvent(c *gin.Context) {
 				// log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				// Figure out how to post the jobInstance to job manager server.
-                url := "http://pz-gateway.cf.piazzageo.io/job"
-                log.Println("URL:>", url)
+				url := "http://pz-gateway.cf.piazzageo.io/job"
+				log.Println("URL:>", url)
 
-                req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(jobInstance)))
-                req.Header.Set("X-Custom-Header", "myvalue")
-                req.Header.Set("Content-Type", "application/json")
+				req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(jobInstance)))
+				req.Header.Set("X-Custom-Header", "myvalue")
+				req.Header.Set("Content-Type", "application/json")
 
-                client := &http.Client{}
-                resp, err := client.Do(req)
-                if err != nil {
-                    panic(err)
-                }
-                defer resp.Body.Close()
+				client := &http.Client{}
+				resp, err := client.Do(req)
+				if err != nil {
+					panic(err)
+				}
+				defer resp.Body.Close()
 
-                log.Println("response Status:", resp.Status)
-                log.Println("response Headers:", resp.Header)
-                body, _ := ioutil.ReadAll(resp.Body)
-                log.Println("response Body:", string(body))                                               
+				log.Println("response Status:", resp.Status)
+				log.Println("response Headers:", resp.Header)
+				body, _ := ioutil.ReadAll(resp.Body)
+				log.Println("response Body:", string(body))
 			}(triggerID)
 		}
-        
-        waitGroup.Wait()
+
+		waitGroup.Wait()
 	}
 
 	c.JSON(http.StatusCreated, retID)

@@ -30,6 +30,7 @@ type TriggerDB struct {
 func NewTriggerDB(server *Server, es *elasticsearch.Client, index string) (*TriggerDB, error) {
 
 	esi := elasticsearch.NewIndex(es, index)
+	log.Printf("opened index: %s", esi.IndexName())
 
 	rdb, err := NewResourceDB(server, es, esi)
 	if err != nil {
