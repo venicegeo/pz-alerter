@@ -15,6 +15,7 @@
 package server
 
 import (
+    "log"
 	"time"
 
 	assert "github.com/stretchr/testify/assert"
@@ -49,12 +50,14 @@ func (suite *ClientTester) Test01Admin() {
 
 	workflow := suite.workflow
 
+    log.Printf("AdminSettings:")
 	settings, err := workflow.GetFromAdminSettings()
 	assert.NoError(err)
 	if settings.Debug != false {
 		t.Error("settings not false")
 	}
-
+    printJSON("before", settings)
+    
 	settings.Debug = true
 	err = workflow.PostToAdminSettings(settings)
 	assert.NoError(err)
@@ -64,6 +67,7 @@ func (suite *ClientTester) Test01Admin() {
 	if settings.Debug != true {
 		t.Error("settings not true")
 	}
+    printJSON("after", settings)    
 }
 
 func (suite *ClientTester) Test02AlertResource() {
@@ -550,3 +554,4 @@ func (suite *ClientTester) Test07Triggering() {
 		}()
 	}
 }
+
