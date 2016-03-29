@@ -106,8 +106,8 @@ func TestRunSuite(t *testing.T) {
 	serverTester := &ServerTester{workflow: workflow, sys: sys}
 	suite.Run(t, serverTester)
 
-//	clientTester := &ClientTester{workflow: workflow, sys: sys}
-//	suite.Run(t, clientTester)
+	clientTester := &ClientTester{workflow: workflow, sys: sys}
+	suite.Run(t, clientTester)
 }
 
 //---------------------------------------------------------------------------
@@ -165,7 +165,6 @@ func makeTestTrigger(eventTypeID Ident) *Trigger {
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-/*
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -516,8 +515,6 @@ func (suite *ServerTester) Test05EventMapping() {
 	err = workflow.DeleteOneEventType(et2Id)
 	assert.NoError(err)
 }
-*/
-
 
 func (suite *ServerTester) Test06Workflow() {
 	t := suite.T()
