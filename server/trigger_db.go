@@ -105,6 +105,7 @@ func (db *TriggerDB) DeleteTrigger(mapping string, id Ident) (bool, error) {
 
 func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
 	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+	log.Printf("GetAll triggers result: (%s) %#v", err, searchResult)
 	if err != nil {
 		return nil, err
 	}
