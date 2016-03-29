@@ -56,7 +56,8 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident) (Id
 	log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationID = Ident(indexResult.Id)
 
-	_, err = db.Esi.PostData(mapping, id.String(), trigger)
+	indexResult2, err := db.Esi.PostData(mapping, id.String(), trigger)
+	log.Printf("posted trigger returned: (%s) %#v", err, indexResult2)
 	if err != nil {
 		return NoIdent, err
 	}
