@@ -17,6 +17,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"log"
 
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -46,11 +47,13 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident) (Id
 		return NoIdent, err
 	}
 
+	log.Printf("Posting percolation query: %s", string(body))
 	indexResult, err := db.server.eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
 	if err != nil {
 		return NoIdent, err
 	}
 
+	log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationID = Ident(indexResult.Id)
 
 	_, err = db.Esi.PostData(mapping, id.String(), trigger)
