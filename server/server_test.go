@@ -65,6 +65,7 @@ func TestRunSuite(t *testing.T) {
 	endpoints := &piazza.ServicesMap{
 		piazza.PzElasticSearch: "https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com",
 		piazza.PzLogger:        "",
+        piazza.PzGateway:       "http://pz-gateway.stage.geointservices.io",        
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, endpoints)
@@ -336,10 +337,10 @@ func (suite *ServerTester) Test04Alert() {
 
 	log.Printf("Getting list of alerts:")
 	alerts, err := workflow.GetAllAlerts()
-	assert.NoError(err)
-	printJSON("alerts:", alerts)
-
-	log.Printf("Creating new event type:")
+	assert.Error(err)
+    printJSON("alerts", alerts)
+    
+    log.Printf("Creating new event type:")
 	eventTypeName := makeTestEventTypeName()
 	eventType := makeTestEventType(eventTypeName)
 	printJSON("event type", eventType)
@@ -375,7 +376,7 @@ func (suite *ServerTester) Test04Alert() {
 	alerts, err = workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
-	printJSON("alerts:", alerts)
+    printJSON("alerts", alerts)
 
 	log.Printf("Get alert by id: %s", id)
 	alert, err = workflow.GetOneAlert(id)
@@ -595,7 +596,7 @@ func (suite *ServerTester) Test06Workflow() {
 				"num":    17,
 				"str":    "quick",
 				"apiKey": "my-api-key-38n987",
-				"jobId":  "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
+				"jobId":  "9d172acd-689e-44b9-af74-309688776b2a",
 			},
 		}
 
@@ -622,7 +623,7 @@ func (suite *ServerTester) Test06Workflow() {
 				"str": "brown",
 				// Probably don't need the following as job shouldn't be executed.
 				"apiKey": "my-api-key-38n987",
-				"jobId":  "789a6531-85a9-4098-aa3c-e90d07d9b8a3",
+				"jobId":  "9d172acd-689e-44b9-af74-309688776b2a",
 			},
 		}
 
@@ -662,9 +663,13 @@ func (suite *ServerTester) Test99Noop() {
 }
 
 func printJSON(msg string, input interface{}) {
-	results, err := json.Marshal(input)
-	if err != nil {
-		log.Fatal(err)
-	}
-	log.Printf("\t%s: %s\n", msg, string(results))
+    if input != nil {
+        results, err := json.Marshal(input) 
+        if err != nil {
+            log.Fatal(err)
+        }
+        log.Printf("\t%s: %s\n", msg, string(results))    
+    } else {
+        log.Printf("\t%s: null\n", msg )            
+    }
 }

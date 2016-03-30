@@ -29,6 +29,7 @@ func main() {
 	endpoints := &piazza.ServicesMap{
 		piazza.PzElasticSearch: "https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com",
 		piazza.PzLogger:        "",
+        piazza.PzGateway:       "http://pz-gateway.stage.geointservices.io",
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, endpoints)
