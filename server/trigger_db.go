@@ -16,7 +16,6 @@ package server
 
 import (
 	"encoding/json"
-	"errors"
 	"log"
 
 	"github.com/venicegeo/pz-gocommon"
@@ -25,6 +24,7 @@ import (
 
 type TriggerDB struct {
 	*ResourceDB
+	mapping string
 }
 
 func NewTriggerDB(server *Server, es *elasticsearch.Client, index string) (*TriggerDB, error) {
@@ -36,11 +36,11 @@ func NewTriggerDB(server *Server, es *elasticsearch.Client, index string) (*Trig
 	if err != nil {
 		return nil, err
 	}
-	ardb := TriggerDB{ResourceDB: rdb}
+	ardb := TriggerDB{ResourceDB: rdb, mapping: "Trigger"}
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident) (Ident, error) {
+func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
 	body, err := json.Marshal(ifaceObj)
@@ -51,16 +51,24 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident) (Id
 	log.Printf("Posting percolation query: %s", string(body))
 	indexResult, err := db.server.eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
 	if err != nil {
-		return NoIdent, err
+		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
+	}
+	if indexResult == nil {
+		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: no indexResult")
+	}
+	if !indexResult.Created {
+		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created")
 	}
 
 	log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationID = Ident(indexResult.Id)
 
-	indexResult2, err := db.Esi.PostData(mapping, id.String(), trigger)
-	log.Printf("posted trigger returned: (%s) %#v", err, indexResult2)
+	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
 	if err != nil {
-		return NoIdent, err
+		return NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+	}
+	if !indexResult2.Created {
+		return NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 
 	err = db.Esi.Flush()
@@ -71,47 +79,21 @@ func (db *TriggerDB) PostTrigger(mapping string, trigger *Trigger, id Ident) (Id
 	return id, nil
 }
 
-func (db *TriggerDB) DeleteTrigger(mapping string, id Ident) (bool, error) {
-
-	trigger, err := db.GetOne(mapping, id)
-	if err != nil {
-		return false, err
-	}
-	if trigger == nil {
-		return false, nil
-	}
-
-	res, err := db.Esi.DeleteByID(mapping, string(id))
-	if err != nil {
-		return false, err
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
-	}
-
-	deleteResult, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
-	if !deleteResult.Found {
-		return false, errors.New("unable to delete percolation")
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
-	}
-
-	return res.Found, nil
-}
-
-func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
-	log.Printf("GetAll triggers result: (%s) %#v", err, searchResult)
-	if err != nil {
-		return nil, err
-	}
-
+func (db *TriggerDB) GetAll() (*[]Trigger, error) {
 	var triggers []Trigger
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &triggers, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping)
+	if err != nil {
+		return nil, LoggedError("TriggerDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, LoggedError("TriggerDB.GetAll failed: no searchResult")
+	}
 
 	if searchResult != nil && searchResult.Hits != nil {
 
@@ -127,14 +109,17 @@ func (db *TriggerDB) GetAll(mapping string) (*[]Trigger, error) {
 	return &triggers, nil
 }
 
-func (db *TriggerDB) GetOne(mapping string, id Ident) (*Trigger, error) {
+func (db *TriggerDB) GetOne(id Ident) (*Trigger, error) {
 
-	getResult, err := db.Esi.GetByID(mapping, id.String())
+	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, err
+		return nil, LoggedError("TriggerDB.GetOne failed: %s", err)
+	}
+	if getResult == nil {
+		return nil, LoggedError("TriggerDB.GetOne failed: no getResult")
 	}
 
-	if getResult == nil || !getResult.Found {
+	if !getResult.Found {
 		return nil, nil
 	}
 
@@ -146,4 +131,46 @@ func (db *TriggerDB) GetOne(mapping string, id Ident) (*Trigger, error) {
 	}
 
 	return &obj, nil
+}
+
+func (db *TriggerDB) DeleteTrigger(id Ident) (bool, error) {
+
+	trigger, err := db.GetOne(id)
+	if err != nil {
+		return false, err
+	}
+	if trigger == nil {
+		return false, nil
+	}
+
+	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
+	if err != nil {
+		return false, LoggedError("TriggerDB.DeleteById failed: %s", err)
+	}
+	if deleteResult == nil {
+		return false, LoggedError("TriggerDB.DeleteById failed: no deleteResult")
+	}
+	if !deleteResult.Found {
+		return false, nil
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+
+	deleteResult2, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
+	if err != nil {
+		return false, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
+	}
+	if deleteResult2 == nil {
+		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult")
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+
+	return deleteResult2.Found, nil
 }

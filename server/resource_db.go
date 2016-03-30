@@ -39,57 +39,11 @@ func NewResourceDB(server *Server, es *elasticsearch.Client, esi *elasticsearch.
 	return db, nil
 }
 
-func (db *ResourceDB) PostData(mapping string, obj interface{}, id Ident) (Ident, error) {
-
-	// TODO: check IndexResult return value
-	_, err := db.Esi.PostData(mapping, id.String(), obj)
-	if err != nil {
-		return NoIdent, err
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return NoIdent, err
-	}
-
-	return id, nil
-}
-
-func (db *ResourceDB) DeleteByID(mapping string, id Ident) (bool, error) {
-	res, err := db.Esi.DeleteByID(mapping, string(id))
-	if err != nil {
-		return false, err
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
-	}
-
-	return res.Found, nil
-}
-
-func (db *ResourceDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
-
-	jsn, err := elasticsearch.ConstructMappingSchema(name, mapping)
-	err = db.Esi.SetMapping(name, jsn)
-	if err != nil {
-		return err
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (db *ResourceDB) Flush() error {
 
 	err := db.Esi.Flush()
 	if err != nil {
-		return err
+		return LoggedError("ResourceDB.Flush failed: %s", err)
 	}
 
 	return nil

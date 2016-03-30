@@ -22,6 +22,7 @@ import (
 
 type AlertDB struct {
 	*ResourceDB
+	mapping string
 }
 
 func NewAlertDB(server *Server, es *elasticsearch.Client, index string) (*AlertDB, error) {
@@ -32,17 +33,44 @@ func NewAlertDB(server *Server, es *elasticsearch.Client, index string) (*AlertD
 	if err != nil {
 		return nil, err
 	}
-	ardb := AlertDB{ResourceDB: rdb}
+	ardb := AlertDB{ResourceDB: rdb, mapping: "Alert"}
 	return &ardb, nil
 }
 
-func (db *AlertDB) GetAll(mapping string) (*[]Alert, error) {
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
+
+	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return nil, err
+		return NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
+	}
+	if !indexResult.Created {
+		return NoIdent, LoggedError("AlertDB.PostData failed: not created")
 	}
 
+	err = db.Esi.Flush()
+	if err != nil {
+		return NoIdent, err
+	}
+
+	return id, nil
+}
+
+func (db *AlertDB) GetAll() (*[]Alert, error) {
+
 	var alerts []Alert
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &alerts, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping)
+	if err != nil {
+		return nil, LoggedError("AlertDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, LoggedError("AlertDB.GetAll failed: no searchResult")
+	}
 
 	if searchResult != nil && searchResult.Hits != nil {
 		for _, hit := range searchResult.Hits.Hits {
@@ -58,14 +86,17 @@ func (db *AlertDB) GetAll(mapping string) (*[]Alert, error) {
 	return &alerts, nil
 }
 
-func (db *AlertDB) GetOne(mapping string, id Ident) (*Alert, error) {
+func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
 
-	getResult, err := db.Esi.GetByID(mapping, id.String())
+	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, err
+		return nil, LoggedError("AlertDB.GetOne failed: %s", err)
+	}
+	if getResult == nil {
+		return nil, LoggedError("AlertDB.GetOne failed: no getResult")
 	}
 
-	if getResult == nil || !getResult.Found {
+	if !getResult.Found {
 		return nil, nil
 	}
 
@@ -77,4 +108,21 @@ func (db *AlertDB) GetOne(mapping string, id Ident) (*Alert, error) {
 	}
 
 	return &alert, nil
+}
+
+func (db *AlertDB) DeleteByID(id Ident) (bool, error) {
+	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
+	if err != nil {
+		return false, LoggedError("AlertDB.DeleteById failed: %s", err)
+	}
+	if deleteResult == nil {
+		return false, LoggedError("AlertDB.DeleteById failed: no deleteResult")
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+
+	return deleteResult.Found, nil
 }

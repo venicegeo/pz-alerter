@@ -36,13 +36,39 @@ func NewEventDB(server *Server, es *elasticsearch.Client, index string) (*EventD
 	return &erdb, nil
 }
 
-func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, error) {
+
+	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
-		return nil, err
+		return NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+	}
+	if !indexResult.Created {
+		return NoIdent, LoggedError("EventDB.PostData failed: not created")
 	}
 
+	err = db.Esi.Flush()
+	if err != nil {
+		return NoIdent, err
+	}
+
+	return id, nil
+}
+
+func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 	var events []Event
+
+	exists := db.Esi.TypeExists(mapping)
+	if !exists {
+		return &events, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+	if err != nil {
+		return nil, LoggedError("EventDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, LoggedError("EventDB.GetAll failed: no searchResult")
+	}
 
 	if searchResult != nil && searchResult.Hits != nil {
 
@@ -62,10 +88,13 @@ func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
 
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
-		return nil, err
+		return nil, LoggedError("EventDB.GetOne failed: %s", err)
+	}
+	if getResult == nil {
+		return nil, LoggedError("EventDB.GetOne failed: no getResult")
 	}
 
-	if getResult == nil || !getResult.Found {
+	if !getResult.Found {
 		return nil, nil
 	}
 
@@ -79,27 +108,73 @@ func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
 	return &event, nil
 }
 
+func (db *EventDB) DeleteByID(mapping string, id Ident) (bool, error) {
+	deleteResult, err := db.Esi.DeleteByID(mapping, string(id))
+	if err != nil {
+		return false, LoggedError("EventDB.DeleteById failed: %s", err)
+	}
+	if deleteResult == nil {
+		return false, LoggedError("EventDB.DeleteById failed: no deleteResult")
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+
+	return deleteResult.Found, nil
+}
+
+func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
+
+	jsn, err := elasticsearch.ConstructMappingSchema(name, mapping)
+	if err != nil {
+		return LoggedError("EventDB.AddMapping failed: %s", err)
+	}
+
+	err = db.Esi.SetMapping(name, jsn)
+	if err != nil {
+		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err)
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
 
-	resp, err := db.Esi.AddPercolationDocument(eventType, data)
+	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
+	if err != nil {
+		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
+	}
+	if percolateResponse == nil {
+		return nil, LoggedError("EventDB.PercolateEventData failed: no percolateResult")
+	}
+
+	err = db.Flush()
 	if err != nil {
 		return nil, err
 	}
 
-	db.Flush()
-
 	// add the triggers to the alert queue
-	ids := make([]Ident, len(resp.Matches))
-	for i, v := range resp.Matches {
+	ids := make([]Ident, len(percolateResponse.Matches))
+	for i, v := range percolateResponse.Matches {
 		ids[i] = Ident(v.Id)
 		alert := Alert{ID: db.server.NewIdent(), EventID: id, TriggerID: Ident(v.Id)}
-		_, err = db.server.alertDB.PostData("Alert", &alert, alert.ID)
+		_, err = db.server.alertDB.PostData(&alert, alert.ID)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	db.server.alertDB.Flush()
+	err = db.server.alertDB.Flush()
+	if err != nil {
+		return nil, err
+	}
 
 	return &ids, nil
 }

@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"sort"
 	"time"
@@ -185,4 +186,10 @@ type WorkflowAdminStats struct {
 
 type WorkflowAdminSettings struct {
 	Debug bool `json:"debug"`
+}
+
+func LoggedError(mssg string, args ...interface{}) error {
+	str := fmt.Sprintf(mssg, args)
+	log.Printf(str)
+	return errors.New(str)
 }

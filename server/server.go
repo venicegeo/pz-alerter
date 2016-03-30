@@ -185,7 +185,7 @@ func handeGetEventByID(c *gin.Context) {
 
 func handleDeleteAlertByID(c *gin.Context) {
 	id := c.Param("id")
-	ok, err := server.alertDB.DeleteByID("Alert", Ident(id))
+	ok, err := server.alertDB.DeleteByID(Ident(id))
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -214,7 +214,7 @@ func handlePostAlert(c *gin.Context) {
 
 	alert.ID = server.NewIdent()
 
-	id, err := server.alertDB.PostData("Alert", &alert, alert.ID)
+	id, err := server.alertDB.PostData(&alert, alert.ID)
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -234,7 +234,7 @@ func handlePostAlert(c *gin.Context) {
 func handleGetAlertByID(c *gin.Context) {
 	id := c.Param("id")
 
-	alert, err := server.alertDB.GetOne("Alert", Ident(id))
+	alert, err := server.alertDB.GetOne(Ident(id))
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -249,7 +249,7 @@ func handleGetAlertByID(c *gin.Context) {
 func handleGetAlerts(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
 
-	all, err := server.alertDB.GetAll("Alert")
+	all, err := server.alertDB.GetAll()
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -259,7 +259,7 @@ func handleGetAlerts(c *gin.Context) {
 
 func handleDeleteTriggerByID(c *gin.Context) {
 	id := c.Param("id")
-	ok, err := server.triggerDB.DeleteTrigger("Trigger", Ident(id))
+	ok, err := server.triggerDB.DeleteTrigger(Ident(id))
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -281,7 +281,7 @@ func handleDeleteTriggerByID(c *gin.Context) {
 func handleGetTriggerByID(c *gin.Context) {
 	id := c.Param("id")
 
-	trigger, err := server.triggerDB.GetOne("Trigger", Ident(id))
+	trigger, err := server.triggerDB.GetOne(Ident(id))
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -294,7 +294,7 @@ func handleGetTriggerByID(c *gin.Context) {
 }
 
 func handleGetTriggers(c *gin.Context) {
-	m, err := server.triggerDB.GetAll("Trigger")
+	m, err := server.triggerDB.GetAll()
 	if err != nil {
 		c.String(http.StatusBadRequest, "%s", err)
 		return
@@ -313,7 +313,7 @@ func handlePostTrigger(c *gin.Context) {
 
 	trigger.ID = server.NewIdent()
 
-	_, err = server.triggerDB.PostTrigger("Trigger", trigger, trigger.ID)
+	_, err = server.triggerDB.PostTrigger(trigger, trigger.ID)
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -332,7 +332,7 @@ func handlePostTrigger(c *gin.Context) {
 
 func handleDeleteEventTypeByID(c *gin.Context) {
 	id := c.Param("id")
-	ok, err := server.eventTypeDB.DeleteByID("EventType", Ident(id))
+	ok, err := server.eventTypeDB.DeleteByID(Ident(id))
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -354,7 +354,7 @@ func handleDeleteEventTypeByID(c *gin.Context) {
 func handleGetEventTypeByID(c *gin.Context) {
 	id := c.Param("id")
 
-	event, err := server.eventTypeDB.GetOne("EventType", Ident(id))
+	event, err := server.eventTypeDB.GetOne(Ident(id))
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -367,7 +367,7 @@ func handleGetEventTypeByID(c *gin.Context) {
 }
 
 func handleGetEventTypes(c *gin.Context) {
-	ets, err := server.eventTypeDB.GetAll("EventType")
+	ets, err := server.eventTypeDB.GetAll()
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -384,7 +384,7 @@ func handlePostEventType(c *gin.Context) {
 	}
 
 	eventType.ID = server.NewIdent()
-	id, err := server.eventTypeDB.PostData("EventType", eventType, eventType.ID)
+	id, err := server.eventTypeDB.PostData(eventType, eventType.ID)
 	if err != nil {
 		Status(c, 400, err.Error())
 		return
@@ -498,7 +498,7 @@ func handlePostEvent(c *gin.Context) {
 				defer waitGroup.Done()
 
 				// log.Printf("\ntriggerID: %v\n", triggerID)
-				trigger, err := server.triggerDB.GetOne("Trigger", triggerID)
+				trigger, err := server.triggerDB.GetOne(triggerID)
 				if err != nil {
 					Status(c, 400, err.Error())
 					return
