@@ -24,6 +24,7 @@ import (
 
 type EventTypeDB struct {
 	*ResourceDB
+	mapping string
 }
 
 func NewEventTypeDB(server *Server, es *elasticsearch.Client, index string) (*EventTypeDB, error) {
@@ -34,17 +35,43 @@ func NewEventTypeDB(server *Server, es *elasticsearch.Client, index string) (*Ev
 	if err != nil {
 		return nil, err
 	}
-	etrdb := EventTypeDB{ResourceDB: rdb}
+	etrdb := EventTypeDB{ResourceDB: rdb, mapping: "EventType"}
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) GetAll(mapping string) (*[]EventType, error) {
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+func (db *EventTypeDB) PostData(obj interface{}, id Ident) (Ident, error) {
+
+	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return nil, err
+		return NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+	}
+	if !indexResult.Created {
+		return NoIdent, LoggedError("EventTypeDB.PostData failed: not created")
 	}
 
+	err = db.Esi.Flush()
+	if err != nil {
+		return NoIdent, err
+	}
+
+	return id, nil
+}
+
+func (db *EventTypeDB) GetAll() (*[]EventType, error) {
 	var eventTypes []EventType
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &eventTypes, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping)
+	if err != nil {
+		return nil, LoggedError("EventTypeDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, LoggedError("EventTypeDB.GetAll failed: no searchResult")
+	}
 
 	if searchResult != nil && searchResult.Hits != nil {
 		for _, hit := range searchResult.Hits.Hits {
@@ -60,14 +87,17 @@ func (db *EventTypeDB) GetAll(mapping string) (*[]EventType, error) {
 	return &eventTypes, nil
 }
 
-func (db *EventTypeDB) GetOne(mapping string, id Ident) (*EventType, error) {
+func (db *EventTypeDB) GetOne(id Ident) (*EventType, error) {
 
-	getResult, err := db.Esi.GetByID(mapping, id.String())
+	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, err
+		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err)
+	}
+	if getResult == nil {
+		return nil, LoggedError("EventTypeDB.GetOne failed: no getResult")
 	}
 
-	if getResult == nil || !getResult.Found {
+	if !getResult.Found {
 		return nil, nil
 	}
 
@@ -79,4 +109,21 @@ func (db *EventTypeDB) GetOne(mapping string, id Ident) (*EventType, error) {
 	}
 
 	return &eventType, nil
+}
+
+func (db *EventTypeDB) DeleteByID(id Ident) (bool, error) {
+	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
+	if err != nil {
+		return false, LoggedError("EventTypeDB.DeleteById failed: %s", err)
+	}
+	if deleteResult == nil {
+		return false, LoggedError("EventTypeDB.DeleteById failed: no deleteResult")
+	}
+
+	err = db.Esi.Flush()
+	if err != nil {
+		return false, err
+	}
+
+	return deleteResult.Found, nil
 }
