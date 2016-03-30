@@ -18,9 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"sort"
 	"time"
 
@@ -43,40 +41,6 @@ func SuperConvert(src interface{}, dst interface{}) error {
 	}
 
 	return nil
-}
-
-type ErrorResponse struct {
-	Status  int    `json:"status"`
-	Message string `json:"message"`
-}
-
-func NewErrorResponseFromHTTP(resp *http.Response) *ErrorResponse {
-	defer resp.Body.Close()
-	mssgBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return &ErrorResponse{Status: 500, Message: "failed to parse error response: " + err.Error()}
-	}
-
-	var e ErrorResponse
-	err = json.Unmarshal(mssgBytes, &e)
-	if err != nil {
-		return &ErrorResponse{Status: 500, Message: "failed to parse error response: " + err.Error()}
-	}
-
-	return &e
-}
-
-func NewErrorFromHTTP(resp *http.Response) error {
-	errResp := NewErrorResponseFromHTTP(resp)
-	return errors.New(errResp.String())
-}
-
-func (e *ErrorResponse) String() string {
-	return fmt.Sprintf("[error response: %d: %s]", e.Status, e.Message)
-}
-
-func (e *ErrorResponse) Error() error {
-	return errors.New(e.String())
 }
 
 type Ident string
