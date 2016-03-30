@@ -518,7 +518,7 @@ func handlePostEvent(c *gin.Context) {
 					jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
 				}
 
-				// log.Printf("jobInstance: %s\n\n", jobInstance)
+				log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				// Figure out how to post the jobInstance to job manager server.
                 url := fmt.Sprintf("%s/job", sysConfig.Endpoints[piazza.PzGateway])

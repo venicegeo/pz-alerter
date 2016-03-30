@@ -107,8 +107,8 @@ func TestRunSuite(t *testing.T) {
 	serverTester := &ServerTester{workflow: workflow, sys: sys}
 	suite.Run(t, serverTester)
 
-	clientTester := &ClientTester{workflow: workflow, sys: sys}
-	suite.Run(t, clientTester)
+//	clientTester := &ClientTester{workflow: workflow, sys: sys}
+//	suite.Run(t, clientTester)
 }
 
 //---------------------------------------------------------------------------
@@ -166,6 +166,7 @@ func makeTestTrigger(eventTypeID Ident) *Trigger {
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -336,7 +337,7 @@ func (suite *ServerTester) Test04Alert() {
     log.Printf("Getting list of alerts:")
 	alerts, err := workflow.GetAllAlerts()
 	assert.Error(err)
-    printJSON("alerts:", alerts)
+    printJSON("alerts", alerts)
     
     log.Printf("Creating new event type:")
 	eventTypeName := makeTestEventTypeName()
@@ -374,7 +375,7 @@ func (suite *ServerTester) Test04Alert() {
 	alerts, err = workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
-    printJSON("alerts:", alerts)
+    printJSON("alerts", alerts)
 
     log.Printf("Get alert by id: %s", id)
 	alert, err = workflow.GetOneAlert(id)    
@@ -399,6 +400,8 @@ func (suite *ServerTester) Test04Alert() {
 	err = workflow.DeleteOneTrigger(triggerID)
 	assert.NoError(err)
 }
+
+
 //---------------------------------------------------------------------------
 
 func (suite *ServerTester) Test05EventMapping() {
@@ -661,9 +664,13 @@ func (suite *ServerTester) Test99Noop() {
 }
 
 func printJSON(msg string, input interface{}) {
-    results, err := json.Marshal(input) 
-    if err != nil {
-		log.Fatal(err)
-	}
-    log.Printf("\t%s: %s\n", msg, string(results))    
+    if input != nil {
+        results, err := json.Marshal(input) 
+        if err != nil {
+            log.Fatal(err)
+        }
+        log.Printf("\t%s: %s\n", msg, string(results))    
+    } else {
+        log.Printf("\t%s: null\n", msg )            
+    }
 }
