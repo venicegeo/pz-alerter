@@ -65,7 +65,7 @@ func TestRunSuite(t *testing.T) {
 	endpoints := &piazza.ServicesMap{
 		piazza.PzElasticSearch: "https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com",
 		piazza.PzLogger:        "",
-        piazza.PzGateway:       "http://pz-gateway.stage.geointservices.io",        
+		piazza.PzGateway:       "http://pz-gateway.stage.geointservices.io",
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, endpoints)
@@ -337,10 +337,11 @@ func (suite *ServerTester) Test04Alert() {
 
 	log.Printf("Getting list of alerts:")
 	alerts, err := workflow.GetAllAlerts()
-	assert.Error(err)
-    printJSON("alerts", alerts)
-    
-    log.Printf("Creating new event type:")
+	assert.NoError(err)
+	assert.Len(*alerts, 0)
+	printJSON("alerts", alerts)
+
+	log.Printf("Creating new event type:")
 	eventTypeName := makeTestEventTypeName()
 	eventType := makeTestEventType(eventTypeName)
 	printJSON("event type", eventType)
@@ -376,7 +377,7 @@ func (suite *ServerTester) Test04Alert() {
 	alerts, err = workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
-    printJSON("alerts", alerts)
+	printJSON("alerts", alerts)
 
 	log.Printf("Get alert by id: %s", id)
 	alert, err = workflow.GetOneAlert(id)
@@ -663,13 +664,13 @@ func (suite *ServerTester) Test99Noop() {
 }
 
 func printJSON(msg string, input interface{}) {
-    if input != nil {
-        results, err := json.Marshal(input) 
-        if err != nil {
-            log.Fatal(err)
-        }
-        log.Printf("\t%s: %s\n", msg, string(results))    
-    } else {
-        log.Printf("\t%s: null\n", msg )            
-    }
+	if input != nil {
+		results, err := json.Marshal(input)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Printf("\t%s: %s\n", msg, string(results))
+	} else {
+		log.Printf("\t%s: null\n", msg)
+	}
 }
