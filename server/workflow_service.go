@@ -72,80 +72,97 @@ func (c PzWorkflowService) GetAddress() string {
 //---------------------------------------------------------------------------
 
 type HTTPReturn struct {
-	Code   int
-	Status string
-	Data   interface{}
-	Err    error
+	StatusCode int
+	Status     string
+	Data       interface{}
 }
 
-func (c *PzWorkflowService) Post(path string, body interface{}) *HTTPReturn {
+func (resp *HTTPReturn) toError() error {
+	s := fmt.Sprintf("%d: %s", resp.StatusCode, resp.Status)
+	return errors.New(s)
+}
+
+func (c *PzWorkflowService) Post(path string, body interface{}) (*HTTPReturn, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
-		return &HTTPReturn{Err: err}
+		return nil, err
 	}
 
 	resp, err := http.Post(c.url+path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
 	if err != nil {
-		return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return &HTTPReturn{Err: err}
+		return nil, err
 	}
 
 	var result interface{}
 	err = json.Unmarshal(data, &result)
 	if err != nil {
-		return &HTTPReturn{Err: err}
+		return nil, err
 	}
 
-	return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Data: result}
+	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
 }
 
-func (c *PzWorkflowService) Get(path string) *HTTPReturn {
+func (c *PzWorkflowService) Get(path string) (*HTTPReturn, error) {
 	resp, err := http.Get(c.url + path)
 	if err != nil {
-		return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
+		return nil, err
 	}
 
 	defer resp.Body.Close()
 	data, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return &HTTPReturn{Err: err}
+		return nil, err
 	}
 
 	var result interface{}
 	err = json.Unmarshal(data, &result)
 	if err != nil {
-		return &HTTPReturn{Err: err}
+		return nil, err
 	}
 
-	return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Data: result}
+	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
 }
 
-func (c *PzWorkflowService) Delete(path string) *HTTPReturn {
+func (c *PzWorkflowService) Delete(path string) (*HTTPReturn, error) {
 	resp, err := piazza.HTTPDelete(c.url + path)
 	if err != nil {
-		return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status, Err: err}
+		return nil, err
 	}
-	return &HTTPReturn{Code: resp.StatusCode, Status: resp.Status}
+
+	defer resp.Body.Close()
+	data, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var result interface{}
+	err = json.Unmarshal(data, &result)
+	if err != nil {
+		return nil, err
+	}
+
+	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
 }
 
 //---------------------------------------------------------------------------
 
 func (c *PzWorkflowService) PostOneEventType(eventType *EventType) (Ident, error) {
-	ret := c.Post("/eventtypes", eventType)
-	if ret.Err != nil {
-		return NoIdent, ret.Err
+	resp, err := c.Post("/eventtypes", eventType)
+	if err != nil {
+		return NoIdent, err
 	}
-	if ret.Code != http.StatusCreated {
-		return NoIdent, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusCreated {
+		return NoIdent, resp.toError()
 	}
 
 	resp2 := &WorkflowIDResponse{}
-	err := SuperConvert(ret.Data, resp2)
+	err = SuperConvert(resp.Data, resp2)
 	if err != nil {
 		return NoIdent, err
 	}
@@ -154,16 +171,16 @@ func (c *PzWorkflowService) PostOneEventType(eventType *EventType) (Ident, error
 }
 
 func (c *PzWorkflowService) GetAllEventTypes() (*[]EventType, error) {
-	ret := c.Get("/eventtypes")
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get("/eventtypes")
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	var typs []EventType
-	err := SuperConvert(ret.Data, &typs)
+	err = SuperConvert(resp.Data, &typs)
 	if err != nil {
 		return nil, err
 	}
@@ -172,16 +189,16 @@ func (c *PzWorkflowService) GetAllEventTypes() (*[]EventType, error) {
 }
 
 func (c *PzWorkflowService) GetOneEventType(id Ident) (*EventType, error) {
-	ret := c.Get("/eventtypes/" + string(id))
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get("/eventtypes/" + string(id))
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	resp2 := EventType{}
-	err := SuperConvert(ret.Data, &resp2)
+	err = SuperConvert(resp.Data, &resp2)
 	if err != nil {
 		return nil, err
 	}
@@ -190,12 +207,12 @@ func (c *PzWorkflowService) GetOneEventType(id Ident) (*EventType, error) {
 }
 
 func (c *PzWorkflowService) DeleteOneEventType(id Ident) error {
-	ret := c.Delete("/eventtypes/" + string(id))
-	if ret.Err != nil {
-		return ret.Err
+	resp, err := c.Delete("/eventtypes/" + string(id))
+	if err != nil {
+		return err
 	}
-	if ret.Code != http.StatusOK {
-		return errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return resp.toError()
 	}
 
 	return nil
@@ -204,18 +221,18 @@ func (c *PzWorkflowService) DeleteOneEventType(id Ident) error {
 //---------------------------------------------------------------------------
 
 func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Ident, error) {
-	ret := c.Post("/events/"+eventTypeName, event)
-	if ret.Err != nil {
-		return NoIdent, ret.Err
+	resp, err := c.Post("/events/"+eventTypeName, event)
+	if err != nil {
+		return NoIdent, err
 	}
-	if ret.Code != http.StatusCreated {
-		return NoIdent, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusCreated {
+		return NoIdent, resp.toError()
 	}
 
 	resp2 := &WorkflowIDResponse{}
-	err := SuperConvert(ret.Data, resp2)
+	err = SuperConvert(resp.Data, resp2)
 	if err != nil {
-		return NoIdent, nil
+		return NoIdent, err
 	}
 
 	return resp2.ID, nil
@@ -227,16 +244,16 @@ func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error)
 		url += "/" + eventTypeName
 	}
 
-	ret := c.Get(url)
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get(url)
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	var events []Event
-	err := SuperConvert(ret.Data, &events)
+	err = SuperConvert(resp.Data, &events)
 	if err != nil {
 		return nil, err
 	}
@@ -245,16 +262,16 @@ func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error)
 }
 
 func (c *PzWorkflowService) GetOneEvent(eventTypeName string, id Ident) (*Event, error) {
-	ret := c.Get("/events/" + eventTypeName + "/" + string(id))
-	if ret.Err != nil {
-		return nil, errors.New(ret.Status)
+	resp, err := c.Get("/events/" + eventTypeName + "/" + string(id))
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	resp2 := Event{}
-	err := SuperConvert(ret.Data, &resp2)
+	err = SuperConvert(resp.Data, &resp2)
 	if err != nil {
 		return nil, err
 	}
@@ -263,12 +280,12 @@ func (c *PzWorkflowService) GetOneEvent(eventTypeName string, id Ident) (*Event,
 }
 
 func (c *PzWorkflowService) DeleteOneEvent(eventTypeName string, id Ident) error {
-	ret := c.Delete("/events/" + eventTypeName + "/" + string(id))
-	if ret.Err != nil {
-		return ret.Err
+	resp, err := c.Delete("/events/" + eventTypeName + "/" + string(id))
+	if err != nil {
+		return err
 	}
-	if ret.Code != http.StatusOK {
-		return errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return resp.toError()
 	}
 
 	return nil
@@ -277,16 +294,16 @@ func (c *PzWorkflowService) DeleteOneEvent(eventTypeName string, id Ident) error
 //---------------------------------------------------------------------------
 
 func (c *PzWorkflowService) PostOneTrigger(trigger *Trigger) (Ident, error) {
-	ret := c.Post("/triggers", trigger)
-	if ret.Err != nil {
-		return NoIdent, ret.Err
+	resp, err := c.Post("/triggers", trigger)
+	if err != nil {
+		return NoIdent, err
 	}
-	if ret.Code != http.StatusCreated {
-		return NoIdent, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusCreated {
+		return NoIdent, resp.toError()
 	}
 
 	resp2 := &WorkflowIDResponse{}
-	err := SuperConvert(ret.Data, resp2)
+	err = SuperConvert(resp.Data, resp2)
 	if err != nil {
 		return NoIdent, err
 	}
@@ -295,16 +312,16 @@ func (c *PzWorkflowService) PostOneTrigger(trigger *Trigger) (Ident, error) {
 }
 
 func (c *PzWorkflowService) GetAllTriggers() (*[]Trigger, error) {
-	ret := c.Get("/triggers")
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get("/triggers")
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	var triggers []Trigger
-	err := SuperConvert(ret.Data, &triggers)
+	err = SuperConvert(resp.Data, &triggers)
 	if err != nil {
 		return nil, err
 	}
@@ -313,16 +330,16 @@ func (c *PzWorkflowService) GetAllTriggers() (*[]Trigger, error) {
 }
 
 func (c *PzWorkflowService) GetOneTrigger(id Ident) (*Trigger, error) {
-	ret := c.Get("/triggers/" + string(id))
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get("/triggers/" + string(id))
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	resp2 := Trigger{}
-	err := SuperConvert(ret.Data, &resp2)
+	err = SuperConvert(resp.Data, &resp2)
 	if err != nil {
 		return nil, err
 	}
@@ -331,12 +348,12 @@ func (c *PzWorkflowService) GetOneTrigger(id Ident) (*Trigger, error) {
 }
 
 func (c *PzWorkflowService) DeleteOneTrigger(id Ident) error {
-	ret := c.Delete("/triggers/" + string(id))
-	if ret.Err != nil {
-		return ret.Err
+	resp, err := c.Delete("/triggers/" + string(id))
+	if err != nil {
+		return err
 	}
-	if ret.Code != http.StatusOK {
-		return errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return resp.toError()
 	}
 
 	return nil
@@ -345,16 +362,16 @@ func (c *PzWorkflowService) DeleteOneTrigger(id Ident) error {
 //---------------------------------------------------------------------------
 
 func (c *PzWorkflowService) PostOneAlert(alert *Alert) (Ident, error) {
-	ret := c.Post("/alerts", alert)
-	if ret.Err != nil {
-		return NoIdent, ret.Err
+	resp, err := c.Post("/alerts", alert)
+	if err != nil {
+		return NoIdent, err
 	}
-	if ret.Code != http.StatusCreated {
-		return NoIdent, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusCreated {
+		return NoIdent, resp.toError()
 	}
 
 	resp2 := &WorkflowIDResponse{}
-	err := SuperConvert(ret.Data, resp2)
+	err = SuperConvert(resp.Data, resp2)
 	if err != nil {
 		return NoIdent, err
 	}
@@ -363,16 +380,16 @@ func (c *PzWorkflowService) PostOneAlert(alert *Alert) (Ident, error) {
 }
 
 func (c *PzWorkflowService) GetAllAlerts() (*[]Alert, error) {
-	ret := c.Get("/alerts")
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get("/alerts")
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	var alerts []Alert
-	err := SuperConvert(ret.Data, &alerts)
+	err = SuperConvert(resp.Data, &alerts)
 	if err != nil {
 		return nil, err
 	}
@@ -381,16 +398,16 @@ func (c *PzWorkflowService) GetAllAlerts() (*[]Alert, error) {
 }
 
 func (c *PzWorkflowService) GetOneAlert(id Ident) (*Alert, error) {
-	ret := c.Get("/alerts/" + string(id))
-	if ret.Err != nil {
-		return nil, ret.Err
+	resp, err := c.Get("/alerts/" + string(id))
+	if err != nil {
+		return nil, err
 	}
-	if ret.Code != http.StatusOK {
-		return nil, errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
 	}
 
 	resp2 := Alert{}
-	err := SuperConvert(ret.Data, &resp2)
+	err = SuperConvert(resp.Data, &resp2)
 	if err != nil {
 		return nil, err
 	}
@@ -399,12 +416,12 @@ func (c *PzWorkflowService) GetOneAlert(id Ident) (*Alert, error) {
 }
 
 func (c *PzWorkflowService) DeleteOneAlert(id Ident) error {
-	ret := c.Delete("/alerts/" + string(id))
-	if ret.Err != nil {
-		return ret.Err
+	resp, err := c.Delete("/alerts/" + string(id))
+	if err != nil {
+		return err
 	}
-	if ret.Code != http.StatusOK {
-		return errors.New(ret.Status)
+	if resp.StatusCode != http.StatusOK {
+		return resp.toError()
 	}
 
 	return nil
@@ -414,19 +431,16 @@ func (c *PzWorkflowService) DeleteOneAlert(id Ident) error {
 
 func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
-	resp, err := http.Get(c.url + "/admin/stats")
-	if err != nil {
-		return nil, NewErrorFromHTTP(resp)
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	resp, err := c.Get("/admin/stats")
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
+	}
 
-	stats := new(WorkflowAdminStats)
-	err = json.Unmarshal(data, stats)
+	stats := &WorkflowAdminStats{}
+	err = SuperConvert(resp.Data, stats)
 	if err != nil {
 		return nil, err
 	}
@@ -436,19 +450,16 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
 func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, error) {
 
-	resp, err := http.Get(c.url + "/admin/settings")
-	if err != nil {
-		return nil, NewErrorFromHTTP(resp)
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	resp, err := c.Get("/admin/settings")
 	if err != nil {
 		return nil, err
 	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.toError()
+	}
 
-	settings := new(WorkflowAdminSettings)
-	err = json.Unmarshal(data, settings)
+	settings := &WorkflowAdminSettings{}
+	err = SuperConvert(resp.Data, settings)
 	if err != nil {
 		return nil, err
 	}
@@ -458,18 +469,13 @@ func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, erro
 
 func (c *PzWorkflowService) PostToAdminSettings(settings *WorkflowAdminSettings) error {
 
-	data, err := json.Marshal(settings)
+	resp, err := c.Post("/admin/settings", settings)
 	if err != nil {
 		return err
 	}
 
-	resp, err := http.Post(c.url+"/admin/settings", piazza.ContentTypeJSON, bytes.NewBuffer(data))
-	if err != nil {
-		return NewErrorFromHTTP(resp)
-	}
-
 	if resp.StatusCode != http.StatusOK {
-		return NewErrorFromHTTP(resp)
+		return resp.toError()
 	}
 
 	return nil
