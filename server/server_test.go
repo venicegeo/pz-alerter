@@ -62,13 +62,13 @@ func assertNoData(t *testing.T, workflow *PzWorkflowService) {
 
 func TestRunSuite(t *testing.T) {
 
-	endpoints := &piazza.ServicesMap{
-		piazza.PzElasticSearch: "https://search-venice-es-pjebjkdaueu2gukocyccj4r5m4.us-east-1.es.amazonaws.com",
-		piazza.PzLogger:        "",
-		piazza.PzGateway:       "http://pz-gateway.stage.geointservices.io",
+	required := []piazza.ServiceName{
+		piazza.PzElasticSearch,
+		piazza.PzLogger,
+		piazza.PzGateway,
 	}
 
-	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, endpoints)
+	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	es, err := elasticsearch.NewClient(sys, true)
+	es, err := elasticsearch.NewClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}

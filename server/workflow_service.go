@@ -28,45 +28,31 @@ import (
 )
 
 type PzWorkflowService struct {
-	name    piazza.ServiceName
-	address string
-	url     string
-	logger  *logger.CustomLogger
+	url    string
+	logger *logger.CustomLogger
 }
 
 func NewPzWorkflowService(sys *piazza.SystemConfig,
 	logger *logger.CustomLogger,
 	es *elasticsearch.Client) (*PzWorkflowService, error) {
 
-	var _ piazza.IService = new(PzWorkflowService)
-
 	var err error
 
-	address := sys.Endpoints[piazza.PzWorkflow]
-
-	service := &PzWorkflowService{
-		url:     fmt.Sprintf("http://%s/v1", address),
-		name:    piazza.PzWorkflow,
-		address: address,
-		logger:  logger,
-	}
-
-	err = piazza.WaitForService(piazza.PzWorkflow, address)
+	err = sys.WaitForService(piazza.PzWorkflow)
 	if err != nil {
 		return nil, err
+	}
+
+	url, err := sys.GetURL(piazza.PzWorkflow)
+
+	service := &PzWorkflowService{
+		url:    url,
+		logger: logger,
 	}
 
 	service.logger.Info("PzWorkflowService started")
 
 	return service, nil
-}
-
-func (c PzWorkflowService) GetName() piazza.ServiceName {
-	return c.name
-}
-
-func (c PzWorkflowService) GetAddress() string {
-	return c.address
 }
 
 //---------------------------------------------------------------------------

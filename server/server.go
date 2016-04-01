@@ -17,23 +17,24 @@ package server
 import (
 	"errors"
 	"fmt"
-_	"io/ioutil"
+	_ "io/ioutil"
 	"log"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
+	"bytes"
+	_ "io"
+	"mime/multipart"
+	_ "net/url"
+	_ "os"
+
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/client"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-_	"net/url"
-	"bytes"
-	"mime/multipart"
-_	"os"
-_	"io"
 )
 
 type LockedAdminSettings struct {
@@ -537,30 +538,36 @@ func handlePostEvent(c *gin.Context) {
 				log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				// Figure out how to post the jobInstance to job manager server.
-                gatewayURL := fmt.Sprintf("%s/job", sysConfig.Endpoints[piazza.PzGateway])
-                extraParams := map[string]string{
-                    "body": jobInstance,
-                }
-                request, err := postToPzGatewayJobService(gatewayURL, extraParams)
-                
-                if err != nil {
-                    log.Fatal(err)
-                }
-                client := &http.Client{}
-                resp, err := client.Do(request)
-                if err != nil {
-                    log.Fatal(err)
-                } else {
-                    body := &bytes.Buffer{}
-                    _, err := body.ReadFrom(resp.Body)
-                    if err != nil {
-                        log.Fatal(err)
-                    }
-                    resp.Body.Close()
-                    log.Println(resp.StatusCode)
-                //    log.Println(resp.Header)
-                    log.Println(body)
-                }                              
+				url, err := sysConfig.GetURL(piazza.PzGateway)
+				if err != nil {
+					StatusBadRequest(c, err)
+					return
+				}
+				gatewayURL := fmt.Sprintf("%s/job", url)
+				extraParams := map[string]string{
+					"body": jobInstance,
+				}
+				request, err := postToPzGatewayJobService(gatewayURL, extraParams)
+				if err != nil {
+					log.Fatal(err)
+				}
+
+				client := &http.Client{}
+				log.Printf(request.URL.String())
+				resp, err := client.Do(request)
+				if err != nil {
+					log.Fatal(err)
+				} else {
+					body := &bytes.Buffer{}
+					_, err := body.ReadFrom(resp.Body)
+					if err != nil {
+						log.Fatal(err)
+					}
+					resp.Body.Close()
+					log.Println(resp.StatusCode)
+					//    log.Println(resp.Header)
+					log.Println(body)
+				}
 
 			}(triggerID)
 		}
@@ -582,8 +589,8 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	var err error
 
-    sysConfig = sys
-    
+	sysConfig = sys
+
 	server, err = NewServer(es, uuidgen)
 	if err != nil {
 		return nil, errors.New("internal error: server context failed to initialize")
@@ -630,19 +637,19 @@ func CreateHandlers(sys *piazza.SystemConfig,
 }
 
 func postToPzGatewayJobService(uri string, params map[string]string) (*http.Request, error) {
-    body := &bytes.Buffer{}
-    writer := multipart.NewWriter(body)
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
 
-    for key, val := range params {
-        _ = writer.WriteField(key, val)
-    }
-    err := writer.Close()
-    if err != nil {
-        return nil, err
-    }
+	for key, val := range params {
+		_ = writer.WriteField(key, val)
+	}
+	err := writer.Close()
+	if err != nil {
+		return nil, err
+	}
 
-    req, error := http.NewRequest("POST", uri, body)
-    req.Header.Add("Content-Type", writer.FormDataContentType())
+	req, error := http.NewRequest("POST", uri, body)
+	req.Header.Add("Content-Type", writer.FormDataContentType())
 
-    return req, error
+	return req, error
 }
