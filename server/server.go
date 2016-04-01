@@ -538,16 +538,22 @@ func handlePostEvent(c *gin.Context) {
 				log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				// Figure out how to post the jobInstance to job manager server.
-				gatewayURL := fmt.Sprintf("%s/job", sysConfig.GetService(piazza.PzGateway))
+				url, err := sysConfig.GetURL(piazza.PzGateway)
+				if err != nil {
+					StatusBadRequest(c, err)
+					return
+				}
+				gatewayURL := fmt.Sprintf("%s/job", url)
 				extraParams := map[string]string{
 					"body": jobInstance,
 				}
 				request, err := postToPzGatewayJobService(gatewayURL, extraParams)
-
 				if err != nil {
 					log.Fatal(err)
 				}
+
 				client := &http.Client{}
+				log.Printf(request.URL.String())
 				resp, err := client.Do(request)
 				if err != nil {
 					log.Fatal(err)

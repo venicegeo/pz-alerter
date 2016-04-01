@@ -38,16 +38,16 @@ func NewPzWorkflowService(sys *piazza.SystemConfig,
 
 	var err error
 
-	address := sys.GetService(piazza.PzWorkflow)
-
-	service := &PzWorkflowService{
-		url:    fmt.Sprintf("http://%s/v1", address),
-		logger: logger,
-	}
-
-	err = piazza.WaitForService(piazza.PzWorkflow, address)
+	err = sys.WaitForService(piazza.PzWorkflow)
 	if err != nil {
 		return nil, err
+	}
+
+	url, err := sys.GetURL(piazza.PzWorkflow)
+
+	service := &PzWorkflowService{
+		url:    url,
+		logger: logger,
 	}
 
 	service.logger.Info("PzWorkflowService started")
