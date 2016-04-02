@@ -23,7 +23,6 @@ import (
 	"net/http"
 
 	"github.com/venicegeo/pz-gocommon"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	logger "github.com/venicegeo/pz-logger/client"
 )
 
@@ -33,8 +32,7 @@ type PzWorkflowService struct {
 }
 
 func NewPzWorkflowService(sys *piazza.SystemConfig,
-	logger *logger.CustomLogger,
-	es *elasticsearch.Client) (*PzWorkflowService, error) {
+	logger *logger.CustomLogger) (*PzWorkflowService, error) {
 
 	var err error
 

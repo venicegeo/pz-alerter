@@ -18,14 +18,12 @@ import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 type ResourceDB struct {
 	server *Server
-	Es     *elasticsearch.Client
-	Esi    *elasticsearch.Index
+	Esi    elasticsearch.IIndex
 }
 
-func NewResourceDB(server *Server, es *elasticsearch.Client, esi *elasticsearch.Index) (*ResourceDB, error) {
+func NewResourceDB(server *Server, esi elasticsearch.IIndex) (*ResourceDB, error) {
 	db := &ResourceDB{
 		server: server,
-		Es:     es,
 		Esi:    esi,
 	}
 

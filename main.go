@@ -49,7 +49,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	es, err := elasticsearch.NewClient(sys)
+	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes")
+	if err != nil {
+		log.Fatal(err)
+	}
+	eventsIndex, err := elasticsearch.NewIndex(sys, "events")
+	if err != nil {
+		log.Fatal(err)
+	}
+	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers")
+	if err != nil {
+		log.Fatal(err)
+	}
+	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -57,7 +69,8 @@ func main() {
 	clogger.Info("pz-workflow starting...")
 
 	// start server
-	routes, err := server.CreateHandlers(sys, clogger, uuidgen, es)
+	routes, err := server.CreateHandlers(sys, clogger, uuidgen,
+		eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
 	if err != nil {
 		log.Fatal(err)
 	}

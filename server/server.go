@@ -85,13 +85,18 @@ type Server struct {
 var server *Server
 var sysConfig *piazza.SystemConfig
 
-func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
+func NewServer(
+	eventtypesIndex elasticsearch.IIndex,
+	eventsIndex elasticsearch.IIndex,
+	triggersIndex elasticsearch.IIndex,
+	alertsIndex elasticsearch.IIndex,
+	uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
 	var s Server
 	var err error
 
 	s.uuidgen = uuidgen
 
-	s.eventTypeDB, err = NewEventTypeDB(&s, es, "eventtypes")
+	s.eventTypeDB, err = NewEventTypeDB(&s, eventtypesIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +105,7 @@ func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*S
 		return nil, err
 	}
 
-	s.eventDB, err = NewEventDB(&s, es, "events")
+	s.eventDB, err = NewEventDB(&s, eventsIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +114,7 @@ func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*S
 		return nil, err
 	}
 
-	s.triggerDB, err = NewTriggerDB(&s, es, "triggers")
+	s.triggerDB, err = NewTriggerDB(&s, triggersIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +123,7 @@ func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*S
 		return nil, err
 	}
 
-	s.alertDB, err = NewAlertDB(&s, es, "alerts")
+	s.alertDB, err = NewAlertDB(&s, alertsIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -585,13 +590,17 @@ func handleHealthCheck(c *gin.Context) {
 func CreateHandlers(sys *piazza.SystemConfig,
 	logger *loggerPkg.CustomLogger,
 	uuidgen uuidgenPkg.IUuidGenService,
-	es *elasticsearch.Client) (http.Handler, error) {
+	eventtypesIndex elasticsearch.IIndex,
+	eventsIndex elasticsearch.IIndex,
+	triggersIndex elasticsearch.IIndex,
+	alertsIndex elasticsearch.IIndex) (http.Handler, error) {
 
 	var err error
 
 	sysConfig = sys
 
-	server, err = NewServer(es, uuidgen)
+	server, err = NewServer(eventtypesIndex, eventsIndex,
+		triggersIndex, alertsIndex, uuidgen)
 	if err != nil {
 		return nil, errors.New("internal error: server context failed to initialize")
 	}

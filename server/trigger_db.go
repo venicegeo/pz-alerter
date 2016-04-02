@@ -27,12 +27,9 @@ type TriggerDB struct {
 	mapping string
 }
 
-func NewTriggerDB(server *Server, es *elasticsearch.Client, index string) (*TriggerDB, error) {
+func NewTriggerDB(server *Server, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	esi := elasticsearch.NewIndex(es, index)
-	log.Printf("opened index: %s", esi.IndexName())
-
-	rdb, err := NewResourceDB(server, es, esi)
+	rdb, err := NewResourceDB(server, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -95,9 +92,9 @@ func (db *TriggerDB) GetAll() (*[]Trigger, error) {
 		return nil, LoggedError("TriggerDB.GetAll failed: no searchResult")
 	}
 
-	if searchResult != nil && searchResult.Hits != nil {
+	if searchResult != nil && searchResult.GetHits() != nil {
 
-		for _, hit := range searchResult.Hits.Hits {
+		for _, hit := range *searchResult.GetHits() {
 			var trigger Trigger
 			err := json.Unmarshal(*hit.Source, &trigger)
 			if err != nil {

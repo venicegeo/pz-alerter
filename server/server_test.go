@@ -28,6 +28,8 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
+const MOCKING = true
+
 type ServerTester struct {
 	suite.Suite
 	sys      *piazza.SystemConfig
@@ -84,14 +86,35 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	es, err := elasticsearch.NewClient(sys)
-	if err != nil {
-		log.Fatal(err)
+	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex elasticsearch.IIndex
+	if MOCKING {
+		eventtypesIndex = elasticsearch.NewMockIndex("eventtypes")
+		eventsIndex = elasticsearch.NewMockIndex("events")
+		triggersIndex = elasticsearch.NewMockIndex("triggers")
+		alertsIndex = elasticsearch.NewMockIndex("alerts")
+	} else {
+		eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes")
+		if err != nil {
+			log.Fatal(err)
+		}
+		eventsIndex, err = elasticsearch.NewIndex(sys, "events")
+		if err != nil {
+			log.Fatal(err)
+		}
+		triggersIndex, err = elasticsearch.NewIndex(sys, "triggers")
+		if err != nil {
+			log.Fatal(err)
+		}
+		alertsIndex, err = elasticsearch.NewIndex(sys, "alerts")
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// start server
 	{
-		routes, err := CreateHandlers(sys, clogger, uuidgen, es)
+		routes, err := CreateHandlers(sys, clogger, uuidgen,
+			eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -99,7 +122,7 @@ func TestRunSuite(t *testing.T) {
 		_ = sys.StartServer(routes)
 	}
 
-	workflow, err := NewPzWorkflowService(sys, clogger, es)
+	workflow, err := NewPzWorkflowService(sys, clogger)
 	if err != nil {
 		log.Fatal(err)
 	}
