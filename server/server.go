@@ -68,7 +68,11 @@ func StatusNotFound(c *gin.Context, obj interface{}) {
 }
 
 func StatusBadRequest(c *gin.Context, err error) {
-	c.String(http.StatusBadRequest, err.Error())
+	type errret struct {
+		Message string
+	}
+	e := errret{Message: err.Error()}
+	c.JSON(http.StatusBadRequest, e)
 }
 
 //---------------------------------------------------------------------------
@@ -85,13 +89,18 @@ type Server struct {
 var server *Server
 var sysConfig *piazza.SystemConfig
 
-func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
+func NewServer(
+	eventtypesIndex elasticsearch.IIndex,
+	eventsIndex elasticsearch.IIndex,
+	triggersIndex elasticsearch.IIndex,
+	alertsIndex elasticsearch.IIndex,
+	uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
 	var s Server
 	var err error
 
 	s.uuidgen = uuidgen
 
-	s.eventTypeDB, err = NewEventTypeDB(&s, es, "eventtypes")
+	s.eventTypeDB, err = NewEventTypeDB(&s, eventtypesIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +109,7 @@ func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*S
 		return nil, err
 	}
 
-	s.eventDB, err = NewEventDB(&s, es, "events")
+	s.eventDB, err = NewEventDB(&s, eventsIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +118,7 @@ func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*S
 		return nil, err
 	}
 
-	s.triggerDB, err = NewTriggerDB(&s, es, "triggers")
+	s.triggerDB, err = NewTriggerDB(&s, triggersIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +127,7 @@ func NewServer(es *elasticsearch.Client, uuidgen uuidgenPkg.IUuidGenService) (*S
 		return nil, err
 	}
 
-	s.alertDB, err = NewAlertDB(&s, es, "alerts")
+	s.alertDB, err = NewAlertDB(&s, alertsIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -448,15 +457,6 @@ func handeDeleteEventByID(c *gin.Context) {
 	StatusOK(c, nil)
 }
 
-func handleGetEvents(c *gin.Context) {
-	m, err := server.eventDB.GetAll("")
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-	StatusOK(c, m)
-}
-
 func handleGetEventsByEventType(c *gin.Context) {
 	eventType := c.Param("eventType")
 
@@ -585,13 +585,17 @@ func handleHealthCheck(c *gin.Context) {
 func CreateHandlers(sys *piazza.SystemConfig,
 	logger *loggerPkg.CustomLogger,
 	uuidgen uuidgenPkg.IUuidGenService,
-	es *elasticsearch.Client) (http.Handler, error) {
+	eventtypesIndex elasticsearch.IIndex,
+	eventsIndex elasticsearch.IIndex,
+	triggersIndex elasticsearch.IIndex,
+	alertsIndex elasticsearch.IIndex) (http.Handler, error) {
 
 	var err error
 
 	sysConfig = sys
 
-	server, err = NewServer(es, uuidgen)
+	server, err = NewServer(eventtypesIndex, eventsIndex,
+		triggersIndex, alertsIndex, uuidgen)
 	if err != nil {
 		return nil, errors.New("internal error: server context failed to initialize")
 	}
@@ -606,7 +610,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/", handleHealthCheck)
 
 	router.POST("/v1/events/:eventType", handlePostEvent)
-	router.GET("/v1/events", handleGetEvents)
+	///////////////////////	router.GET("/v1/events", handleGetEvents)
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
 	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)

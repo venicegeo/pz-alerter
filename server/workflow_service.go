@@ -23,7 +23,6 @@ import (
 	"net/http"
 
 	"github.com/venicegeo/pz-gocommon"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	logger "github.com/venicegeo/pz-logger/client"
 )
 
@@ -33,8 +32,7 @@ type PzWorkflowService struct {
 }
 
 func NewPzWorkflowService(sys *piazza.SystemConfig,
-	logger *logger.CustomLogger,
-	es *elasticsearch.Client) (*PzWorkflowService, error) {
+	logger *logger.CustomLogger) (*PzWorkflowService, error) {
 
 	var err error
 
@@ -64,7 +62,7 @@ type HTTPReturn struct {
 }
 
 func (resp *HTTPReturn) toError() error {
-	s := fmt.Sprintf("%d: %s", resp.StatusCode, resp.Status)
+	s := fmt.Sprintf("%d: %s  {%v}", resp.StatusCode, resp.Status, resp.Data)
 	return errors.New(s)
 }
 
@@ -225,10 +223,11 @@ func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Id
 }
 
 func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error) {
-	url := "/events"
-	if eventTypeName != "" {
-		url += "/" + eventTypeName
+	if eventTypeName == "" {
+		return nil, errors.New("GetAllEvents: type name required")
 	}
+
+	url := "/events/" + eventTypeName
 
 	resp, err := c.Get(url)
 	if err != nil {

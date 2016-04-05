@@ -24,11 +24,9 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(server *Server, es *elasticsearch.Client, index string) (*EventDB, error) {
+func NewEventDB(server *Server, esi elasticsearch.IIndex) (*EventDB, error) {
 
-	esi := elasticsearch.NewIndex(es, index)
-
-	rdb, err := NewResourceDB(server, es, esi)
+	rdb, err := NewResourceDB(server, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -56,10 +54,9 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 
 func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 	var events []Event
-
-	exists := db.Esi.TypeExists(mapping)
+	exists := mapping != "" && db.Esi.TypeExists(mapping)
 	if !exists {
-		return &events, nil
+		return nil, LoggedError("Type %s does not exist", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping)
@@ -70,9 +67,9 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 		return nil, LoggedError("EventDB.GetAll failed: no searchResult")
 	}
 
-	if searchResult != nil && searchResult.Hits != nil {
+	if searchResult != nil && searchResult.GetHits() != nil {
 
-		for _, hit := range searchResult.Hits.Hits {
+		for _, hit := range *searchResult.GetHits() {
 			var event Event
 			err := json.Unmarshal(*hit.Source, &event)
 			if err != nil {

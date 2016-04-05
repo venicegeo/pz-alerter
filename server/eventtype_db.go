@@ -27,11 +27,9 @@ type EventTypeDB struct {
 	mapping string
 }
 
-func NewEventTypeDB(server *Server, es *elasticsearch.Client, index string) (*EventTypeDB, error) {
+func NewEventTypeDB(server *Server, esi elasticsearch.IIndex) (*EventTypeDB, error) {
 
-	esi := elasticsearch.NewIndex(es, index)
-
-	rdb, err := NewResourceDB(server, es, esi)
+	rdb, err := NewResourceDB(server, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +71,8 @@ func (db *EventTypeDB) GetAll() (*[]EventType, error) {
 		return nil, LoggedError("EventTypeDB.GetAll failed: no searchResult")
 	}
 
-	if searchResult != nil && searchResult.Hits != nil {
-		for _, hit := range searchResult.Hits.Hits {
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
 			if err != nil {
