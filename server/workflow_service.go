@@ -62,7 +62,7 @@ type HTTPReturn struct {
 }
 
 func (resp *HTTPReturn) toError() error {
-	s := fmt.Sprintf("%d: %s", resp.StatusCode, resp.Status)
+	s := fmt.Sprintf("%d: %s  {%v}", resp.StatusCode, resp.Status, resp.Data)
 	return errors.New(s)
 }
 
@@ -223,10 +223,11 @@ func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Id
 }
 
 func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error) {
-	url := "/events"
-	if eventTypeName != "" {
-		url += "/" + eventTypeName
+	if eventTypeName == "" {
+		return nil, errors.New("GetAllEvents: type name required")
 	}
+
+	url := "/events/" + eventTypeName
 
 	resp, err := c.Get(url)
 	if err != nil {

@@ -68,7 +68,11 @@ func StatusNotFound(c *gin.Context, obj interface{}) {
 }
 
 func StatusBadRequest(c *gin.Context, err error) {
-	c.String(http.StatusBadRequest, err.Error())
+	type errret struct {
+		Message string
+	}
+	e := errret{Message: err.Error()}
+	c.JSON(http.StatusBadRequest, e)
 }
 
 //---------------------------------------------------------------------------
@@ -453,15 +457,6 @@ func handeDeleteEventByID(c *gin.Context) {
 	StatusOK(c, nil)
 }
 
-func handleGetEvents(c *gin.Context) {
-	m, err := server.eventDB.GetAll("")
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-	StatusOK(c, m)
-}
-
 func handleGetEventsByEventType(c *gin.Context) {
 	eventType := c.Param("eventType")
 
@@ -615,7 +610,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/", handleHealthCheck)
 
 	router.POST("/v1/events/:eventType", handlePostEvent)
-	router.GET("/v1/events", handleGetEvents)
+	///////////////////////	router.GET("/v1/events", handleGetEvents)
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
 	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)

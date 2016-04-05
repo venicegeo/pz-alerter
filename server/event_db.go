@@ -54,10 +54,9 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 
 func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 	var events []Event
-
-	exists := db.Esi.TypeExists(mapping)
+	exists := mapping != "" && db.Esi.TypeExists(mapping)
 	if !exists {
-		return &events, nil
+		return nil, LoggedError("Type %s does not exist", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping)

@@ -32,7 +32,7 @@ func main() {
 		piazza.PzGateway,
 	}
 
-	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required, false)
+	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)
 	if err != nil {
 		log.Fatal(err)
 	}
