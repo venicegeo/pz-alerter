@@ -252,11 +252,11 @@ func (suite *ServerTester) Test02Event() {
 	assertNoData(suite.T(), suite.workflow)
 	defer assertNoData(suite.T(), suite.workflow)
 
-	//log.Printf("Getting list of events:")
-	//events, err := workflow.GetAllEvents("")
-	//assert.NoError(err)
-	//assert.Len(*events, 0)
-	//printJSON("Events", events)
+	log.Printf("Getting list of events (type=\"\"):")
+	events, err := workflow.GetAllEvents("")
+	assert.NoError(err)
+	assert.Len(*events, 0)
+	printJSON("Events", events)
 
 	log.Printf("Creating new event type:")
 	eventTypeName := makeTestEventTypeName()
@@ -274,7 +274,13 @@ func (suite *ServerTester) Test02Event() {
 	printJSON("event id", id)
 
 	log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err := workflow.GetAllEvents(eventTypeName)
+	events, err = workflow.GetAllEvents(eventTypeName)
+	assert.NoError(err)
+	assert.Len(*events, 1)
+	printJSON("Events", events)
+
+	log.Printf("Getting list of events (type=\"\"):")
+	events, err = workflow.GetAllEvents("")
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	printJSON("Events", events)
@@ -289,8 +295,14 @@ func (suite *ServerTester) Test02Event() {
 	err = workflow.DeleteOneEvent(eventTypeName, id)
 	assert.NoError(err)
 
-	log.Printf("Getting list of events:")
+	log.Printf("Getting list of events (type=%s):", eventTypeName)
 	events, err = workflow.GetAllEvents(eventTypeName)
+	assert.NoError(err)
+	assert.Len(*events, 0)
+	printJSON("Events", events)
+
+	log.Printf("Getting list of events (type=\"\"):")
+	events, err = workflow.GetAllEvents("")
 	assert.NoError(err)
 	assert.Len(*events, 0)
 	printJSON("Events", events)
