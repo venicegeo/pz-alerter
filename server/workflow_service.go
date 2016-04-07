@@ -223,11 +223,14 @@ func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Id
 }
 
 func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error) {
-	if eventTypeName == "" {
+	/*if eventTypeName == "" {
 		return nil, errors.New("GetAllEvents: type name required")
-	}
+	}*/
 
-	url := "/events/" + eventTypeName
+	url := "/events"
+	if eventTypeName != "" {
+		url += "/" + eventTypeName
+	}
 
 	resp, err := c.Get(url)
 	if err != nil {

@@ -192,6 +192,15 @@ func handlePostAdminShutdown(c *gin.Context) {
 	piazza.HandlePostAdminShutdown(c)
 }
 
+func handleGetEvents(c *gin.Context) {
+	m, err := server.eventDB.GetAll("")
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}
+	StatusOK(c, m)
+}
+
 func handeGetEventByID(c *gin.Context) {
 	eventType := c.Param("eventType")
 	s := c.Param("id")
@@ -610,7 +619,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/", handleHealthCheck)
 
 	router.POST("/v1/events/:eventType", handlePostEvent)
-	///////////////////////	router.GET("/v1/events", handleGetEvents)
+	router.GET("/v1/events", handleGetEvents)
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
 	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
