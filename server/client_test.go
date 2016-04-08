@@ -228,7 +228,7 @@ func (suite *ClientTester) Test15One() {
 		x1 := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
-				EventTypeID: etID,
+				EventTypeIDs: []Ident{etID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -238,7 +238,7 @@ func (suite *ClientTester) Test15One() {
 				},
 			},
 			Job: Job{
-				Task: "the x1 task",
+				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
 			},
 		}
 
@@ -260,6 +260,8 @@ func (suite *ClientTester) Test15One() {
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
+				"userName": "my-api-key-38n987",
+				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",                
 			},
 		}
 
@@ -345,7 +347,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	t1 := Trigger{
 		Title: "the x1 trigger",
 		Condition: Condition{
-			EventTypeID: etID,
+			EventTypeIDs: []Ident{etID},
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -355,7 +357,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 			},
 		},
 		Job: Job{
-			Task: "the x1 task",
+			Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
 		},
 	}
 	t1ID, err := workflow.PostOneTrigger(&t1)
@@ -425,7 +427,7 @@ func (suite *ClientTester) Test17Triggering() {
 		t1 := &Trigger{
 			Title: "Trigger A",
 			Condition: Condition{
-				EventTypeID: etC,
+				EventTypeIDs: []Ident{etC},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -435,7 +437,7 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Task: "Trigger A task",
+				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
 			},
 		}
 		tA, err = workflow.PostOneTrigger(t1)
@@ -448,7 +450,7 @@ func (suite *ClientTester) Test17Triggering() {
 		t2 := &Trigger{
 			Title: "Trigger B",
 			Condition: Condition{
-				EventTypeID: etD,
+				EventTypeIDs: []Ident{etD},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -458,7 +460,7 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Task: "Trigger B task",
+				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
 			},
 		}
 		tB, err = workflow.PostOneTrigger(t2)
@@ -482,6 +484,8 @@ func (suite *ClientTester) Test17Triggering() {
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
+				"userName": "my-api-key-38n987",
+				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",                
 			},
 		}
 		eF, err = workflow.PostOneEvent("EventType C", &e1)
@@ -498,6 +502,8 @@ func (suite *ClientTester) Test17Triggering() {
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
+				"userName": "my-api-key-38n987",
+				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",                
 			},
 		}
 		eG, err = workflow.PostOneEvent("EventType D", &e2)

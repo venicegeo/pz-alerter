@@ -15,8 +15,9 @@
 package server
 
 import (
+    
 	"encoding/json"
-
+    "log"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
@@ -159,7 +160,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	if err != nil {
 		return nil, err
 	}
-
+    
 	// add the triggers to the alert queue
 	ids := make([]Ident, len(percolateResponse.Matches))
 	for i, v := range percolateResponse.Matches {
@@ -170,6 +171,9 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 			return nil, err
 		}
 	}
+    
+    log.Printf("\t\ttriggerIds: %v", ids)
+
 
 	err = db.server.alertDB.Flush()
 	if err != nil {
