@@ -23,16 +23,16 @@ import (
 	"net/http"
 
 	"github.com/venicegeo/pz-gocommon"
-	logger "github.com/venicegeo/pz-logger/client"
+	logger "github.com/venicegeo/pz-logger/lib"
 )
 
 type PzWorkflowService struct {
 	url    string
-	logger *logger.CustomLogger
+	logger logger.IClient
 }
 
 func NewPzWorkflowService(sys *piazza.SystemConfig,
-	logger *logger.CustomLogger) (*PzWorkflowService, error) {
+	logger logger.IClient) (*PzWorkflowService, error) {
 
 	var err error
 
