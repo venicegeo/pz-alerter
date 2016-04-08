@@ -19,7 +19,7 @@ import (
 
 	piazza "github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/client"
+	loggerPkg "github.com/venicegeo/pz-logger/lib"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 	"github.com/venicegeo/pz-workflow/server"
 )
@@ -37,12 +37,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	theLogger, err := loggerPkg.NewMockLoggerService(sys)
+	logger, err := loggerPkg.NewClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
-	var tmp = theLogger
-	clogger := loggerPkg.NewCustomLogger(&tmp, piazza.PzWorkflow, sys.Address)
 
 	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
@@ -66,10 +64,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	clogger.Info("pz-workflow starting...")
+	logger.Info("pz-workflow starting...")
 
 	// start server
-	routes, err := server.CreateHandlers(sys, clogger, uuidgen,
+	routes, err := server.CreateHandlers(sys, logger, uuidgen,
 		eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
 	if err != nil {
 		log.Fatal(err)
