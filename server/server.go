@@ -194,6 +194,8 @@ func handlePostAdminShutdown(c *gin.Context) {
 
 func handleGetEvents(c *gin.Context) {
 	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+	log.Printf("FORMAT1: %s", format)
+
 	m, err := server.eventDB.GetAll("", format)
 	if err != nil {
 		StatusBadRequest(c, err)
@@ -474,6 +476,7 @@ func handeDeleteEventByID(c *gin.Context) {
 
 func handleGetEventsByEventType(c *gin.Context) {
 	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+	log.Printf("FORMAT2: %s", format)
 
 	eventType := c.Param("eventType")
 

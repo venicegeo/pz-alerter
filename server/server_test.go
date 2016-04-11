@@ -251,6 +251,8 @@ func (suite *ServerTester) Test02Event() {
 	assertNoData(suite.T(), suite.workflow)
 	defer assertNoData(suite.T(), suite.workflow)
 
+	//time.Sleep(2 * time.Second)
+
 	log.Printf("Getting list of events (type=\"\"):")
 	events, err := workflow.GetAllEvents("")
 	assert.NoError(err)
