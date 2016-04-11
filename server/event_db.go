@@ -15,9 +15,9 @@
 package server
 
 import (
-    
 	"encoding/json"
-    "log"
+	"log"
+
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
@@ -53,7 +53,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 	return id, nil
 }
 
-func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
+func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, error) {
 	var events []Event
 	exists := true
 	if mapping != "" {
@@ -63,8 +63,7 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 		return nil, LoggedError("Type %s does not exist", mapping)
 	}
 
-	//searchResult, err := db.Esi.FilterByMatchAll(mapping, "")
-	searchResult, err := db.Esi.FilterByMatchAll(mapping, "", 10, 0)
+	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
 	if err != nil {
 		return nil, LoggedError("EventDB.GetAll failed: %s", err)
 	}
@@ -83,6 +82,7 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 			events = append(events, event)
 		}
 	}
+
 	return &events, nil
 }
 
@@ -161,7 +161,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	if err != nil {
 		return nil, err
 	}
-    
+
 	// add the triggers to the alert queue
 	ids := make([]Ident, len(percolateResponse.Matches))
 	for i, v := range percolateResponse.Matches {
@@ -172,9 +172,8 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 			return nil, err
 		}
 	}
-    
-    log.Printf("\t\ttriggerIds: %v", ids)
 
+	log.Printf("\t\ttriggerIds: %v", ids)
 
 	err = db.server.alertDB.Flush()
 	if err != nil {

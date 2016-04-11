@@ -55,7 +55,7 @@ func (db *EventTypeDB) PostData(obj interface{}, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *EventTypeDB) GetAll() (*[]EventType, error) {
+func (db *EventTypeDB) GetAll(format elasticsearch.QueryFormat) (*[]EventType, error) {
 	var eventTypes []EventType
 
 	exists := db.Esi.TypeExists(db.mapping)
@@ -63,8 +63,7 @@ func (db *EventTypeDB) GetAll() (*[]EventType, error) {
 		return &eventTypes, nil
 	}
 
-	//searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "", 10, 0)
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, LoggedError("EventTypeDB.GetAll failed: %s", err)
 	}

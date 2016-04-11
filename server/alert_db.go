@@ -53,17 +53,16 @@ func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *AlertDB) GetAll() (*[]Alert, error) {
+func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, error) {
 
-	var alerts []Alert 
+	var alerts []Alert
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
 		return &alerts, nil
 	}
 
-	//searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "", 10, 0)
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, LoggedError("AlertDB.GetAll failed: %s", err)
 	}
