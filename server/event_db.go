@@ -174,6 +174,8 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 		}
 	}
 
+	log.Printf("\t\ttriggerIds: %v", ids)
+
 	err = db.server.alertDB.Flush()
 	if err != nil {
 		return nil, err

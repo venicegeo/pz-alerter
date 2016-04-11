@@ -489,6 +489,7 @@ func handleGetEventsByEventType(c *gin.Context) {
 }
 
 func handlePostEvent(c *gin.Context) {
+    // log.Printf("---------------------\n")
 
 	eventType := c.Param("eventType")
 
@@ -514,7 +515,7 @@ func handlePostEvent(c *gin.Context) {
 		return
 	}
 
-	{
+	{        
 		// log.Printf("event:\n")
 		// log.Printf("\tID: %v\n", event.ID)
 		// log.Printf("\tType: %v\n", eventType)
@@ -535,7 +536,7 @@ func handlePostEvent(c *gin.Context) {
 			go func(triggerID Ident) {
 				defer waitGroup.Done()
 
-				// log.Printf("\ntriggerID: %v\n", triggerID)
+				log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := server.triggerDB.GetOne(triggerID)
 				if err != nil {
 					StatusBadRequest(c, err)
@@ -545,8 +546,9 @@ func handlePostEvent(c *gin.Context) {
 					StatusNotFound(c, gin.H{"id": triggerID})
 					return
 				}
-				// log.Printf("trigger: %v\n", trigger)
-				// log.Printf("\tJob: %v\n\n", trigger.Job.Task)
+
+				log.Printf("trigger: %v\n", trigger)
+				log.Printf("\tJob: %v\n\n", trigger.Job.Task)
 
 				var jobInstance = trigger.Job.Task
 
@@ -596,6 +598,7 @@ func handlePostEvent(c *gin.Context) {
 	}
 
 	StatusCreated(c, retID)
+    // log.Printf("---------------------\n")    
 }
 
 func handleHealthCheck(c *gin.Context) {
