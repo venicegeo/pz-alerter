@@ -63,7 +63,8 @@ func (db *EventTypeDB) GetAll() (*[]EventType, error) {
 		return &eventTypes, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	//searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "", 10, 0)
 	if err != nil {
 		return nil, LoggedError("EventTypeDB.GetAll failed: %s", err)
 	}

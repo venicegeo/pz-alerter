@@ -84,7 +84,8 @@ func (db *TriggerDB) GetAll() (*[]Trigger, error) {
 		return &triggers, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	//searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "", 10, 0)
 	if err != nil {
 		return nil, LoggedError("TriggerDB.GetAll failed: %s", err)
 	}

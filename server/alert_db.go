@@ -62,7 +62,8 @@ func (db *AlertDB) GetAll() (*[]Alert, error) {
 		return &alerts, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	//searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "", 10, 0)
 	if err != nil {
 		return nil, LoggedError("AlertDB.GetAll failed: %s", err)
 	}
