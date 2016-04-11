@@ -134,8 +134,8 @@ func TestRunSuite(t *testing.T) {
 	serverTester := &ServerTester{workflow: workflow, sys: sys}
 	suite.Run(t, serverTester)
 
-	//clientTester := &ClientTester{workflow: workflow, sys: sys}
-	//suite.Run(t, clientTester)
+	clientTester := &ClientTester{workflow: workflow, sys: sys}
+	suite.Run(t, clientTester)
 }
 
 //---------------------------------------------------------------------------
@@ -190,9 +190,10 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 	}
 	return trigger
 }
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-func (suite *ServerTester) xTest01EventType() {
+func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -312,7 +313,7 @@ func (suite *ServerTester) Test02Event() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) xTest03Trigger() {
+func (suite *ServerTester) Test03Trigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -336,7 +337,7 @@ func (suite *ServerTester) xTest03Trigger() {
 	printJSON("event type id", eventTypeID)
 
 	log.Printf("Creating new trigger:")
-	trigger := makeTestTrigger( []Ident{eventTypeID})
+	trigger := makeTestTrigger([]Ident{eventTypeID})
 	printJSON("trigger", trigger)
 	id, err := workflow.PostOneTrigger(trigger)
 	printJSON("trigger id", id)
@@ -367,7 +368,7 @@ func (suite *ServerTester) xTest03Trigger() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) xTest04Alert() {
+func (suite *ServerTester) Test04Alert() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -445,7 +446,7 @@ func (suite *ServerTester) xTest04Alert() {
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) xTest05EventMapping() {
+func (suite *ServerTester) Test05EventMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -573,7 +574,7 @@ func (suite *ServerTester) xTest05EventMapping() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) xTest06Workflow() {
+func (suite *ServerTester) Test06Workflow() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -587,10 +588,10 @@ func (suite *ServerTester) xTest06Workflow() {
 	var et1ID Ident
 	{
 		mapping := map[string]elasticsearch.MappingElementTypeName{
-			"num":    elasticsearch.MappingElementTypeInteger,
-			"str":    elasticsearch.MappingElementTypeString,
+			"num":      elasticsearch.MappingElementTypeInteger,
+			"str":      elasticsearch.MappingElementTypeString,
 			"userName": elasticsearch.MappingElementTypeString,
-			"jobId":  elasticsearch.MappingElementTypeString,
+			"jobId":    elasticsearch.MappingElementTypeString,
 		}
 
 		log.Printf("Creating event type:\n")
@@ -647,10 +648,10 @@ func (suite *ServerTester) xTest06Workflow() {
 			EventTypeID: et1ID,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
-				"num":    17,
-				"str":    "quick",
+				"num":      17,
+				"str":      "quick",
 				"userName": "my-api-key-38n987",
-				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",
+				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
 
@@ -677,7 +678,7 @@ func (suite *ServerTester) xTest06Workflow() {
 				"str": "brown",
 				// Probably don't need the following as job shouldn't be executed.
 				"userName": "my-api-key-38n987",
-				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",
+				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
 
@@ -717,102 +718,102 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
-    
-    var mapping = map[string]elasticsearch.MappingElementTypeName{
-        "num":    elasticsearch.MappingElementTypeInteger,
-        "str":    elasticsearch.MappingElementTypeString,
-        "userName": elasticsearch.MappingElementTypeString,
-        "jobId":  elasticsearch.MappingElementTypeString,
-    }
-    
-    var data = map[string]interface{}{
-        "num": 31,
-        "str": "brown",
-        // Probably don't need the following as job shouldn't be executed.
-        "userName": "my-api-key-38n987",
-        "jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",
-    }
+
+	var mapping = map[string]elasticsearch.MappingElementTypeName{
+		"num":      elasticsearch.MappingElementTypeInteger,
+		"str":      elasticsearch.MappingElementTypeString,
+		"userName": elasticsearch.MappingElementTypeString,
+		"jobId":    elasticsearch.MappingElementTypeString,
+	}
+
+	var data = map[string]interface{}{
+		"num": 31,
+		"str": "brown",
+		// Probably don't need the following as job shouldn't be executed.
+		"userName": "my-api-key-38n987",
+		"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
+	}
 
 	// Create Event Type 1
 	log.Printf("\tCreating event type 1:")
 	eventType1 := makeTestEventType("Event Type 1")
-    eventType1.Mapping = mapping    
+	eventType1.Mapping = mapping
 	printJSON("\tevent type", eventType1)
 	eventTypeId1, err := workflow.PostOneEventType(eventType1)
 	assert.NoError(err)
 	printJSON("\tevent type id", eventTypeId1)
 
 	defer func() {
-		log.Printf("\tDeleting event type: %s\n", eventTypeId1)				
+		log.Printf("\tDeleting event type: %s\n", eventTypeId1)
 		err = workflow.DeleteOneEventType(eventTypeId1)
-		assert.NoError(err)		
+		assert.NoError(err)
 	}()
 
 	// Create Event Type 2
 	log.Printf("\tCreating event type 2:")
 	eventType2 := makeTestEventType("Event Type 2")
-    eventType2.Mapping = mapping
+	eventType2.Mapping = mapping
 	printJSON("\tevent type", eventType2)
 	eventTypeId2, err := workflow.PostOneEventType(eventType2)
 	assert.NoError(err)
 	printJSON("\tevent type id", eventTypeId2)
 
 	defer func() {
-		log.Printf("\tDeleting event type: %s\n", eventTypeId2)				
+		log.Printf("\tDeleting event type: %s\n", eventTypeId2)
 		err = workflow.DeleteOneEventType(eventTypeId2)
-		assert.NoError(err)		
+		assert.NoError(err)
 	}()
 
 	// Create MultiTrigger
 	log.Printf("\tCreating trigger:")
 	trigger := makeTestTrigger([]Ident{eventTypeId1, eventTypeId2})
-    trigger.Job = Job {
-        //Task: "the x1 task",
-        // Using a GetJob call as it is as close to a 'noop' as I could find.
-        Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
-    }
+	trigger.Job = Job{
+		//Task: "the x1 task",
+		// Using a GetJob call as it is as close to a 'noop' as I could find.
+		Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+	}
 	printJSON("\ttrigger", trigger)
-	triggerId, err := workflow.PostOneTrigger(trigger)	
+	triggerId, err := workflow.PostOneTrigger(trigger)
 	assert.NoError(err)
 	printJSON("\ttrigger id", triggerId)
 
 	defer func() {
-		log.Printf("\tDeleting trigger: %s\n", triggerId)				
+		log.Printf("\tDeleting trigger: %s\n", triggerId)
 		err = workflow.DeleteOneTrigger(triggerId)
-		assert.NoError(err)		
+		assert.NoError(err)
 	}()
 
-    // Create Event of Type 1
+	// Create Event of Type 1
 	log.Printf("\tCreating new event:")
 	event1 := makeTestEvent(eventTypeId1)
-    event1.Data = data
+	event1.Data = data
 	printJSON("\tevent", event1)
 	eventId1, err := workflow.PostOneEvent(eventType1.Name, event1)
 	assert.NoError(err)
 	printJSON("\tevent id", eventId1)
-    
-    defer func ()  {
-		log.Printf("\tDeleting event: %s\n", eventId1)				
-		err = workflow.DeleteOneEvent(eventType1.Name, eventId1)
-		assert.NoError(err)		        
-    }()       
 
-    // Create Event of Type 2
+	defer func() {
+		log.Printf("\tDeleting event: %s\n", eventId1)
+		err = workflow.DeleteOneEvent(eventType1.Name, eventId1)
+		assert.NoError(err)
+	}()
+
+	// Create Event of Type 2
 	log.Printf("\tCreating new event:")
 	event2 := makeTestEvent(eventTypeId2)
-    event2.Data = data
+	event2.Data = data
 	printJSON("\tevent", event2)
 	eventId2, err := workflow.PostOneEvent(eventType2.Name, event2)
 	assert.NoError(err)
 	printJSON("\tevent id", eventId2)
-    
-    defer func ()  {
-		log.Printf("\tDeleting event: %s\n", eventId2)				
+
+	defer func() {
+		log.Printf("\tDeleting event: %s\n", eventId2)
 		err = workflow.DeleteOneEvent(eventType2.Name, eventId2)
-		assert.NoError(err)		        
-    }()       
-    
-    {
+		assert.NoError(err)
+	}()
+
+	{
 		if MOCKING {
 			t.Skip("Skipping test, because mocking")
 		}
@@ -822,7 +823,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		assert.Len(*alerts, 2)
 		printJSON("alerts", alerts)
 
-        // Delete Alert 1
+		// Delete Alert 1
 		alert0 := (*alerts)[0]
 		assert.EqualValues(eventId1, alert0.EventID)
 		assert.EqualValues(triggerId, alert0.TriggerID)
@@ -830,7 +831,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		err = workflow.DeleteOneAlert(alert0.ID)
 		assert.NoError(err)
 
-        // Delete Alert 2
+		// Delete Alert 2
 		alert1 := (*alerts)[1]
 		assert.EqualValues(eventId2, alert1.EventID)
 		assert.EqualValues(triggerId, alert1.TriggerID)
@@ -838,9 +839,8 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		err = workflow.DeleteOneAlert(alert1.ID)
 		assert.NoError(err)
 
-	}    
+	}
 }
-
 
 func printJSON(msg string, input interface{}) {
 	if input != nil {

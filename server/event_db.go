@@ -54,7 +54,6 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 }
 
 func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, error) {
-	log.Printf("AAA")
 	var events []Event
 	exists := true
 	if mapping != "" {
@@ -83,7 +82,7 @@ func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]
 			events = append(events, event)
 		}
 	}
-	log.Printf("BB")
+
 	return &events, nil
 }
 
