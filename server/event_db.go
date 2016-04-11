@@ -51,8 +51,8 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 
 	return id, nil
 }
-
-func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
+ 
+func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, error) {
 	var events []Event
 	exists := true
 	if mapping != "" {
@@ -62,7 +62,7 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 		return nil, LoggedError("Type %s does not exist", mapping)
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(mapping, "")
+	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
 	if err != nil {
 		return nil, LoggedError("EventDB.GetAll failed: %s", err)
 	}

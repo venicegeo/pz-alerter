@@ -193,7 +193,8 @@ func handlePostAdminShutdown(c *gin.Context) {
 }
 
 func handleGetEvents(c *gin.Context) {
-	m, err := server.eventDB.GetAll("")
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+	m, err := server.eventDB.GetAll("", format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -285,7 +286,8 @@ func handleGetAlertByID(c *gin.Context) {
 func handleGetAlerts(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
 
-	all, err := server.alertDB.GetAll()
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+	all, err := server.alertDB.GetAll(format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -330,7 +332,9 @@ func handleGetTriggerByID(c *gin.Context) {
 }
 
 func handleGetTriggers(c *gin.Context) {
-	m, err := server.triggerDB.GetAll()
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	m, err := server.triggerDB.GetAll(format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -403,7 +407,9 @@ func handleGetEventTypeByID(c *gin.Context) {
 }
 
 func handleGetEventTypes(c *gin.Context) {
-	ets, err := server.eventTypeDB.GetAll()
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	ets, err := server.eventTypeDB.GetAll(format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -467,9 +473,11 @@ func handeDeleteEventByID(c *gin.Context) {
 }
 
 func handleGetEventsByEventType(c *gin.Context) {
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
 	eventType := c.Param("eventType")
 
-	m, err := server.eventDB.GetAll(eventType)
+	m, err := server.eventDB.GetAll(eventType, format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return

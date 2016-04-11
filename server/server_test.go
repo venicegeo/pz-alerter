@@ -28,7 +28,7 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
-const MOCKING = true
+const MOCKING = !true
 
 type ServerTester struct {
 	suite.Suite
@@ -134,8 +134,8 @@ func TestRunSuite(t *testing.T) {
 	serverTester := &ServerTester{workflow: workflow, sys: sys}
 	suite.Run(t, serverTester)
 
-	clientTester := &ClientTester{workflow: workflow, sys: sys}
-	suite.Run(t, clientTester)
+	//clientTester := &ClientTester{workflow: workflow, sys: sys}
+	//suite.Run(t, clientTester)
 }
 
 //---------------------------------------------------------------------------
@@ -193,7 +193,7 @@ func makeTestTrigger(eventTypeID Ident) *Trigger {
 
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
-func (suite *ServerTester) Test01EventType() {
+func (suite *ServerTester) xTest01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -311,7 +311,7 @@ func (suite *ServerTester) Test02Event() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) Test03Trigger() {
+func (suite *ServerTester) xTest03Trigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -366,7 +366,7 @@ func (suite *ServerTester) Test03Trigger() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) Test04Alert() {
+func (suite *ServerTester) xTest04Alert() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -444,7 +444,7 @@ func (suite *ServerTester) Test04Alert() {
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) Test05EventMapping() {
+func (suite *ServerTester) xTest05EventMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
@@ -572,7 +572,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	assert.NoError(err)
 }
 
-func (suite *ServerTester) Test06Workflow() {
+func (suite *ServerTester) xTest06Workflow() {
 	t := suite.T()
 	assert := assert.New(t)
 	workflow := suite.workflow
