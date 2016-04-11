@@ -63,7 +63,7 @@ func (db *EventDB) GetAll(mapping string) (*[]Event, error) {
 		return nil, LoggedError("Type %s does not exist", mapping)
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(mapping)
+	searchResult, err := db.Esi.FilterByMatchAll(mapping, "")
 	if err != nil {
 		return nil, LoggedError("EventDB.GetAll failed: %s", err)
 	}

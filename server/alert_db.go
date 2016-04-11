@@ -55,14 +55,14 @@ func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
 
 func (db *AlertDB) GetAll() (*[]Alert, error) {
 
-	var alerts []Alert
+	var alerts []Alert 
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
 		return &alerts, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping)
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
 	if err != nil {
 		return nil, LoggedError("AlertDB.GetAll failed: %s", err)
 	}

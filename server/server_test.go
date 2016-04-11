@@ -24,7 +24,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/client"
+	loggerPkg "github.com/venicegeo/pz-logger/lib"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
@@ -80,11 +80,10 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewMockLoggerService(sys)
+	logger, err := loggerPkg.NewMockClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
-	clogger := loggerPkg.NewCustomLogger(&logger, piazza.PzWorkflow, sys.Address)
 
 	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	if err != nil {
@@ -118,7 +117,7 @@ func TestRunSuite(t *testing.T) {
 
 	// start server
 	{
-		routes, err := CreateHandlers(sys, clogger, uuidgen,
+		routes, err := CreateHandlers(sys, logger, uuidgen,
 			eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
 		if err != nil {
 			log.Fatal(err)
@@ -127,7 +126,7 @@ func TestRunSuite(t *testing.T) {
 		_ = sys.StartServer(routes)
 	}
 
-	workflow, err := NewPzWorkflowService(sys, clogger)
+	workflow, err := NewPzWorkflowService(sys, logger)
 	if err != nil {
 		log.Fatal(err)
 	}

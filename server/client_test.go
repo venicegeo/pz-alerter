@@ -22,13 +22,13 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/client"
+	loggerPkg "github.com/venicegeo/pz-logger/lib"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
 type ClientTester struct {
 	suite.Suite
-	logger     loggerPkg.ILoggerService
+	logger     loggerPkg.IClient
 	uuidgenner uuidgenPkg.IUuidGenService
 	workflow   *PzWorkflowService
 	sys        *piazza.SystemConfig

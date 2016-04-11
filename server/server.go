@@ -33,7 +33,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/client"
+	loggerPkg "github.com/venicegeo/pz-logger/lib"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
@@ -595,7 +595,7 @@ func handleHealthCheck(c *gin.Context) {
 }
 
 func CreateHandlers(sys *piazza.SystemConfig,
-	logger *loggerPkg.CustomLogger,
+	logger loggerPkg.IClient,
 	uuidgen uuidgenPkg.IUuidGenService,
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
