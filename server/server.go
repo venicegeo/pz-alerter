@@ -188,9 +188,9 @@ func handlePostAdminSettings(c *gin.Context) {
 	StatusOK(c, s)
 }
 
-func handlePostAdminShutdown(c *gin.Context) {
-	piazza.HandlePostAdminShutdown(c)
-}
+//func handlePostAdminShutdown(c *gin.Context) {
+//	piazza.HandlePostAdminShutdown(c)
+//}
 
 func handleGetEvents(c *gin.Context) {
 	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
@@ -652,7 +652,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
 
 	router.POST("/v1/admin/settings", handlePostAdminSettings)
-	router.POST("/v1/admin/shutdown", handlePostAdminShutdown)
+	//router.POST("/v1/admin/shutdown", handlePostAdminShutdown)
 	router.GET("/v1/admin/stats", handleGetAdminStats)
 	router.GET("/v1/admin/settings", handleGetAdminSettings)
 
