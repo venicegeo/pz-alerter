@@ -50,24 +50,9 @@ func (suite *ClientTester) Test11Admin() {
 
 	workflow := suite.workflow
 
-	log.Printf("AdminSettings:")
-	settings, err := workflow.GetFromAdminSettings()
+	log.Printf("AdminStats:")
+	_, err := workflow.GetFromAdminStats()
 	assert.NoError(err)
-	if settings.Debug != false {
-		t.Error("settings not false")
-	}
-	printJSON("before", settings)
-
-	settings.Debug = true
-	err = workflow.PostToAdminSettings(settings)
-	assert.NoError(err)
-
-	settings, err = workflow.GetFromAdminSettings()
-	assert.NoError(err)
-	if settings.Debug != true {
-		t.Error("settings not true")
-	}
-	printJSON("after", settings)
 }
 
 func (suite *ClientTester) Test12AlertResource() {
@@ -258,10 +243,10 @@ func (suite *ClientTester) Test15One() {
 			EventTypeID: etID,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
-				"num": 17,
-				"str": "quick",
+				"num":      17,
+				"str":      "quick",
 				"userName": "my-api-key-38n987",
-				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",                
+				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
 
@@ -482,10 +467,10 @@ func (suite *ClientTester) Test17Triggering() {
 			EventTypeID: etC,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
-				"num": 17,
-				"str": "quick",
+				"num":      17,
+				"str":      "quick",
 				"userName": "my-api-key-38n987",
-				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",                
+				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
 		eF, err = workflow.PostOneEvent("EventType C", &e1)
@@ -500,10 +485,10 @@ func (suite *ClientTester) Test17Triggering() {
 			EventTypeID: etD,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
-				"num": 18,
-				"str": "brown",
+				"num":      18,
+				"str":      "brown",
 				"userName": "my-api-key-38n987",
-				"jobId":  "43688858-b6d4-4ef9-a98b-163e1980bba8",                
+				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
 		eG, err = workflow.PostOneEvent("EventType D", &e2)

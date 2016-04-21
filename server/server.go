@@ -37,13 +37,6 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
-type LockedAdminSettings struct {
-	sync.Mutex
-	WorkflowAdminSettings
-}
-
-var settings LockedAdminSettings
-
 type LockedAdminStats struct {
 	sync.Mutex
 	WorkflowAdminStats
@@ -167,30 +160,6 @@ func handleGetAdminStats(c *gin.Context) {
 	stats.Unlock()
 	StatusOK(c, t)
 }
-
-func handleGetAdminSettings(c *gin.Context) {
-	settings.Lock()
-	t := settings
-	settings.Unlock()
-	StatusOK(c, t)
-}
-
-func handlePostAdminSettings(c *gin.Context) {
-	var s WorkflowAdminSettings
-	err := c.BindJSON(&s)
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-	settings.Lock()
-	settings.WorkflowAdminSettings = s
-	settings.Unlock()
-	StatusOK(c, s)
-}
-
-//func handlePostAdminShutdown(c *gin.Context) {
-//	piazza.HandlePostAdminShutdown(c)
-//}
 
 func handleGetEvents(c *gin.Context) {
 	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
@@ -651,10 +620,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/v1/alerts/:id", handleGetAlertByID)
 	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
 
-	router.POST("/v1/admin/settings", handlePostAdminSettings)
-	//router.POST("/v1/admin/shutdown", handlePostAdminShutdown)
 	router.GET("/v1/admin/stats", handleGetAdminStats)
-	router.GET("/v1/admin/settings", handleGetAdminSettings)
 
 	logger.Info("handlers set")
 
