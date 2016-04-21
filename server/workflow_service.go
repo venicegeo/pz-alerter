@@ -435,36 +435,3 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
 	return stats, nil
 }
-
-func (c *PzWorkflowService) GetFromAdminSettings() (*WorkflowAdminSettings, error) {
-
-	resp, err := c.Get("/admin/settings")
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	settings := &WorkflowAdminSettings{}
-	err = SuperConvert(resp.Data, settings)
-	if err != nil {
-		return nil, err
-	}
-
-	return settings, nil
-}
-
-func (c *PzWorkflowService) PostToAdminSettings(settings *WorkflowAdminSettings) error {
-
-	resp, err := c.Post("/admin/settings", settings)
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return resp.toError()
-	}
-
-	return nil
-}
