@@ -76,7 +76,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *TriggerDB) GetAll() (*[]Trigger, error) {
+func (db *TriggerDB) GetAll(format elasticsearch.QueryFormat) (*[]Trigger, error) {
 	var triggers []Trigger
 
 	exists := db.Esi.TypeExists(db.mapping)
@@ -84,7 +84,7 @@ func (db *TriggerDB) GetAll() (*[]Trigger, error) {
 		return &triggers, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, "")
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, LoggedError("TriggerDB.GetAll failed: %s", err)
 	}

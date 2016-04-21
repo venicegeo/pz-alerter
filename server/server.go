@@ -188,12 +188,14 @@ func handlePostAdminSettings(c *gin.Context) {
 	StatusOK(c, s)
 }
 
-func handlePostAdminShutdown(c *gin.Context) {
-	piazza.HandlePostAdminShutdown(c)
-}
+//func handlePostAdminShutdown(c *gin.Context) {
+//	piazza.HandlePostAdminShutdown(c)
+//}
 
 func handleGetEvents(c *gin.Context) {
-	m, err := server.eventDB.GetAll("")
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	m, err := server.eventDB.GetAll("", format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -285,7 +287,8 @@ func handleGetAlertByID(c *gin.Context) {
 func handleGetAlerts(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
 
-	all, err := server.alertDB.GetAll()
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+	all, err := server.alertDB.GetAll(format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -330,7 +333,9 @@ func handleGetTriggerByID(c *gin.Context) {
 }
 
 func handleGetTriggers(c *gin.Context) {
-	m, err := server.triggerDB.GetAll()
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	m, err := server.triggerDB.GetAll(format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -403,7 +408,9 @@ func handleGetEventTypeByID(c *gin.Context) {
 }
 
 func handleGetEventTypes(c *gin.Context) {
-	ets, err := server.eventTypeDB.GetAll()
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	ets, err := server.eventTypeDB.GetAll(format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -467,9 +474,11 @@ func handeDeleteEventByID(c *gin.Context) {
 }
 
 func handleGetEventsByEventType(c *gin.Context) {
+	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+
 	eventType := c.Param("eventType")
 
-	m, err := server.eventDB.GetAll(eventType)
+	m, err := server.eventDB.GetAll(eventType, format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -478,6 +487,7 @@ func handleGetEventsByEventType(c *gin.Context) {
 }
 
 func handlePostEvent(c *gin.Context) {
+	// log.Printf("---------------------\n")
 
 	eventType := c.Param("eventType")
 
@@ -524,7 +534,7 @@ func handlePostEvent(c *gin.Context) {
 			go func(triggerID Ident) {
 				defer waitGroup.Done()
 
-				// log.Printf("\ntriggerID: %v\n", triggerID)
+				log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := server.triggerDB.GetOne(triggerID)
 				if err != nil {
 					StatusBadRequest(c, err)
@@ -534,8 +544,9 @@ func handlePostEvent(c *gin.Context) {
 					StatusNotFound(c, gin.H{"id": triggerID})
 					return
 				}
-				// log.Printf("trigger: %v\n", trigger)
-				// log.Printf("\tJob: %v\n\n", trigger.Job.Task)
+
+				log.Printf("trigger: %v\n", trigger)
+				log.Printf("\tJob: %v\n\n", trigger.Job.Task)
 
 				var jobInstance = trigger.Job.Task
 
@@ -585,6 +596,7 @@ func handlePostEvent(c *gin.Context) {
 	}
 
 	StatusCreated(c, retID)
+	// log.Printf("---------------------\n")
 }
 
 func handleHealthCheck(c *gin.Context) {
@@ -640,7 +652,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
 
 	router.POST("/v1/admin/settings", handlePostAdminSettings)
-	router.POST("/v1/admin/shutdown", handlePostAdminShutdown)
+	//router.POST("/v1/admin/shutdown", handlePostAdminShutdown)
 	router.GET("/v1/admin/stats", handleGetAdminStats)
 	router.GET("/v1/admin/settings", handleGetAdminSettings)
 

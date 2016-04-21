@@ -13,7 +13,7 @@
 // limitations under the License.
 
 package server
-
+ 
 import (
 	"encoding/json"
 	"errors"
@@ -56,7 +56,7 @@ func (id Ident) String() string {
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventTypeID Ident                  `json:"eventtype_id" binding:"required"`
+	EventTypeIDs []Ident               `json:"eventtype_ids" binding:"required"`
 	Query       map[string]interface{} `json:"query" binding:"required"`
 }
 
