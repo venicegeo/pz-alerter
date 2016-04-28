@@ -72,6 +72,7 @@ func TestRunSuite(t *testing.T) {
 			piazza.PzElasticSearch,
 			piazza.PzLogger,
 			piazza.PzGateway,
+			piazza.PzUuidgen,			
 		}
 	}
 
@@ -85,7 +86,14 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
+    var uuidgen uuidgenPkg.IUuidGenService
+	
+    if MOCKING {
+		uuidgen, err = uuidgenPkg.NewMockUuidGenService(sys)		
+	} else {
+		uuidgen, err = uuidgenPkg.NewPzUuidGenService(sys)		
+	}
+	
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -856,7 +864,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		printJSON("alerts", alerts)
 
 		// Delete Alert 1
-		alert0 := (*alerts)[0]
+		alert0 := (*alerts)[1]
 		assert.EqualValues(eventId1, alert0.EventID)
 		assert.EqualValues(triggerId, alert0.TriggerID)
 		log.Printf("Delete alert by id: %s", alert0.ID)
@@ -864,7 +872,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		assert.NoError(err)
 
 		// Delete Alert 2
-		alert1 := (*alerts)[1]
+		alert1 := (*alerts)[0]
 		assert.EqualValues(eventId2, alert1.EventID)
 		assert.EqualValues(triggerId, alert1.TriggerID)
 		log.Printf("Delete alert by id: %s", alert1.ID)

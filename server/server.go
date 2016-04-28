@@ -133,7 +133,7 @@ func NewServer(
 }
 
 func (s *Server) NewIdent() Ident {
-	var debugIds = true
+	var debugIds = false
 
 	var uuid string
 	var err error
@@ -148,6 +148,7 @@ func (s *Server) NewIdent() Ident {
 		if err != nil {
 			panic("uuidgen failed")
 		}
+		// log.Printf("uuid: %s", uuid)
 	}
 	return Ident(uuid)
 }
