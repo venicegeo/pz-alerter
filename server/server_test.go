@@ -101,18 +101,25 @@ func TestRunSuite(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("eventtypesIndex: %s\n", eventtypesIndex.IndexName())
+		
 		eventsIndex, err = elasticsearch.NewIndex(sys, "events$")
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("eventsIndex: %s\n", eventsIndex.IndexName())
+
 		triggersIndex, err = elasticsearch.NewIndex(sys, "triggers$")
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("triggersIndex: %s\n", triggersIndex.IndexName())
+		
 		alertsIndex, err = elasticsearch.NewIndex(sys, "alerts$")
 		if err != nil {
 			log.Fatal(err)
 		}
+		log.Printf("alertsIndex: %s\n", alertsIndex.IndexName())
 	}
 
 	// start server
@@ -136,15 +143,40 @@ func TestRunSuite(t *testing.T) {
 
 	clientTester := &ClientTester{workflow: workflow, sys: sys}
 	suite.Run(t, clientTester)
+	
+	err = eventtypesIndex.Delete()
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	err = eventsIndex.Delete()
+	if err != nil  {
+		log.Fatal(err)
+	}
+
+	err = triggersIndex.Delete()
+	if err  != nil  {
+		log.Fatal(err)
+	}
+
+	err = alertsIndex.Delete()
+	if err  != nil {
+		log.Fatal(err)
+	}
+	
 }
 
 //---------------------------------------------------------------------------
 
 func (suite *ServerTester) SetupSuite() {
 	assertNoData(suite.T(), suite.workflow)
+	
+	log.Printf("--- SetupSuite --- \n")
 }
 func (suite *ServerTester) TearDownSuite() {
 	assertNoData(suite.T(), suite.workflow)
+	
+	log.Printf("--- TearDownSuite --- \n")
 }
 
 //---------------------------------------------------------------------------
