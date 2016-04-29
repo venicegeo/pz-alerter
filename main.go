@@ -30,6 +30,7 @@ func main() {
 		piazza.PzElasticSearch,
 		piazza.PzLogger,
 		piazza.PzGateway,
+		piazza.PzUuidgen,
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)
@@ -42,7 +43,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
+//	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
+	uuidgen, err := uuidgenPkg.NewPzUuidGenService(sys)
+	
 	if err != nil {
 		log.Fatal(err)
 	}
