@@ -106,6 +106,39 @@ func (db *TriggerDB) GetAll(format elasticsearch.QueryFormat) (*[]Trigger, error
 	return &triggers, nil
 }
 
+func (db *TriggerDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Trigger, int64, error) {
+	var triggers []Trigger
+	var count = int64(-1)
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &triggers, count, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
+	if err != nil {
+		return nil, count, LoggedError("TriggerDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, count, LoggedError("TriggerDB.GetAll failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		count = searchResult.NumberMatched()
+
+		for _, hit := range *searchResult.GetHits() {
+			var trigger Trigger
+			err := json.Unmarshal(*hit.Source, &trigger)
+			if err != nil {
+				return nil, count, err
+			}
+			triggers = append(triggers, trigger)
+		}
+	}
+	return &triggers, count, nil
+}
+
+
 func (db *TriggerDB) GetOne(id Ident) (*Trigger, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())

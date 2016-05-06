@@ -85,6 +85,39 @@ func (db *EventTypeDB) GetAll(format elasticsearch.QueryFormat) (*[]EventType, e
 	return &eventTypes, nil
 }
 
+func (db *EventTypeDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]EventType, int64, error) {
+	var eventTypes []EventType
+	var count = int64(-1)
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &eventTypes, count, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
+	if err != nil {
+		return nil, count, LoggedError("EventTypeDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, count, LoggedError("EventTypeDB.GetAll failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		count = searchResult.NumberMatched()
+
+		for _, hit := range *searchResult.GetHits() {
+			var eventType EventType
+			err := json.Unmarshal(*hit.Source, &eventType)
+			if err != nil {
+				return nil, count, err
+			}
+			eventTypes = append(eventTypes, eventType)
+		}
+	}
+
+	return &eventTypes, count, nil
+}
+
 func (db *EventTypeDB) GetOne(id Ident) (*EventType, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
