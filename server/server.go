@@ -807,55 +807,55 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/", handleHealthCheck)
 
 	router.POST("/v1/events/:eventType", handlePostEvent)
-	router.POST("/v2/events/:eventType", handlePostEvent)
+	router.POST("/v2/event/:eventType", handlePostEvent)
 	
 	router.GET("/v1/events", handleGetEvents)
-	router.GET("/v2/events", handleGetEventsV2)	
+	router.GET("/v2/event", handleGetEventsV2)	
 	
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
-	router.GET("/v2/events/:eventType", handleGetEventsByEventTypeV2)
+	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
 		
 	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
-	router.GET("/v2/events/:eventType/:id", handeGetEventByID)
+	router.GET("/v2/event/:eventType/:id", handeGetEventByID)
 
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
-	router.DELETE("/v2/events/:eventType/:id", handeDeleteEventByID)
+	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
 
 	router.POST("/v1/eventtypes", handlePostEventType)
-	router.POST("/v2/eventtypes", handlePostEventType)
+	router.POST("/v2/eventType", handlePostEventType)
 		
 	router.GET("/v1/eventtypes", handleGetEventTypes)
-	router.GET("/v2/eventtypes", handleGetEventTypesV2)
+	router.GET("/v2/eventType", handleGetEventTypesV2)
 
 	router.GET("/v1/eventtypes/:id", handleGetEventTypeByID)
-	router.GET("/v2/eventtypes/:id", handleGetEventTypeByID)
+	router.GET("/v2/eventType/:id", handleGetEventTypeByID)
 
 	router.DELETE("/v1/eventtypes/:id", handleDeleteEventTypeByID)
-	router.DELETE("/v2/eventtypes/:id", handleDeleteEventTypeByID)
+	router.DELETE("/v2/eventType/:id", handleDeleteEventTypeByID)
 
 	router.POST("/v1/triggers", handlePostTrigger)
-	router.POST("/v2/triggers", handlePostTrigger)
+	router.POST("/v2/trigger", handlePostTrigger)
 
 	router.GET("/v1/triggers", handleGetTriggers)
-	router.GET("/v2/triggers", handleGetTriggersV2)
+	router.GET("/v2/trigger", handleGetTriggersV2)
 		
 	router.GET("/v1/triggers/:id", handleGetTriggerByID)
-	router.GET("/v2/triggers/:id", handleGetTriggerByID)
+	router.GET("/v2/trigger/:id", handleGetTriggerByID)
 	
 	router.DELETE("/v1/triggers/:id", handleDeleteTriggerByID)
-	router.DELETE("/v2/triggers/:id", handleDeleteTriggerByID)
+	router.DELETE("/v2/trigger/:id", handleDeleteTriggerByID)
 
 	router.POST("/v1/alerts", handlePostAlert)
-	router.POST("/v2/alerts", handlePostAlert)
+	router.POST("/v2/alert", handlePostAlert)
 	
 	router.GET("/v1/alerts", handleGetAlerts)
-	router.GET("/v2/alerts", handleGetAlertsV2)	
+	router.GET("/v2/alert", handleGetAlertsV2)	
 	
 	router.GET("/v1/alerts/:id", handleGetAlertByID)
-	router.GET("/v2/alerts/:id", handleGetAlertByID)
+	router.GET("/v2/alert/:id", handleGetAlertByID)
 	
 	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
-	router.DELETE("/v2/alerts/:id", handleDeleteAlertByID)
+	router.DELETE("/v2/alert/:id", handleDeleteAlertByID)
 
 	router.GET("/v1/admin/stats", handleGetAdminStats)
 	router.GET("/v2/admin/stats", handleGetAdminStats)
