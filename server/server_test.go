@@ -28,7 +28,7 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
-const MOCKING = true
+const MOCKING = !true
 
 type ServerTester struct {
 	suite.Suite

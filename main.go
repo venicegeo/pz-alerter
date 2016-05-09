@@ -76,7 +76,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_ = sys.StartServer(routes)
+	// _ = sys.StartServer(routes)
 
 	done := sys.StartServer(routes)
 

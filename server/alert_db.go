@@ -84,6 +84,40 @@ func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, error) {
 	return &alerts, nil
 }
 
+func (db *AlertDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Alert, int64, error) {
+
+	var alerts []Alert
+	var count = int64(-1)
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &alerts, count, nil
+	}
+
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
+	if err != nil {
+		return nil, count, LoggedError("AlertDB.GetAll failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, count, LoggedError("AlertDB.GetAll failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		count = searchResult.NumberMatched()
+		for _, hit := range *searchResult.GetHits() {
+			var alert Alert
+			err := json.Unmarshal(*hit.Source, &alert)
+			if err != nil {
+				return nil, count, err
+			}
+			alerts = append(alerts, alert)
+		}
+	}
+
+	return &alerts, count, nil
+}
+
+
 func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())

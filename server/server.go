@@ -61,11 +61,24 @@ func StatusNotFound(c *gin.Context, obj interface{}) {
 }
 
 func StatusBadRequest(c *gin.Context, err error) {
+	
 	type errret struct {
-		Message string
+		Status int `json:"status"`
+		Error string `json:"error"`
+		Message string	`json:"message"`
+		Timestamp int64 `json:"timestamp"`
+		Path string `json:"path"`  	
 	}
-	e := errret{Message: err.Error()}
+	e := errret{
+		Status: 400,
+		Error: "Bad Request",
+		Message: err.Error(),
+		Timestamp: time.Now().Unix(),
+		Path: c.Request.URL.Path,
+	}
+	
 	c.JSON(http.StatusBadRequest, e)
+	
 }
 
 //---------------------------------------------------------------------------
@@ -170,8 +183,47 @@ func handleGetEvents(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
-	StatusOK(c, m)
+
+	StatusOK(c, m)	
 }
+
+func handleGetEventsV2(c *gin.Context) {
+	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	m, count, err := server.eventDB.GetAllWithCount("", format)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}
+		
+	bar := make([]interface{}, len(*m))
+	
+	for i, e := range *m {
+		bar[i] = e
+	}
+	
+	var order string
+			
+	if format.Order {
+		order = "desc"	
+	} else {
+		order = "asc"			
+	}
+	
+	foo := &piazza.Common18FListResponse{
+		Data: bar,
+		Pagination: piazza.Pagination {
+			Page: format.From,
+			PerPage: format.Size,
+			Count: count,
+			SortBy: format.Key,
+			Order: order,
+		},	
+	}
+	
+	StatusOK(c, foo)
+}
+
 
 func handeGetEventByID(c *gin.Context) {
 	eventType := c.Param("eventType")
@@ -266,6 +318,44 @@ func handleGetAlerts(c *gin.Context) {
 	StatusOK(c, all)
 }
 
+func handleGetAlertsV2(c *gin.Context) {
+	// TODO: conditionID := c.Query("condition")
+
+	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
+	all, count, err := server.alertDB.GetAllWithCount(format)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}
+	bar := make([]interface{}, len(*all))
+	
+	for i, e := range *all {
+		bar[i] = e
+	}
+		
+	var order string
+			
+	if format.Order {
+		order = "desc"	
+	} else {
+		order = "asc"			
+	}
+	
+	foo := &piazza.Common18FListResponse{
+		Data: bar,
+		Pagination: piazza.Pagination {
+			Page: format.From,
+			PerPage: format.Size,
+			Count: count,
+			SortBy: format.Key,
+			Order: order,
+		},	
+	}
+	
+	StatusOK(c, foo)	
+}
+
+
 func handleDeleteTriggerByID(c *gin.Context) {
 	id := c.Param("id")
 	ok, err := server.triggerDB.DeleteTrigger(Ident(id))
@@ -313,6 +403,44 @@ func handleGetTriggers(c *gin.Context) {
 
 	StatusOK(c, m)
 }
+
+func handleGetTriggersV2(c *gin.Context) {
+	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	m, count, err := server.triggerDB.GetAllWithCount(format)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}
+
+	bar := make([]interface{}, len(*m))
+	
+	for i, e := range *m {
+		bar[i] = e
+	}
+	
+	var order string
+			
+	if format.Order {
+		order = "desc"	
+	} else {
+		order = "asc"			
+	}
+	
+	foo := &piazza.Common18FListResponse{
+		Data: bar,
+		Pagination: piazza.Pagination {
+			Page: format.From,
+			PerPage: format.Size,
+			Count: count,
+			SortBy: format.Key,
+			Order: order,
+		},	
+	}
+	
+	StatusOK(c, foo)
+}
+
 
 func handlePostTrigger(c *gin.Context) {
 	trigger := &Trigger{}
@@ -388,6 +516,45 @@ func handleGetEventTypes(c *gin.Context) {
 	StatusOK(c, ets)
 }
 
+func handleGetEventTypesV2(c *gin.Context) {
+	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	ets, count, err := server.eventTypeDB.GetAllWithCount(format)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}
+	
+	bar := make([]interface{}, len(*ets))
+	
+	for i, e := range *ets {
+		bar[i] = e
+	}
+	
+	var order string
+			
+	if format.Order {
+		order = "desc"	
+	} else {
+		order = "asc"			
+	}
+	
+	foo := &piazza.Common18FListResponse{
+		Data: bar,
+		Pagination: piazza.Pagination {
+			Page: format.From,
+			PerPage: format.Size,
+			Count: count,
+			SortBy: format.Key,
+			Order: order,
+		},	
+	}
+	
+	StatusOK(c, foo)	
+}
+
+
+
 func handlePostEventType(c *gin.Context) {
 	eventType := &EventType{}
 	err := c.BindJSON(eventType)
@@ -453,7 +620,46 @@ func handleGetEventsByEventType(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
-	StatusOK(c, m)
+	StatusOK(c, m)		
+}
+
+func handleGetEventsByEventTypeV2(c *gin.Context) {
+	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
+
+	eventType := c.Param("eventType")
+	
+	m, count, err := server.eventDB.GetAllWithCount(eventType, format)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}
+	
+	bar := make([]interface{}, len(*m))
+	
+	for i, e := range *m {
+		bar[i] = e
+	}
+	
+	var order string
+			
+	if format.Order {
+		order = "desc"	
+	} else {
+		order = "asc"			
+	}
+	
+	foo := &piazza.Common18FListResponse{
+		Data: bar,
+		Pagination: piazza.Pagination {
+			Page: format.From,
+			PerPage: format.Size,
+			Count: count,
+			SortBy: format.Key,
+			Order: order,
+		},	
+	}
+	
+	StatusOK(c, foo)	
 }
 
 func handlePostEvent(c *gin.Context) {
@@ -601,27 +807,58 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/", handleHealthCheck)
 
 	router.POST("/v1/events/:eventType", handlePostEvent)
+	router.POST("/v2/event/:eventType", handlePostEvent)
+	
 	router.GET("/v1/events", handleGetEvents)
+	router.GET("/v2/event", handleGetEventsV2)	
+	
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
+	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
+		
 	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
+	router.GET("/v2/event/:eventType/:id", handeGetEventByID)
+
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
+	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
 
 	router.POST("/v1/eventtypes", handlePostEventType)
+	router.POST("/v2/eventType", handlePostEventType)
+		
 	router.GET("/v1/eventtypes", handleGetEventTypes)
+	router.GET("/v2/eventType", handleGetEventTypesV2)
+
 	router.GET("/v1/eventtypes/:id", handleGetEventTypeByID)
+	router.GET("/v2/eventType/:id", handleGetEventTypeByID)
+
 	router.DELETE("/v1/eventtypes/:id", handleDeleteEventTypeByID)
+	router.DELETE("/v2/eventType/:id", handleDeleteEventTypeByID)
 
 	router.POST("/v1/triggers", handlePostTrigger)
+	router.POST("/v2/trigger", handlePostTrigger)
+
 	router.GET("/v1/triggers", handleGetTriggers)
+	router.GET("/v2/trigger", handleGetTriggersV2)
+		
 	router.GET("/v1/triggers/:id", handleGetTriggerByID)
+	router.GET("/v2/trigger/:id", handleGetTriggerByID)
+	
 	router.DELETE("/v1/triggers/:id", handleDeleteTriggerByID)
+	router.DELETE("/v2/trigger/:id", handleDeleteTriggerByID)
 
 	router.POST("/v1/alerts", handlePostAlert)
+	router.POST("/v2/alert", handlePostAlert)
+	
 	router.GET("/v1/alerts", handleGetAlerts)
+	router.GET("/v2/alert", handleGetAlertsV2)	
+	
 	router.GET("/v1/alerts/:id", handleGetAlertByID)
+	router.GET("/v2/alert/:id", handleGetAlertByID)
+	
 	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
+	router.DELETE("/v2/alert/:id", handleDeleteAlertByID)
 
 	router.GET("/v1/admin/stats", handleGetAdminStats)
+	router.GET("/v2/admin/stats", handleGetAdminStats)
 
 	logger.Info("handlers set")
 
