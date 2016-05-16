@@ -36,13 +36,3 @@ func NewResourceDB(server *Server, esi elasticsearch.IIndex) (*ResourceDB, error
 
 	return db, nil
 }
-
-func (db *ResourceDB) Flush() error {
-
-	err := db.Esi.Flush()
-	if err != nil {
-		return LoggedError("ResourceDB.Flush failed: %s", err)
-	}
-
-	return nil
-}

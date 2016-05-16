@@ -45,11 +45,6 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 		return NoIdent, LoggedError("EventDB.PostData failed: not created")
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return NoIdent, err
-	}
-
 	return id, nil
 }
 
@@ -89,7 +84,7 @@ func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]
 func (db *EventDB) GetAllWithCount(mapping string, format elasticsearch.QueryFormat) (*[]Event, int64, error) {
 	var events []Event
 	var count = int64(-1)
-	
+
 	exists := true
 	if mapping != "" {
 		exists = db.Esi.TypeExists(mapping)
@@ -107,9 +102,9 @@ func (db *EventDB) GetAllWithCount(mapping string, format elasticsearch.QueryFor
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
-		
+
 		count = searchResult.NumberMatched()
-		
+
 		for _, hit := range *searchResult.GetHits() {
 			var event Event
 			err := json.Unmarshal(*hit.Source, &event)
@@ -156,11 +151,6 @@ func (db *EventDB) DeleteByID(mapping string, id Ident) (bool, error) {
 		return false, LoggedError("EventDB.DeleteById failed: no deleteResult")
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
-	}
-
 	return deleteResult.Found, nil
 }
 
@@ -176,11 +166,6 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err)
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -192,11 +177,6 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	}
 	if percolateResponse == nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: no percolateResult")
-	}
-
-	err = db.Flush()
-	if err != nil {
-		return nil, err
 	}
 
 	// add the triggers to the alert queue
@@ -211,11 +191,6 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	}
 
 	log.Printf("\t\ttriggerIds: %v", ids)
-
-	err = db.server.alertDB.Flush()
-	if err != nil {
-		return nil, err
-	}
 
 	return &ids, nil
 }
