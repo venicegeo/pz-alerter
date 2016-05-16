@@ -68,11 +68,6 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 		return NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return NoIdent, err
-	}
-
 	return id, nil
 }
 
@@ -138,7 +133,6 @@ func (db *TriggerDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Trigg
 	return &triggers, count, nil
 }
 
-
 func (db *TriggerDB) GetOne(id Ident) (*Trigger, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
@@ -184,22 +178,12 @@ func (db *TriggerDB) DeleteTrigger(id Ident) (bool, error) {
 		return false, nil
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
-	}
-
 	deleteResult2, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
 	if err != nil {
 		return false, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}
 	if deleteResult2 == nil {
 		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult")
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
 	}
 
 	return deleteResult2.Found, nil

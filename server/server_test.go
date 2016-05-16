@@ -28,7 +28,7 @@ import (
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
 )
 
-const MOCKING = !true
+const MOCKING = true
 
 type ServerTester struct {
 	suite.Suite
@@ -72,7 +72,7 @@ func TestRunSuite(t *testing.T) {
 			piazza.PzElasticSearch,
 			piazza.PzLogger,
 			piazza.PzGateway,
-			piazza.PzUuidgen,			
+			piazza.PzUuidgen,
 		}
 	}
 
@@ -86,14 +86,14 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-    var uuidgen uuidgenPkg.IUuidGenService
-	
-    if MOCKING {
-		uuidgen, err = uuidgenPkg.NewMockUuidGenService(sys)		
+	var uuidgen uuidgenPkg.IUuidGenService
+
+	if MOCKING {
+		uuidgen, err = uuidgenPkg.NewMockUuidGenService(sys)
 	} else {
-		uuidgen, err = uuidgenPkg.NewPzUuidGenService(sys)		
+		uuidgen, err = uuidgenPkg.NewPzUuidGenService(sys)
 	}
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestRunSuite(t *testing.T) {
 			log.Fatal(err)
 		}
 		log.Printf("eventtypesIndex: %s\n", eventtypesIndex.IndexName())
-		
+
 		eventsIndex, err = elasticsearch.NewIndex(sys, "events$")
 		if err != nil {
 			log.Fatal(err)
@@ -122,7 +122,7 @@ func TestRunSuite(t *testing.T) {
 			log.Fatal(err)
 		}
 		log.Printf("triggersIndex: %s\n", triggersIndex.IndexName())
-		
+
 		alertsIndex, err = elasticsearch.NewIndex(sys, "alerts$")
 		if err != nil {
 			log.Fatal(err)
@@ -151,39 +151,39 @@ func TestRunSuite(t *testing.T) {
 
 	clientTester := &ClientTester{workflow: workflow, sys: sys}
 	suite.Run(t, clientTester)
-	
+
 	err = eventtypesIndex.Delete()
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	err = eventsIndex.Delete()
-	if err != nil  {
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	err = triggersIndex.Delete()
-	if err  != nil  {
+	if err != nil {
 		log.Fatal(err)
 	}
 
 	err = alertsIndex.Delete()
-	if err  != nil {
+	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 }
 
 //---------------------------------------------------------------------------
 
 func (suite *ServerTester) SetupSuite() {
 	assertNoData(suite.T(), suite.workflow)
-	
+
 	log.Printf("--- SetupSuite --- \n")
 }
 func (suite *ServerTester) TearDownSuite() {
 	assertNoData(suite.T(), suite.workflow)
-	
+
 	log.Printf("--- TearDownSuite --- \n")
 }
 

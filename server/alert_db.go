@@ -45,11 +45,6 @@ func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
 		return NoIdent, LoggedError("AlertDB.PostData failed: not created")
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return NoIdent, err
-	}
-
 	return id, nil
 }
 
@@ -149,11 +144,6 @@ func (db *AlertDB) DeleteByID(id Ident) (bool, error) {
 	}
 	if deleteResult == nil {
 		return false, LoggedError("AlertDB.DeleteById failed: no deleteResult")
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
 	}
 
 	return deleteResult.Found, nil

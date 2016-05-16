@@ -61,24 +61,24 @@ func StatusNotFound(c *gin.Context, obj interface{}) {
 }
 
 func StatusBadRequest(c *gin.Context, err error) {
-	
+
 	type errret struct {
-		Status int `json:"status"`
-		Error string `json:"error"`
-		Message string	`json:"message"`
-		Timestamp int64 `json:"timestamp"`
-		Path string `json:"path"`  	
+		Status    int    `json:"status"`
+		Error     string `json:"error"`
+		Message   string `json:"message"`
+		Timestamp int64  `json:"timestamp"`
+		Path      string `json:"path"`
 	}
 	e := errret{
-		Status: 400,
-		Error: "Bad Request",
-		Message: err.Error(),
+		Status:    400,
+		Error:     "Bad Request",
+		Message:   err.Error(),
 		Timestamp: time.Now().Unix(),
-		Path: c.Request.URL.Path,
+		Path:      c.Request.URL.Path,
 	}
-	
+
 	c.JSON(http.StatusBadRequest, e)
-	
+
 }
 
 //---------------------------------------------------------------------------
@@ -110,16 +110,8 @@ func NewServer(
 	if err != nil {
 		return nil, err
 	}
-	err = s.eventTypeDB.Esi.Flush()
-	if err != nil {
-		return nil, err
-	}
 
 	s.eventDB, err = NewEventDB(&s, eventsIndex)
-	if err != nil {
-		return nil, err
-	}
-	err = s.eventDB.Esi.Flush()
 	if err != nil {
 		return nil, err
 	}
@@ -128,16 +120,8 @@ func NewServer(
 	if err != nil {
 		return nil, err
 	}
-	err = s.triggerDB.Esi.Flush()
-	if err != nil {
-		return nil, err
-	}
 
 	s.alertDB, err = NewAlertDB(&s, alertsIndex)
-	if err != nil {
-		return nil, err
-	}
-	err = s.alertDB.Esi.Flush()
 	if err != nil {
 		return nil, err
 	}
@@ -184,7 +168,7 @@ func handleGetEvents(c *gin.Context) {
 		return
 	}
 
-	StatusOK(c, m)	
+	StatusOK(c, m)
 }
 
 func handleGetEventsV2(c *gin.Context) {
@@ -195,35 +179,34 @@ func handleGetEventsV2(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
-		
+
 	bar := make([]interface{}, len(*m))
-	
+
 	for i, e := range *m {
 		bar[i] = e
 	}
-	
+
 	var order string
-			
+
 	if format.Order {
-		order = "desc"	
+		order = "desc"
 	} else {
-		order = "asc"			
+		order = "asc"
 	}
-	
+
 	foo := &piazza.Common18FListResponse{
 		Data: bar,
-		Pagination: piazza.Pagination {
-			Page: format.From,
+		Pagination: piazza.Pagination{
+			Page:    format.From,
 			PerPage: format.Size,
-			Count: count,
-			SortBy: format.Key,
-			Order: order,
-		},	
+			Count:   count,
+			SortBy:  format.Key,
+			Order:   order,
+		},
 	}
-	
+
 	StatusOK(c, foo)
 }
-
 
 func handeGetEventByID(c *gin.Context) {
 	eventType := c.Param("eventType")
@@ -254,12 +237,6 @@ func handleDeleteAlertByID(c *gin.Context) {
 		return
 	}
 
-	err = server.alertDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-
 	StatusOK(c, nil)
 }
 
@@ -280,12 +257,6 @@ func handlePostAlert(c *gin.Context) {
 	}
 
 	retID := WorkflowIDResponse{ID: id}
-
-	err = server.alertDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
 
 	StatusCreated(c, retID)
 }
@@ -328,33 +299,32 @@ func handleGetAlertsV2(c *gin.Context) {
 		return
 	}
 	bar := make([]interface{}, len(*all))
-	
+
 	for i, e := range *all {
 		bar[i] = e
 	}
-		
+
 	var order string
-			
+
 	if format.Order {
-		order = "desc"	
+		order = "desc"
 	} else {
-		order = "asc"			
+		order = "asc"
 	}
-	
+
 	foo := &piazza.Common18FListResponse{
 		Data: bar,
-		Pagination: piazza.Pagination {
-			Page: format.From,
+		Pagination: piazza.Pagination{
+			Page:    format.From,
 			PerPage: format.Size,
-			Count: count,
-			SortBy: format.Key,
-			Order: order,
-		},	
+			Count:   count,
+			SortBy:  format.Key,
+			Order:   order,
+		},
 	}
-	
-	StatusOK(c, foo)	
-}
 
+	StatusOK(c, foo)
+}
 
 func handleDeleteTriggerByID(c *gin.Context) {
 	id := c.Param("id")
@@ -365,12 +335,6 @@ func handleDeleteTriggerByID(c *gin.Context) {
 	}
 	if !ok {
 		StatusNotFound(c, gin.H{"id": id})
-		return
-	}
-
-	err = server.triggerDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
 		return
 	}
 
@@ -414,33 +378,32 @@ func handleGetTriggersV2(c *gin.Context) {
 	}
 
 	bar := make([]interface{}, len(*m))
-	
+
 	for i, e := range *m {
 		bar[i] = e
 	}
-	
+
 	var order string
-			
+
 	if format.Order {
-		order = "desc"	
+		order = "desc"
 	} else {
-		order = "asc"			
+		order = "asc"
 	}
-	
+
 	foo := &piazza.Common18FListResponse{
 		Data: bar,
-		Pagination: piazza.Pagination {
-			Page: format.From,
+		Pagination: piazza.Pagination{
+			Page:    format.From,
 			PerPage: format.Size,
-			Count: count,
-			SortBy: format.Key,
-			Order: order,
-		},	
+			Count:   count,
+			SortBy:  format.Key,
+			Order:   order,
+		},
 	}
-	
+
 	StatusOK(c, foo)
 }
-
 
 func handlePostTrigger(c *gin.Context) {
 	trigger := &Trigger{}
@@ -460,12 +423,6 @@ func handlePostTrigger(c *gin.Context) {
 
 	a := WorkflowIDResponse{ID: trigger.ID}
 
-	err = server.triggerDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-
 	StatusCreated(c, a)
 }
 
@@ -478,12 +435,6 @@ func handleDeleteEventTypeByID(c *gin.Context) {
 	}
 	if !ok {
 		StatusNotFound(c, gin.H{"id": id})
-		return
-	}
-
-	err = server.eventTypeDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
 		return
 	}
 
@@ -524,36 +475,34 @@ func handleGetEventTypesV2(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
-	
+
 	bar := make([]interface{}, len(*ets))
-	
+
 	for i, e := range *ets {
 		bar[i] = e
 	}
-	
+
 	var order string
-			
+
 	if format.Order {
-		order = "desc"	
+		order = "desc"
 	} else {
-		order = "asc"			
+		order = "asc"
 	}
-	
+
 	foo := &piazza.Common18FListResponse{
 		Data: bar,
-		Pagination: piazza.Pagination {
-			Page: format.From,
+		Pagination: piazza.Pagination{
+			Page:    format.From,
 			PerPage: format.Size,
-			Count: count,
-			SortBy: format.Key,
-			Order: order,
-		},	
+			Count:   count,
+			SortBy:  format.Key,
+			Order:   order,
+		},
 	}
-	
-	StatusOK(c, foo)	
+
+	StatusOK(c, foo)
 }
-
-
 
 func handlePostEventType(c *gin.Context) {
 	eventType := &EventType{}
@@ -578,12 +527,6 @@ func handlePostEventType(c *gin.Context) {
 
 	retID := WorkflowIDResponse{ID: id}
 
-	err = server.eventTypeDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-
 	StatusCreated(c, retID)
 }
 
@@ -601,12 +544,6 @@ func handeDeleteEventByID(c *gin.Context) {
 		return
 	}
 
-	err = server.eventDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
-
 	StatusOK(c, nil)
 }
 
@@ -620,46 +557,46 @@ func handleGetEventsByEventType(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
-	StatusOK(c, m)		
+	StatusOK(c, m)
 }
 
 func handleGetEventsByEventTypeV2(c *gin.Context) {
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
 
 	eventType := c.Param("eventType")
-	
+
 	m, count, err := server.eventDB.GetAllWithCount(eventType, format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
-	
+
 	bar := make([]interface{}, len(*m))
-	
+
 	for i, e := range *m {
 		bar[i] = e
 	}
-	
+
 	var order string
-			
+
 	if format.Order {
-		order = "desc"	
+		order = "desc"
 	} else {
-		order = "asc"			
+		order = "asc"
 	}
-	
+
 	foo := &piazza.Common18FListResponse{
 		Data: bar,
-		Pagination: piazza.Pagination {
-			Page: format.From,
+		Pagination: piazza.Pagination{
+			Page:    format.From,
 			PerPage: format.Size,
-			Count: count,
-			SortBy: format.Key,
-			Order: order,
-		},	
+			Count:   count,
+			SortBy:  format.Key,
+			Order:   order,
+		},
 	}
-	
-	StatusOK(c, foo)	
+
+	StatusOK(c, foo)
 }
 
 func handlePostEvent(c *gin.Context) {
@@ -682,12 +619,6 @@ func handlePostEvent(c *gin.Context) {
 	}
 
 	retID := WorkflowIDResponse{ID: event.ID}
-
-	err = server.eventDB.Flush()
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
-	}
 
 	{
 		// log.Printf("event:\n")
@@ -808,13 +739,13 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	router.POST("/v1/events/:eventType", handlePostEvent)
 	router.POST("/v2/event/:eventType", handlePostEvent)
-	
+
 	router.GET("/v1/events", handleGetEvents)
-	router.GET("/v2/event", handleGetEventsV2)	
-	
+	router.GET("/v2/event", handleGetEventsV2)
+
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
 	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
-		
+
 	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
 	router.GET("/v2/event/:eventType/:id", handeGetEventByID)
 
@@ -823,7 +754,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	router.POST("/v1/eventtypes", handlePostEventType)
 	router.POST("/v2/eventType", handlePostEventType)
-		
+
 	router.GET("/v1/eventtypes", handleGetEventTypes)
 	router.GET("/v2/eventType", handleGetEventTypesV2)
 
@@ -838,22 +769,22 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	router.GET("/v1/triggers", handleGetTriggers)
 	router.GET("/v2/trigger", handleGetTriggersV2)
-		
+
 	router.GET("/v1/triggers/:id", handleGetTriggerByID)
 	router.GET("/v2/trigger/:id", handleGetTriggerByID)
-	
+
 	router.DELETE("/v1/triggers/:id", handleDeleteTriggerByID)
 	router.DELETE("/v2/trigger/:id", handleDeleteTriggerByID)
 
 	router.POST("/v1/alerts", handlePostAlert)
 	router.POST("/v2/alert", handlePostAlert)
-	
+
 	router.GET("/v1/alerts", handleGetAlerts)
-	router.GET("/v2/alert", handleGetAlertsV2)	
-	
+	router.GET("/v2/alert", handleGetAlertsV2)
+
 	router.GET("/v1/alerts/:id", handleGetAlertByID)
 	router.GET("/v2/alert/:id", handleGetAlertByID)
-	
+
 	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
 	router.DELETE("/v2/alert/:id", handleDeleteAlertByID)
 

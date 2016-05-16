@@ -47,11 +47,6 @@ func (db *EventTypeDB) PostData(obj interface{}, id Ident) (Ident, error) {
 		return NoIdent, LoggedError("EventTypeDB.PostData failed: not created")
 	}
 
-	err = db.Esi.Flush()
-	if err != nil {
-		return NoIdent, err
-	}
-
 	return id, nil
 }
 
@@ -149,11 +144,6 @@ func (db *EventTypeDB) DeleteByID(id Ident) (bool, error) {
 	}
 	if deleteResult == nil {
 		return false, LoggedError("EventTypeDB.DeleteById failed: no deleteResult")
-	}
-
-	err = db.Esi.Flush()
-	if err != nil {
-		return false, err
 	}
 
 	return deleteResult.Found, nil
