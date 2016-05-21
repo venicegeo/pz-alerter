@@ -90,6 +90,7 @@ type Server struct {
 	alertDB     *AlertDB
 
 	uuidgen uuidgenPkg.IUuidGenService
+	logger  loggerPkg.IClient
 }
 
 var server *Server
@@ -100,11 +101,13 @@ func NewServer(
 	eventsIndex elasticsearch.IIndex,
 	triggersIndex elasticsearch.IIndex,
 	alertsIndex elasticsearch.IIndex,
-	uuidgen uuidgenPkg.IUuidGenService) (*Server, error) {
+	uuidgen uuidgenPkg.IUuidGenService,
+	logger loggerPkg.IClient) (*Server, error) {
 	var s Server
 	var err error
 
 	s.uuidgen = uuidgen
+	s.logger = logger
 
 	s.eventTypeDB, err = NewEventTypeDB(&s, eventtypesIndex)
 	if err != nil {
@@ -664,6 +667,9 @@ func handlePostEvent(c *gin.Context) {
 
 				log.Printf("jobInstance: %s\n\n", jobInstance)
 
+				server.logger.Info("job submission: %s with %s", jobInstance)
+
+				/**
 				// Figure out how to post the jobInstance to job manager server.
 				url, err := sysConfig.GetURL(piazza.PzGateway)
 				if err != nil {
@@ -674,6 +680,7 @@ func handlePostEvent(c *gin.Context) {
 				extraParams := map[string]string{
 					"body": jobInstance,
 				}
+
 				request, err := postToPzGatewayJobService(gatewayURL, extraParams)
 				if err != nil {
 					log.Fatal(err)
@@ -695,6 +702,7 @@ func handlePostEvent(c *gin.Context) {
 					//    log.Println(resp.Header)
 					log.Println(body)
 				}
+				**/
 
 			}(triggerID)
 		}
@@ -723,7 +731,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	sysConfig = sys
 
 	server, err = NewServer(eventtypesIndex, eventsIndex,
-		triggersIndex, alertsIndex, uuidgen)
+		triggersIndex, alertsIndex, uuidgen, logger)
 	if err != nil {
 		return nil, errors.New("internal error: server context failed to initialize")
 	}
