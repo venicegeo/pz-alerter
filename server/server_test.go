@@ -70,8 +70,8 @@ func TestRunSuite(t *testing.T) {
 	} else {
 		required = []piazza.ServiceName{
 			piazza.PzElasticSearch,
+			piazza.PzKafka,
 			piazza.PzLogger,
-			piazza.PzGateway,
 			piazza.PzUuidgen,
 		}
 	}

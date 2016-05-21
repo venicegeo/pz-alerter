@@ -29,8 +29,8 @@ func main() {
 	required := []piazza.ServiceName{
 		piazza.PzElasticSearch,
 		piazza.PzLogger,
-		piazza.PzGateway,
 		piazza.PzUuidgen,
+		piazza.PzKafka,
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)
@@ -43,9 +43,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-//	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
+	//	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	uuidgen, err := uuidgenPkg.NewPzUuidGenService(sys)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
