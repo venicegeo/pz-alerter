@@ -8,7 +8,7 @@ cat > tmp <<foo
 {
     "title": "High Severity",
     "condition": {
-        "event_id": "$etId",
+        "eventtype_ids": ["$etId"],
         "query": {
             "query": {
                 "bool": {

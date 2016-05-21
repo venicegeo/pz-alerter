@@ -1,5 +1,5 @@
 #!/bin/sh
 
-#WHOST=http://pz-workflow.cf.piazzageo.io
+WHOST=http://pz-workflow.int.geointservices.io
 
-WHOST=localhost:12342
+#WHOST=localhost:12342
