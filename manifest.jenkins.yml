@@ -3,9 +3,9 @@ applications:
   host: pz-workflow
   command: chmod 755 pz-workflow.bin && ./pz-workflow.bin
   buildpack: binary_buildpack
-  domain: stage.geointservices.io
   memory: 512M
   instances: 1
   timeout: 180
   services:
       - pz-elasticsearch
+      - pz-kafka
