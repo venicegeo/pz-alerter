@@ -27,7 +27,7 @@ func NewResourceDB(server *Server, esi elasticsearch.IIndex) (*ResourceDB, error
 		Esi:    esi,
 	}
 
-	_ = esi.Delete()
+	// _ = esi.Delete()
 
 	err := esi.Create()
 	if err != nil {
