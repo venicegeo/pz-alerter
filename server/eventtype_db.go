@@ -51,7 +51,7 @@ func (db *EventTypeDB) PostData(obj interface{}, id Ident) (Ident, error) {
 }
 
 func (db *EventTypeDB) GetAll(format elasticsearch.QueryFormat) (*[]EventType, error) {
-	var eventTypes []EventType
+	eventTypes := []EventType{}
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
