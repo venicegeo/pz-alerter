@@ -72,7 +72,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 }
 
 func (db *TriggerDB) GetAll(format elasticsearch.QueryFormat) (*[]Trigger, error) {
-	var triggers []Trigger
+	triggers := []Trigger{}
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {

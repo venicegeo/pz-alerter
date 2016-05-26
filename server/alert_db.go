@@ -50,7 +50,7 @@ func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
 
 func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, error) {
 
-	var alerts []Alert
+	alerts := []Alert{}
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
