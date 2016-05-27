@@ -69,6 +69,8 @@ func (suite *ClientTester) Test12AlertResource() {
 	id, err := workflow.PostOneAlert(&a1)
 	assert.NoError(err)
 
+	sleep()
+
 	alerts, err := workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
@@ -88,6 +90,8 @@ func (suite *ClientTester) Test12AlertResource() {
 
 	err = workflow.DeleteOneAlert(id)
 	assert.NoError(err)
+
+	sleep()
 
 	alert, err = workflow.GetOneAlert(id)
 	assert.Error(err)
@@ -142,6 +146,8 @@ func (suite *ClientTester) Test13EventResource() {
 	//assert.Len(*events, 1)
 	//assert.EqualValues(eID, (*events)[0].ID)
 
+	sleep()
+
 	tmp, err := workflow.GetOneEvent(eventTypeName, eID)
 	assert.NoError(err)
 	assert.EqualValues(eID, tmp.ID)
@@ -167,6 +173,8 @@ func (suite *ClientTester) Test14EventTypeResource() {
 		err = workflow.DeleteOneEventType(id)
 		assert.NoError(err)
 	}()
+
+	sleep()
 
 	eventTypes, err := workflow.GetAllEventTypes()
 	assert.NoError(err)
@@ -207,6 +215,8 @@ func (suite *ClientTester) Test15One() {
 			assert.NoError(err)
 		}()
 	}
+
+	sleep()
 
 	var tID Ident
 	{
@@ -259,6 +269,8 @@ func (suite *ClientTester) Test15One() {
 		}()
 	}
 
+	sleep()
+
 	var e2ID Ident
 	{
 		// will cause no triggers
@@ -279,6 +291,7 @@ func (suite *ClientTester) Test15One() {
 			assert.NoError(err)
 		}()
 	}
+	sleep()
 
 	//{
 	//	ary, err := workflow.GetAllEvents("")
@@ -353,6 +366,8 @@ func (suite *ClientTester) Test16TriggerResource() {
 		assert.NoError(err)
 	}()
 
+	sleep()
+
 	tmp, err := workflow.GetOneTrigger(t1ID)
 	assert.NoError(err)
 	assert.EqualValues(t1ID, tmp.ID)
@@ -392,10 +407,14 @@ func (suite *ClientTester) Test17Triggering() {
 		etE, err = workflow.PostOneEventType(eventTypeE)
 		assert.NoError(err)
 
+		sleep()
+
 		eventTypes, err := workflow.GetAllEventTypes()
 		assert.NoError(err)
 		assert.Len(*eventTypes, 3)
 	}
+	sleep()
+
 	defer func() {
 		workflow.DeleteOneEventType(etC)
 		assert.NoError(err)
@@ -454,6 +473,8 @@ func (suite *ClientTester) Test17Triggering() {
 			workflow.DeleteOneTrigger(tB)
 			assert.NoError(err)
 		}()
+
+		sleep()
 
 		triggers, err := workflow.GetAllTriggers()
 		assert.NoError(err)
@@ -514,6 +535,8 @@ func (suite *ClientTester) Test17Triggering() {
 			assert.NoError(err)
 		}()
 	}
+
+	sleep()
 
 	var aI, aJ Ident
 	{
