@@ -204,8 +204,8 @@ func (c *PzWorkflowService) DeleteOneEventType(id Ident) error {
 
 //---------------------------------------------------------------------------
 
-func (c *PzWorkflowService) PostOneEvent(eventTypeName string, event *Event) (Ident, error) {
-	resp, err := c.Post("/events/"+eventTypeName, event)
+func (c *PzWorkflowService) PostOneEvent(foo string, event *Event) (Ident, error) {
+	resp, err := c.Post("/events", event)
 	if err != nil {
 		return NoIdent, err
 	}
@@ -229,7 +229,8 @@ func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error)
 
 	url := "/events"
 	if eventTypeName != "" {
-		url += "/" + eventTypeName
+		// url += "/" + eventTypeName
+		url += "?eventTypeId=" + eventTypeName
 	}
 
 	resp, err := c.Get(url)
@@ -249,8 +250,8 @@ func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error)
 	return &events, nil
 }
 
-func (c *PzWorkflowService) GetOneEvent(eventTypeName string, id Ident) (*Event, error) {
-	resp, err := c.Get("/events/" + eventTypeName + "/" + string(id))
+func (c *PzWorkflowService) GetOneEvent(foo string, id Ident) (*Event, error) {
+	resp, err := c.Get("/events/" + string(id))
 	if err != nil {
 		return nil, err
 	}
@@ -267,8 +268,8 @@ func (c *PzWorkflowService) GetOneEvent(eventTypeName string, id Ident) (*Event,
 	return &resp2, nil
 }
 
-func (c *PzWorkflowService) DeleteOneEvent(eventTypeName string, id Ident) error {
-	resp, err := c.Delete("/events/" + eventTypeName + "/" + string(id))
+func (c *PzWorkflowService) DeleteOneEvent(foot string, id Ident) error {
+	resp, err := c.Delete("/events/" + string(id))
 	if err != nil {
 		return err
 	}
