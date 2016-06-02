@@ -163,15 +163,20 @@ func handleGetAdminStats(c *gin.Context) {
 }
 
 func handleGetEvents(c *gin.Context) {
-	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
+	eventTypeId := c.Query("eventTypeId")
+	if eventTypeId == "" {		
+		format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
 
-	m, err := server.eventDB.GetAll("", format)
-	if err != nil {
-		StatusBadRequest(c, err)
-		return
+		m, err := server.eventDB.GetAll("", format)
+		if err != nil {
+			StatusBadRequest(c, err)
+			return
+		}
+
+		StatusOK(c, m)
+	} else {
+		handleGetEventsByEventType(c)
 	}
-
-	StatusOK(c, m)
 }
 
 func handleGetEventsV2(c *gin.Context) {
@@ -211,12 +216,39 @@ func handleGetEventsV2(c *gin.Context) {
 	StatusOK(c, foo)
 }
 
-func handeGetEventByID(c *gin.Context) {
-	eventType := c.Param("eventType")
+func lookupEventTypeNameByEventID(id Ident) (string, error) {
+	var mapping string = ""
+	
+	types, err := server.eventDB.Esi.GetTypes()
+	// log.Printf("types: %v", types)
+	if err == nil {
+		for _, typ := range types {
+			// log.Printf("trying %s\n", typ)
+			if server.eventDB.Esi.ItemExists(typ, id.String()) {
+				mapping = typ
+				break				
+			}
+		}	
+	} else {
+		return "", err 
+	}
+	
+	return mapping, nil	
+}
+func handleGetEventByID(c *gin.Context) {
+	// eventType := c.Param("eventType")
 	s := c.Param("id")
-
 	id := Ident(s)
-	event, err := server.eventDB.GetOne(eventType, id)
+	// event, err := server.eventDB.GetOne(eventType, id)
+	mapping, err := lookupEventTypeNameByEventID(id)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}		
+	
+	log.Printf("The Mapping is:  %s\n", mapping)
+	
+	event, err := server.eventDB.GetOne(mapping, id)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -533,11 +565,19 @@ func handlePostEventType(c *gin.Context) {
 	StatusCreated(c, retID)
 }
 
-func handeDeleteEventByID(c *gin.Context) {
-	id := c.Param("id")
-	eventType := c.Param("eventType")
+func handleDeleteEventByID(c *gin.Context) {
+	s := c.Param("id")
+	id := Ident(s)
+	// eventType := c.Param("eventType")
+	mapping, err := lookupEventTypeNameByEventID(id)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}		
+	
+	log.Printf("The Mapping is:  %s\n", mapping)
 
-	ok, err := server.eventDB.DeleteByID(eventType, Ident(id))
+	ok, err := server.eventDB.DeleteByID(mapping, Ident(id))
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -551,11 +591,13 @@ func handeDeleteEventByID(c *gin.Context) {
 }
 
 func handleGetEventsByEventType(c *gin.Context) {
+	
 	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
 
-	eventType := c.Param("eventType")
+	// eventType := c.Param("eventType")
+	eventTypeId := c.Query("eventTypeId")
 
-	m, err := server.eventDB.GetAll(eventType, format)
+	m, err := server.eventDB.GetAll(eventTypeId, format)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -605,17 +647,24 @@ func handleGetEventsByEventTypeV2(c *gin.Context) {
 func handlePostEvent(c *gin.Context) {
 	// log.Printf("---------------------\n")
 
-	eventType := c.Param("eventType")
-
+	// eventType := c.Param("eventType")
+	
 	var event Event
 	err := c.BindJSON(&event)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
-
+	
+	eventTypeId := event.EventTypeID
+	eventType, err := server.eventTypeDB.GetOne(eventTypeId)
+	if err != nil {
+		StatusBadRequest(c, err)
+		return
+	}	
+	
 	event.ID = server.NewIdent()
-	_, err = server.eventDB.PostData(eventType, event, event.ID)
+	_, err = server.eventDB.PostData(eventType.Name, event, event.ID)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -630,7 +679,7 @@ func handlePostEvent(c *gin.Context) {
 		// log.Printf("\tData: %v\n", event.Data)
 
 		// Find triggers associated with event
-		triggerIDs, err := server.eventDB.PercolateEventData(eventType, event.Data, event.ID)
+		triggerIDs, err := server.eventDB.PercolateEventData(eventType.Name, event.Data, event.ID)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
@@ -745,20 +794,26 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	router.GET("/", handleHealthCheck)
 
-	router.POST("/v1/events/:eventType", handlePostEvent)
-	router.POST("/v2/event/:eventType", handlePostEvent)
+	router.POST("/v1/events", handlePostEvent)
+	router.POST("/v2/event", handlePostEvent)
 
 	router.GET("/v1/events", handleGetEvents)
 	router.GET("/v2/event", handleGetEventsV2)
 
+/*
 	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
 	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
+*/
 
-	router.GET("/v1/events/:eventType/:id", handeGetEventByID)
-	router.GET("/v2/event/:eventType/:id", handeGetEventByID)
-
+	router.GET("/v1/events/:id", handleGetEventByID)
+	router.GET("/v2/event/:id", handleGetEventByID)
+	
+/*
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
 	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
+*/
+	router.DELETE("/v1/events/:id", handleDeleteEventByID)
+	router.DELETE("/v2/event/:id", handleDeleteEventByID)
 
 	router.POST("/v1/eventtypes", handlePostEventType)
 	router.POST("/v2/eventType", handlePostEventType)
