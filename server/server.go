@@ -28,9 +28,10 @@ import (
 	_ "io"
 	"mime/multipart"
 	_ "net/url"
-	_ "os"
+	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/Shopify/sarama"	
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/lib"
@@ -717,6 +718,8 @@ func handlePostEvent(c *gin.Context) {
 				log.Printf("jobInstance: %s\n\n", jobInstance)
 
 				server.logger.Info("job submission: %s with %s", jobInstance)
+				
+				sendToKafka(jobInstance)
 
 				/**
 				// Figure out how to post the jobInstance to job manager server.
@@ -761,6 +764,49 @@ func handlePostEvent(c *gin.Context) {
 
 	StatusCreated(c, retID)
 	// log.Printf("---------------------\n")
+}
+
+func sendToKafka(jobInstance string)  {
+	log.Printf("***********************\n")
+	log.Printf("%s\n", jobInstance)
+		
+	kafkaAddress, err := sysConfig.GetAddress(piazza.PzKafka)
+	if err != nil {
+		// return err
+		log.Printf("%v\n", err)
+	}
+	
+	// Get Space we are running in.   Default to int
+	space := os.Getenv("SPACE")
+	if space == "" {
+		space = "int"
+	}
+	
+	topic := fmt.Sprintf("Request-Job-%s", space)
+	message := jobInstance
+	
+	log.Printf("%s\n", kafkaAddress)
+	log.Printf("%s\n", topic)
+	
+	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer func() {
+		if err := producer.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
+
+	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(message)}
+	partition, offset, err := producer.SendMessage(msg)
+	if err != nil {
+		log.Printf("FAILED to send message: %s\n", err)
+	} else {
+		log.Printf("> message sent to partition %d at offset %d\n", partition, offset)
+	}
+	
+	log.Printf("***********************\n")			
 }
 
 func handleHealthCheck(c *gin.Context) {
