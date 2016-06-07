@@ -27,10 +27,10 @@ foo
 json=`cat tmp`
 
 echo
-echo POST /triggers
+echo POST /v2/trigger
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/triggers`
+ret=`curl -S -s -XPOST -d "$json" $WHOST/v2/trigger`
 
 echo RETURN:
 echo $ret

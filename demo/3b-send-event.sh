@@ -19,10 +19,10 @@ foo
 json=`cat tmp`
 
 echo
-echo POST /events/USDataEvent
+echo POST /v2/event
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" $WHOST/v1/events/USDataEvent`
+ret=`curl -S -s -XPOST -d "$json" $WHOST/v2/event`
 
 echo RETURN:
 echo $ret
