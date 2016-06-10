@@ -13,7 +13,7 @@
 // limitations under the License.
 
 package server
- 
+
 import (
 	"encoding/json"
 	"errors"
@@ -60,8 +60,25 @@ type Condition struct {
 	Query       map[string]interface{} `json:"query" binding:"required"`
 }
 
+//---------------------------------------------------------------------------
+
+// Job JSON struct
 type Job struct {
-	Task string
+	Username           string `json:"username" binding:"required"`
+	JobID              Ident  `json:"jobId" binding:"required"`
+	Type               string `json:"type" binding:"required"`
+
+	// IngestJob
+	DataResource       string `json:"data_resource,omitempty"`
+	Host               string `json:"host,omitempty"`
+
+	// ExecuteServiceJob
+	ExecuteServiceData string `json:"service_data,omitempty"`
+	ServiceJobID       string `json:"service_job_id,omitempty"`
+
+	// AccessJob
+	DataID             string `json:"data_id,omitempty"`
+	DeploymentType     string `json:"deployment_type,omitempty"`
 }
 
 //---------------------------------------------------------------------------
@@ -69,7 +86,6 @@ type Job struct {
 // when the and'ed set of Conditions all are true, do Something
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
-// TODO: some sort of mapping from the event info into the Job string
 type Trigger struct {
 	ID            Ident     `json:"id"`
 	Title         string    `json:"title" binding:"required"`
@@ -111,6 +127,7 @@ type Alert struct {
 	ID        Ident `json:"id"`
 	TriggerID Ident `json:"trigger_id"`
 	EventID   Ident `json:"event_id"`
+	JobID     Ident `json:"job_id"`
 }
 
 type AlertList []Alert

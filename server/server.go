@@ -15,6 +15,7 @@
 package server
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	_ "io/ioutil"
@@ -31,7 +32,7 @@ import (
 	"os"
 
 	"github.com/gin-gonic/gin"
-	"github.com/Shopify/sarama"	
+	"github.com/Shopify/sarama"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/lib"
@@ -165,7 +166,7 @@ func handleGetAdminStats(c *gin.Context) {
 
 func handleGetEvents(c *gin.Context) {
 	eventTypeId := c.Query("eventTypeId")
-	if eventTypeId == "" {		
+	if eventTypeId == "" {
 		format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
 
 		m, err := server.eventDB.GetAll("", format)
@@ -219,7 +220,7 @@ func handleGetEventsV2(c *gin.Context) {
 
 func lookupEventTypeNameByEventID(id Ident) (string, error) {
 	var mapping string = ""
-	
+
 	types, err := server.eventDB.Esi.GetTypes()
 	// log.Printf("types: %v", types)
 	if err == nil {
@@ -227,14 +228,14 @@ func lookupEventTypeNameByEventID(id Ident) (string, error) {
 			// log.Printf("trying %s\n", typ)
 			if server.eventDB.Esi.ItemExists(typ, id.String()) {
 				mapping = typ
-				break				
+				break
 			}
-		}	
+		}
 	} else {
-		return "", err 
+		return "", err
 	}
-	
-	return mapping, nil	
+
+	return mapping, nil
 }
 func handleGetEventByID(c *gin.Context) {
 	// eventType := c.Param("eventType")
@@ -245,10 +246,10 @@ func handleGetEventByID(c *gin.Context) {
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
-	}		
-	
+	}
+
 	log.Printf("The Mapping is:  %s\n", mapping)
-	
+
 	event, err := server.eventDB.GetOne(mapping, id)
 	if err != nil {
 		StatusBadRequest(c, err)
@@ -574,8 +575,8 @@ func handleDeleteEventByID(c *gin.Context) {
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
-	}		
-	
+	}
+
 	log.Printf("The Mapping is:  %s\n", mapping)
 
 	ok, err := server.eventDB.DeleteByID(mapping, Ident(id))
@@ -592,7 +593,7 @@ func handleDeleteEventByID(c *gin.Context) {
 }
 
 func handleGetEventsByEventType(c *gin.Context) {
-	
+
 	format := elasticsearch.GetFormatParams(c, 10, 0, "id", elasticsearch.SortAscending)
 
 	// eventType := c.Param("eventType")
@@ -649,21 +650,21 @@ func handlePostEvent(c *gin.Context) {
 	// log.Printf("---------------------\n")
 
 	// eventType := c.Param("eventType")
-	
+
 	var event Event
 	err := c.BindJSON(&event)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
-	
+
 	eventTypeId := event.EventTypeID
 	eventType, err := server.eventTypeDB.GetOne(eventTypeId)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
-	}	
-	
+	}
+
 	event.ID = server.NewIdent()
 	_, err = server.eventDB.PostData(eventType.Name, event, event.ID)
 	if err != nil {
@@ -705,21 +706,26 @@ func handlePostEvent(c *gin.Context) {
 					return
 				}
 
+				// Give the job the Ident
+				Job := trigger.Job
+				Job.JobID = server.NewIdent()
+
+				jobInstance, err := json.Marshal(Job)
+				jobString := string(jobInstance)
+
 				log.Printf("trigger: %v\n", trigger)
-				log.Printf("\tJob: %v\n\n", trigger.Job.Task)
+				log.Printf("\tJob: %v\n\n", jobString)
 
-				var jobInstance = trigger.Job.Task
-
-				//  Not very robust,  need to find a better way
+				// Not very robust,  need to find a better way
 				for key, value := range event.Data {
-					jobInstance = strings.Replace(jobInstance, "$"+key, fmt.Sprintf("%v", value), 1)
+					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), 1)
 				}
 
-				log.Printf("jobInstance: %s\n\n", jobInstance)
+				log.Printf("jobInstance: %s\n\n", jobString)
 
-				server.logger.Info("job submission: %s with %s", jobInstance)
-				
-				sendToKafka(jobInstance)
+				server.logger.Info("job submission: %s with %s", jobString)
+
+				sendToKafka(jobString)
 
 				/**
 				// Figure out how to post the jobInstance to job manager server.
@@ -769,25 +775,25 @@ func handlePostEvent(c *gin.Context) {
 func sendToKafka(jobInstance string)  {
 	log.Printf("***********************\n")
 	log.Printf("%s\n", jobInstance)
-		
+
 	kafkaAddress, err := sysConfig.GetAddress(piazza.PzKafka)
 	if err != nil {
 		// return err
 		log.Printf("%v\n", err)
 	}
-	
+
 	// Get Space we are running in.   Default to int
 	space := os.Getenv("SPACE")
 	if space == "" {
 		space = "int"
 	}
-	
+
 	topic := fmt.Sprintf("Request-Job-%s", space)
 	message := jobInstance
-	
+
 	log.Printf("%s\n", kafkaAddress)
 	log.Printf("%s\n", topic)
-	
+
 	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
 	if err != nil {
 		log.Fatalln(err)
@@ -805,8 +811,8 @@ func sendToKafka(jobInstance string)  {
 	} else {
 		log.Printf("> message sent to partition %d at offset %d\n", partition, offset)
 	}
-	
-	log.Printf("***********************\n")			
+
+	log.Printf("***********************\n")
 }
 
 func handleHealthCheck(c *gin.Context) {
@@ -853,7 +859,7 @@ func CreateHandlers(sys *piazza.SystemConfig,
 
 	router.GET("/v1/events/:id", handleGetEventByID)
 	router.GET("/v2/event/:id", handleGetEventByID)
-	
+
 /*
 	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
 	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
