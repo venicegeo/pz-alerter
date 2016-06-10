@@ -214,6 +214,7 @@ func makeTestEvent(eventTypeID Ident) *Event {
 }
 
 func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
+	var tZ = server.NewIdent()
 	trigger := &Trigger{
 		Title: "MY TRIGGER TITLE",
 		Condition: Condition{
@@ -227,7 +228,9 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 			},
 		},
 		Job: Job{
-			Task: "MY TASK",
+			Username: "test",
+			Type:     "get",
+			JobID:    tZ,
 		},
 	}
 	return trigger
@@ -684,6 +687,7 @@ func (suite *ServerTester) Test06Workflow() {
 	}
 	sleep()
 
+	var tZ = server.NewIdent()
 	var t1ID Ident
 	{
 		log.Printf("Creating trigger:\n")
@@ -700,9 +704,9 @@ func (suite *ServerTester) Test06Workflow() {
 				},
 			},
 			Job: Job{
-				//Task: "the x1 task",
-				// Using a GetJob call as it is as close to a 'noop' as I could find.
-				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+				Username: "test",
+				Type:     "get",
+				JobID:    tZ,
 			},
 		}
 
@@ -851,11 +855,6 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	// Create MultiTrigger
 	log.Printf("\tCreating trigger:")
 	trigger := makeTestTrigger([]Ident{eventTypeId1, eventTypeId2})
-	trigger.Job = Job{
-		//Task: "the x1 task",
-		// Using a GetJob call as it is as close to a 'noop' as I could find.
-		Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
-	}
 	printJSON("\ttrigger", trigger)
 	triggerId, err := workflow.PostOneTrigger(trigger)
 	assert.NoError(err)

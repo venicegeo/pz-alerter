@@ -218,6 +218,8 @@ func (suite *ClientTester) Test15One() {
 
 	sleep()
 
+	var tZ = server.NewIdent()
+
 	var tID Ident
 	{
 		x1 := &Trigger{
@@ -233,7 +235,9 @@ func (suite *ClientTester) Test15One() {
 				},
 			},
 			Job: Job{
-				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+				Username: "test",
+				Type: "get",
+				JobID: tZ,
 			},
 		}
 
@@ -256,7 +260,6 @@ func (suite *ClientTester) Test15One() {
 				"num":      17,
 				"str":      "quick",
 				"userName": "my-api-key-38n987",
-				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
 
@@ -342,6 +345,8 @@ func (suite *ClientTester) Test16TriggerResource() {
 		assert.NoError(err)
 	}()
 
+	var tZ = server.NewIdent()
+
 	t1 := Trigger{
 		Title: "the x1 trigger",
 		Condition: Condition{
@@ -355,7 +360,9 @@ func (suite *ClientTester) Test16TriggerResource() {
 			},
 		},
 		Job: Job{
-			Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+			Username: "test",
+			Type: "get",
+			JobID: tZ,
 		},
 	}
 	t1ID, err := workflow.PostOneTrigger(&t1)
@@ -426,6 +433,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 	////////////////
 
+	var tZ = server.NewIdent()
 	var tA, tB Ident
 	{
 		t1 := &Trigger{
@@ -441,7 +449,9 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+				Username: "test",
+				Type: "get",
+				JobID: tZ,
 			},
 		}
 		tA, err = workflow.PostOneTrigger(t1)
@@ -464,7 +474,9 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Task: `{"userName": "$userName", "jobType": {"type": "get", "jobId": "$jobId"}}`,
+				Username: "test",
+				Type: "get",
+				JobID: tZ,
 			},
 		}
 		tB, err = workflow.PostOneTrigger(t2)
