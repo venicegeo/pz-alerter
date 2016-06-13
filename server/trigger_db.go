@@ -40,6 +40,7 @@ func NewTriggerDB(server *Server, esi elasticsearch.IIndex) (*TriggerDB, error) 
 func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
+	log.Printf("Query: %v", ifaceObj)
 	body, err := json.Marshal(ifaceObj)
 	if err != nil {
 		return NoIdent, err
