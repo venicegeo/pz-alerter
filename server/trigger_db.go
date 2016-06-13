@@ -58,8 +58,8 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created")
 	}
 
-	log.Printf("percolation indexResult: %v", indexResult)
-	log.Printf("percolation id: %s", indexResult.Id)
+	log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
+	//log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationID = Ident(indexResult.Id)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
