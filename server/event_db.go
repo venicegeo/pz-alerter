@@ -172,6 +172,8 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
 
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
+	log.Printf("percolateResponse: %v", percolateResponse)
+
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
 	}
@@ -183,11 +185,6 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	ids := make([]Ident, len(percolateResponse.Matches))
 	for i, v := range percolateResponse.Matches {
 		ids[i] = Ident(v.Id)
-		alert := Alert{ID: db.server.NewIdent(), EventID: id, TriggerID: Ident(v.Id)}
-		_, err = db.server.alertDB.PostData(&alert, alert.ID)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	log.Printf("\t\ttriggerIds: %v", ids)
