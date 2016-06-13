@@ -15,8 +15,6 @@ go get github.com/stretchr/testify/assert
 go get gopkg.in/olivere/elastic.v3
 
 go get github.com/venicegeo/pz-gocommon
-go test -v github.com/venicegeo/pz-gocommon
-go test -v github.com/venicegeo/pz-gocommon/elasticsearch
 
 go get github.com/venicegeo/pz-workflow
 go test -v github.com/venicegeo/pz-workflow/server
