@@ -729,17 +729,17 @@ func handlePostEvent(c *gin.Context) {
 
 				// Send alert
 				var alert Alert
-				err := c.BindJSON(&alert)
-				if err != nil {
-					StatusBadRequest(c, err)
+				alert_err := c.BindJSON(&alert)
+				if alert_err != nil {
+					StatusBadRequest(c, alert_err)
 					return
 				}
 
 				alert.ID = server.NewIdent()
 
-				id, err := server.alertDB.PostData(&alert, alert.ID)
-				if err != nil {
-					StatusBadRequest(c, err)
+				id, alert_err := server.alertDB.PostData(&alert, alert.ID)
+				if alert_err != nil {
+					StatusBadRequest(c, alert_err)
 					return
 				}
 
