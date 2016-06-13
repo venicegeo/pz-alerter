@@ -56,29 +56,29 @@ func (id Ident) String() string {
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventTypeIDs []Ident               `json:"eventtype_ids" binding:"required"`
-	Query       map[string]interface{} `json:"query" binding:"required"`
+	EventTypeIDs []Ident                `json:"eventtype_ids" binding:"required"`
+	Query        map[string]interface{} `json:"query" binding:"required"`
 }
 
 //---------------------------------------------------------------------------
 
 // Job JSON struct
 type Job struct {
-	Username           string `json:"username" binding:"required"`
-	JobID              Ident  `json:"jobId" binding:"required"`
-	Type               string `json:"type" binding:"required"`
+	Username string `json:"username" binding:"required"`
+	JobID    Ident  `json:"jobId" binding:"required"`
+	Type     string `json:"type" binding:"required"`
 
 	// IngestJob
-	DataResource       string `json:"data_resource,omitempty"`
-	Host               string `json:"host,omitempty"`
+	DataResource string `json:"data_resource,omitempty"`
+	Host         string `json:"host,omitempty"`
 
 	// ExecuteServiceJob
 	ExecuteServiceData string `json:"service_data,omitempty"`
 	ServiceJobID       string `json:"service_job_id,omitempty"`
 
 	// AccessJob
-	DataID             string `json:"data_id,omitempty"`
-	DeploymentType     string `json:"deployment_type,omitempty"`
+	DataID         string `json:"data_id,omitempty"`
+	DeploymentType string `json:"deployment_type,omitempty"`
 }
 
 //---------------------------------------------------------------------------

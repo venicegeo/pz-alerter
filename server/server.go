@@ -723,9 +723,33 @@ func handlePostEvent(c *gin.Context) {
 
 				log.Printf("jobInstance: %s\n\n", jobString)
 
-				server.logger.Info("job submission: %s with %s", jobString)
+				server.logger.Info("job submission: %s\n", jobString)
 
 				sendToKafka(jobString)
+
+				// Send alert
+				var alert Alert
+				err := c.BindJSON(&alert)
+				if err != nil {
+					StatusBadRequest(c, err)
+					return
+				}
+
+				alert.ID = server.NewIdent()
+
+				id, err := server.alertDB.PostData(&alert, alert.ID)
+				if err != nil {
+					StatusBadRequest(c, err)
+					return
+				}
+
+				alert.TriggerID = triggerID
+				alert.EventID = event.ID
+				alert.JobID = Job.JobID
+
+				retID := WorkflowIDResponse{ID: id}
+
+				StatusCreated(c, retID)
 
 				/**
 				// Figure out how to post the jobInstance to job manager server.
