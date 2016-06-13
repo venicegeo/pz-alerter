@@ -728,9 +728,9 @@ func handlePostEvent(c *gin.Context) {
 				sendToKafka(jobString)
 
 				// Send alert
-				alert := Alert{ID: NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: Job.JobID}
+				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: Job.JobID}
 
-				id, alert_err := server.alertDB.PostData(&alert, alert.ID)
+				_, alert_err := server.alertDB.PostData(&alert, alert.ID)
 				if alert_err != nil {
 					StatusBadRequest(c, alert_err)
 					return
