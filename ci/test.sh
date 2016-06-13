@@ -17,6 +17,6 @@ go get gopkg.in/olivere/elastic.v3
 go get github.com/venicegeo/pz-gocommon
 
 go get github.com/venicegeo/pz-workflow
-go test -v github.com/venicegeo/pz-workflow/server
+go test -v -coverprofile=workflow.cov github.com/venicegeo/pz-workflow/server
 
 ###
