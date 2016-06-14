@@ -736,7 +736,7 @@ func handlePostEvent(c *gin.Context) {
 				// Send alert
 				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: Job.JobID}
 
-				log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s")
+				log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
 
 				_, alert_err := server.alertDB.PostData(&alert, alert.ID)
 				if alert_err != nil {
