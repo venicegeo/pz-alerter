@@ -549,6 +549,8 @@ func handlePostEventType(c *gin.Context) {
 		return
 	}
 
+	log.Printf("New EventType with id: %s\n", eventType.ID)
+
 	eventType.ID = server.NewIdent()
 	id, err := server.eventTypeDB.PostData(eventType, eventType.ID)
 	if err != nil {
@@ -556,11 +558,15 @@ func handlePostEventType(c *gin.Context) {
 		return
 	}
 
+	log.Printf("New EventType with id: %s\n", eventType.ID)
+
 	err = server.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
+
+	log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
 
 	retID := WorkflowIDResponse{ID: id}
 
@@ -706,7 +712,7 @@ func handlePostEvent(c *gin.Context) {
 					return
 				}
 
-				// Give the job the Ident
+				// Give the job an ID
 				Job := trigger.Job
 				Job.JobID = server.NewIdent()
 
@@ -729,6 +735,8 @@ func handlePostEvent(c *gin.Context) {
 
 				// Send alert
 				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: Job.JobID}
+
+				log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s"
 
 				_, alert_err := server.alertDB.PostData(&alert, alert.ID)
 				if alert_err != nil {
