@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
+# shellcheck disable=SC1091
 source 0-setup.sh
 
 cat > tmp <<foo
@@ -13,14 +14,16 @@ cat > tmp <<foo
 }
 foo
 
-json=`cat tmp`
+json=$(cat tmp)
 
 echo
 echo POST /v2/eventType
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" $WHOST/v2/eventType`
+ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/v2/eventType)
 
 echo RETURN:
-echo $ret
+echo "$ret"
 echo
+
+rm tmp

@@ -1,5 +1,6 @@
-#!/bin/sh
+#!/bin/bash
 
+# shellcheck disable=SC1091
 source 0-setup.sh
 
 etId=$1
@@ -19,19 +20,25 @@ cat > tmp <<foo
                 }
             }
         }
-     },
-    "job": { "task": "alert the user" }
+    },
+    "job": {
+        "task": "alert the user",
+        "username": "test",
+        "type": "test"
+    }
 }
 foo
 
-json=`cat tmp`
+json=$(cat tmp)
 
 echo
 echo POST /v2/trigger
 echo "$json"
 
-ret=`curl -S -s -XPOST -d "$json" $WHOST/v2/trigger`
+ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/v2/trigger)
 
 echo RETURN:
-echo $ret
+echo "$ret"
 echo
+
+rm tmp
