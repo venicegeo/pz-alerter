@@ -719,24 +719,24 @@ func handlePostEvent(c *gin.Context) {
 				jobInstance, err := json.Marshal(Job)
 				jobString := string(jobInstance)
 
-				log.Printf("trigger: %v\n", trigger)
-				log.Printf("\tJob: %v\n\n", jobString)
+				//log.Printf("trigger: %v\n", trigger)
+				//log.Printf("\tJob: %v\n\n", jobString)
 
 				// Not very robust,  need to find a better way
 				for key, value := range event.Data {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), 1)
 				}
 
-				log.Printf("jobInstance: %s\n\n", jobString)
+				//log.Printf("jobInstance: %s\n\n", jobString)
 
-				server.logger.Info("job submission: %s\n", jobString)
+				//server.logger.Info("job submission: %s\n", jobString)
 
 				sendToKafka(jobString)
 
 				// Send alert
 				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: Job.JobID}
 
-				log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
+				//log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
 
 				_, alert_err := server.alertDB.PostData(&alert, alert.ID)
 				if alert_err != nil {
