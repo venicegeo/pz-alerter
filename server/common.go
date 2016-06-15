@@ -68,17 +68,15 @@ type Job struct {
 	JobID    Ident  `json:"jobId"`
 	Type     string `json:"type" binding:"required"`
 
-	// IngestJob
-	DataResource string `json:"data_resource,omitempty"`
-	Host         string `json:"host,omitempty"`
+	// Required by both IngestJob and ExecuteServiceJob
+	Data string `json:"data,omitempty"`
 
-	// ExecuteServiceJob
-	ExecuteServiceData string `json:"service_data,omitempty"`
-	ServiceJobID       string `json:"service_job_id,omitempty"`
+	// IngestJob requires host
+	Host bool `json:"host,omitempty"`
 
 	// AccessJob
-	DataID         string `json:"data_id,omitempty"`
-	DeploymentType string `json:"deployment_type,omitempty"`
+	DataID         string `json:"dataId,omitempty"`
+	DeploymentType string `json:"deploymentType,omitempty"`
 }
 
 //---------------------------------------------------------------------------
