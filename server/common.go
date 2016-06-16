@@ -65,7 +65,7 @@ type Condition struct {
 // Job JSON struct
 type Job struct {
 	Username string `json:"userName" binding:"required"`
-	Type     string `json:"type" binding:"required"`
+	JobType  string `json:"jobType" binding:"required"`
 
 	// Required by both IngestJob and ExecuteServiceJob
 	Data map[string]interface{} `json:"data,omitempty"`
