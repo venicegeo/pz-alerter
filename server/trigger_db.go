@@ -64,9 +64,11 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
 	if err != nil {
+		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.ID))
 		return NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
+		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.ID))
 		return NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 

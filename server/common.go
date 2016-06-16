@@ -69,7 +69,7 @@ type Job struct {
 	Type     string `json:"type" binding:"required"`
 
 	// Required by both IngestJob and ExecuteServiceJob
-	Data string `json:"data,omitempty"`
+	Data map[string]interface{} `json:"data,omitempty"`
 
 	// IngestJob requires host
 	Host bool `json:"host,omitempty"`
