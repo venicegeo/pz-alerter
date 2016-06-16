@@ -214,7 +214,6 @@ func makeTestEvent(eventTypeID Ident) *Event {
 }
 
 func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
-	var tZ = server.NewIdent()
 	trigger := &Trigger{
 		Title: "MY TRIGGER TITLE",
 		Condition: Condition{
@@ -230,7 +229,6 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 		Job: Job{
 			Username: "test",
 			Type:     "get",
-			JobID:    tZ,
 		},
 	}
 	return trigger
@@ -687,7 +685,6 @@ func (suite *ServerTester) Test06Workflow() {
 	}
 	sleep()
 
-	var tZ = server.NewIdent()
 	var t1ID Ident
 	{
 		log.Printf("Creating trigger:\n")
@@ -706,7 +703,6 @@ func (suite *ServerTester) Test06Workflow() {
 			Job: Job{
 				Username: "test",
 				Type:     "get",
-				JobID:    tZ,
 			},
 		}
 
