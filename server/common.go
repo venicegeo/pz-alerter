@@ -65,7 +65,6 @@ type Condition struct {
 // Job JSON struct
 type Job struct {
 	Username string `json:"userName" binding:"required"`
-	JobID    Ident  `json:"jobId"`
 	Type     string `json:"type" binding:"required"`
 
 	// Required by both IngestJob and ExecuteServiceJob

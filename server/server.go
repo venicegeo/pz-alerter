@@ -712,9 +712,9 @@ func handlePostEvent(c *gin.Context) {
 					return
 				}
 
-				// Give the job an ID
+				// JobID gets sent through Kafka as the key
 				Job := trigger.Job
-				Job.JobID = server.NewIdent()
+				JobID := server.NewIdent()
 
 				jobInstance, err := json.Marshal(Job)
 				jobString := string(jobInstance)
@@ -731,10 +731,10 @@ func handlePostEvent(c *gin.Context) {
 
 				//server.logger.Info("job submission: %s\n", jobString)
 
-				sendToKafka(jobString)
+				sendToKafka(jobString, JobID)
 
 				// Send alert
-				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: Job.JobID}
+				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: JobID}
 
 				//log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
 
@@ -789,7 +789,7 @@ func handlePostEvent(c *gin.Context) {
 	// log.Printf("---------------------\n")
 }
 
-func sendToKafka(jobInstance string)  {
+func sendToKafka(jobInstance string, JobID Ident)  {
 	log.Printf("***********************\n")
 	log.Printf("%s\n", jobInstance)
 
@@ -821,7 +821,7 @@ func sendToKafka(jobInstance string)  {
 		}
 	}()
 
-	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(message)}
+	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(message), Key: sarama.StringEncoder(JobID)}
 	partition, offset, err := producer.SendMessage(msg)
 	if err != nil {
 		log.Printf("FAILED to send message: %s\n", err)
