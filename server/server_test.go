@@ -228,7 +228,7 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 		},
 		Job: Job{
 			Username: "test",
-			Type:     "get",
+			JobType:     "get",
 		},
 	}
 	return trigger
@@ -702,7 +702,7 @@ func (suite *ServerTester) Test06Workflow() {
 			},
 			Job: Job{
 				Username: "test",
-				Type:     "get",
+				JobType:     "get",
 			},
 		}
 

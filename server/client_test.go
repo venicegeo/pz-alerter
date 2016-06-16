@@ -234,7 +234,7 @@ func (suite *ClientTester) Test15One() {
 			},
 			Job: Job{
 				Username: "test",
-				Type: "get",
+				JobType: "get",
 			},
 		}
 
@@ -356,7 +356,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 		},
 		Job: Job{
 			Username: "test",
-			Type: "get",
+			JobType: "get",
 		},
 	}
 	t1ID, err := workflow.PostOneTrigger(&t1)
@@ -443,7 +443,7 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 			Job: Job{
 				Username: "test",
-				Type: "get",
+				JobType: "get",
 			},
 		}
 		tA, err = workflow.PostOneTrigger(t1)
@@ -467,7 +467,7 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 			Job: Job{
 				Username: "test",
-				Type: "get",
+				JobType: "get",
 			},
 		}
 		tB, err = workflow.PostOneTrigger(t2)
