@@ -228,7 +228,14 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 		},
 		Job: Job{
 			Username: "test",
-			JobType:     "get",
+			JobType: map[string]interface{}{
+				"type": "execute-service",
+				"data": map[string]interface{}{
+					// "dataInputs": map[string]interface{},
+					// "dataOutput": map[string]interface{},
+					"serviceId": "ddd5134",
+				},
+			},
 		},
 	}
 	return trigger
@@ -702,7 +709,14 @@ func (suite *ServerTester) Test06Workflow() {
 			},
 			Job: Job{
 				Username: "test",
-				JobType:     "get",
+				JobType: map[string]interface{}{
+					"type": "execute-service",
+					"data": map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
+				},
 			},
 		}
 

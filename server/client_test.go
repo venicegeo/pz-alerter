@@ -234,7 +234,14 @@ func (suite *ClientTester) Test15One() {
 			},
 			Job: Job{
 				Username: "test",
-				JobType: "get",
+				JobType: map[string]interface{}{
+					"type": "execute-service",
+					"data": map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
+				},
 			},
 		}
 
@@ -356,7 +363,14 @@ func (suite *ClientTester) Test16TriggerResource() {
 		},
 		Job: Job{
 			Username: "test",
-			JobType: "get",
+			JobType: map[string]interface{}{
+				"type": "execute-service",
+				"data": map[string]interface{}{
+					// "dataInputs": map[string]interface{},
+					// "dataOutput": map[string]interface{},
+					"serviceId": "ddd5134",
+				},
+			},
 		},
 	}
 	t1ID, err := workflow.PostOneTrigger(&t1)
@@ -443,7 +457,14 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 			Job: Job{
 				Username: "test",
-				JobType: "get",
+				JobType: map[string]interface{}{
+					"type": "execute-service",
+					"data": map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
+				},
 			},
 		}
 		tA, err = workflow.PostOneTrigger(t1)
@@ -467,7 +488,14 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 			Job: Job{
 				Username: "test",
-				JobType: "get",
+				JobType: map[string]interface{}{
+					"type": "execute-service",
+					"data": map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
+				},
 			},
 		}
 		tB, err = workflow.PostOneTrigger(t2)

@@ -64,18 +64,8 @@ type Condition struct {
 
 // Job JSON struct
 type Job struct {
-	Username string `json:"userName" binding:"required"`
-	JobType  string `json:"jobType" binding:"required"`
-
-	// Required by both IngestJob and ExecuteServiceJob
-	Data map[string]interface{} `json:"data,omitempty"`
-
-	// IngestJob requires host
-	Host bool `json:"host,omitempty"`
-
-	// AccessJob
-	DataID         string `json:"dataId,omitempty"`
-	DeploymentType string `json:"deploymentType,omitempty"`
+	Username string                 `json:"userName" binding:"required"`
+	JobType  map[string]interface{} `json:"jobType" binding:"required"`
 }
 
 //---------------------------------------------------------------------------
