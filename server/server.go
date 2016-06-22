@@ -551,7 +551,7 @@ func handlePostEventType(c *gin.Context) {
 	log.Printf("New EventType with id: %s\n", eventType.ID)
 
 	eventType.ID = server.NewIdent()
-	id, err := server.eventTypeDB.PostData(eventType, eventType.ID, eventType.Name)
+	id, err := server.eventTypeDB.PostData(eventType, eventType.ID)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return

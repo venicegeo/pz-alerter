@@ -37,9 +37,9 @@ func NewEventTypeDB(server *Server, esi elasticsearch.IIndex) (*EventTypeDB, err
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) PostData(obj interface{}, id Ident, name string) (Ident, error) {
+func (db *EventTypeDB) PostData(obj interface{}, id Ident) (Ident, error) {
 
-	indexResult, err := db.Esi.PostData(name, id.String(), obj)
+	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
 		return NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
