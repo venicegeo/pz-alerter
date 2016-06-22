@@ -80,7 +80,6 @@ func StatusBadRequest(c *gin.Context, err error) {
 	}
 
 	c.JSON(http.StatusBadRequest, e)
-
 }
 
 //---------------------------------------------------------------------------
@@ -552,7 +551,7 @@ func handlePostEventType(c *gin.Context) {
 	log.Printf("New EventType with id: %s\n", eventType.ID)
 
 	eventType.ID = server.NewIdent()
-	id, err := server.eventTypeDB.PostData(eventType, eventType.ID)
+	id, err := server.eventTypeDB.PostData(eventType, eventType.ID, eventType.Name)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -562,6 +561,7 @@ func handlePostEventType(c *gin.Context) {
 
 	err = server.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
+		server.eventTypeDB.DeleteByID(id)
 		StatusBadRequest(c, err)
 		return
 	}
