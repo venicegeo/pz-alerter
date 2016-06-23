@@ -31,8 +31,8 @@ import (
 	_ "net/url"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Shopify/sarama"
+	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/lib"
@@ -326,7 +326,7 @@ func handleGetAlerts(c *gin.Context) {
 }
 
 func handleGetAlertsV2(c *gin.Context) {
-	// TODO: conditionID := c.Query("condition")
+	eventID := c.Query("event")
 
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
 	all, count, err := server.alertDB.GetAllWithCount(format)
@@ -336,8 +336,16 @@ func handleGetAlertsV2(c *gin.Context) {
 	}
 	bar := make([]interface{}, len(*all))
 
-	for i, e := range *all {
-		bar[i] = e
+	if eventID == "" {
+		for i, e := range *all {
+			bar[i] = e
+		}
+	} else {
+		for i, e := range *all {
+			if e.EventID == Ident(eventID) {
+				bar[i] = e
+			}
+		}
 	}
 
 	var order string
@@ -789,7 +797,7 @@ func handlePostEvent(c *gin.Context) {
 	// log.Printf("---------------------\n")
 }
 
-func sendToKafka(jobInstance string, JobID Ident)  {
+func sendToKafka(jobInstance string, JobID Ident) {
 	log.Printf("***********************\n")
 	log.Printf("%s\n", jobInstance)
 
@@ -869,18 +877,18 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/v1/events", handleGetEvents)
 	router.GET("/v2/event", handleGetEventsV2)
 
-/*
-	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
-	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
-*/
+	/*
+		router.GET("/v1/events/:eventType", handleGetEventsByEventType)
+		router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
+	*/
 
 	router.GET("/v1/events/:id", handleGetEventByID)
 	router.GET("/v2/event/:id", handleGetEventByID)
 
-/*
-	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
-	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
-*/
+	/*
+		router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
+		router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
+	*/
 	router.DELETE("/v1/events/:id", handleDeleteEventByID)
 	router.DELETE("/v2/event/:id", handleDeleteEventByID)
 
