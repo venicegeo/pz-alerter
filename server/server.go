@@ -704,7 +704,7 @@ func handlePostEvent(c *gin.Context) {
 		// log.Printf("\tData: %v\n", event.Data)
 
 		// Find triggers associated with event
-		triggerIDs, err := server.eventDB.PercolateEventData(eventType.ID, event.Data, event.ID)
+		triggerIDs, err := server.eventDB.PercolateEventData(string(eventType.ID), event.Data, event.ID)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
