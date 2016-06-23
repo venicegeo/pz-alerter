@@ -31,8 +31,8 @@ import (
 	_ "net/url"
 	"os"
 
-	"github.com/Shopify/sarama"
 	"github.com/gin-gonic/gin"
+	"github.com/Shopify/sarama"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/lib"
@@ -326,7 +326,7 @@ func handleGetAlerts(c *gin.Context) {
 }
 
 func handleGetAlertsV2(c *gin.Context) {
-	eventID := c.Query("event")
+	// TODO: conditionID := c.Query("condition")
 
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
 	all, count, err := server.alertDB.GetAllWithCount(format)
@@ -334,27 +334,10 @@ func handleGetAlertsV2(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
+	bar := make([]interface{}, len(*all))
 
-	var bar []interface{}
-
-	if eventID == "" {
-		bar = make([]interface{}, len(*all))
-		for i, e := range *all {
-			bar[i] = e
-		}
-	} else {
-		cnt := 0
-		for _, e := range *all {
-			if e.EventID == Ident(eventID) {
-				cnt++
-			}
-		}
-		bar = make([]interface{}, cnt)
-		for i, e := range *all {
-			if e.EventID == Ident(eventID) {
-				bar[i] = e
-			}
-		}
+	for i, e := range *all {
+		bar[i] = e
 	}
 
 	var order string
@@ -704,7 +687,7 @@ func handlePostEvent(c *gin.Context) {
 		// log.Printf("\tData: %v\n", event.Data)
 
 		// Find triggers associated with event
-		triggerIDs, err := server.eventDB.PercolateEventData(string(eventType.ID), event.Data, event.ID)
+		triggerIDs, err := server.eventDB.PercolateEventData(eventType.Name, event.Data, event.ID)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
@@ -806,7 +789,7 @@ func handlePostEvent(c *gin.Context) {
 	// log.Printf("---------------------\n")
 }
 
-func sendToKafka(jobInstance string, JobID Ident) {
+func sendToKafka(jobInstance string, JobID Ident)  {
 	log.Printf("***********************\n")
 	log.Printf("%s\n", jobInstance)
 
@@ -886,18 +869,18 @@ func CreateHandlers(sys *piazza.SystemConfig,
 	router.GET("/v1/events", handleGetEvents)
 	router.GET("/v2/event", handleGetEventsV2)
 
-	/*
-		router.GET("/v1/events/:eventType", handleGetEventsByEventType)
-		router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
-	*/
+/*
+	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
+	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
+*/
 
 	router.GET("/v1/events/:id", handleGetEventByID)
 	router.GET("/v2/event/:id", handleGetEventByID)
 
-	/*
-		router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
-		router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
-	*/
+/*
+	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
+	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
+*/
 	router.DELETE("/v1/events/:id", handleDeleteEventByID)
 	router.DELETE("/v2/event/:id", handleDeleteEventByID)
 
