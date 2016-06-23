@@ -334,13 +334,22 @@ func handleGetAlertsV2(c *gin.Context) {
 		StatusBadRequest(c, err)
 		return
 	}
-	bar := make([]interface{}, len(*all))
+
+	var bar []interface{}
 
 	if eventID == "" {
+		bar = make([]interface{}, len(*all))
 		for i, e := range *all {
 			bar[i] = e
 		}
 	} else {
+		cnt := 0
+		for _, e := range *all {
+			if e.EventID == Ident(eventID) {
+				cnt++
+			}
+		}
+		bar = make([]interface{}, cnt)
 		for i, e := range *all {
 			if e.EventID == Ident(eventID) {
 				bar[i] = e
@@ -695,7 +704,7 @@ func handlePostEvent(c *gin.Context) {
 		// log.Printf("\tData: %v\n", event.Data)
 
 		// Find triggers associated with event
-		triggerIDs, err := server.eventDB.PercolateEventData(eventType.Name, event.Data, event.ID)
+		triggerIDs, err := server.eventDB.PercolateEventData(eventType.ID, event.Data, event.ID)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
