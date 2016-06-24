@@ -327,6 +327,7 @@ func handleGetAlerts(c *gin.Context) {
 
 func handleGetAlertsV2(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
+	log.Printf("%s", c.Request)
 	triggerID, exists := c.GetQuery("triggerid")
 
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
