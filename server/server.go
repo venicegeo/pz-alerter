@@ -327,13 +327,35 @@ func handleGetAlerts(c *gin.Context) {
 
 func handleGetAlertsV2(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
+	triggerID, exists := c.GetQuery("triggerid")
 
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
-	all, count, err := server.alertDB.GetAllWithCount(format)
-	if err != nil {
-		StatusBadRequest(c, err)
+
+	var all *[]Alert
+	var count int64
+	var err error
+
+	if exists && isUuid(triggerID) {
+		log.Printf("Getting alerts with trigger %s", triggerID)
+		all, count, err = server.alertDB.GetAllByTrigger(format, triggerID)
+		if err != nil {
+			StatusBadRequest(c, err)
+			return
+		}
+	}
+	if !exists {
+		log.Printf("Getting all alerts")
+		all, count, err = server.alertDB.GetAllWithCount(format)
+		if err != nil {
+			StatusBadRequest(c, err)
+			return
+		}
+	}
+	if exists {
+		StatusBadRequest(c, nil)
 		return
 	}
+
 	bar := make([]interface{}, len(*all))
 
 	for i, e := range *all {

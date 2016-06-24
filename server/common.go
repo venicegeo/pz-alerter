@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	uuidpkg "github.com/pborman/uuid"
 )
 
 type WorkflowIDResponse struct {
@@ -160,4 +161,10 @@ func LoggedError(mssg string, args ...interface{}) error {
 	str := fmt.Sprintf(mssg, args)
 	log.Printf(str)
 	return errors.New(str)
+}
+
+// Checks to see if the Uuid is valid
+func isUuid(uuid string) bool {
+	check := uuidpkg.Parse(uuid)
+	return check != nil
 }

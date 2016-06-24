@@ -112,6 +112,38 @@ func (db *AlertDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Alert, 
 	return &alerts, count, nil
 }
 
+func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID string) (*[]Alert, int64, error) {
+
+	alerts := []Alert{}
+	var count = int64(-1)
+
+	exists := db.Esi.TypeExists(db.mapping)
+	if !exists {
+		return &alerts, count, nil
+	}
+
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "trigger_id", triggerID)
+	if err != nil {
+		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		count = searchResult.NumberMatched()
+		for _, hit := range *searchResult.GetHits() {
+			var alert Alert
+			err := json.Unmarshal(*hit.Source, &alert)
+			if err != nil {
+				return nil, count, err
+			}
+			alerts = append(alerts, alert)
+		}
+	}
+
+	return &alerts, count, nil
+}
 
 func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
 
