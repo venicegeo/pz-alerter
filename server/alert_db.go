@@ -114,7 +114,7 @@ func (db *AlertDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Alert, 
 
 func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID string) (*[]Alert, int64, error) {
 
-	alerts := []Alert{}
+	var alerts []Alert
 	var count = int64(-1)
 
 	exists := db.Esi.TypeExists(db.mapping)
@@ -122,16 +122,22 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 		return &alerts, count, nil
 	}
 
+	log.Printf("Type exists: %s", db.mapping)
+
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "trigger_id", triggerID)
 	if err != nil {
+		log.Printf("Error: %s", err)
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
 	}
 	if searchResult == nil {
+		log.Printf("Search returned nil")
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult")
 	}
 
+
 	if searchResult != nil && searchResult.GetHits() != nil {
 		count = searchResult.NumberMatched()
+		log.Printf("Adding %d search results", count)
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
