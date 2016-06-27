@@ -15,6 +15,7 @@
 package server
 
 import (
+	"log"
 	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
