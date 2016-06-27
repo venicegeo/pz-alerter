@@ -336,6 +336,10 @@ func handleGetAlertsV2(c *gin.Context) {
 	var count int64
 	var err error
 
+	if exists {
+		log.Printf("%s", triggerID)
+	}
+
 	if exists && isUuid(triggerID) {
 		log.Printf("Getting alerts with trigger %s", triggerID)
 		all, count, err = server.alertDB.GetAllByTrigger(format, triggerID)
