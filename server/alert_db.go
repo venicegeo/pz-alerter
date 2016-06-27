@@ -125,7 +125,7 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 
 	log.Printf("Type exists: %s", db.mapping)
 
-	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "trigger_id", triggerID)
+	searchResult, err := db.Esi.FilterByMatchQuery(db.mapping, "trigger_id", triggerID)
 	if err != nil {
 		log.Printf("Error: %s", err)
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
@@ -138,6 +138,10 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		count = searchResult.NumberMatched()
+		// If we don't find any alerts by the given triggerID, don't error out, just return an empty list
+		if count == 0 {
+			return &alerts, count, nil
+		}
 		log.Printf("Adding %d search results", count)
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
