@@ -171,6 +171,7 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
 
+	log.Printf("percolating type %s with data %v", eventType, data)
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
 	log.Printf("percolateResponse: %v", percolateResponse)
 
