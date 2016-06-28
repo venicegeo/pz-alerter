@@ -739,6 +739,19 @@ func handlePostEvent(c *gin.Context) {
 					StatusNotFound(c, gin.H{"id": triggerID})
 					return
 				}
+				// Not the best way to do this, but should disallow Triggers from firing if they
+				// don't have the same Eventtype as the Event
+				// Would rather have this done via the percolation itself ...
+				matches := false
+				for _, eventtype_id := range trigger.Condition.EventTypeIDs {
+					if eventtype_id == eventType.ID {
+						matches = true
+						break
+					}
+				}
+				if matches == false {
+					return
+				}
 
 				// JobID gets sent through Kafka as the key
 				Job := trigger.Job
