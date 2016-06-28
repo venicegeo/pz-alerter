@@ -48,40 +48,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 	return id, nil
 }
 
-func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, error) {
-	events := []Event{}
-	exists := true
-	if mapping != "" {
-		exists = db.Esi.TypeExists(mapping)
-	}
-	if !exists {
-		return nil, LoggedError("Type %s does not exist", mapping)
-	}
-
-	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
-	if err != nil {
-		return nil, LoggedError("EventDB.GetAll failed: %s", err)
-	}
-	if searchResult == nil {
-		return nil, LoggedError("EventDB.GetAll failed: no searchResult")
-	}
-
-	if searchResult != nil && searchResult.GetHits() != nil {
-
-		for _, hit := range *searchResult.GetHits() {
-			var event Event
-			err := json.Unmarshal(*hit.Source, &event)
-			if err != nil {
-				return nil, err
-			}
-			events = append(events, event)
-		}
-	}
-
-	return &events, nil
-}
-
-func (db *EventDB) GetAllWithCount(mapping string, format elasticsearch.QueryFormat) (*[]Event, int64, error) {
+func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, int64, error) {
 	var events []Event
 	var count = int64(-1)
 
@@ -102,9 +69,7 @@ func (db *EventDB) GetAllWithCount(mapping string, format elasticsearch.QueryFor
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
-
 		count = searchResult.NumberMatched()
-
 		for _, hit := range *searchResult.GetHits() {
 			var event Event
 			err := json.Unmarshal(*hit.Source, &event)
