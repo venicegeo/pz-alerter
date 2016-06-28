@@ -347,16 +347,14 @@ func handleGetAlertsV2(c *gin.Context) {
 			StatusBadRequest(c, err)
 			return
 		}
-	}
-	else if !exists {
+	} else if !exists {
 		log.Printf("Getting all alerts")
 		all, count, err = server.alertDB.GetAllWithCount(format)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
 		}
-	}
-	else if exists {
+	} else if exists {
 		StatusBadRequest(c, nil)
 		return
 	}
