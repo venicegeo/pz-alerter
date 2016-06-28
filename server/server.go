@@ -361,8 +361,10 @@ func handleGetAlertsV2(c *gin.Context) {
 		return
 	}
 
+	log.Printf("Making bar")
 	bar := make([]interface{}, len(*all))
 
+	log.Printf("Adding values to bar")
 	for i, e := range *all {
 		bar[i] = e
 	}
@@ -375,6 +377,7 @@ func handleGetAlertsV2(c *gin.Context) {
 		order = "asc"
 	}
 
+	log.Printf("Creating response")
 	foo := &piazza.Common18FListResponse{
 		Data: bar,
 		Pagination: piazza.Pagination{

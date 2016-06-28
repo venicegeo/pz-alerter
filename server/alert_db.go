@@ -115,7 +115,7 @@ func (db *AlertDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Alert, 
 
 func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID string) (*[]Alert, int64, error) {
 
-	var alerts []Alert
+	alerts := []Alert{}
 	var count = int64(-1)
 
 	exists := db.Esi.TypeExists(db.mapping)
@@ -154,6 +154,7 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 		}
 	}
 
+	log.Printf("Returning alerts by trigger...")
 	return &alerts, count, nil
 }
 
