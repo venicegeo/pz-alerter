@@ -145,6 +145,7 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 		log.Printf("Adding %d search results", count)
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
+			log.Printf("Adding search result: %v", *hit.Source)
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
 				return nil, count, err
