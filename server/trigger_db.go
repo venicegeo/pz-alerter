@@ -89,37 +89,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *TriggerDB) GetAll(format elasticsearch.QueryFormat) (*[]Trigger, error) {
-	triggers := []Trigger{}
-
-	exists := db.Esi.TypeExists(db.mapping)
-	if !exists {
-		return &triggers, nil
-	}
-
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
-	if err != nil {
-		return nil, LoggedError("TriggerDB.GetAll failed: %s", err)
-	}
-	if searchResult == nil {
-		return nil, LoggedError("TriggerDB.GetAll failed: no searchResult")
-	}
-
-	if searchResult != nil && searchResult.GetHits() != nil {
-
-		for _, hit := range *searchResult.GetHits() {
-			var trigger Trigger
-			err := json.Unmarshal(*hit.Source, &trigger)
-			if err != nil {
-				return nil, err
-			}
-			triggers = append(triggers, trigger)
-		}
-	}
-	return &triggers, nil
-}
-
-func (db *TriggerDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Trigger, int64, error) {
+func (db *TriggerDB) GetAll(format elasticsearch.QueryFormat) (*[]Trigger, int64, error) {
 	var triggers []Trigger
 	var count = int64(-1)
 

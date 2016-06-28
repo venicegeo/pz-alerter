@@ -49,39 +49,7 @@ func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, error) {
-
-	alerts := []Alert{}
-
-	exists := db.Esi.TypeExists(db.mapping)
-	if !exists {
-		return &alerts, nil
-	}
-
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
-	if err != nil {
-		return nil, LoggedError("AlertDB.GetAll failed: %s", err)
-	}
-	if searchResult == nil {
-		return nil, LoggedError("AlertDB.GetAll failed: no searchResult")
-	}
-
-	if searchResult != nil && searchResult.GetHits() != nil {
-		for _, hit := range *searchResult.GetHits() {
-			var alert Alert
-			err := json.Unmarshal(*hit.Source, &alert)
-			if err != nil {
-				return nil, err
-			}
-			alerts = append(alerts, alert)
-		}
-	}
-
-	return &alerts, nil
-}
-
-func (db *AlertDB) GetAllWithCount(format elasticsearch.QueryFormat) (*[]Alert, int64, error) {
-
+func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, int64, error) {
 	var alerts []Alert
 	var count = int64(-1)
 
