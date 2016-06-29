@@ -328,7 +328,7 @@ func handleGetAlerts(c *gin.Context) {
 func handleGetAlertsV2(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
 	log.Printf("%s", c.Request)
-	triggerID, exists := c.GetQuery("triggerid")
+	triggerId, exists := c.GetQuery("triggerId")
 
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
 
@@ -337,12 +337,12 @@ func handleGetAlertsV2(c *gin.Context) {
 	var err error
 
 	if exists {
-		log.Printf("%s", triggerID)
+		log.Printf("%s", triggerId)
 	}
 
-	if exists && isUuid(triggerID) {
-		log.Printf("Getting alerts with trigger %s", triggerID)
-		all, count, err = server.alertDB.GetAllByTrigger(format, triggerID)
+	if exists && isUuid(triggerId) {
+		log.Printf("Getting alerts with trigger %s", triggerId)
+		all, count, err = server.alertDB.GetAllByTrigger(format, triggerId)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
