@@ -284,9 +284,9 @@ func handlePostAlert(c *gin.Context) {
 		return
 	}
 
-	alert.ID = server.NewIdent()
+	alert.AlertId = server.NewIdent()
 
-	id, err := server.alertDB.PostData(&alert, alert.ID)
+	id, err := server.alertDB.PostData(&alert, alert.AlertId)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
@@ -473,15 +473,15 @@ func handlePostTrigger(c *gin.Context) {
 		return
 	}
 
-	trigger.ID = server.NewIdent()
+	trigger.TriggerId = server.NewIdent()
 
-	_, err = server.triggerDB.PostTrigger(trigger, trigger.ID)
+	_, err = server.triggerDB.PostTrigger(trigger, trigger.TriggerId)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
 
-	a := WorkflowIDResponse{ID: trigger.ID}
+	a := WorkflowIDResponse{ID: trigger.TriggerId}
 
 	StatusCreated(c, a)
 }
@@ -572,16 +572,16 @@ func handlePostEventType(c *gin.Context) {
 		return
 	}
 
-	log.Printf("New EventType with id: %s\n", eventType.ID)
+	log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
-	eventType.ID = server.NewIdent()
-	id, err := server.eventTypeDB.PostData(eventType, eventType.ID)
+	eventType.EventTypeId = server.NewIdent()
+	id, err := server.eventTypeDB.PostData(eventType, eventType.EventTypeId)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
 
-	log.Printf("New EventType with id: %s\n", eventType.ID)
+	log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	err = server.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
@@ -688,21 +688,21 @@ func handlePostEvent(c *gin.Context) {
 		return
 	}
 
-	eventTypeId := event.EventTypeID
+	eventTypeId := event.EventTypeId
 	eventType, err := server.eventTypeDB.GetOne(eventTypeId)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
 
-	event.ID = server.NewIdent()
-	_, err = server.eventDB.PostData(eventType.Name, event, event.ID)
+	event.EventId = server.NewIdent()
+	_, err = server.eventDB.PostData(eventType.Name, event, event.EventId)
 	if err != nil {
 		StatusBadRequest(c, err)
 		return
 	}
 
-	retID := WorkflowIDResponse{ID: event.ID}
+	retID := WorkflowIDResponse{ID: event.EventId}
 
 	{
 		// log.Printf("event:\n")
@@ -712,7 +712,7 @@ func handlePostEvent(c *gin.Context) {
 
 		// Find triggers associated with event
 		log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
-		triggerIDs, err := server.eventDB.PercolateEventData(eventType.Name, event.Data, event.ID)
+		triggerIDs, err := server.eventDB.PercolateEventData(eventType.Name, event.Data, event.EventId)
 		if err != nil {
 			StatusBadRequest(c, err)
 			return
@@ -740,8 +740,8 @@ func handlePostEvent(c *gin.Context) {
 				// don't have the same Eventtype as the Event
 				// Would rather have this done via the percolation itself ...
 				matches := false
-				for _, eventtype_id := range trigger.Condition.EventTypeIDs {
-					if eventtype_id == eventType.ID {
+				for _, eventtype_id := range trigger.Condition.EventTypeIds {
+					if eventtype_id == eventType.EventTypeId {
 						matches = true
 						break
 					}
@@ -772,11 +772,11 @@ func handlePostEvent(c *gin.Context) {
 				sendToKafka(jobString, JobID)
 
 				// Send alert
-				alert := Alert{ID: server.NewIdent(), EventID: event.ID, TriggerID: triggerID, JobID: JobID}
+				alert := Alert{AlertId: server.NewIdent(), EventId: event.EventId, TriggerId: triggerID, JobId: JobID}
 
 				//log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
 
-				_, alert_err := server.alertDB.PostData(&alert, alert.ID)
+				_, alert_err := server.alertDB.PostData(&alert, alert.AlertId)
 				if alert_err != nil {
 					StatusBadRequest(c, alert_err)
 					return

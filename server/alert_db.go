@@ -26,9 +26,53 @@ type AlertDB struct {
 	mapping string
 }
 
+// The default settings for our Elasticsearch alerts index
+// Explanation:
+//   "index.mapper.dynamic": false
+//     This removes the ability for us to create new fields within documents
+//     after the type has been defined, rather than adding them in dynamically
+//     if they aren't recognized
+//   "index": "not_analyzed"
+//     This means that these properties are not analyzed by Elasticsearch.
+//     Previously, these ids were analyzed by ES and thus broken up into chunks;
+//     in the case of a UUID this would happen via break-up by the "-" character.
+//     For example, the UUID "ab3142cd-1a8e-44f8-6a01-5ce8a9328fb2" would be broken
+//     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
+//     match on all of these separate strings, which was undesired behavior.
+const (alertIndexSettings = `
+{
+	"settings": {
+		"index.mapper.dynamic": false
+	}
+	"mappings": {
+		"Alert": {
+			"properties": {
+				"alertId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+				"triggerId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+				"jobId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
+)
+
 func NewAlertDB(server *Server, esi elasticsearch.IIndex) (*AlertDB, error) {
 
-	rdb, err := NewResourceDB(server, esi)
+	rdb, err := NewResourceDB(server, esi, alertIndexSettings)
 	if err != nil {
 		return nil, err
 	}
@@ -81,7 +125,7 @@ func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, int64, er
 	return &alerts, count, nil
 }
 
-func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID string) (*[]Alert, int64, error) {
+func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerId string) (*[]Alert, int64, error) {
 
 	alerts := []Alert{}
 	var count = int64(-1)
@@ -93,7 +137,10 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 
 	log.Printf("Type exists: %s", db.mapping)
 
-	searchResult, err := db.Esi.FilterByMatchQuery(db.mapping, "trigger_id", triggerID)
+	// This will be an Elasticsearch term query of roughly the following structure:
+	// { "term": { "_id": triggerId } }
+	// This matches the '_id' field of the Elasticsearch document exactly
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerId)
 	if err != nil {
 		log.Printf("Error: %s", err)
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
@@ -106,7 +153,7 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerID s
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		count = searchResult.NumberMatched()
-		// If we don't find any alerts by the given triggerID, don't error out, just return an empty list
+		// If we don't find any alerts by the given triggerId, don't error out, just return an empty list
 		if count == 0 {
 			return &alerts, count, nil
 		}

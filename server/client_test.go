@@ -65,7 +65,7 @@ func (suite *ClientTester) Test12AlertResource() {
 
 	var err error
 
-	a1 := Alert{TriggerID: "dummyT1", EventID: "dummyE1"}
+	a1 := Alert{TriggerId: "dummyT1", EventId: "dummyE1"}
 	id, err := workflow.PostOneAlert(&a1)
 	assert.NoError(err)
 
@@ -74,13 +74,13 @@ func (suite *ClientTester) Test12AlertResource() {
 	alerts, err := workflow.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
-	assert.EqualValues(id, (*alerts)[0].ID)
-	assert.EqualValues("dummyT1", (*alerts)[0].TriggerID)
-	assert.EqualValues("dummyE1", (*alerts)[0].EventID)
+	assert.EqualValues(id, (*alerts)[0].AlertId)
+	assert.EqualValues("dummyT1", (*alerts)[0].TriggerId)
+	assert.EqualValues("dummyE1", (*alerts)[0].EventId)
 
 	alert, err := workflow.GetOneAlert(id)
 	assert.NoError(err)
-	assert.EqualValues(id, alert.ID)
+	assert.EqualValues(id, alert.AlertId)
 
 	alert, err = workflow.GetOneAlert("nosuchalert1")
 	assert.Error(err)
@@ -126,7 +126,7 @@ func (suite *ClientTester) Test13EventResource() {
 	}()
 
 	event := &Event{
-		EventTypeID: etID,
+		EventTypeId: etID,
 		Date:        time.Now(),
 		Data: map[string]interface{}{
 			"myint": 17,
@@ -150,7 +150,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	tmp, err := workflow.GetOneEvent(eventTypeName, eID)
 	assert.NoError(err)
-	assert.EqualValues(eID, tmp.ID)
+	assert.EqualValues(eID, tmp.EventId)
 }
 
 func (suite *ClientTester) Test14EventTypeResource() {
@@ -179,11 +179,11 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	eventTypes, err := workflow.GetAllEventTypes()
 	assert.NoError(err)
 	assert.Len(*eventTypes, 1)
-	assert.EqualValues(id, (*eventTypes)[0].ID)
+	assert.EqualValues(id, (*eventTypes)[0].EventTypeId)
 
 	tmp, err := workflow.GetOneEventType(id)
 	assert.NoError(err)
-	assert.EqualValues(id, tmp.ID)
+	assert.EqualValues(id, tmp.EventTypeId)
 }
 
 func (suite *ClientTester) Test15One() {
@@ -223,7 +223,7 @@ func (suite *ClientTester) Test15One() {
 		x1 := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
-				EventTypeIDs: []Ident{etID},
+				EventTypeIds: []Ident{etID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -258,7 +258,7 @@ func (suite *ClientTester) Test15One() {
 	{
 		// will cause trigger t1ID
 		e1 := &Event{
-			EventTypeID: etID,
+			EventTypeId: etID,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
@@ -282,7 +282,7 @@ func (suite *ClientTester) Test15One() {
 	{
 		// will cause no triggers
 		e2 := &Event{
-			EventTypeID: etID,
+			EventTypeId: etID,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
@@ -315,10 +315,10 @@ func (suite *ClientTester) Test15One() {
 		assert.NoError(err)
 		assert.Len(*alerts, 1)
 		alert0 := (*alerts)[0]
-		assert.EqualValues(e1ID, alert0.EventID)
-		assert.EqualValues(tID, alert0.TriggerID)
+		assert.EqualValues(e1ID, alert0.EventId)
+		assert.EqualValues(tID, alert0.TriggerId)
 
-		aID = alert0.ID
+		aID = alert0.AlertId
 
 		defer func() {
 			err := workflow.DeleteOneAlert(aID)
@@ -352,7 +352,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	t1 := Trigger{
 		Title: "the x1 trigger",
 		Condition: Condition{
-			EventTypeIDs: []Ident{etID},
+			EventTypeIds: []Ident{etID},
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -385,12 +385,12 @@ func (suite *ClientTester) Test16TriggerResource() {
 
 	tmp, err := workflow.GetOneTrigger(t1ID)
 	assert.NoError(err)
-	assert.EqualValues(t1ID, tmp.ID)
+	assert.EqualValues(t1ID, tmp.TriggerId)
 
 	triggers, err := workflow.GetAllTriggers()
 	assert.NoError(err)
 	assert.Len(*triggers, 1)
-	assert.EqualValues(t1ID, (*triggers)[0].ID)
+	assert.EqualValues(t1ID, (*triggers)[0].TriggerId)
 }
 
 func (suite *ClientTester) Test17Triggering() {
@@ -446,7 +446,7 @@ func (suite *ClientTester) Test17Triggering() {
 		t1 := &Trigger{
 			Title: "Trigger A",
 			Condition: Condition{
-				EventTypeIDs: []Ident{etC},
+				EventTypeIds: []Ident{etC},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -477,7 +477,7 @@ func (suite *ClientTester) Test17Triggering() {
 		t2 := &Trigger{
 			Title: "Trigger B",
 			Condition: Condition{
-				EventTypeIDs: []Ident{etD},
+				EventTypeIds: []Ident{etD},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -516,7 +516,7 @@ func (suite *ClientTester) Test17Triggering() {
 	{
 		// will cause trigger TA
 		e1 := Event{
-			EventTypeID: etC,
+			EventTypeId: etC,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
@@ -534,7 +534,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 		// will cause trigger TB
 		e2 := Event{
-			EventTypeID: etD,
+			EventTypeId: etD,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num":      18,
@@ -552,7 +552,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 		// will cause no triggers
 		e3 := Event{
-			EventTypeID: etE,
+			EventTypeId: etE,
 			Date:        time.Now(),
 			Data: map[string]interface{}{
 				"num": 19,
@@ -579,7 +579,7 @@ func (suite *ClientTester) Test17Triggering() {
 		assert.Len(*alerts, 2)
 
 		var alert0, alert1 *Alert
-		if (*alerts)[0].EventID == eF {
+		if (*alerts)[0].EventId == eF {
 			alert0 = &(*alerts)[0]
 			alert1 = &(*alerts)[1]
 		} else {
@@ -587,13 +587,13 @@ func (suite *ClientTester) Test17Triggering() {
 			alert1 = &(*alerts)[0]
 		}
 
-		aI = alert0.ID
-		aJ = alert1.ID
+		aI = alert0.AlertId
+		aJ = alert1.AlertId
 
-		assert.EqualValues(alert0.TriggerID, tA)
-		assert.EqualValues(alert0.EventID, eF)
-		assert.EqualValues(alert1.TriggerID, tB)
-		assert.EqualValues(alert1.EventID, eG)
+		assert.EqualValues(alert0.TriggerId, tA)
+		assert.EqualValues(alert0.EventId, eF)
+		assert.EqualValues(alert1.TriggerId, tB)
+		assert.EqualValues(alert1.EventId, eG)
 
 		defer func() {
 			workflow.DeleteOneAlert(aI)
