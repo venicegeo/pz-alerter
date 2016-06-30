@@ -266,9 +266,10 @@ func (suite *ServerTester) Test01EventType() {
 	assert.NoError(err)
 	assert.Len(*typs, 0)
 	printJSON("EventTypes", typs)
-	log.Printf("Creating new Event Type:")
 
+	log.Printf("Creating new Event Type:")
 	eventTypeName := makeTestEventTypeName()
+	printJSON("event type name", eventTypeName)
 	eventType := makeTestEventType(eventTypeName)
 	printJSON("event type", eventType)
 
