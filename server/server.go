@@ -31,8 +31,8 @@ import (
 	_ "net/url"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"github.com/Shopify/sarama"
+	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/lib"
@@ -94,43 +94,44 @@ type Server struct {
 	logger  loggerPkg.IClient
 }
 
-var server *Server
+var server = &Server{}
+
 var sysConfig *piazza.SystemConfig
 
-func NewServer(
+func Init(
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
 	triggersIndex elasticsearch.IIndex,
 	alertsIndex elasticsearch.IIndex,
-	uuidgen uuidgenPkg.IUuidGenService,
-	logger loggerPkg.IClient) (*Server, error) {
-	var s Server
+	logger loggerPkg.IClient,
+	uuidgen uuidgenPkg.IUuidGenService) error {
+
 	var err error
 
-	s.uuidgen = uuidgen
-	s.logger = logger
+	server.uuidgen = uuidgen
+	server.logger = logger
 
-	s.eventTypeDB, err = NewEventTypeDB(&s, eventtypesIndex)
+	server.eventTypeDB, err = NewEventTypeDB(server, eventtypesIndex)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	s.eventDB, err = NewEventDB(&s, eventsIndex)
+	server.eventDB, err = NewEventDB(server, eventsIndex)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	s.triggerDB, err = NewTriggerDB(&s, triggersIndex)
+	server.triggerDB, err = NewTriggerDB(server, triggersIndex)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	s.alertDB, err = NewAlertDB(&s, alertsIndex)
+	server.alertDB, err = NewAlertDB(server, alertsIndex)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &s, nil
+	return nil
 }
 
 func (s *Server) NewIdent() Ident {
@@ -327,7 +328,7 @@ func handleGetAlerts(c *gin.Context) {
 
 func handleGetAlertsV2(c *gin.Context) {
 	// TODO: conditionID := c.Query("condition")
-	log.Printf("%s", c.Request)
+	log.Printf("%#v", c.Request)
 	triggerId := c.Query("triggerId")
 
 	format := elasticsearch.GetFormatParamsV2(c, 10, 0, "id", elasticsearch.SortAscending)
@@ -827,7 +828,7 @@ func handlePostEvent(c *gin.Context) {
 	// log.Printf("---------------------\n")
 }
 
-func sendToKafka(jobInstance string, JobID Ident)  {
+func sendToKafka(jobInstance string, JobID Ident) {
 	log.Printf("***********************\n")
 	log.Printf("%s\n", jobInstance)
 
@@ -874,96 +875,49 @@ func handleHealthCheck(c *gin.Context) {
 	c.String(http.StatusOK, "Hi. I'm pz-workflow.")
 }
 
-func CreateHandlers(sys *piazza.SystemConfig,
-	logger loggerPkg.IClient,
-	uuidgen uuidgenPkg.IUuidGenService,
-	eventtypesIndex elasticsearch.IIndex,
-	eventsIndex elasticsearch.IIndex,
-	triggersIndex elasticsearch.IIndex,
-	alertsIndex elasticsearch.IIndex) (http.Handler, error) {
-
-	var err error
-
-	sysConfig = sys
-
-	server, err = NewServer(eventtypesIndex, eventsIndex,
-		triggersIndex, alertsIndex, uuidgen, logger)
-	if err != nil {
-		return nil, errors.New("internal error: server context failed to initialize")
-	}
-
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
-	//router.Use(gin.Logger())
-	//router.Use(gin.Recovery())
-
-	//---------------------------------------------------------------
-
-	router.GET("/", handleHealthCheck)
-
-	router.POST("/v1/events", handlePostEvent)
-	router.POST("/v2/event", handlePostEvent)
-
-	router.GET("/v1/events", handleGetEvents)
-	router.GET("/v2/event", handleGetEventsV2)
-
-/*
-	router.GET("/v1/events/:eventType", handleGetEventsByEventType)
-	router.GET("/v2/event/:eventType", handleGetEventsByEventTypeV2)
-*/
-
-	router.GET("/v1/events/:id", handleGetEventByID)
-	router.GET("/v2/event/:id", handleGetEventByID)
-
-/*
-	router.DELETE("/v1/events/:eventType/:id", handeDeleteEventByID)
-	router.DELETE("/v2/event/:eventType/:id", handeDeleteEventByID)
-*/
-	router.DELETE("/v1/events/:id", handleDeleteEventByID)
-	router.DELETE("/v2/event/:id", handleDeleteEventByID)
-
-	router.POST("/v1/eventtypes", handlePostEventType)
-	router.POST("/v2/eventType", handlePostEventType)
-
-	router.GET("/v1/eventtypes", handleGetEventTypes)
-	router.GET("/v2/eventType", handleGetEventTypesV2)
-
-	router.GET("/v1/eventtypes/:id", handleGetEventTypeByID)
-	router.GET("/v2/eventType/:id", handleGetEventTypeByID)
-
-	router.DELETE("/v1/eventtypes/:id", handleDeleteEventTypeByID)
-	router.DELETE("/v2/eventType/:id", handleDeleteEventTypeByID)
-
-	router.POST("/v1/triggers", handlePostTrigger)
-	router.POST("/v2/trigger", handlePostTrigger)
-
-	router.GET("/v1/triggers", handleGetTriggers)
-	router.GET("/v2/trigger", handleGetTriggersV2)
-
-	router.GET("/v1/triggers/:id", handleGetTriggerByID)
-	router.GET("/v2/trigger/:id", handleGetTriggerByID)
-
-	router.DELETE("/v1/triggers/:id", handleDeleteTriggerByID)
-	router.DELETE("/v2/trigger/:id", handleDeleteTriggerByID)
-
-	router.POST("/v1/alerts", handlePostAlert)
-	router.POST("/v2/alert", handlePostAlert)
-
-	router.GET("/v1/alerts", handleGetAlerts)
-	router.GET("/v2/alert", handleGetAlertsV2)
-
-	router.GET("/v1/alerts/:id", handleGetAlertByID)
-	router.GET("/v2/alert/:id", handleGetAlertByID)
-
-	router.DELETE("/v1/alerts/:id", handleDeleteAlertByID)
-	router.DELETE("/v2/alert/:id", handleDeleteAlertByID)
-
-	router.GET("/v1/admin/stats", handleGetAdminStats)
-	router.GET("/v2/admin/stats", handleGetAdminStats)
-
-	logger.Info("handlers set")
-
-	return router, nil
+var Routes = &piazza.RouteData{
+	Get: map[string]gin.HandlerFunc{
+		"/":                  handleHealthCheck,
+		"/v1/events":         handleGetEvents,
+		"/v2/event":          handleGetEventsV2,
+		"/v1/events/:id":     handleGetEventByID,
+		"/v2/event/:id":      handleGetEventByID,
+		"/v1/eventtypes":     handleGetEventTypes,
+		"/v2/eventType":      handleGetEventTypesV2,
+		"/v1/eventtypes/:id": handleGetEventTypeByID,
+		"/v2/eventType/:id":  handleGetEventTypeByID,
+		"/v1/triggers":       handleGetTriggers,
+		"/v2/trigger":        handleGetTriggersV2,
+		"/v1/triggers/:id":   handleGetTriggerByID,
+		"/v2/trigger/:id":    handleGetTriggerByID,
+		"/v1/alerts":         handleGetAlerts,
+		"/v2/alert":          handleGetAlertsV2,
+		"/v1/alerts/:id":     handleGetAlertByID,
+		"/v2/alert/:id":      handleGetAlertByID,
+		"/v1/admin/stats":    handleGetAdminStats,
+		"/v2/admin/stats":    handleGetAdminStats,
+	},
+	Post: map[string]gin.HandlerFunc{
+		"/v1/triggers":   handlePostTrigger,
+		"/v2/trigger":    handlePostTrigger,
+		"/v1/events":     handlePostEvent,
+		"/v2/event":      handlePostEvent,
+		"/v1/eventtypes": handlePostEventType,
+		"/v2/eventType":  handlePostEventType,
+		"/v1/alerts":     handlePostAlert,
+		"/v2/alert":      handlePostAlert,
+	},
+	Put: map[string]gin.HandlerFunc{},
+	Delete: map[string]gin.HandlerFunc{
+		"/v1/events/:id":     handleDeleteEventByID,
+		"/v2/event/:id":      handleDeleteEventByID,
+		"/v1/eventtypes/:id": handleDeleteEventTypeByID,
+		"/v2/eventType/:id":  handleDeleteEventTypeByID,
+		"/v1/triggers/:id":   handleDeleteTriggerByID,
+		"/v2/trigger/:id":    handleDeleteTriggerByID,
+		"/v1/alerts/:id":     handleDeleteAlertByID,
+		"/v2/alert/:id":      handleDeleteAlertByID,
+	},
 }
 
 func postToPzGatewayJobService(uri string, params map[string]string) (*http.Request, error) {

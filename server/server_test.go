@@ -132,16 +132,20 @@ func TestRunSuite(t *testing.T) {
 		log.Printf("alertsIndex: %s\n", alertsIndex.IndexName())
 	}
 
-	// start server
-	{
-		routes, err := CreateHandlers(sys, logger, uuidgen,
-			eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		_ = sys.StartServer(routes)
+	err = Init(eventtypesIndex, eventsIndex, triggersIndex, alertsIndex,
+		logger, uuidgen)
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	server := piazza.GenericServer{Sys: sys}
+
+	err = server.Configure(Routes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_ = server.Start()
 
 	workflow, err := NewPzWorkflowService(sys, logger)
 	if err != nil {
