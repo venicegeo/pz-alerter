@@ -127,7 +127,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	event := &Event{
 		EventTypeId: etID,
-		Date:        time.Now(),
+		CreatedOn:   time.Now(),
 		Data: map[string]interface{}{
 			"myint": 17,
 			"mystr": "quick",
@@ -259,7 +259,7 @@ func (suite *ClientTester) Test15One() {
 		// will cause trigger t1ID
 		e1 := &Event{
 			EventTypeId: etID,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -283,7 +283,7 @@ func (suite *ClientTester) Test15One() {
 		// will cause no triggers
 		e2 := &Event{
 			EventTypeId: etID,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -517,7 +517,7 @@ func (suite *ClientTester) Test17Triggering() {
 		// will cause trigger TA
 		e1 := Event{
 			EventTypeId: etC,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -535,7 +535,7 @@ func (suite *ClientTester) Test17Triggering() {
 		// will cause trigger TB
 		e2 := Event{
 			EventTypeId: etD,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      18,
 				"str":      "brown",
@@ -553,7 +553,7 @@ func (suite *ClientTester) Test17Triggering() {
 		// will cause no triggers
 		e3 := Event{
 			EventTypeId: etE,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 19,
 				"str": "fox",

@@ -92,7 +92,7 @@ type TriggerList []Trigger
 type Event struct {
 	EventId     Ident                  `json:"eventId"`
 	EventTypeId Ident                  `json:"eventTypeId" binding:"required"`
-	Date        time.Time              `json:"date" binding:"required"`
+	CreatedOn   time.Time              `json:"createdOn" binding:"required"`
 	Data        map[string]interface{} `json:"data"`
 }
 
@@ -146,11 +146,11 @@ func (list AlertList) ToSortedArray() []Alert {
 //---------------------------------------------------------------------------
 
 type WorkflowAdminStats struct {
-	Date          time.Time `json:"date"`
-	NumAlerts     int       `json:"num_alerts"`
-	NumConditions int       `json:"num_conditions"`
-	NumEvents     int       `json:"num_events"`
-	NumTriggers   int       `json:"num_triggers"`
+	CreatedOn     time.Time `json:"createdOn"`
+	NumAlerts     int       `json:"numAlerts"`
+	NumConditions int       `json:"numConditions"`
+	NumEvents     int       `json:"numEvents"`
+	NumTriggers   int       `json:"numTriggers"`
 }
 
 type WorkflowAdminSettings struct {

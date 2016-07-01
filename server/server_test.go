@@ -205,7 +205,7 @@ func makeTestEventType(eventTypeName string) *EventType {
 func makeTestEvent(eventTypeID Ident) *Event {
 	event := &Event{
 		EventTypeId: eventTypeID,
-		Date:        time.Now(),
+		CreatedOn:   time.Now(),
 		Data: map[string]interface{}{
 			"num": 17,
 		},
@@ -567,7 +567,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
 			EventTypeId: eventTypeID,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": value,
 			},
@@ -738,7 +738,7 @@ func (suite *ServerTester) Test06Workflow() {
 		// will cause trigger TRG1
 		event := &Event{
 			EventTypeId: et1ID,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -765,7 +765,7 @@ func (suite *ServerTester) Test06Workflow() {
 		// will cause no triggers
 		event := &Event{
 			EventTypeId: et1ID,
-			Date:        time.Now(),
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",

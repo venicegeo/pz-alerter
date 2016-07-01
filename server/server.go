@@ -47,7 +47,7 @@ type LockedAdminStats struct {
 var stats LockedAdminStats
 
 func init() {
-	stats.Date = time.Now()
+	stats.CreatedOn = time.Now()
 }
 
 func StatusOK(c *gin.Context, obj interface{}) {
