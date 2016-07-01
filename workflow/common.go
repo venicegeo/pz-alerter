@@ -57,7 +57,7 @@ func (id Ident) String() string {
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventTypeIDs []Ident                `json:"eventtype_ids" binding:"required"`
+	EventTypeIds []Ident                `json:"eventTypeIds" binding:"required"`
 	Query        map[string]interface{} `json:"query" binding:"required"`
 }
 
@@ -75,11 +75,11 @@ type Job struct {
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
 type Trigger struct {
-	ID            Ident     `json:"id"`
+	TriggerId     Ident     `json:"triggerId"`
 	Title         string    `json:"title" binding:"required"`
 	Condition     Condition `json:"condition" binding:"required"`
 	Job           Job       `json:"job" binding:"required"`
-	PercolationID Ident     `json:"percolation_id"`
+	PercolationId Ident     `json:"percolationId"`
 }
 
 type TriggerList []Trigger
@@ -90,9 +90,9 @@ type TriggerList []Trigger
 // Data is specific to the event type
 // TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
-	ID          Ident                  `json:"id"`
-	EventTypeID Ident                  `json:"eventtype_id" binding:"required"`
-	Date        time.Time              `json:"date" binding:"required"`
+	EventId     Ident                  `json:"eventId"`
+	EventTypeId Ident                  `json:"eventTypeId" binding:"required"`
+	CreatedOn   time.Time              `json:"createdOn" binding:"required"`
 	Data        map[string]interface{} `json:"data"`
 }
 
@@ -101,9 +101,9 @@ type EventList []Event
 //---------------------------------------------------------------------------
 
 type EventType struct {
-	ID      Ident                                           `json:"id"`
-	Name    string                                          `json:"name" binding:"required"`
-	Mapping map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
+	EventTypeId Ident                                           `json:"eventTypeId"`
+	Name        string                                          `json:"name" binding:"required"`
+	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
 }
 
 type EventTypeList []EventType
@@ -112,24 +112,24 @@ type EventTypeList []EventType
 
 // a notification, automatically created when an Trigger happens
 type Alert struct {
-	ID        Ident `json:"id"`
-	TriggerID Ident `json:"trigger_id"`
-	EventID   Ident `json:"event_id"`
-	JobID     Ident `json:"job_id"`
+	AlertId   Ident `json:"alertId"`
+	TriggerId Ident `json:"triggerId"`
+	EventId   Ident `json:"eventId"`
+	JobId     Ident `json:"jobId"`
 }
 
 type AlertList []Alert
 
-type AlertListByID []Alert
+type AlertListById []Alert
 
-func (a AlertListByID) Len() int {
+func (a AlertListById) Len() int {
 	return len(a)
 }
-func (a AlertListByID) Swap(i, j int) {
+func (a AlertListById) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
 }
-func (a AlertListByID) Less(i, j int) bool {
-	return a[i].ID < a[j].ID
+func (a AlertListById) Less(i, j int) bool {
+	return a[i].AlertId < a[j].AlertId
 }
 
 func (list AlertList) ToSortedArray() []Alert {
@@ -139,18 +139,18 @@ func (list AlertList) ToSortedArray() []Alert {
 		array[i] = v
 		i++
 	}
-	sort.Sort(AlertListByID(array))
+	sort.Sort(AlertListById(array))
 	return array
 }
 
 //---------------------------------------------------------------------------
 
 type WorkflowAdminStats struct {
-	Date          time.Time `json:"date"`
-	NumAlerts     int       `json:"num_alerts"`
-	NumConditions int       `json:"num_conditions"`
-	NumEvents     int       `json:"num_events"`
-	NumTriggers   int       `json:"num_triggers"`
+	CreatedOn     time.Time `json:"createdOn"`
+	NumAlerts     int       `json:"numAlerts"`
+	NumConditions int       `json:"numConditions"`
+	NumEvents     int       `json:"numEvents"`
+	NumTriggers   int       `json:"numTriggers"`
 }
 
 type WorkflowAdminSettings struct {
