@@ -79,7 +79,7 @@ const (triggerIndexSettings = `
 
 func NewTriggerDB(server *Server, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	rdb, err := NewResourceDB(server, esi, triggerIndexSettings)
+	rdb, err := NewResourceDB(server, esi, "")
 	if err != nil {
 		return nil, err
 	}

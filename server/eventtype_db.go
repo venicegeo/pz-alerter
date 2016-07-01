@@ -55,7 +55,7 @@ const (eventTypeIndexSettings = `
 
 func NewEventTypeDB(server *Server, esi elasticsearch.IIndex) (*EventTypeDB, error) {
 
-	rdb, err := NewResourceDB(server, esi, eventTypeIndexSettings)
+	rdb, err := NewResourceDB(server, esi, "")
 	if err != nil {
 		return nil, err
 	}

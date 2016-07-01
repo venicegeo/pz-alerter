@@ -72,7 +72,7 @@ const (alertIndexSettings = `
 
 func NewAlertDB(server *Server, esi elasticsearch.IIndex) (*AlertDB, error) {
 
-	rdb, err := NewResourceDB(server, esi, alertIndexSettings)
+	rdb, err := NewResourceDB(server, esi, "")
 	if err != nil {
 		return nil, err
 	}
