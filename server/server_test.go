@@ -211,8 +211,8 @@ func makeTestEventType(eventTypeName string) *EventType {
 
 func makeTestEvent(eventTypeID Ident) *Event {
 	event := &Event{
-		EventTypeID: eventTypeID,
-		Date:        time.Now(),
+		EventTypeId: eventTypeID,
+		CreatedOn:   time.Now(),
 		Data: map[string]interface{}{
 			"num": 17,
 		},
@@ -224,7 +224,7 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 	trigger := &Trigger{
 		Title: "MY TRIGGER TITLE",
 		Condition: Condition{
-			EventTypeIDs: eventTypeIDs,
+			EventTypeIds: eventTypeIDs,
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -293,7 +293,7 @@ func (suite *ServerTester) Test01EventType() {
 	log.Printf("Getting event type by Id: %s", id)
 	typ, err := workflow.GetOneEventType(id)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(typ.ID))
+	assert.EqualValues(string(id), string(typ.EventTypeId))
 
 	printJSON("Got Event type", typ)
 	log.Printf("Deleting Event type by Id: %s", id)
@@ -360,7 +360,7 @@ func (suite *ServerTester) Test02Event() {
 	event, err = workflow.GetOneEvent(eventTypeName, id)
 	printJSON("Got event", event)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(event.ID))
+	assert.EqualValues(string(id), string(event.EventId))
 
 	log.Printf("Deleting event by id: %s", id)
 	err = workflow.DeleteOneEvent(eventTypeName, id)
@@ -426,7 +426,7 @@ func (suite *ServerTester) Test03Trigger() {
 	log.Printf("Getting trigger by id: %s", id)
 	trigger, err = workflow.GetOneTrigger(id)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(trigger.ID))
+	assert.EqualValues(string(id), string(trigger.TriggerId))
 	printJSON("Trigger", trigger)
 
 	log.Printf("Delete trigger by id: %s", id)
@@ -490,8 +490,8 @@ func (suite *ServerTester) Test04Alert() {
 
 	log.Printf("Creating new alert:")
 	alert := &Alert{
-		TriggerID: triggerID,
-		EventID:   eventID,
+		TriggerId: triggerID,
+		EventId:   eventID,
 	}
 	printJSON("alert", alert)
 	id, err := workflow.PostOneAlert(alert)
@@ -509,7 +509,7 @@ func (suite *ServerTester) Test04Alert() {
 	log.Printf("Get alert by id: %s", id)
 	alert, err = workflow.GetOneAlert(id)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(alert.ID))
+	assert.EqualValues(string(id), string(alert.AlertId))
 	printJSON("alert", alert)
 
 	log.Printf("Delete alert by id: %s", id)
@@ -565,7 +565,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		eventTypeX, err := workflow.GetOneEventType(eventTypeID)
 		assert.NoError(err)
 
-		assert.EqualValues(eventTypeID, eventTypeX.ID)
+		assert.EqualValues(eventTypeID, eventTypeX.EventTypeId)
 		// printJSON("eventTypeX", eventTypeX)
 
 		return eventTypeID
@@ -574,8 +574,8 @@ func (suite *ServerTester) Test05EventMapping() {
 	eventF := func(eventTypeID Ident, eventTypeName string, value int) Ident {
 		log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
-			EventTypeID: eventTypeID,
-			Date:        time.Now(),
+			EventTypeId: eventTypeID,
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": value,
 			},
@@ -591,7 +591,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		eventX, err := workflow.GetOneEvent(eventTypeName, eventID)
 		assert.NoError(err)
 
-		assert.EqualValues(eventID, eventX.ID)
+		assert.EqualValues(eventID, eventX.EventId)
 
 		// printJSON("eventX", eventX)
 		return eventID
@@ -641,7 +641,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	{
 		x, err := workflow.GetOneEventType(et1Id)
 		assert.NoError(err)
-		assert.EqualValues(string(et1Id), string((*x).ID))
+		assert.EqualValues(string(et1Id), string((*x).EventTypeId))
 	}
 
 	e1Id := eventF(et1Id, eventTypeName1, 17)
@@ -706,7 +706,7 @@ func (suite *ServerTester) Test06Workflow() {
 		trigger := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
-				EventTypeIDs: []Ident{et1ID},
+				EventTypeIds: []Ident{et1ID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -745,8 +745,8 @@ func (suite *ServerTester) Test06Workflow() {
 		log.Printf("Creating event:\n")
 		// will cause trigger TRG1
 		event := &Event{
-			EventTypeID: et1ID,
-			Date:        time.Now(),
+			EventTypeId: et1ID,
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -772,8 +772,8 @@ func (suite *ServerTester) Test06Workflow() {
 
 		// will cause no triggers
 		event := &Event{
-			EventTypeID: et1ID,
-			Date:        time.Now(),
+			EventTypeId: et1ID,
+			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -807,11 +807,11 @@ func (suite *ServerTester) Test06Workflow() {
 		printJSON("alerts", alerts)
 
 		alert0 := (*alerts)[0]
-		assert.EqualValues(e1ID, alert0.EventID)
-		assert.EqualValues(t1ID, alert0.TriggerID)
+		assert.EqualValues(e1ID, alert0.EventId)
+		assert.EqualValues(t1ID, alert0.TriggerId)
 
-		log.Printf("Delete alert by id: %s", alert0.ID)
-		err = workflow.DeleteOneAlert(alert0.ID)
+		log.Printf("Delete alert by id: %s", alert0.AlertId)
+		err = workflow.DeleteOneAlert(alert0.AlertId)
 		assert.NoError(err)
 	}
 }
@@ -932,20 +932,20 @@ func (suite *ServerTester) Test07MultiTrigger() {
 
 		alert1 := (*alerts)[0]
 		alert2 := (*alerts)[1]
-		assert.EqualValues(triggerId, alert1.TriggerID)
-		assert.EqualValues(triggerId, alert2.TriggerID)
-		ok0 := (eventId1 == alert1.EventID) && (eventId2 == alert2.EventID)
-		ok1 := (eventId1 == alert2.EventID) && (eventId2 == alert1.EventID)
+		assert.EqualValues(triggerId, alert1.TriggerId)
+		assert.EqualValues(triggerId, alert2.TriggerId)
+		ok0 := (eventId1 == alert1.EventId) && (eventId2 == alert2.EventId)
+		ok1 := (eventId1 == alert2.EventId) && (eventId2 == alert1.EventId)
 		assert.True((ok0 && !ok1) || (!ok0 && ok1))
 
 		// Delete Alert 1
-		log.Printf("Delete alert by id: %s", alert1.ID)
-		err = workflow.DeleteOneAlert(alert1.ID)
+		log.Printf("Delete alert by id: %s", alert1.AlertId)
+		err = workflow.DeleteOneAlert(alert1.AlertId)
 		assert.NoError(err)
 
 		// Delete Alert 2
-		log.Printf("Delete alert by id: %s", alert2.ID)
-		err = workflow.DeleteOneAlert(alert2.ID)
+		log.Printf("Delete alert by id: %s", alert2.AlertId)
+		err = workflow.DeleteOneAlert(alert2.AlertId)
 		assert.NoError(err)
 
 	}
