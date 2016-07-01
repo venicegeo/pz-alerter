@@ -17,11 +17,11 @@ package main
 import (
 	"log"
 
-	piazza "github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/lib"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	pzworkflow "github.com/venicegeo/pz-workflow/server"
+	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	loggerPkg "github.com/venicegeo/pz-logger/logger"
+	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
+	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
 
 func main() {
