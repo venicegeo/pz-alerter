@@ -27,9 +27,35 @@ type EventTypeDB struct {
 	mapping string
 }
 
+const (eventTypeIndexSettings = `
+{
+	"settings": {
+		"index.mapper.dynamic": false
+	}
+	"mappings": {
+		"EventType": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"name": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"mapping": {
+					"dynamic": true
+				}
+			}
+		}
+	}
+}
+`
+)
+
 func NewEventTypeDB(server *Server, esi elasticsearch.IIndex) (*EventTypeDB, error) {
 
-	rdb, err := NewResourceDB(server, esi)
+	rdb, err := NewResourceDB(server, esi, "")
 	if err != nil {
 		return nil, err
 	}
