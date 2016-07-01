@@ -22,7 +22,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
-
+ 
 type TriggerDB struct {
 	*ResourceDB
 	mapping string

@@ -17,13 +17,13 @@ package server
 import (
 	"log"
 	"time"
-
+ 
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/lib"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
+	"github.com/venicegeo/pz-gocommon/gocommon"
+	loggerPkg "github.com/venicegeo/pz-logger/logger"
+	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 type ClientTester struct {

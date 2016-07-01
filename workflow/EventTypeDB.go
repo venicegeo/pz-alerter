@@ -19,7 +19,7 @@ import (
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
-
+ 
 //---------------------------------------------------------------------------
 
 type EventTypeDB struct {
