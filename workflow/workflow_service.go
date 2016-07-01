@@ -22,8 +22,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/venicegeo/pz-gocommon"
-	logger "github.com/venicegeo/pz-logger/lib"
+	"github.com/venicegeo/pz-gocommon/gocommon"
+	logger "github.com/venicegeo/pz-logger/logger"
 )
 
 type PzWorkflowService struct {
