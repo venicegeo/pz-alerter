@@ -33,10 +33,10 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/gin-gonic/gin"
-	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/lib"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
+	"github.com/venicegeo/pz-gocommon/gocommon"
+	loggerPkg "github.com/venicegeo/pz-logger/logger"
+	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 type LockedAdminStats struct {

@@ -15,8 +15,8 @@
 package server
 
 import (
-	"log"
 	"encoding/json"
+	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
@@ -39,7 +39,8 @@ type AlertDB struct {
 //     For example, the UUID "ab3142cd-1a8e-44f8-6a01-5ce8a9328fb2" would be broken
 //     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
 //     match on all of these separate strings, which was undesired behavior.
-const (alertIndexSettings = `
+const (
+	alertIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
@@ -149,7 +150,6 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerId s
 		log.Printf("Search returned nil")
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult")
 	}
-
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		count = searchResult.NumberMatched()

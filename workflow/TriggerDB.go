@@ -16,11 +16,11 @@ package server
 
 import (
 	"encoding/json"
-	"log"
 	"fmt"
+	"log"
 
-	"github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 type TriggerDB struct {
@@ -28,7 +28,8 @@ type TriggerDB struct {
 	mapping string
 }
 
-const (triggerIndexSettings = `
+const (
+	triggerIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
