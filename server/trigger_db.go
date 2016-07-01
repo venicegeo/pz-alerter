@@ -28,9 +28,58 @@ type TriggerDB struct {
 	mapping string
 }
 
+const (triggerIndexSettings = `
+{
+	"settings": {
+		"index.mapper.dynamic": false
+	}
+	"mappings": {
+		"Trigger": {
+			"properties": {
+				"triggerId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"title": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"condition": {
+					"properties": {
+						"eventTypeIds": {
+							"type": "string",
+							"index": "not_analyzed"
+						},
+						"query": {
+							"dynamic": "true"
+						}
+					}
+				},
+				"job": {
+					"properties": {
+						"userName": {
+							"type": "string",
+							"index": "not_analyzed"
+						},
+						"jobType": {
+							"dynamic": "true"
+						}
+					}
+				},
+				"percolationId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
+)
+
 func NewTriggerDB(server *Server, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	rdb, err := NewResourceDB(server, esi)
+	rdb, err := NewResourceDB(server, esi, "")
 	if err != nil {
 		return nil, err
 	}
@@ -53,7 +102,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	json = json[:len(json)-1]
 	json += ",\"type\":["
 	// Add the types that the percolation query can match
-	for _, id := range trigger.Condition.EventTypeIDs {
+	for _, id := range trigger.Condition.EventTypeIds {
 		json += fmt.Sprintf("\"%s\",", id)
 	}
 	json = json[:len(json)-1]
@@ -61,7 +110,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	json += "]}"
 
 	log.Printf("Posting percolation query: %s", body)
-	indexResult, err := db.server.eventDB.Esi.AddPercolationQuery(string(trigger.ID), piazza.JsonString(body))
+	indexResult, err := db.server.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
 	if err != nil {
 		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
 	}
@@ -74,15 +123,15 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 
 	log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
 	//log.Printf("percolation id: %s", indexResult.Id)
-	trigger.PercolationID = Ident(indexResult.Id)
+	trigger.PercolationId = Ident(indexResult.Id)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
 	if err != nil {
-		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.ID))
+		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
-		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.ID))
+		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 
@@ -166,7 +215,7 @@ func (db *TriggerDB) DeleteTrigger(id Ident) (bool, error) {
 		return false, nil
 	}
 
-	deleteResult2, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
+	deleteResult2, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationId))
 	if err != nil {
 		return false, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}
