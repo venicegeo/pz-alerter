@@ -145,7 +145,10 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_ = server.Start()
+	_, err = server.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	workflow, err := NewPzWorkflowService(sys, logger)
 	if err != nil {
