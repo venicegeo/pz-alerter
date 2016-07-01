@@ -132,15 +132,22 @@ func TestRunSuite(t *testing.T) {
 		log.Printf("alertsIndex: %s\n", alertsIndex.IndexName())
 	}
 
-	// start server
-	{
-		routes, err := CreateHandlers(sys, logger, uuidgen,
-			eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
-		if err != nil {
-			log.Fatal(err)
-		}
+	err = Init(eventtypesIndex, eventsIndex, triggersIndex, alertsIndex,
+		logger, uuidgen)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-		_ = sys.StartServer(routes)
+	server := piazza.GenericServer{Sys: sys}
+
+	err = server.Configure(Routes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = server.Start()
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	workflow, err := NewPzWorkflowService(sys, logger)
@@ -262,9 +269,10 @@ func (suite *ServerTester) Test01EventType() {
 	assert.NoError(err)
 	assert.Len(*typs, 0)
 	printJSON("EventTypes", typs)
-	log.Printf("Creating new Event Type:")
 
+	log.Printf("Creating new Event Type:")
 	eventTypeName := makeTestEventTypeName()
+	printJSON("event type name", eventTypeName)
 	eventType := makeTestEventType(eventTypeName)
 	printJSON("event type", eventType)
 

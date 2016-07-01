@@ -21,7 +21,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	loggerPkg "github.com/venicegeo/pz-logger/lib"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"github.com/venicegeo/pz-workflow/server"
+	pzworkflow "github.com/venicegeo/pz-workflow/server"
 )
 
 func main() {
@@ -69,16 +69,23 @@ func main() {
 
 	logger.Info("pz-workflow starting...")
 
-	// start server
-	routes, err := server.CreateHandlers(sys, logger, uuidgen,
-		eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
+	err = pzworkflow.Init(eventtypesIndex, eventsIndex, triggersIndex, alertsIndex,
+		logger, uuidgen)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// _ = sys.StartServer(routes)
+	server := piazza.GenericServer{Sys: sys}
 
-	done := sys.StartServer(routes)
+	err = server.Configure(pzworkflow.Routes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	done, err := server.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	err = <-done
 	if err != nil {
