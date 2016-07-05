@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import (
 	"encoding/json"
@@ -138,7 +138,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	server := piazza.GenericServer{Sys: sys}
+	genericServer := piazza.GenericServer{Sys: sys}
 
 	err = server.Configure(Routes)
 	if err != nil {
@@ -149,7 +149,7 @@ func TestRunSuite(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+ 
 	workflow, err := NewPzWorkflowService(sys, logger)
 	if err != nil {
 		log.Fatal(err)

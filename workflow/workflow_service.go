@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
+/***
 import (
 	"bytes"
 	"encoding/json"
@@ -223,9 +224,9 @@ func (c *PzWorkflowService) PostOneEvent(foo string, event *Event) (Ident, error
 }
 
 func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error) {
-	/*if eventTypeName == "" {
-		return nil, errors.New("GetAllEvents: type name required")
-	}*/
+	//if eventTypeName == "" {
+	//	return nil, errors.New("GetAllEvents: type name required")
+	//}
 
 	url := "/events"
 	if eventTypeName != "" {
@@ -436,3 +437,4 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
 	return stats, nil
 }
+***/

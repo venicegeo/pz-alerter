@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import (
 	"encoding/json"
@@ -22,7 +22,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
- 
+
 type TriggerDB struct {
 	*ResourceDB
 	mapping string
@@ -78,9 +78,9 @@ const (
 `
 )
 
-func NewTriggerDB(server *Server, esi elasticsearch.IIndex) (*TriggerDB, error) {
+func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	rdb, err := NewResourceDB(server, esi, "")
+	rdb, err := NewResourceDB(service, esi, "")
 	if err != nil {
 		return nil, err
 	}
@@ -111,7 +111,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	json += "]}"
 
 	log.Printf("Posting percolation query: %s", body)
-	indexResult, err := db.server.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
+	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
 	if err != nil {
 		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
 	}
@@ -128,11 +128,11 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
 	if err != nil {
-		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
-		db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 
@@ -216,7 +216,7 @@ func (db *TriggerDB) DeleteTrigger(id Ident) (bool, error) {
 		return false, nil
 	}
 
-	deleteResult2, err := db.server.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationId))
+	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationId))
 	if err != nil {
 		return false, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}
