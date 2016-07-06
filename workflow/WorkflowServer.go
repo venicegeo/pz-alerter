@@ -32,36 +32,38 @@ type WorkflowServer struct {
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) Init() error {
+func (server *WorkflowServer) Init(service *WorkflowService) error {
+
+	server.service = service
 
 	server.Routes = []piazza.RouteData{
 		{"GET", "/", server.handleGetRoot},
 
-		{"GET", "/v2/eventType", server.handleGetEventTypes},
-		{"GET", "/v2/eventType/:id", server.handleGetEventTypeByID},
-		{"POST", "/v2/eventType", server.handlePostEventType},
+		{"GET", "/eventType", server.handleGetEventTypes},
+		{"GET", "/eventType/:id", server.handleGetEventTypeByID},
+		{"POST", "/eventType", server.handlePostEventType},
 		// TODO: PUT
-		{"DELETE", "/v2/eventType/:id", server.handleDeleteEventTypeByID},
+		{"DELETE", "/eventType/:id", server.handleDeleteEventTypeByID},
 
-		{"GET", "/v2/event", server.handleGetEvents},
-		{"GET", "/v2/event/:id", server.handleGetEventByID},
-		{"POST", "/v2/event", server.handlePostEvent},
+		{"GET", "/event", server.handleGetEvents},
+		{"GET", "/event/:id", server.handleGetEventByID},
+		{"POST", "/event", server.handlePostEvent},
 		// TODO: PUT
-		{"DELETE", "/v2/event/:id", server.handleDeleteEventByID},
+		{"DELETE", "/event/:id", server.handleDeleteEventByID},
 
-		{"GET", "/v2/trigger", server.handleGetTriggers},
-		{"GET", "/v2/trigger/:id", server.handleGetTriggerByID},
-		{"POST", "/v2/trigger", server.handlePostTrigger},
+		{"GET", "/trigger", server.handleGetTriggers},
+		{"GET", "/trigger/:id", server.handleGetTriggerByID},
+		{"POST", "/trigger", server.handlePostTrigger},
 		// TODO: PUT
-		{"DELETE", "/v2/trigger/:id", server.handleDeleteTriggerByID},
+		{"DELETE", "/trigger/:id", server.handleDeleteTriggerByID},
 
-		{"GET", "/v2/alert", server.handleGetAlerts},
-		{"GET", "/v2/alert/:id", server.handleGetAlertByID},
-		{"POST", "/v2/alert", server.handlePostAlert},
+		{"GET", "/alert", server.handleGetAlerts},
+		{"GET", "/alert/:id", server.handleGetAlertByID},
+		{"POST", "/alert", server.handlePostAlert},
 		// TODO: PUT
-		{"DELETE", "/v2/alert/:id", server.handleDeleteAlertByID},
+		{"DELETE", "/alert/:id", server.handleDeleteAlertByID},
 
-		{"GET", "/v2/admin/stats", server.handleGetAdminStats},
+		{"GET", "/admin/stats", server.handleGetAdminStats},
 	}
 
 	return nil
