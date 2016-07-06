@@ -14,7 +14,6 @@
 
 package workflow
 
-/***
 import (
 	"bytes"
 	"encoding/json"
@@ -27,13 +26,13 @@ import (
 	logger "github.com/venicegeo/pz-logger/logger"
 )
 
-type PzWorkflowService struct {
+type Client struct {
 	url    string
 	logger logger.IClient
 }
 
-func NewPzWorkflowService(sys *piazza.SystemConfig,
-	logger logger.IClient) (*PzWorkflowService, error) {
+func NewClient(sys *piazza.SystemConfig,
+	logger logger.IClient) (*Client, error) {
 
 	var err error
 
@@ -44,12 +43,12 @@ func NewPzWorkflowService(sys *piazza.SystemConfig,
 
 	url, err := sys.GetURL(piazza.PzWorkflow)
 
-	service := &PzWorkflowService{
+	service := &Client{
 		url:    url,
 		logger: logger,
 	}
 
-	service.logger.Info("PzWorkflowService started")
+	service.logger.Info("Client started")
 
 	return service, nil
 }
@@ -67,7 +66,7 @@ func (resp *HTTPReturn) toError() error {
 	return errors.New(s)
 }
 
-func (c *PzWorkflowService) Post(path string, body interface{}) (*HTTPReturn, error) {
+func (c *Client) Post(path string, body interface{}) (*HTTPReturn, error) {
 	bodyBytes, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
@@ -93,7 +92,7 @@ func (c *PzWorkflowService) Post(path string, body interface{}) (*HTTPReturn, er
 	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
 }
 
-func (c *PzWorkflowService) Get(path string) (*HTTPReturn, error) {
+func (c *Client) Get(path string) (*HTTPReturn, error) {
 	resp, err := http.Get(c.url + path)
 	if err != nil {
 		return nil, err
@@ -114,7 +113,7 @@ func (c *PzWorkflowService) Get(path string) (*HTTPReturn, error) {
 	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
 }
 
-func (c *PzWorkflowService) Delete(path string) (*HTTPReturn, error) {
+func (c *Client) Delete(path string) (*HTTPReturn, error) {
 	resp, err := piazza.HTTPDelete(c.url + path)
 	if err != nil {
 		return nil, err
@@ -137,7 +136,7 @@ func (c *PzWorkflowService) Delete(path string) (*HTTPReturn, error) {
 
 //---------------------------------------------------------------------------
 
-func (c *PzWorkflowService) PostOneEventType(eventType *EventType) (Ident, error) {
+func (c *Client) PostOneEventType(eventType *EventType) (Ident, error) {
 	resp, err := c.Post("/eventtypes", eventType)
 	if err != nil {
 		return NoIdent, err
@@ -155,7 +154,7 @@ func (c *PzWorkflowService) PostOneEventType(eventType *EventType) (Ident, error
 	return resp2.ID, nil
 }
 
-func (c *PzWorkflowService) GetAllEventTypes() (*[]EventType, error) {
+func (c *Client) GetAllEventTypes() (*[]EventType, error) {
 	resp, err := c.Get("/eventtypes")
 	if err != nil {
 		return nil, err
@@ -173,7 +172,7 @@ func (c *PzWorkflowService) GetAllEventTypes() (*[]EventType, error) {
 	return &typs, nil
 }
 
-func (c *PzWorkflowService) GetOneEventType(id Ident) (*EventType, error) {
+func (c *Client) GetOneEventType(id Ident) (*EventType, error) {
 	resp, err := c.Get("/eventtypes/" + string(id))
 	if err != nil {
 		return nil, err
@@ -191,7 +190,7 @@ func (c *PzWorkflowService) GetOneEventType(id Ident) (*EventType, error) {
 	return &resp2, nil
 }
 
-func (c *PzWorkflowService) DeleteOneEventType(id Ident) error {
+func (c *Client) DeleteOneEventType(id Ident) error {
 	resp, err := c.Delete("/eventtypes/" + string(id))
 	if err != nil {
 		return err
@@ -205,7 +204,7 @@ func (c *PzWorkflowService) DeleteOneEventType(id Ident) error {
 
 //---------------------------------------------------------------------------
 
-func (c *PzWorkflowService) PostOneEvent(foo string, event *Event) (Ident, error) {
+func (c *Client) PostOneEvent(foo string, event *Event) (Ident, error) {
 	resp, err := c.Post("/events", event)
 	if err != nil {
 		return NoIdent, err
@@ -223,7 +222,7 @@ func (c *PzWorkflowService) PostOneEvent(foo string, event *Event) (Ident, error
 	return resp2.ID, nil
 }
 
-func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error) {
+func (c *Client) GetAllEvents(eventTypeName string) (*[]Event, error) {
 	//if eventTypeName == "" {
 	//	return nil, errors.New("GetAllEvents: type name required")
 	//}
@@ -251,7 +250,7 @@ func (c *PzWorkflowService) GetAllEvents(eventTypeName string) (*[]Event, error)
 	return &events, nil
 }
 
-func (c *PzWorkflowService) GetOneEvent(foo string, id Ident) (*Event, error) {
+func (c *Client) GetOneEvent(foo string, id Ident) (*Event, error) {
 	resp, err := c.Get("/events/" + string(id))
 	if err != nil {
 		return nil, err
@@ -269,7 +268,7 @@ func (c *PzWorkflowService) GetOneEvent(foo string, id Ident) (*Event, error) {
 	return &resp2, nil
 }
 
-func (c *PzWorkflowService) DeleteOneEvent(foot string, id Ident) error {
+func (c *Client) DeleteOneEvent(foot string, id Ident) error {
 	resp, err := c.Delete("/events/" + string(id))
 	if err != nil {
 		return err
@@ -283,7 +282,7 @@ func (c *PzWorkflowService) DeleteOneEvent(foot string, id Ident) error {
 
 //---------------------------------------------------------------------------
 
-func (c *PzWorkflowService) PostOneTrigger(trigger *Trigger) (Ident, error) {
+func (c *Client) PostOneTrigger(trigger *Trigger) (Ident, error) {
 	resp, err := c.Post("/triggers", trigger)
 	if err != nil {
 		return NoIdent, err
@@ -301,7 +300,7 @@ func (c *PzWorkflowService) PostOneTrigger(trigger *Trigger) (Ident, error) {
 	return resp2.ID, nil
 }
 
-func (c *PzWorkflowService) GetAllTriggers() (*[]Trigger, error) {
+func (c *Client) GetAllTriggers() (*[]Trigger, error) {
 	resp, err := c.Get("/triggers")
 	if err != nil {
 		return nil, err
@@ -319,7 +318,7 @@ func (c *PzWorkflowService) GetAllTriggers() (*[]Trigger, error) {
 	return &triggers, nil
 }
 
-func (c *PzWorkflowService) GetOneTrigger(id Ident) (*Trigger, error) {
+func (c *Client) GetOneTrigger(id Ident) (*Trigger, error) {
 	resp, err := c.Get("/triggers/" + string(id))
 	if err != nil {
 		return nil, err
@@ -337,7 +336,7 @@ func (c *PzWorkflowService) GetOneTrigger(id Ident) (*Trigger, error) {
 	return &resp2, nil
 }
 
-func (c *PzWorkflowService) DeleteOneTrigger(id Ident) error {
+func (c *Client) DeleteOneTrigger(id Ident) error {
 	resp, err := c.Delete("/triggers/" + string(id))
 	if err != nil {
 		return err
@@ -351,7 +350,7 @@ func (c *PzWorkflowService) DeleteOneTrigger(id Ident) error {
 
 //---------------------------------------------------------------------------
 
-func (c *PzWorkflowService) PostOneAlert(alert *Alert) (Ident, error) {
+func (c *Client) PostOneAlert(alert *Alert) (Ident, error) {
 	resp, err := c.Post("/alerts", alert)
 	if err != nil {
 		return NoIdent, err
@@ -369,7 +368,7 @@ func (c *PzWorkflowService) PostOneAlert(alert *Alert) (Ident, error) {
 	return resp2.ID, nil
 }
 
-func (c *PzWorkflowService) GetAllAlerts() (*[]Alert, error) {
+func (c *Client) GetAllAlerts() (*[]Alert, error) {
 	resp, err := c.Get("/alerts")
 	if err != nil {
 		return nil, err
@@ -387,7 +386,7 @@ func (c *PzWorkflowService) GetAllAlerts() (*[]Alert, error) {
 	return &alerts, nil
 }
 
-func (c *PzWorkflowService) GetOneAlert(id Ident) (*Alert, error) {
+func (c *Client) GetOneAlert(id Ident) (*Alert, error) {
 	resp, err := c.Get("/alerts/" + string(id))
 	if err != nil {
 		return nil, err
@@ -405,7 +404,7 @@ func (c *PzWorkflowService) GetOneAlert(id Ident) (*Alert, error) {
 	return &resp2, nil
 }
 
-func (c *PzWorkflowService) DeleteOneAlert(id Ident) error {
+func (c *Client) DeleteOneAlert(id Ident) error {
 	resp, err := c.Delete("/alerts/" + string(id))
 	if err != nil {
 		return err
@@ -419,7 +418,7 @@ func (c *PzWorkflowService) DeleteOneAlert(id Ident) error {
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
+func (c *Client) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
 	resp, err := c.Get("/admin/stats")
 	if err != nil {
@@ -437,4 +436,3 @@ func (c *PzWorkflowService) GetFromAdminStats() (*WorkflowAdminStats, error) {
 
 	return stats, nil
 }
-***/

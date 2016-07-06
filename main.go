@@ -69,15 +69,20 @@ func main() {
 
 	logger.Info("pz-workflow starting...")
 
-	err = pzworkflow.Init(eventtypesIndex, eventsIndex, triggersIndex, alertsIndex,
-		logger, uuidgen)
+	workflowService := &pzworkflow.WorkflowService{}
+	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
+	if err != nil {
+		log.Fatal(err)
+	}
+	workflowServer := &pzworkflow.WorkflowServer{}
+	err = workflowServer.Init()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	genericServer := piazza.GenericServer{Sys: sys}
 
-	err = genericServer.Configure(pzworkflow.Routes)
+	err = genericServer.Configure(workflowServer.Routes)
 	if err != nil {
 		log.Fatal(err)
 	}
