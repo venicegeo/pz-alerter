@@ -12,24 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 type ResourceDB struct {
-	server *Server
-	Esi    elasticsearch.IIndex
+	service *WorkflowService
+	Esi     elasticsearch.IIndex
 }
 
-func NewResourceDB(server *Server, esi elasticsearch.IIndex) (*ResourceDB, error) {
+func NewResourceDB(service *WorkflowService, esi elasticsearch.IIndex, indexSettings string) (*ResourceDB, error) {
 	db := &ResourceDB{
-		server: server,
-		Esi:    esi,
+		service: service,
+		Esi:     esi,
 	}
 
 	// _ = esi.Delete()
 
-	err := esi.Create()
+	err := esi.Create(indexSettings)
 	if err != nil {
 		return nil, err
 	}

@@ -17,11 +17,11 @@ package main
 import (
 	"log"
 
-	piazza "github.com/venicegeo/pz-gocommon"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	loggerPkg "github.com/venicegeo/pz-logger/lib"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/client"
-	"github.com/venicegeo/pz-workflow/server"
+	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
+	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
 
 func main() {
@@ -38,13 +38,13 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewClient(sys)
+	logger, err := pzlogger.NewClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	//	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
-	uuidgen, err := uuidgenPkg.NewPzUuidGenService(sys)
+	uuidgen, err := pzuuidgen.NewPzUuidGenService(sys)
 
 	if err != nil {
 		log.Fatal(err)
@@ -69,16 +69,28 @@ func main() {
 
 	logger.Info("pz-workflow starting...")
 
-	// start server
-	routes, err := server.CreateHandlers(sys, logger, uuidgen,
-		eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
+	workflowService := &pzworkflow.WorkflowService{}
+	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
+	if err != nil {
+		log.Fatal(err)
+	}
+	workflowServer := &pzworkflow.WorkflowServer{}
+	err = workflowServer.Init(workflowService)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// _ = sys.StartServer(routes)
+	genericServer := piazza.GenericServer{Sys: sys}
 
-	done := sys.StartServer(routes)
+	err = genericServer.Configure(workflowServer.Routes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	done, err := genericServer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	err = <-done
 	if err != nil {

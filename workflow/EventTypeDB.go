@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import (
 	"encoding/json"
@@ -27,9 +27,36 @@ type EventTypeDB struct {
 	mapping string
 }
 
-func NewEventTypeDB(server *Server, esi elasticsearch.IIndex) (*EventTypeDB, error) {
+const (
+	eventTypeIndexSettings = `
+{
+	"settings": {
+		"index.mapper.dynamic": false
+	}
+	"mappings": {
+		"EventType": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"name": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"mapping": {
+					"dynamic": true
+				}
+			}
+		}
+	}
+}
+`
+)
 
-	rdb, err := NewResourceDB(server, esi)
+func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventTypeDB, error) {
+
+	rdb, err := NewResourceDB(service, esi, "")
 	if err != nil {
 		return nil, err
 	}

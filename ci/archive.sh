@@ -12,7 +12,7 @@ mkdir -p "$GOPATH"
 
 go get github.com/venicegeo/pz-workflow
 
-go install github.com/venicegeo/pz-workflow/server
+go install github.com/venicegeo/pz-workflow
 
 ###
 

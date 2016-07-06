@@ -12,11 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
@@ -25,9 +24,37 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(server *Server, esi elasticsearch.IIndex) (*EventDB, error) {
+const (
+	eventIndexSettings = `
+{
+	"settings": {
+		"index.mapper.dynamic": false
+	}
+	"mappings": {
+		"Event": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+				"data": {
+					"dynamic": true
+				}
+			}
+		}
+	}
+}
+`
+)
 
-	rdb, err := NewResourceDB(server, esi)
+func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
+
+	// Create with no settings specified
+	rdb, err := NewResourceDB(service, esi, "")
 	if err != nil {
 		return nil, err
 	}
@@ -136,9 +163,9 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
 
-	log.Printf("percolating type %s with data %v", eventType, data)
+	//log.Printf("percolating type %s with data %v", eventType, data)
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
-	log.Printf("percolateResponse: %v", percolateResponse)
+	//log.Printf("percolateResponse: %v", percolateResponse)
 
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
@@ -153,7 +180,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 		ids[i] = Ident(v.Id)
 	}
 
-	log.Printf("\t\ttriggerIds: %v", ids)
+	//log.Printf("\t\ttriggerIds: %v", ids)
 
 	return &ids, nil
 }
