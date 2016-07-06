@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import (
 	"encoding/json"
 	"log"
- 
+
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
@@ -71,9 +71,9 @@ const (
 `
 )
 
-func NewAlertDB(server *Server, esi elasticsearch.IIndex) (*AlertDB, error) {
+func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
 
-	rdb, err := NewResourceDB(server, esi, "")
+	rdb, err := NewResourceDB(service, esi, "")
 	if err != nil {
 		return nil, err
 	}

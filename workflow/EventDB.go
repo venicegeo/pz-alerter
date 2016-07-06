@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package server
+package workflow
 
 import (
 	"encoding/json"
-	"log" 
+	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
@@ -25,7 +25,8 @@ type EventDB struct {
 	*ResourceDB
 }
 
-const (eventIndexSettings = `
+const (
+	eventIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
@@ -51,10 +52,10 @@ const (eventIndexSettings = `
 `
 )
 
-func NewEventDB(server *Server, esi elasticsearch.IIndex) (*EventDB, error) {
+func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
 
 	// Create with no settings specified
-	rdb, err := NewResourceDB(server, esi, "")
+	rdb, err := NewResourceDB(service, esi, "")
 	if err != nil {
 		return nil, err
 	}
