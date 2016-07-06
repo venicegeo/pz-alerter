@@ -146,13 +146,12 @@ func (service *WorkflowService) lookupEventTypeNameByEventID(id Ident) (string, 
 }
 
 func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) {
-	log.Printf("***********************\n")
-	log.Printf("%s\n", jobInstance)
+	//log.Printf("***********************\n")
+	//log.Printf("%s\n", jobInstance)
 
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
 	if err != nil {
-		// return err
-		log.Printf("%v\n", err)
+		log.Fatalf("Kafka-related failure (1): %s", err)
 	}
 
 	// Get Space we are running in.   Default to int
@@ -164,28 +163,30 @@ func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) {
 	topic := fmt.Sprintf("Request-Job-%s", space)
 	message := jobInstance
 
-	log.Printf("%s\n", kafkaAddress)
-	log.Printf("%s\n", topic)
+	//log.Printf("%s\n", kafkaAddress)
+	//log.Printf("%s\n", topic)
 
 	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalf("Kafka-related failure (2): %s", err)
 	}
 	defer func() {
 		if err := producer.Close(); err != nil {
-			log.Fatalln(err)
+			log.Fatalf("Kafka-related failure (3): %s", err)
 		}
 	}()
 
 	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(message), Key: sarama.StringEncoder(JobID)}
 	partition, offset, err := producer.SendMessage(msg)
+	_ = partition
+	_ = offset
 	if err != nil {
-		log.Printf("FAILED to send message: %s\n", err)
+		//log.Printf("FAILED to send message: %s\n", err)
 	} else {
-		log.Printf("> message sent to partition %d at offset %d\n", partition, offset)
+		//log.Printf("> message sent to partition %d at offset %d\n", partition, offset)
 	}
 
-	log.Printf("***********************\n")
+	//log.Printf("***********************\n")
 }
 
 func (service *WorkflowService) postToPzGatewayJobService(uri string, params map[string]string) (*http.Request, error) {
@@ -285,7 +286,7 @@ func (service *WorkflowService) GetEventByID(c *gin.Context) *piazza.JsonRespons
 		return statusBadRequest(err)
 	}
 
-	log.Printf("The Mapping is:  %s\n", mapping)
+	//log.Printf("The Mapping is:  %s\n", mapping)
 
 	event, err := service.eventDB.GetOne(mapping, id)
 	if err != nil {
@@ -345,7 +346,7 @@ func (service *WorkflowService) GetAlertByID(c *gin.Context) *piazza.JsonRespons
 
 func (service *WorkflowService) GetAlerts(c *gin.Context) *piazza.JsonResponse {
 	// TODO: conditionID := c.Query("condition")
-	log.Printf("%#v", c.Request)
+	//log.Printf("%#v", c.Request)
 	triggerId := c.Query("triggerId")
 
 	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
@@ -356,13 +357,13 @@ func (service *WorkflowService) GetAlerts(c *gin.Context) *piazza.JsonResponse {
 	var count int64
 
 	if isUuid(triggerId) {
-		log.Printf("Getting alerts with trigger %s", triggerId)
+		//log.Printf("Getting alerts with trigger %s", triggerId)
 		all, count, err = service.alertDB.GetAllByTrigger(format, triggerId)
 		if err != nil {
 			return statusBadRequest(err)
 		}
 	} else if triggerId == "" {
-		log.Printf("Getting all alerts")
+		//log.Printf("Getting all alerts %#v", service)
 		all, count, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return statusBadRequest(err)
@@ -371,10 +372,10 @@ func (service *WorkflowService) GetAlerts(c *gin.Context) *piazza.JsonResponse {
 		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
-	log.Printf("Making bar")
+	//log.Printf("Making bar")
 	bar := make([]interface{}, len(*all))
 
-	log.Printf("Adding values to bar")
+	//log.Printf("Adding values to bar")
 	for i, e := range *all {
 		bar[i] = e
 	}
@@ -387,7 +388,7 @@ func (service *WorkflowService) GetAlerts(c *gin.Context) *piazza.JsonResponse {
 		order = "asc"
 	}
 
-	log.Printf("Creating response")
+	//log.Printf("Creating response")
 	foo := &piazza.JsonPaginationResponse{
 		Page:    format.From,
 		PerPage: format.Size,
@@ -553,7 +554,7 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
-	log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
+	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	eventType.EventTypeId = service.newIdent()
 	id, err := service.eventTypeDB.PostData(eventType, eventType.EventTypeId)
@@ -561,7 +562,7 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
-	log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
+	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
@@ -569,7 +570,7 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
-	log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
+	//log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
 
 	return statusCreated(eventType)
 }
@@ -583,7 +584,7 @@ func (service *WorkflowService) DeleteEventByID(c *gin.Context) *piazza.JsonResp
 		return statusBadRequest(err)
 	}
 
-	log.Printf("The Mapping is:  %s\n", mapping)
+	//log.Printf("The Mapping is:  %s\n", mapping)
 
 	ok, err := service.eventDB.DeleteByID(mapping, Ident(id))
 	if err != nil {
@@ -637,10 +638,6 @@ func (service *WorkflowService) GetEventsByEventType(c *gin.Context) *piazza.Jso
 }
 
 func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
-	// log.Printf("---------------------\n")
-
-	// eventType := c.Param("eventType")
-
 	var event Event
 	err := c.BindJSON(&event)
 	if err != nil {
@@ -666,7 +663,7 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 		// log.Printf("\tData: %v\n", event.Data)
 
 		// Find triggers associated with event
-		log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
+		//log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
 		triggerIDs, err := service.eventDB.PercolateEventData(eventType.Name, event.Data, event.EventId)
 		if err != nil {
 			return statusBadRequest(err)
@@ -682,7 +679,7 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 			go func(triggerID Ident) {
 				defer waitGroup.Done()
 
-				log.Printf("\ntriggerID: %v\n", triggerID)
+				//log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := service.triggerDB.GetOne(triggerID)
 				if err != nil {
 					results[triggerID] = statusBadRequest(err)
@@ -786,5 +783,4 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 	}
 
 	return statusCreated(event)
-	// log.Printf("---------------------\n")
 }

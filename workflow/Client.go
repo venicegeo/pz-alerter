@@ -15,11 +15,6 @@
 package workflow
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -55,384 +50,271 @@ func NewClient(sys *piazza.SystemConfig,
 
 //---------------------------------------------------------------------------
 
-type HTTPReturn struct {
-	StatusCode int
-	Status     string
-	Data       interface{}
+func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
+	et := EventType{}
+
+	err := piazza.SuperConverter(resp.Data, &et)
+	if err != nil {
+		return nil, err
+	}
+
+	return &et, nil
 }
 
-func (resp *HTTPReturn) toError() error {
-	s := fmt.Sprintf("%d: %s  {%v}", resp.StatusCode, resp.Status, resp.Data)
-	return errors.New(s)
-}
+func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
+	ets := []EventType{}
 
-func (c *Client) Post(path string, body interface{}) (*HTTPReturn, error) {
-	bodyBytes, err := json.Marshal(body)
+	err := piazza.SuperConverter(resp.Data, &ets)
 	if err != nil {
 		return nil, err
 	}
 
-	resp, err := http.Post(c.url+path, piazza.ContentTypeJSON, bytes.NewBuffer(bodyBytes))
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result interface{}
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
-}
-
-func (c *Client) Get(path string) (*HTTPReturn, error) {
-	resp, err := http.Get(c.url + path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result interface{}
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
-}
-
-func (c *Client) Delete(path string) (*HTTPReturn, error) {
-	resp, err := piazza.HTTPDelete(c.url + path)
-	if err != nil {
-		return nil, err
-	}
-
-	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	var result interface{}
-	err = json.Unmarshal(data, &result)
-	if err != nil {
-		return nil, err
-	}
-
-	return &HTTPReturn{StatusCode: resp.StatusCode, Status: resp.Status, Data: result}, nil
+	return &ets, nil
 }
 
 //---------------------------------------------------------------------------
 
-func (c *Client) PostOneEventType(eventType *EventType) (Ident, error) {
-	resp, err := c.Post("/eventtypes", eventType)
+func asObject(resp *piazza.JsonResponse, out interface{}) error {
+	err := piazza.SuperConverter(resp.Data, out)
 	if err != nil {
-		return NoIdent, err
+		return err
+	}
+
+	return nil
+}
+
+func (c *Client) getObject(endpoint string, out interface{}) error {
+	resp := piazza.HttpGetJson(c.url + endpoint)
+	if resp.IsError() {
+		return resp.ToError()
+	}
+	if resp.StatusCode != http.StatusOK {
+		return resp.ToError()
+	}
+
+	return asObject(resp, out)
+}
+
+func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) error {
+	resp := piazza.HttpPostJson(c.url+endpoint, obj)
+	if resp.IsError() {
+		return resp.ToError()
 	}
 	if resp.StatusCode != http.StatusCreated {
-		return NoIdent, resp.toError()
+		return resp.ToError()
 	}
 
-	resp2 := &WorkflowIDResponse{}
-	err = SuperConvert(resp.Data, resp2)
-	if err != nil {
-		return NoIdent, err
-	}
-
-	return resp2.ID, nil
+	return asObject(resp, out)
 }
 
-func (c *Client) GetAllEventTypes() (*[]EventType, error) {
-	resp, err := c.Get("/eventtypes")
-	if err != nil {
-		return nil, err
+func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) error {
+	resp := piazza.HttpPutJson(c.url+endpoint, obj)
+	if resp.IsError() {
+		return resp.ToError()
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
+		return resp.ToError()
 	}
 
-	var typs []EventType
-	err = SuperConvert(resp.Data, &typs)
-	if err != nil {
-		return nil, err
-	}
-
-	return &typs, nil
+	return asObject(resp, out)
 }
 
-func (c *Client) GetOneEventType(id Ident) (*EventType, error) {
-	resp, err := c.Get("/eventtypes/" + string(id))
-	if err != nil {
-		return nil, err
+func (c *Client) deleteObject(endpoint string) error {
+	resp := piazza.HttpDeleteJson(c.url + endpoint)
+	if resp.IsError() {
+		return resp.ToError()
 	}
 	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
+		return resp.ToError()
 	}
 
-	resp2 := EventType{}
-	err = SuperConvert(resp.Data, &resp2)
-	if err != nil {
-		return nil, err
+	return nil
+}
+
+/***
+func (c *Client) PostEventType(eventType *EventType) (*EventType, error) {
+	resp := piazza.HttpPostJson("/eventtypes", eventType)
+	if resp.IsError() {
+		return nil, resp.ToError()
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return nil, resp.ToError()
 	}
 
-	return &resp2, nil
+	return asEventType(resp)
+}
+
+func (c *Client) GetEventTypes() (*[]EventType, error) {
+	resp := piazza.HttpGetJson("/eventtypes")
+	if resp.IsError() {
+		return nil, resp.ToError()
+	}
+	if resp.StatusCode != http.StatusCreated {
+		return nil, resp.ToError()
+	}
+
+	return asEventTypeArray(resp)
+}
+
+func (c *Client) GetEventType(id Ident) (*EventType, error) {
+	resp := piazza.HttpGetJson("/eventtypes/" + string(id))
+	if resp.IsError() {
+		return nil, resp.ToError()
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, resp.ToError()
+	}
+
+	return asEventType(resp)
+
 }
 
 func (c *Client) DeleteOneEventType(id Ident) error {
-	resp, err := c.Delete("/eventtypes/" + string(id))
-	if err != nil {
-		return err
+	resp := piazza.HttpDeleteJson("/eventtypes/" + string(id))
+	if resp.IsError() {
+		return resp.ToError()
 	}
 	if resp.StatusCode != http.StatusOK {
-		return resp.toError()
+		return resp.ToError()
 	}
 
 	return nil
 }
+***/
 
-//---------------------------------------------------------------------------
-
-func (c *Client) PostOneEvent(foo string, event *Event) (Ident, error) {
-	resp, err := c.Post("/events", event)
-	if err != nil {
-		return NoIdent, err
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return NoIdent, resp.toError()
-	}
-
-	resp2 := &WorkflowIDResponse{}
-	err = SuperConvert(resp.Data, resp2)
-	if err != nil {
-		return NoIdent, err
-	}
-
-	return resp2.ID, nil
+func (c *Client) GetEventType(id Ident) (*EventType, error) {
+	out := &EventType{}
+	err := c.getObject("/eventType/"+id.String(), out)
+	return out, err
 }
 
-func (c *Client) GetAllEvents(eventTypeName string) (*[]Event, error) {
-	//if eventTypeName == "" {
-	//	return nil, errors.New("GetAllEvents: type name required")
-	//}
-
-	url := "/events"
-	if eventTypeName != "" {
-		// url += "/" + eventTypeName
-		url += "?eventTypeId=" + eventTypeName
-	}
-
-	resp, err := c.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	var events []Event
-	err = SuperConvert(resp.Data, &events)
-	if err != nil {
-		return nil, err
-	}
-
-	return &events, nil
+func (c *Client) GetAllEventTypes() (*[]EventType, error) {
+	out := &[]EventType{}
+	err := c.getObject("/eventType", out)
+	return out, err
 }
 
-func (c *Client) GetOneEvent(foo string, id Ident) (*Event, error) {
-	resp, err := c.Get("/events/" + string(id))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	resp2 := Event{}
-	err = SuperConvert(resp.Data, &resp2)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp2, nil
+func (c *Client) PostEventType(eventType *EventType) (*EventType, error) {
+	out := &EventType{}
+	err := c.postObject(eventType, "/eventType", out)
+	return out, err
 }
 
-func (c *Client) DeleteOneEvent(foot string, id Ident) error {
-	resp, err := c.Delete("/events/" + string(id))
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return resp.toError()
-	}
+func (c *Client) PutEventType(eventType *EventType) (*EventType, error) {
+	out := &EventType{}
+	err := c.putObject(eventType, "/eventType", out)
+	return out, err
+}
 
-	return nil
+func (c *Client) DeleteEventType(id Ident) error {
+	err := c.deleteObject("/eventType/" + id.String())
+	return err
 }
 
 //---------------------------------------------------------------------------
 
-func (c *Client) PostOneTrigger(trigger *Trigger) (Ident, error) {
-	resp, err := c.Post("/triggers", trigger)
-	if err != nil {
-		return NoIdent, err
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return NoIdent, resp.toError()
-	}
+func (c *Client) GetEvent(id Ident) (*Event, error) {
+	out := &Event{}
+	err := c.getObject("/event/"+id.String(), out)
+	return out, err
+}
 
-	resp2 := &WorkflowIDResponse{}
-	err = SuperConvert(resp.Data, resp2)
-	if err != nil {
-		return NoIdent, err
-	}
+func (c *Client) GetAllEvents() (*[]Event, error) {
+	out := &[]Event{}
+	err := c.getObject("/event", out)
+	return out, err
+}
 
-	return resp2.ID, nil
+func (c *Client) GetAllEventsByEventType(eventTypeId string) (*[]Event, error) {
+	out := &[]Event{}
+	err := c.getObject("/event?eventTypeId="+eventTypeId, out)
+	return out, err
+}
+
+func (c *Client) PostEvent(event *Event) (*Event, error) {
+	out := &Event{}
+	err := c.postObject(event, "/event", out)
+	return out, err
+}
+
+func (c *Client) PutEvent(event *Event) (*Event, error) {
+	out := &Event{}
+	err := c.putObject(event, "/event", out)
+	return out, err
+}
+
+func (c *Client) DeleteEvent(id Ident) error {
+	err := c.deleteObject("/event/" + id.String())
+	return err
+}
+
+//---------------------------------------------------------------------------
+
+func (c *Client) GetTrigger(id Ident) (*Trigger, error) {
+	out := &Trigger{}
+	err := c.getObject("/trigger/"+id.String(), out)
+	return out, err
 }
 
 func (c *Client) GetAllTriggers() (*[]Trigger, error) {
-	resp, err := c.Get("/triggers")
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	var triggers []Trigger
-	err = SuperConvert(resp.Data, &triggers)
-	if err != nil {
-		return nil, err
-	}
-
-	return &triggers, nil
+	out := &[]Trigger{}
+	err := c.getObject("/trigger", out)
+	return out, err
 }
 
-func (c *Client) GetOneTrigger(id Ident) (*Trigger, error) {
-	resp, err := c.Get("/triggers/" + string(id))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	resp2 := Trigger{}
-	err = SuperConvert(resp.Data, &resp2)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp2, nil
+func (c *Client) PostTrigger(trigger *Trigger) (*Trigger, error) {
+	out := &Trigger{}
+	err := c.postObject(trigger, "/trigger", out)
+	return out, err
 }
 
-func (c *Client) DeleteOneTrigger(id Ident) error {
-	resp, err := c.Delete("/triggers/" + string(id))
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return resp.toError()
-	}
+func (c *Client) PutTrigger(trigger *Trigger) (*Trigger, error) {
+	out := &Trigger{}
+	err := c.putObject(trigger, "/trigger", out)
+	return out, err
+}
 
-	return nil
+func (c *Client) DeleteTrigger(id Ident) error {
+	err := c.deleteObject("/trigger/" + id.String())
+	return err
 }
 
 //---------------------------------------------------------------------------
 
-func (c *Client) PostOneAlert(alert *Alert) (Ident, error) {
-	resp, err := c.Post("/alerts", alert)
-	if err != nil {
-		return NoIdent, err
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return NoIdent, resp.toError()
-	}
-
-	resp2 := &WorkflowIDResponse{}
-	err = SuperConvert(resp.Data, resp2)
-	if err != nil {
-		return NoIdent, err
-	}
-
-	return resp2.ID, nil
+func (c *Client) GetAlert(id Ident) (*Alert, error) {
+	out := &Alert{}
+	err := c.getObject("/alert/"+id.String(), out)
+	return out, err
 }
 
 func (c *Client) GetAllAlerts() (*[]Alert, error) {
-	resp, err := c.Get("/alerts")
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	var alerts []Alert
-	err = SuperConvert(resp.Data, &alerts)
-	if err != nil {
-		return nil, err
-	}
-
-	return &alerts, nil
+	out := &[]Alert{}
+	err := c.getObject("/alert", out)
+	return out, err
 }
 
-func (c *Client) GetOneAlert(id Ident) (*Alert, error) {
-	resp, err := c.Get("/alerts/" + string(id))
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	resp2 := Alert{}
-	err = SuperConvert(resp.Data, &resp2)
-	if err != nil {
-		return nil, err
-	}
-
-	return &resp2, nil
+func (c *Client) PostAlert(alert *Alert) (*Alert, error) {
+	out := &Alert{}
+	err := c.postObject(alert, "/alert", out)
+	return out, err
 }
 
-func (c *Client) DeleteOneAlert(id Ident) error {
-	resp, err := c.Delete("/alerts/" + string(id))
-	if err != nil {
-		return err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return resp.toError()
-	}
+func (c *Client) PutAlert(alert *Alert) (*Alert, error) {
+	out := &Alert{}
+	err := c.putObject(alert, "/alert", out)
+	return out, err
+}
 
-	return nil
+func (c *Client) DeleteAlert(id Ident) error {
+	err := c.deleteObject("/alert/" + id.String())
+	return err
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-func (c *Client) GetFromAdminStats() (*WorkflowAdminStats, error) {
+func (c *Client) GetStats() (*WorkflowAdminStats, error) {
+	out := &WorkflowAdminStats{}
+	err := c.getObject("/admin/stats", out)
+	return out, err
 
-	resp, err := c.Get("/admin/stats")
-	if err != nil {
-		return nil, err
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.toError()
-	}
-
-	stats := &WorkflowAdminStats{}
-	err = SuperConvert(resp.Data, stats)
-	if err != nil {
-		return nil, err
-	}
-
-	return stats, nil
 }

@@ -15,33 +15,17 @@
 package workflow
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"log" 
 	"sort"
 	"time"
 
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	uuidpkg "github.com/pborman/uuid"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
 type WorkflowIDResponse struct {
 	ID Ident `json:"id"`
-}
-
-func SuperConvert(src interface{}, dst interface{}) error {
-	jsn, err := json.Marshal(src)
-	if err != nil {
-		return err
-	}
-
-	err = json.Unmarshal(jsn, dst)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 type Ident string
@@ -159,7 +143,7 @@ type WorkflowAdminSettings struct {
 
 func LoggedError(mssg string, args ...interface{}) error {
 	str := fmt.Sprintf(mssg, args)
-	log.Printf(str)
+	//log.Printf(str)
 	return errors.New(str)
 }
 

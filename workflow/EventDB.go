@@ -16,7 +16,6 @@ package workflow
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
@@ -164,9 +163,9 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
 
-	log.Printf("percolating type %s with data %v", eventType, data)
+	//log.Printf("percolating type %s with data %v", eventType, data)
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
-	log.Printf("percolateResponse: %v", percolateResponse)
+	//log.Printf("percolateResponse: %v", percolateResponse)
 
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
@@ -181,7 +180,7 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 		ids[i] = Ident(v.Id)
 	}
 
-	log.Printf("\t\ttriggerIds: %v", ids)
+	//log.Printf("\t\ttriggerIds: %v", ids)
 
 	return &ids, nil
 }
