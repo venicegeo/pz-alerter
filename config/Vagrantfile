@@ -1,0 +1,18 @@
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+
+  config.vm.define "workflow" do |workflow|
+	  workflow.vm.box = "ubuntu/precise64"
+	  workflow.vm.hostname = "workflow.dev"
+	  workflow.vm.provision :shell, path: "workflow-bootstrap.sh"
+	  workflow.vm.network :private_network, ip:"192.168.50.50"
+	  workflow.vm.network :forwarded_port, host: 8096, guest: 8096
+	  workflow.vm.synced_folder "../", "/vagrant/workflow"
+	  workflow.vm.provider "virtualbox" do |v|
+		v.memory = 1024
+		v.cpus = 1
+		v.name = "pz-workflow"
+      end
+  end
+end
