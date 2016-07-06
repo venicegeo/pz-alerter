@@ -15,7 +15,12 @@
 package workflow
 
 import (
+	"log"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	loggerPkg "github.com/venicegeo/pz-logger/logger"
 	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
@@ -38,7 +43,7 @@ func (suite *ClientTester) TearDownSuite() {
 }
 
 //---------------------------------------------------------------------------
-/***
+
 func (suite *ClientTester) Test11Admin() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -91,7 +96,6 @@ func (suite *ClientTester) Test12AlertResource() {
 
 	alert, err = client.GetAlert(id)
 	assert.Error(err)
-	assert.Nil(alert)
 
 	alerts, err = client.GetAllAlerts()
 	assert.NoError(err)
@@ -130,12 +134,12 @@ func (suite *ClientTester) Test13EventResource() {
 			"mystr": "quick",
 		},
 	}
-	respEvent, err := client.PostEvent(eventTypeName, event)
+	respEvent, err := client.PostEvent(event)
 	eID := respEvent.EventId
 	assert.NoError(err)
 
 	defer func() {
-		err = client.DeleteEvent(eventTypeName, eID)
+		err = client.DeleteEvent(eID)
 		assert.NoError(err)
 	}()
 
@@ -146,7 +150,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	sleep()
 
-	tmp, err := client.GetEvent(eventTypeName, eID)
+	tmp, err := client.GetEvent(eID)
 	assert.NoError(err)
 	assert.EqualValues(eID, tmp.EventId)
 }
@@ -166,9 +170,10 @@ func (suite *ClientTester) Test14EventTypeResource() {
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
 	eventType := &EventType{Name: "typnam", Mapping: mapping}
-	id, err := client.PostOneEventType(eventType)
+	respEventType, err := client.PostEventType(eventType)
+	id := respEventType.EventTypeId
 	defer func() {
-		err = client.DeleteOneEventType(id)
+		err = client.DeleteEventType(id)
 		assert.NoError(err)
 	}()
 
@@ -179,7 +184,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	assert.Len(*eventTypes, 1)
 	assert.EqualValues(id, (*eventTypes)[0].EventTypeId)
 
-	tmp, err := client.GetOneEventType(id)
+	tmp, err := client.GetEventType(id)
 	assert.NoError(err)
 	assert.EqualValues(id, tmp.EventTypeId)
 }
@@ -193,7 +198,6 @@ func (suite *ClientTester) Test15One() {
 	assertNoData(suite.T(), client)
 	defer assertNoData(suite.T(), client)
 
-	var err error
 	var eventTypeName = "EventTypeA"
 
 	var etID Ident
@@ -205,11 +209,12 @@ func (suite *ClientTester) Test15One() {
 
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 
-		etID, err = client.PostOneEventType(eventType)
+		respEventType, err := client.PostEventType(eventType)
+		etID := respEventType.EventTypeId
 		assert.NoError(err)
 
 		defer func() {
-			err := client.DeleteOneEventType(etID)
+			err := client.DeleteEventType(etID)
 			assert.NoError(err)
 		}()
 	}
@@ -243,11 +248,12 @@ func (suite *ClientTester) Test15One() {
 			},
 		}
 
-		tID, err = client.PostOneTrigger(x1)
+		respTrigger, err := client.PostTrigger(x1)
+		tID = respTrigger.TriggerId
 		assert.NoError(err)
 
 		defer func() {
-			err := client.DeleteOneTrigger(tID)
+			err := client.DeleteTrigger(tID)
 			assert.NoError(err)
 		}()
 	}
@@ -265,11 +271,12 @@ func (suite *ClientTester) Test15One() {
 			},
 		}
 
-		e1ID, err = client.PostOneEvent(eventTypeName, e1)
+		respEvent1, err := client.PostEvent(e1)
+		e1ID = respEvent1.EventId
 		assert.NoError(err)
 
 		defer func() {
-			err := client.DeleteOneEvent(eventTypeName, e1ID)
+			err := client.DeleteEvent(e1ID)
 			assert.NoError(err)
 		}()
 	}
@@ -288,11 +295,12 @@ func (suite *ClientTester) Test15One() {
 			},
 		}
 
-		e2ID, err = client.PostOneEvent(eventTypeName, e2)
+		respEvent2, err := client.PostEvent(e2)
+		e2ID = respEvent2.EventId
 		assert.NoError(err)
 
 		defer func() {
-			err := client.DeleteOneEvent(eventTypeName, e2ID)
+			err := client.DeleteEvent(e2ID)
 			assert.NoError(err)
 		}()
 	}
@@ -319,7 +327,7 @@ func (suite *ClientTester) Test15One() {
 		aID = alert0.AlertId
 
 		defer func() {
-			err := client.DeleteOneAlert(aID)
+			err := client.DeleteAlert(aID)
 			assert.NoError(err)
 		}()
 	}
@@ -340,10 +348,11 @@ func (suite *ClientTester) Test16TriggerResource() {
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
 	eventType := &EventType{Name: "typnam", Mapping: mapping}
-	etID, err := client.PostOneEventType(eventType)
+	respEventType, err := client.PostEventType(eventType)
+	etID := respEventType.EventTypeId
 
 	defer func() {
-		err = client.DeleteOneEventType(etID)
+		err = client.DeleteEventType(etID)
 		assert.NoError(err)
 	}()
 
@@ -371,17 +380,18 @@ func (suite *ClientTester) Test16TriggerResource() {
 			},
 		},
 	}
-	t1ID, err := client.PostOneTrigger(&t1)
+	respTrigger, err := client.PostTrigger(&t1)
+	t1ID := respTrigger.TriggerId
 	assert.NoError(err)
 
 	defer func() {
-		err = client.DeleteOneTrigger(t1ID)
+		err = client.DeleteTrigger(t1ID)
 		assert.NoError(err)
 	}()
 
 	sleep()
 
-	tmp, err := client.GetOneTrigger(t1ID)
+	tmp, err := client.GetTrigger(t1ID)
 	assert.NoError(err)
 	assert.EqualValues(t1ID, tmp.TriggerId)
 
@@ -413,11 +423,14 @@ func (suite *ClientTester) Test17Triggering() {
 		eventTypeC := &EventType{Name: "EventType C", Mapping: mapping}
 		eventTypeD := &EventType{Name: "EventType D", Mapping: mapping}
 		eventTypeE := &EventType{Name: "EventType E", Mapping: mapping}
-		etC, err = client.PostOneEventType(eventTypeC)
+		respEventTypeC, err := client.PostEventType(eventTypeC)
+		etC = respEventTypeC.EventTypeId
 		assert.NoError(err)
-		etD, err = client.PostOneEventType(eventTypeD)
+		respEventTypeD, err := client.PostEventType(eventTypeD)
+		etD = respEventTypeD.EventTypeId
 		assert.NoError(err)
-		etE, err = client.PostOneEventType(eventTypeE)
+		respEventTypeE, err := client.PostEventType(eventTypeE)
+		etE = respEventTypeE.EventTypeId
 		assert.NoError(err)
 
 		sleep()
@@ -429,11 +442,11 @@ func (suite *ClientTester) Test17Triggering() {
 	sleep()
 
 	defer func() {
-		client.DeleteOneEventType(etC)
+		client.DeleteEventType(etC)
 		assert.NoError(err)
-		client.DeleteOneEventType(etD)
+		client.DeleteEventType(etD)
 		assert.NoError(err)
-		client.DeleteOneEventType(etE)
+		client.DeleteEventType(etE)
 		assert.NoError(err)
 	}()
 
@@ -465,10 +478,11 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 		}
-		tA, err = client.PostOneTrigger(t1)
+		respTriggerA, err := client.PostTrigger(t1)
+		tA := respTriggerA.TriggerId
 		assert.NoError(err)
 		defer func() {
-			client.DeleteOneTrigger(tA)
+			client.DeleteTrigger(tA)
 			assert.NoError(err)
 		}()
 
@@ -496,10 +510,11 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 		}
-		tB, err = client.PostOneTrigger(t2)
+		respTriggerB, err := client.PostTrigger(t2)
+		tB = respTriggerB.TriggerId
 		assert.NoError(err)
 		defer func() {
-			client.DeleteOneTrigger(tB)
+			client.DeleteTrigger(tB)
 			assert.NoError(err)
 		}()
 
@@ -523,10 +538,11 @@ func (suite *ClientTester) Test17Triggering() {
 				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
-		eF, err = client.PostOneEvent("EventType C", &e1)
+		respEventF, err := client.PostEvent(&e1)
+		eF = respEventF.EventId
 		assert.NoError(err)
 		defer func() {
-			client.DeleteOneEvent("EventType C", eF)
+			client.DeleteEvent(eF)
 			assert.NoError(err)
 		}()
 
@@ -541,10 +557,11 @@ func (suite *ClientTester) Test17Triggering() {
 				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
 			},
 		}
-		eG, err = client.PostOneEvent("EventType D", &e2)
+		respEventG, err := client.PostEvent(&e2)
+		eG = respEventG.EventId
 		assert.NoError(err)
 		defer func() {
-			client.DeleteOneEvent("EventType D", eG)
+			client.DeleteEvent(eG)
 			assert.NoError(err)
 		}()
 
@@ -557,10 +574,11 @@ func (suite *ClientTester) Test17Triggering() {
 				"str": "fox",
 			},
 		}
-		eH, err = client.PostOneEvent("EventType E", &e3)
+		respEventH, err := client.PostEvent(&e3)
+		eH = respEventH.EventId
 		assert.NoError(err)
 		defer func() {
-			client.DeleteOneEvent("EventType E", eH)
+			client.DeleteEvent(eH)
 			assert.NoError(err)
 		}()
 	}
@@ -594,13 +612,12 @@ func (suite *ClientTester) Test17Triggering() {
 		assert.EqualValues(alert1.EventId, eG)
 
 		defer func() {
-			client.DeleteOneAlert(aI)
+			client.DeleteAlert(aI)
 			assert.NoError(err)
 		}()
 		defer func() {
-			client.DeleteOneAlert(aJ)
+			client.DeleteAlert(aJ)
 			assert.NoError(err)
 		}()
 	}
 }
-***/

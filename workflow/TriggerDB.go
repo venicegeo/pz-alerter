@@ -17,7 +17,6 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -91,14 +90,14 @@ func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerD
 func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
-	log.Printf("Query: %v", ifaceObj)
+	//log.Printf("Query: %v", ifaceObj)
 	body, err := json.Marshal(ifaceObj)
 	if err != nil {
 		return NoIdent, err
 	}
 
 	json := string(body)
-	log.Printf("Current json: %s", json)
+	//log.Printf("Current json: %s", json)
 	// Remove trailing }
 	json = json[:len(json)-1]
 	json += ",\"type\":["
@@ -110,7 +109,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	// Add back trailing } and ] to close array
 	json += "]}"
 
-	log.Printf("Posting percolation query: %s", body)
+	//log.Printf("Posting percolation query: %s", body)
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
 	if err != nil {
 		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
@@ -122,7 +121,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created")
 	}
 
-	log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
+	//log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
 	//log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationId = Ident(indexResult.Id)
 

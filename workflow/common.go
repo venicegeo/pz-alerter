@@ -17,7 +17,6 @@ package workflow
 import (
 	"errors"
 	"fmt"
-	"log"
 	"sort"
 	"time"
 
@@ -144,7 +143,7 @@ type WorkflowAdminSettings struct {
 
 func LoggedError(mssg string, args ...interface{}) error {
 	str := fmt.Sprintf(mssg, args)
-	log.Printf(str)
+	//log.Printf(str)
 	return errors.New(str)
 }
 
