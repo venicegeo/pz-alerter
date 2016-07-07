@@ -22,16 +22,16 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	loggerPkg "github.com/venicegeo/pz-logger/logger"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
+	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 type ClientTester struct {
 	suite.Suite
-	logger     loggerPkg.IClient
-	uuidgenner uuidgenPkg.IUuidGenService
-	client     *Client
-	sys        *piazza.SystemConfig
+	logger  pzlogger.IClient
+	uuidgen pzuuidgen.IClient
+	client  *Client
+	sys     *piazza.SystemConfig
 }
 
 func (suite *ClientTester) SetupSuite() {

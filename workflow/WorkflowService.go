@@ -56,7 +56,7 @@ type WorkflowService struct {
 	stats LockedAdminStats
 
 	logger  pzlogger.IClient
-	uuidgen pzuuidgen.IUuidGenService
+	uuidgen pzuuidgen.IClient
 
 	sys *piazza.SystemConfig
 }
@@ -66,7 +66,7 @@ type WorkflowService struct {
 func (service *WorkflowService) Init(
 	sys *piazza.SystemConfig,
 	logger pzlogger.IClient,
-	uuidgen pzuuidgen.IUuidGenService,
+	uuidgen pzuuidgen.IClient,
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
 	triggersIndex elasticsearch.IIndex,
@@ -105,23 +105,12 @@ func (service *WorkflowService) Init(
 }
 
 func (s *WorkflowService) newIdent() Ident {
-	var debugIds = false
-
-	var uuid string
-	var err error
-
-	if debugIds {
-		uuid, err = s.uuidgen.GetDebugUuid("W")
-		if err != nil {
-			panic("uuidgen failed")
-		}
-	} else {
-		uuid, err = s.uuidgen.GetUuid()
-		if err != nil {
-			panic("uuidgen failed")
-		}
-		// log.Printf("uuid: %s", uuid)
+	uuid, err := s.uuidgen.GetUuid()
+	if err != nil {
+		panic("uuidgen failed")
 	}
+	//log.Printf("uuid: %s", uuid)
+
 	return Ident(uuid)
 }
 
@@ -402,9 +391,11 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 		return statusBadRequest(err)
 	}
 
-	eventType := c.Param("eventType")
+	eventTypeId := c.Query("eventTypeId")
 
-	m, count, err := service.eventDB.GetAll(eventType, format)
+	log.Printf("FFF %s", eventTypeId)
+
+	m, count, err := service.eventDB.GetAll(eventTypeId, format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -456,11 +447,6 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 	}
 
 	{
-		// log.Printf("event:\n")
-		// log.Printf("\tID: %v\n", event.ID)
-		// log.Printf("\tType: %v\n", eventType)
-		// log.Printf("\tData: %v\n", event.Data)
-
 		// Find triggers associated with event
 		//log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
 		triggerIDs, err := service.eventDB.PercolateEventData(eventType.Name, event.Data, event.EventId)
