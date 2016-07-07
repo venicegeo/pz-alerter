@@ -259,7 +259,7 @@ func sleep() {
 }
 
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
+
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -348,8 +348,8 @@ func (suite *ServerTester) Test02Event() {
 
 	sleep()
 
-	//log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err = client.GetAllEventsByEventType(eventTypeName)
+	//log.Printf("Getting list of events (type=%s):", eventTypeId)
+	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	//printJSON("Events", events)
@@ -373,7 +373,7 @@ func (suite *ServerTester) Test02Event() {
 	sleep()
 
 	//log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err = client.GetAllEventsByEventType(eventTypeName)
+	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 0)
 	//printJSON("Events", events)
@@ -609,8 +609,8 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventID
 	}
 
-	checkEvents := func(eventTypeName string, expected int) {
-		x, err := client.GetAllEventsByEventType(eventTypeName)
+	checkEvents := func(eventTypeId Ident, expected int) {
+		x, err := client.GetAllEventsByEventType(eventTypeId)
 		assert.NoError(err)
 		assert.Len(*x, expected)
 	}
@@ -626,19 +626,17 @@ func (suite *ServerTester) Test05EventMapping() {
 
 	{
 		// no events yet!
-		x, err := client.GetAllEventsByEventType(eventTypeName1)
+		x, err := client.GetAllEvents()
 		assert.NoError(err)
 		assert.Len(*x, 0)
 
-		x, err = client.GetAllEventsByEventType(eventTypeName2)
+		x, err = client.GetAllEventsByEventType(et1Id)
 		assert.NoError(err)
 		assert.Len(*x, 0)
-	}
 
-	{
-		x, err := client.GetAllEventTypes()
+		x, err = client.GetAllEventsByEventType(et2Id)
 		assert.NoError(err)
-		assert.Len(*x, 2)
+		assert.Len(*x, 0)
 	}
 
 	{
@@ -648,13 +646,13 @@ func (suite *ServerTester) Test05EventMapping() {
 	}
 
 	e1Id := createEvent(et1Id, eventTypeName1, 17)
-	checkEvents(eventTypeName1, 1)
+	checkEvents(et1Id, 1)
 
 	e2Id := createEvent(et1Id, eventTypeName1, 18)
-	checkEvents(eventTypeName1, 2)
+	checkEvents(et1Id, 2)
 
 	e3Id := createEvent(et2Id, eventTypeName2, 19)
-	checkEvents(eventTypeName2, 1)
+	checkEvents(et2Id, 1)
 
 	err = client.DeleteEvent(e1Id)
 	assert.NoError(err)
