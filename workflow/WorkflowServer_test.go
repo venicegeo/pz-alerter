@@ -259,7 +259,7 @@ func sleep() {
 }
 
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
+
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -348,8 +348,8 @@ func (suite *ServerTester) Test02Event() {
 
 	sleep()
 
-	//log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err = client.GetAllEventsByEventType(eventTypeName)
+	//log.Printf("Getting list of events (type=%s):", eventTypeId)
+	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	//printJSON("Events", events)
@@ -373,7 +373,7 @@ func (suite *ServerTester) Test02Event() {
 	sleep()
 
 	//log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err = client.GetAllEventsByEventType(eventTypeName)
+	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 0)
 	//printJSON("Events", events)
@@ -556,7 +556,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	var eventTypeName1 = "Type1"
 	var eventTypeName2 = "Type2"
 
-	eventtypeF := func(typ string) Ident {
+	createEventType := func(typ string) Ident {
 		//log.Printf("Creating event type: %s\n", typ)
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
@@ -582,7 +582,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventTypeID
 	}
 
-	eventF := func(eventTypeID Ident, eventTypeName string, value int) Ident {
+	createEvent := func(eventTypeID Ident, eventTypeName string, value int) Ident {
 		//log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
 			EventTypeId: eventTypeID,
@@ -609,14 +609,14 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventID
 	}
 
-	dumpEventsF := func(eventTypeName string, expected int) {
-		x, err := client.GetAllEventsByEventType(eventTypeName)
+	checkEvents := func(eventTypeId Ident, expected int) {
+		x, err := client.GetAllEventsByEventType(eventTypeId)
 		assert.NoError(err)
 		assert.Len(*x, expected)
 	}
 
-	et1Id := eventtypeF(eventTypeName1)
-	et2Id := eventtypeF(eventTypeName2)
+	et1Id := createEventType(eventTypeName1)
+	et2Id := createEventType(eventTypeName2)
 
 	{
 		x, err := client.GetAllEventTypes()
@@ -626,20 +626,17 @@ func (suite *ServerTester) Test05EventMapping() {
 
 	{
 		// no events yet!
-		x, err := client.GetAllEventsByEventType(eventTypeName1)
-		// TODO: this is a bug, mocked and real should both return same answer
+		x, err := client.GetAllEvents()
 		assert.NoError(err)
 		assert.Len(*x, 0)
 
-		x, err = client.GetAllEventsByEventType(eventTypeName2)
+		x, err = client.GetAllEventsByEventType(et1Id)
 		assert.NoError(err)
 		assert.Len(*x, 0)
-	}
 
-	{
-		x, err := client.GetAllEventTypes()
+		x, err = client.GetAllEventsByEventType(et2Id)
 		assert.NoError(err)
-		assert.Len(*x, 2)
+		assert.Len(*x, 0)
 	}
 
 	{
@@ -648,14 +645,14 @@ func (suite *ServerTester) Test05EventMapping() {
 		assert.EqualValues(string(et1Id), string((*x).EventTypeId))
 	}
 
-	e1Id := eventF(et1Id, eventTypeName1, 17)
-	dumpEventsF(eventTypeName1, 1)
+	e1Id := createEvent(et1Id, eventTypeName1, 17)
+	checkEvents(et1Id, 1)
 
-	e2Id := eventF(et1Id, eventTypeName1, 18)
-	dumpEventsF(eventTypeName1, 2)
+	e2Id := createEvent(et1Id, eventTypeName1, 18)
+	checkEvents(et1Id, 2)
 
-	e3Id := eventF(et2Id, eventTypeName2, 19)
-	dumpEventsF(eventTypeName2, 1)
+	e3Id := createEvent(et2Id, eventTypeName2, 19)
+	checkEvents(et2Id, 1)
 
 	err = client.DeleteEvent(e1Id)
 	assert.NoError(err)

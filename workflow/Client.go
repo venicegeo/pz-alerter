@@ -225,9 +225,9 @@ func (c *Client) GetAllEvents() (*[]Event, error) {
 	return out, err
 }
 
-func (c *Client) GetAllEventsByEventType(eventTypeId string) (*[]Event, error) {
+func (c *Client) GetAllEventsByEventType(eventTypeId Ident) (*[]Event, error) {
 	out := &[]Event{}
-	err := c.getObject("/event?eventTypeId="+eventTypeId, out)
+	err := c.getObject("/event?eventTypeId="+eventTypeId.String(), out)
 	return out, err
 }
 

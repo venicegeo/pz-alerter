@@ -238,6 +238,8 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 	return statusOK(t)
 }
 
+//------------------------------------------
+
 func (service *WorkflowService) GetEvents(c *gin.Context) *piazza.JsonResponse {
 	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
 	if err != nil {
@@ -276,214 +278,7 @@ func (service *WorkflowService) GetEvents(c *gin.Context) *piazza.JsonResponse {
 	return resp
 }
 
-func (service *WorkflowService) GetEventByID(c *gin.Context) *piazza.JsonResponse {
-	// eventType := c.Param("eventType")
-	s := c.Param("id")
-	id := Ident(s)
-	// event, err := server.eventDB.GetOne(eventType, id)
-	mapping, err := service.lookupEventTypeNameByEventID(id)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	//log.Printf("The Mapping is:  %s\n", mapping)
-
-	event, err := service.eventDB.GetOne(mapping, id)
-	if err != nil {
-		return statusBadRequest(err)
-
-	}
-	if event == nil {
-		return statusNotFound(id)
-	}
-
-	return statusOK(event)
-}
-
-func (service *WorkflowService) DeleteAlertByID(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-	ok, err := service.alertDB.DeleteByID(id)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-	if !ok {
-		return statusNotFound(id)
-	}
-
-	return statusOK(nil)
-}
-
-func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
-	var alert Alert
-	err := c.BindJSON(&alert)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	alert.AlertId = service.newIdent()
-
-	_, err = service.alertDB.PostData(&alert, alert.AlertId)
-	if err != nil {
-		return statusInternalServerError(err)
-	}
-
-	return statusCreated(alert)
-}
-
-func (service *WorkflowService) GetAlertByID(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-
-	alert, err := service.alertDB.GetOne(id)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-	if alert == nil {
-		return statusNotFound(id)
-	}
-
-	return statusOK(alert)
-}
-
-func (service *WorkflowService) GetAlerts(c *gin.Context) *piazza.JsonResponse {
-	// TODO: conditionID := c.Query("condition")
-	//log.Printf("%#v", c.Request)
-	triggerId := c.Query("triggerId")
-
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-	var all *[]Alert
-	var count int64
-
-	if isUuid(triggerId) {
-		//log.Printf("Getting alerts with trigger %s", triggerId)
-		all, count, err = service.alertDB.GetAllByTrigger(format, triggerId)
-		if err != nil {
-			return statusBadRequest(err)
-		}
-	} else if triggerId == "" {
-		//log.Printf("Getting all alerts %#v", service)
-		all, count, err = service.alertDB.GetAll(format)
-		if err != nil {
-			return statusBadRequest(err)
-		}
-	} else { // Malformed triggerId
-		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
-	}
-
-	//log.Printf("Making bar")
-	bar := make([]interface{}, len(*all))
-
-	//log.Printf("Adding values to bar")
-	for i, e := range *all {
-		bar[i] = e
-	}
-
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	//log.Printf("Creating response")
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
-
-	resp := statusOK(bar)
-	resp.Pagination = foo
-	return resp
-}
-
-func (service *WorkflowService) DeleteTriggerByID(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-	ok, err := service.triggerDB.DeleteTrigger(Ident(id))
-	if err != nil {
-		return statusBadRequest(err)
-	}
-	if !ok {
-		return statusNotFound(id)
-	}
-
-	return statusOK(nil)
-}
-
-func (service *WorkflowService) GetTriggerByID(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-
-	trigger, err := service.triggerDB.GetOne(Ident(id))
-	if err != nil {
-		return statusBadRequest(err)
-	}
-	if trigger == nil {
-		return statusNotFound(id)
-	}
-	return statusOK(trigger)
-}
-
-func (service *WorkflowService) GetTriggers(c *gin.Context) *piazza.JsonResponse {
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
-	if err != nil {
-		return statusBadRequest(err)
-
-	}
-	m, count, err := service.triggerDB.GetAll(format)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	bar := make([]interface{}, len(*m))
-
-	for i, e := range *m {
-		bar[i] = e
-	}
-
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
-
-	resp := statusOK(bar)
-	resp.Pagination = foo
-	return resp
-}
-
-func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse {
-	trigger := &Trigger{}
-	err := c.BindJSON(trigger)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	trigger.TriggerId = service.newIdent()
-
-	_, err = service.triggerDB.PostTrigger(trigger, trigger.TriggerId)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	return statusCreated(trigger)
-}
-
-func (service *WorkflowService) DeleteEventTypeByID(c *gin.Context) *piazza.JsonResponse {
+func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResponse {
 	id := Ident(c.Param("id"))
 	ok, err := service.eventTypeDB.DeleteByID(Ident(id))
 	if err != nil {
@@ -496,7 +291,7 @@ func (service *WorkflowService) DeleteEventTypeByID(c *gin.Context) *piazza.Json
 	return statusOK(nil)
 }
 
-func (service *WorkflowService) GetEventTypeByID(c *gin.Context) *piazza.JsonResponse {
+func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonResponse {
 	id := Ident(c.Param("id"))
 
 	event, err := service.eventTypeDB.GetOne(Ident(id))
@@ -509,7 +304,7 @@ func (service *WorkflowService) GetEventTypeByID(c *gin.Context) *piazza.JsonRes
 	return statusOK(event)
 }
 
-func (service *WorkflowService) GetEventTypes(c *gin.Context) *piazza.JsonResponse {
+func (service *WorkflowService) GetAllEventTypes(c *gin.Context) *piazza.JsonResponse {
 	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
 	if err != nil {
 		return statusBadRequest(err)
@@ -575,10 +370,13 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 	return statusCreated(eventType)
 }
 
-func (service *WorkflowService) DeleteEventByID(c *gin.Context) *piazza.JsonResponse {
+//------------------------------------------
+
+func (service *WorkflowService) GetEvent(c *gin.Context) *piazza.JsonResponse {
+	// eventType := c.Param("eventType")
 	s := c.Param("id")
 	id := Ident(s)
-	// eventType := c.Param("eventType")
+	// event, err := server.eventDB.GetOne(eventType, id)
 	mapping, err := service.lookupEventTypeNameByEventID(id)
 	if err != nil {
 		return statusBadRequest(err)
@@ -586,18 +384,19 @@ func (service *WorkflowService) DeleteEventByID(c *gin.Context) *piazza.JsonResp
 
 	//log.Printf("The Mapping is:  %s\n", mapping)
 
-	ok, err := service.eventDB.DeleteByID(mapping, Ident(id))
+	event, err := service.eventDB.GetOne(mapping, id)
 	if err != nil {
 		return statusBadRequest(err)
+
 	}
-	if !ok {
+	if event == nil {
 		return statusNotFound(id)
 	}
 
-	return statusOK(nil)
+	return statusOK(event)
 }
 
-func (service *WorkflowService) GetEventsByEventType(c *gin.Context) *piazza.JsonResponse {
+func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonResponse {
 	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
 	if err != nil {
 		return statusBadRequest(err)
@@ -783,4 +582,213 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 	}
 
 	return statusCreated(event)
+}
+
+func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse {
+	s := c.Param("id")
+	id := Ident(s)
+	// eventType := c.Param("eventType")
+	mapping, err := service.lookupEventTypeNameByEventID(id)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
+	//log.Printf("The Mapping is:  %s\n", mapping)
+
+	ok, err := service.eventDB.DeleteByID(mapping, Ident(id))
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	if !ok {
+		return statusNotFound(id)
+	}
+
+	return statusOK(nil)
+}
+
+//------------------------------------------
+
+func (service *WorkflowService) GetTrigger(c *gin.Context) *piazza.JsonResponse {
+	id := Ident(c.Param("id"))
+
+	trigger, err := service.triggerDB.GetOne(Ident(id))
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	if trigger == nil {
+		return statusNotFound(id)
+	}
+	return statusOK(trigger)
+}
+
+func (service *WorkflowService) GetAllTriggers(c *gin.Context) *piazza.JsonResponse {
+	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	if err != nil {
+		return statusBadRequest(err)
+
+	}
+	m, count, err := service.triggerDB.GetAll(format)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
+	bar := make([]interface{}, len(*m))
+
+	for i, e := range *m {
+		bar[i] = e
+	}
+
+	var order string
+
+	if format.Order {
+		order = "desc"
+	} else {
+		order = "asc"
+	}
+
+	foo := &piazza.JsonPaginationResponse{
+		Page:    format.From,
+		PerPage: format.Size,
+		Count:   int(count),
+		SortBy:  format.Key,
+		Order:   order,
+	}
+
+	resp := statusOK(bar)
+	resp.Pagination = foo
+	return resp
+}
+
+func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse {
+	trigger := &Trigger{}
+	err := c.BindJSON(trigger)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
+	trigger.TriggerId = service.newIdent()
+
+	_, err = service.triggerDB.PostTrigger(trigger, trigger.TriggerId)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
+	return statusCreated(trigger)
+}
+
+func (service *WorkflowService) DeleteTrigger(c *gin.Context) *piazza.JsonResponse {
+	id := Ident(c.Param("id"))
+	ok, err := service.triggerDB.DeleteTrigger(Ident(id))
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	if !ok {
+		return statusNotFound(id)
+	}
+
+	return statusOK(nil)
+}
+
+//------------------------------------------
+
+func (service *WorkflowService) GetAlert(c *gin.Context) *piazza.JsonResponse {
+	id := Ident(c.Param("id"))
+
+	alert, err := service.alertDB.GetOne(id)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	if alert == nil {
+		return statusNotFound(id)
+	}
+
+	return statusOK(alert)
+}
+
+func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonResponse {
+	// TODO: conditionID := c.Query("condition")
+	//log.Printf("%#v", c.Request)
+	triggerId := c.Query("triggerId")
+
+	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	var all *[]Alert
+	var count int64
+
+	if isUuid(triggerId) {
+		//log.Printf("Getting alerts with trigger %s", triggerId)
+		all, count, err = service.alertDB.GetAllByTrigger(format, triggerId)
+		if err != nil {
+			return statusBadRequest(err)
+		}
+	} else if triggerId == "" {
+		//log.Printf("Getting all alerts %#v", service)
+		all, count, err = service.alertDB.GetAll(format)
+		if err != nil {
+			return statusBadRequest(err)
+		}
+	} else { // Malformed triggerId
+		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
+	}
+
+	//log.Printf("Making bar")
+	bar := make([]interface{}, len(*all))
+
+	//log.Printf("Adding values to bar")
+	for i, e := range *all {
+		bar[i] = e
+	}
+
+	var order string
+
+	if format.Order {
+		order = "desc"
+	} else {
+		order = "asc"
+	}
+
+	//log.Printf("Creating response")
+	foo := &piazza.JsonPaginationResponse{
+		Page:    format.From,
+		PerPage: format.Size,
+		Count:   int(count),
+		SortBy:  format.Key,
+		Order:   order,
+	}
+
+	resp := statusOK(bar)
+	resp.Pagination = foo
+	return resp
+}
+
+func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
+	var alert Alert
+	err := c.BindJSON(&alert)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
+	alert.AlertId = service.newIdent()
+
+	_, err = service.alertDB.PostData(&alert, alert.AlertId)
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+
+	return statusCreated(alert)
+}
+
+func (service *WorkflowService) DeleteAlert(c *gin.Context) *piazza.JsonResponse {
+	id := Ident(c.Param("id"))
+	ok, err := service.alertDB.DeleteByID(id)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	if !ok {
+		return statusNotFound(id)
+	}
+
+	return statusOK(nil)
 }

@@ -39,31 +39,31 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 	server.Routes = []piazza.RouteData{
 		{"GET", "/", server.handleGetRoot},
 
-		{"GET", "/eventType", server.handleGetEventTypes},
-		{"GET", "/eventType/:id", server.handleGetEventTypeByID},
+		{"GET", "/eventType", server.handleGetAllEventTypes},
+		{"GET", "/eventType/:id", server.handleGetEventType},
 		{"POST", "/eventType", server.handlePostEventType},
 		// TODO: PUT
-		{"DELETE", "/eventType/:id", server.handleDeleteEventTypeByID},
+		{"DELETE", "/eventType/:id", server.handleDeleteEventType},
 
-		{"GET", "/event", server.handleGetEvents},
-		{"GET", "/event/:id", server.handleGetEventByID},
+		{"GET", "/event/:id", server.handleGetEvent},
+		{"GET", "/event", server.handleGetAllEvents},
 		{"POST", "/event", server.handlePostEvent},
 		// TODO: PUT
-		{"DELETE", "/event/:id", server.handleDeleteEventByID},
+		{"DELETE", "/event/:id", server.handleDeleteEvent},
 
-		{"GET", "/trigger", server.handleGetTriggers},
-		{"GET", "/trigger/:id", server.handleGetTriggerByID},
+		{"GET", "/trigger/:id", server.handleGetTrigger},
+		{"GET", "/trigger", server.handleGetAllTriggers},
 		{"POST", "/trigger", server.handlePostTrigger},
 		// TODO: PUT
-		{"DELETE", "/trigger/:id", server.handleDeleteTriggerByID},
+		{"DELETE", "/trigger/:id", server.handleDeleteTrigger},
 
-		{"GET", "/alert", server.handleGetAlerts},
-		{"GET", "/alert/:id", server.handleGetAlertByID},
+		{"GET", "/alert/:id", server.handleGetAlert},
+		{"GET", "/alert", server.handleGetAllAlerts},
 		{"POST", "/alert", server.handlePostAlert},
 		// TODO: PUT
-		{"DELETE", "/alert/:id", server.handleDeleteAlertByID},
+		{"DELETE", "/alert/:id", server.handleDeleteAlert},
 
-		{"GET", "/admin/stats", server.handleGetAdminStats},
+		{"GET", "/admin/stats", server.handleGetStats},
 	}
 
 	return nil
@@ -71,73 +71,29 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) handleGetAdminStats(c *gin.Context) {
+func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
+	type T struct {
+		Message string
+	}
+	message := "Hi! I'm pz-workflow."
+	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handleGetStats(c *gin.Context) {
 	resp := server.service.GetAdminStats()
 	c.JSON(resp.StatusCode, resp)
 }
 
-func (server *WorkflowServer) handleGetEvents(c *gin.Context) {
-	resp := server.service.GetEvents(c)
+//---------------------------------------------------------------------------
+
+func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
+	resp := server.service.GetEventType(c)
 	c.JSON(resp.StatusCode, resp)
 }
 
-func (server *WorkflowServer) handleGetEventByID(c *gin.Context) {
-	resp := server.service.GetEventByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleDeleteAlertByID(c *gin.Context) {
-	resp := server.service.DeleteAlertByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
-	resp := server.service.PostAlert(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleGetAlertByID(c *gin.Context) {
-	resp := server.service.GetAlertByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleGetAlerts(c *gin.Context) {
-	resp := server.service.GetAlerts(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleDeleteTriggerByID(c *gin.Context) {
-	resp := server.service.DeleteTriggerByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleGetTriggerByID(c *gin.Context) {
-	resp := server.service.GetTriggerByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleGetTriggers(c *gin.Context) {
-	resp := server.service.GetTriggers(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
-	resp := server.service.PostTrigger(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleDeleteEventTypeByID(c *gin.Context) {
-	resp := server.service.DeleteEventTypeByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleGetEventTypeByID(c *gin.Context) {
-	resp := server.service.GetEventTypeByID(c)
-	c.JSON(resp.StatusCode, resp)
-}
-
-func (server *WorkflowServer) handleGetEventTypes(c *gin.Context) {
-	resp := server.service.GetEventTypes(c)
+func (server *WorkflowServer) handleGetAllEventTypes(c *gin.Context) {
+	resp := server.service.GetAllEventTypes(c)
 	c.JSON(resp.StatusCode, resp)
 }
 
@@ -146,26 +102,78 @@ func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
 	c.JSON(resp.StatusCode, resp)
 }
 
-func (server *WorkflowServer) handleDeleteEventByID(c *gin.Context) {
-	resp := server.service.DeleteEventByID(c)
+func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
+	resp := server.service.DeleteEventType(c)
 	c.JSON(resp.StatusCode, resp)
 }
 
-func (server *WorkflowServer) handleGetEventsByEventType(c *gin.Context) {
-	resp := server.service.GetEventsByEventType(c)
+//---------------------------------------------------------------------------
+
+func (server *WorkflowServer) handleGetEvent(c *gin.Context) {
+	resp := server.service.GetEvent(c)
 	c.JSON(resp.StatusCode, resp)
 }
+
+func (server *WorkflowServer) handleGetAllEvents(c *gin.Context) {
+	resp := server.service.GetAllEvents(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+//func (server *WorkflowServer) handleGetEventsByEventType(c *gin.Context) {
+//	resp := server.service.GetEventsByEventType(c)
+//	c.JSON(resp.StatusCode, resp)
+//}
 
 func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 	resp := server.service.PostEvent(c)
 	c.JSON(resp.StatusCode, resp)
 }
 
-func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
-	type T struct {
-		Message string
-	}
-	message := "Hi! I'm pz-workflow."
-	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
+func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
+	resp := server.service.DeleteEvent(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+//---------------------------------------------------------------------------
+
+func (server *WorkflowServer) handleGetTrigger(c *gin.Context) {
+	resp := server.service.GetTrigger(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handleGetAllTriggers(c *gin.Context) {
+	resp := server.service.GetAllTriggers(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
+	resp := server.service.PostTrigger(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
+	resp := server.service.DeleteTrigger(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+//---------------------------------------------------------------------------
+
+func (server *WorkflowServer) handleGetAlert(c *gin.Context) {
+	resp := server.service.GetAlert(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handleGetAllAlerts(c *gin.Context) {
+	resp := server.service.GetAllAlerts(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
+	resp := server.service.PostAlert(c)
+	c.JSON(resp.StatusCode, resp)
+}
+
+func (server *WorkflowServer) handleDeleteAlert(c *gin.Context) {
+	resp := server.service.DeleteAlert(c)
 	c.JSON(resp.StatusCode, resp)
 }
