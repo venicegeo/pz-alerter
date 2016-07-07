@@ -54,7 +54,7 @@ const (
 func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
 
 	// Create with no settings specified
-	rdb, err := NewResourceDB(service, esi, "")
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}

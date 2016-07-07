@@ -79,7 +79,7 @@ const (
 
 func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	rdb, err := NewResourceDB(service, esi, "")
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
