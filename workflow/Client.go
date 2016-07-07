@@ -131,57 +131,6 @@ func (c *Client) deleteObject(endpoint string) error {
 	return nil
 }
 
-/***
-func (c *Client) PostEventType(eventType *EventType) (*EventType, error) {
-	resp := piazza.HttpPostJson("/eventtypes", eventType)
-	if resp.IsError() {
-		return nil, resp.ToError()
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return nil, resp.ToError()
-	}
-
-	return asEventType(resp)
-}
-
-func (c *Client) GetEventTypes() (*[]EventType, error) {
-	resp := piazza.HttpGetJson("/eventtypes")
-	if resp.IsError() {
-		return nil, resp.ToError()
-	}
-	if resp.StatusCode != http.StatusCreated {
-		return nil, resp.ToError()
-	}
-
-	return asEventTypeArray(resp)
-}
-
-func (c *Client) GetEventType(id Ident) (*EventType, error) {
-	resp := piazza.HttpGetJson("/eventtypes/" + string(id))
-	if resp.IsError() {
-		return nil, resp.ToError()
-	}
-	if resp.StatusCode != http.StatusOK {
-		return nil, resp.ToError()
-	}
-
-	return asEventType(resp)
-
-}
-
-func (c *Client) DeleteOneEventType(id Ident) error {
-	resp := piazza.HttpDeleteJson("/eventtypes/" + string(id))
-	if resp.IsError() {
-		return resp.ToError()
-	}
-	if resp.StatusCode != http.StatusOK {
-		return resp.ToError()
-	}
-
-	return nil
-}
-***/
-
 func (c *Client) GetEventType(id Ident) (*EventType, error) {
 	out := &EventType{}
 	err := c.getObject("/eventType/"+id.String(), out)

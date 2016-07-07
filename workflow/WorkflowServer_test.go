@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	loggerPkg "github.com/venicegeo/pz-logger/logger"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
+	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 const MOCKING = true
@@ -80,17 +80,17 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewMockClient(sys)
+	logger, err := pzlogger.NewMockClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var uuidgen uuidgenPkg.IUuidGenService
+	var uuidgen pzuuidgen.IClient
 
 	if MOCKING {
-		uuidgen, err = uuidgenPkg.NewMockUuidGenService(sys)
+		uuidgen, err = pzuuidgen.NewMockClient(sys)
 	} else {
-		uuidgen, err = uuidgenPkg.NewPzUuidGenService(sys)
+		uuidgen, err = pzuuidgen.NewClient(sys)
 	}
 
 	if err != nil {
@@ -331,7 +331,9 @@ func (suite *ServerTester) Test02Event() {
 	eventTypeName := makeTestEventTypeName()
 	eventType := makeTestEventType(eventTypeName)
 	//printJSON("event type", eventType)
+	//log.Printf("CCC %#v", eventType)
 	respEventType, err := client.PostEventType(eventType)
+	//log.Printf("BBB %#v", respEventType)
 	eventTypeID := respEventType.EventTypeId
 	assert.NoError(err)
 	//printJSON("event type id", eventTypeID)
@@ -340,15 +342,15 @@ func (suite *ServerTester) Test02Event() {
 
 	//log.Printf("Creating new event:")
 	event := makeTestEvent(eventTypeID)
-	//printJSON("event", event)
 	respEvent, err := client.PostEvent(event)
+	//log.Printf("CCC %#v", event)
 	id := respEvent.EventId
 	assert.NoError(err)
 	//printJSON("event id", id)
 
 	sleep()
 
-	//log.Printf("Getting list of events (type=%s):", eventTypeId)
+	//log.Printf("Getting list of events (type=%s):", eventTypeID)
 	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 1)
