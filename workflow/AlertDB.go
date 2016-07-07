@@ -73,7 +73,7 @@ const (
 
 func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
 
-	rdb, err := NewResourceDB(service, esi, "")
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
