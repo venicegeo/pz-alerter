@@ -5,7 +5,8 @@ source 0-setup.sh
 
 cat > tmp <<foo
 {
-    "name": "USDataEvent",
+    "eventTypeId": "1234",
+    "name": "USDadtaEvent",
     "mapping": {
         "filename": "string",
         "code":     "string",
@@ -17,10 +18,10 @@ foo
 json=$(cat tmp)
 
 echo
-echo POST /v2/eventType
+echo POST /eventType
 echo "$json"
 
-ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/v2/eventType)
+ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/eventType)
 
 echo RETURN:
 echo "$ret"
