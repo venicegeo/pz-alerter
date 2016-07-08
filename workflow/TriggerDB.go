@@ -138,7 +138,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *TriggerDB) GetAll(format elasticsearch.QueryFormat) (*[]Trigger, int64, error) {
+func (db *TriggerDB) GetAll(format *piazza.JsonPagination) (*[]Trigger, int64, error) {
 	var triggers []Trigger
 	var count = int64(-1)
 

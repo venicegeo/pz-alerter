@@ -61,6 +61,13 @@ type WorkflowService struct {
 	sys *piazza.SystemConfig
 }
 
+var defaultPagination = &piazza.JsonPagination{
+	PerPage: 10,
+	Page:    0,
+	SortBy:  "id",
+	Order:   piazza.PaginationOrderAscending,
+}
+
 //------------------------------------------
 
 func (service *WorkflowService) Init(
@@ -230,7 +237,9 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 //------------------------------------------
 
 func (service *WorkflowService) GetEvents(c *gin.Context) *piazza.JsonResponse {
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	params := piazza.NewQueryParams(c.Request)
+
+	format, err := piazza.NewJsonPagination(params, defaultPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -246,24 +255,10 @@ func (service *WorkflowService) GetEvents(c *gin.Context) *piazza.JsonResponse {
 		bar[i] = e
 	}
 
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
+	format.Count = int(count)
 
 	resp := statusOK(bar)
-	resp.Pagination = foo
+	resp.Pagination = format
 	return resp
 }
 
@@ -294,7 +289,9 @@ func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonRespons
 }
 
 func (service *WorkflowService) GetAllEventTypes(c *gin.Context) *piazza.JsonResponse {
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	params := piazza.NewQueryParams(c.Request)
+
+	format, err := piazza.NewJsonPagination(params, defaultPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -310,24 +307,10 @@ func (service *WorkflowService) GetAllEventTypes(c *gin.Context) *piazza.JsonRes
 		bar[i] = e
 	}
 
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
+	format.Count = int(count)
 
 	resp := statusOK(bar)
-	resp.Pagination = foo
+	resp.Pagination = format
 	return resp
 }
 
@@ -386,7 +369,9 @@ func (service *WorkflowService) GetEvent(c *gin.Context) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonResponse {
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	params := piazza.NewQueryParams(c.Request)
+
+	format, err := piazza.NewJsonPagination(params, defaultPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -414,24 +399,10 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 		bar[i] = e
 	}
 
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
+	format.Count = int(count)
 
 	resp := statusOK(bar)
-	resp.Pagination = foo
+	resp.Pagination = format
 	return resp
 }
 
@@ -616,11 +587,13 @@ func (service *WorkflowService) GetTrigger(c *gin.Context) *piazza.JsonResponse 
 }
 
 func (service *WorkflowService) GetAllTriggers(c *gin.Context) *piazza.JsonResponse {
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	params := piazza.NewQueryParams(c.Request)
+
+	format, err := piazza.NewJsonPagination(params, defaultPagination)
 	if err != nil {
 		return statusBadRequest(err)
-
 	}
+
 	m, count, err := service.triggerDB.GetAll(format)
 	if err != nil {
 		return statusBadRequest(err)
@@ -632,24 +605,10 @@ func (service *WorkflowService) GetAllTriggers(c *gin.Context) *piazza.JsonRespo
 		bar[i] = e
 	}
 
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
+	format.Count = int(count)
 
 	resp := statusOK(bar)
-	resp.Pagination = foo
+	resp.Pagination = format
 	return resp
 }
 
@@ -704,10 +663,13 @@ func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonRespons
 	//log.Printf("%#v", c.Request)
 	triggerId := c.Query("triggerId")
 
-	format, err := elasticsearch.GetFormatParamsV2(c.Query, 10, 0, "id", elasticsearch.SortAscending)
+	params := piazza.NewQueryParams(c.Request)
+
+	format, err := piazza.NewJsonPagination(params, defaultPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
+
 	var all *[]Alert
 	var count int64
 
@@ -735,25 +697,10 @@ func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonRespons
 		bar[i] = e
 	}
 
-	var order string
-
-	if format.Order {
-		order = "desc"
-	} else {
-		order = "asc"
-	}
-
-	//log.Printf("Creating response")
-	foo := &piazza.JsonPaginationResponse{
-		Page:    format.From,
-		PerPage: format.Size,
-		Count:   int(count),
-		SortBy:  format.Key,
-		Order:   order,
-	}
+	format.Count = int(count)
 
 	resp := statusOK(bar)
-	resp.Pagination = foo
+	resp.Pagination = format
 	return resp
 }
 

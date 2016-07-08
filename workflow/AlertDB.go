@@ -19,6 +19,7 @@ import (
 	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 type AlertDB struct {
@@ -94,7 +95,7 @@ func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
 	return id, nil
 }
 
-func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, int64, error) {
+func (db *AlertDB) GetAll(format *piazza.JsonPagination) (*[]Alert, int64, error) {
 	var alerts []Alert
 	var count = int64(-1)
 
@@ -126,7 +127,7 @@ func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, int64, er
 	return &alerts, count, nil
 }
 
-func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerId string) (*[]Alert, int64, error) {
+func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId string) (*[]Alert, int64, error) {
 
 	alerts := []Alert{}
 	var count = int64(-1)

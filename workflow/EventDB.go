@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 type EventDB struct {
@@ -75,7 +76,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, e
 	return id, nil
 }
 
-func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, int64, error) {
+func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) (*[]Event, int64, error) {
 	var events []Event
 	var count = int64(-1)
 
