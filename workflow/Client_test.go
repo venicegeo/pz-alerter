@@ -210,7 +210,7 @@ func (suite *ClientTester) Test15One() {
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 
 		respEventType, err := client.PostEventType(eventType)
-		etID := respEventType.EventTypeId
+		etID = respEventType.EventTypeId
 		assert.NoError(err)
 
 		defer func() {
