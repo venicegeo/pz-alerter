@@ -393,9 +393,17 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 
 	eventTypeId := c.Query("eventTypeId")
 
-	log.Printf("FFF %s", eventTypeId)
+	//log.Printf("FFF %s", eventTypeId)
 
-	m, count, err := service.eventDB.GetAll(eventTypeId, format)
+	query := ""
+
+	// Get the eventTypeName corresponding to the eventTypeId
+	if eventTypeId != "" {
+		eventType, _ := service.eventTypeDB.GetOne(Ident(eventTypeId))
+		query = eventType.Name
+	}
+
+	m, count, err := service.eventDB.GetAll(query, format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -422,7 +430,7 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 		Order:   order,
 	}
 
-	resp := statusOK(foo)
+	resp := statusOK(bar)
 	resp.Pagination = foo
 	return resp
 }

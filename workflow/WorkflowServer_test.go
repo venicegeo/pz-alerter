@@ -632,12 +632,13 @@ func (suite *ServerTester) Test05EventMapping() {
 		assert.NoError(err)
 		assert.Len(*x, 0)
 
+		// We expect errors here because searching for an EventType that doesn't exist
+		// results in an error
 		x, err = client.GetAllEventsByEventType(et1Id)
-		assert.NoError(err)
+		assert.Error(err)
 		assert.Len(*x, 0)
-
 		x, err = client.GetAllEventsByEventType(et2Id)
-		assert.NoError(err)
+		assert.Error(err)
 		assert.Len(*x, 0)
 	}
 
