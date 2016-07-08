@@ -111,14 +111,14 @@ func (service *WorkflowService) Init(
 	return nil
 }
 
-func (s *WorkflowService) newIdent() Ident {
+func (s *WorkflowService) newIdent() (Ident, error) {
 	uuid, err := s.uuidgen.GetUuid()
 	if err != nil {
-		panic("uuidgen failed")
+		return NoIdent, err
 	}
 	//log.Printf("uuid: %s", uuid)
 
-	return Ident(uuid)
+	return Ident(uuid), nil
 }
 
 func (service *WorkflowService) lookupEventTypeNameByEventID(id Ident) (string, error) {
@@ -323,7 +323,11 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 
 	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
-	eventType.EventTypeId = service.newIdent()
+	eventType.EventTypeId, err = service.newIdent()
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
 	id, err := service.eventTypeDB.PostData(eventType, eventType.EventTypeId)
 	if err != nil {
 		return statusBadRequest(err)
@@ -419,7 +423,11 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 		return statusBadRequest(err)
 	}
 
-	event.EventId = service.newIdent()
+	event.EventId, err = service.newIdent()
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
 	_, err = service.eventDB.PostData(eventType.Name, event, event.EventId)
 	if err != nil {
 		return statusBadRequest(err)
@@ -469,7 +477,11 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 
 				// JobID gets sent through Kafka as the key
 				Job := trigger.Job
-				JobID := service.newIdent()
+				JobID, err := service.newIdent()
+				if err != nil {
+					panic(99) // TODO
+					//return statusBadRequest(err)
+				}
 
 				jobInstance, err := json.Marshal(Job)
 				jobString := string(jobInstance)
@@ -489,7 +501,12 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 				service.sendToKafka(jobString, JobID)
 
 				// Send alert
-				alert := Alert{AlertId: service.newIdent(), EventId: event.EventId, TriggerId: triggerID, JobId: JobID}
+				newid, err := service.newIdent()
+				if err != nil {
+					panic(99) // TODO
+				}
+
+				alert := Alert{AlertId: newid, EventId: event.EventId, TriggerId: triggerID, JobId: JobID}
 
 				//log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
 
@@ -619,7 +636,10 @@ func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse
 		return statusBadRequest(err)
 	}
 
-	trigger.TriggerId = service.newIdent()
+	trigger.TriggerId, err = service.newIdent()
+	if err != nil {
+		return statusBadRequest(err)
+	}
 
 	_, err = service.triggerDB.PostTrigger(trigger, trigger.TriggerId)
 	if err != nil {
@@ -711,7 +731,10 @@ func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
 		return statusBadRequest(err)
 	}
 
-	alert.AlertId = service.newIdent()
+	alert.AlertId, err = service.newIdent()
+	if err != nil {
+		return statusBadRequest(err)
+	}
 
 	_, err = service.alertDB.PostData(&alert, alert.AlertId)
 	if err != nil {
