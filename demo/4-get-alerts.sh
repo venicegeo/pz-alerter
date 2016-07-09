@@ -4,9 +4,9 @@
 source 0-setup.sh
 
 echo
-echo GET /v2/alert
+echo GET /alert
 
-ret=$(curl -S -s -XGET "$WHOST"/v2/alert)
+ret=$(curl -S -s -XGET "$WHOST"/alert)
 
 echo RETURN:
 echo "$ret"

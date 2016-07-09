@@ -9,7 +9,7 @@ cat > tmp <<foo
 {
     "title": "High Severity",
     "condition": {
-        "eventtype_ids": ["$etId"],
+        "eventTypeIds": ["$etId"],
         "query": {
             "query": {
                 "bool": {
@@ -23,8 +23,13 @@ cat > tmp <<foo
     },
     "job": {
         "task": "alert the user",
-        "username": "test",
-        "type": "test"
+        "userName": "test",
+        "jobType": {
+            "type": "execute-service",
+            "data": {
+                "serviceId": "ddd5134"
+            }
+        }
     }
 }
 foo
@@ -35,7 +40,7 @@ echo
 echo POST /v2/trigger
 echo "$json"
 
-ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/v2/trigger)
+ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/trigger)
 
 echo RETURN:
 echo "$ret"

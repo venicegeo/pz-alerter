@@ -7,8 +7,8 @@ etId=$1
 
 cat > tmp <<foo
 {
-    "eventtype_id": "$etId",
-    "date": "2007-05-05T14:30:00Z",
+    "eventTypeId": "$etId",
+    "createdOn": "2007-05-05T14:30:00Z",
     "data": {
         "filename": "dataset-a",
         "severity": 5,
@@ -23,7 +23,7 @@ echo
 echo POST /v2/event
 echo "$json"
 
-ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/v2/event)
+ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/event)
 
 echo RETURN:
 echo "$ret"
