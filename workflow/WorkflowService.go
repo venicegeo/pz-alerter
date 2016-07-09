@@ -111,16 +111,16 @@ func (service *WorkflowService) Init(
 	return nil
 }
 
-func (s *WorkflowService) newIdent() (Ident, error) {
+func (s *WorkflowService) newIdent() (piazza.Ident, error) {
 	uuid, err := s.uuidgen.GetUuid()
 	if err != nil {
-		return NoIdent, err
+		return piazza.NoIdent, err
 	}
 
-	return Ident(uuid), nil
+	return piazza.Ident(uuid), nil
 }
 
-func (service *WorkflowService) lookupEventTypeNameByEventID(id Ident) (string, error) {
+func (service *WorkflowService) lookupEventTypeNameByEventID(id piazza.Ident) (string, error) {
 	var mapping string = ""
 
 	types, err := service.eventDB.Esi.GetTypes()
@@ -140,7 +140,7 @@ func (service *WorkflowService) lookupEventTypeNameByEventID(id Ident) (string, 
 	return mapping, nil
 }
 
-func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) error {
+func (service *WorkflowService) sendToKafka(jobInstance string, jobID piazza.Ident) error {
 	//log.Printf("***********************\n")
 	//log.Printf("%s\n", jobInstance)
 
@@ -172,7 +172,7 @@ func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) err
 		}
 	}()
 
-	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(message), Key: sarama.StringEncoder(JobID)}
+	msg := &sarama.ProducerMessage{Topic: topic, Value: sarama.StringEncoder(message), Key: sarama.StringEncoder(jobID)}
 	partition, offset, err := producer.SendMessage(msg)
 	_ = partition
 	_ = offset
@@ -223,7 +223,7 @@ func statusInternalServerError(err error) *piazza.JsonResponse {
 	return &piazza.JsonResponse{StatusCode: http.StatusInternalServerError, Message: err.Error()}
 }
 
-func statusNotFound(id Ident) *piazza.JsonResponse {
+func statusNotFound(id piazza.Ident) *piazza.JsonResponse {
 	return &piazza.JsonResponse{StatusCode: http.StatusNotFound, Message: string(id)}
 }
 
@@ -239,9 +239,9 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 //------------------------------------------
 
 func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
+	id := piazza.Ident(c.Param("id"))
 
-	event, err := service.eventTypeDB.GetOne(Ident(id))
+	event, err := service.eventTypeDB.GetOne(piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -314,8 +314,8 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 }
 
 func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-	ok, err := service.eventTypeDB.DeleteByID(Ident(id))
+	id := piazza.Ident(c.Param("id"))
+	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -331,7 +331,7 @@ func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResp
 func (service *WorkflowService) GetEvent(c *gin.Context) *piazza.JsonResponse {
 	// eventType := c.Param("eventType")
 	s := c.Param("id")
-	id := Ident(s)
+	id := piazza.Ident(s)
 	// event, err := server.eventDB.GetOne(eventType, id)
 	mapping, err := service.lookupEventTypeNameByEventID(id)
 	if err != nil {
@@ -370,7 +370,7 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 
 	// Get the eventTypeName corresponding to the eventTypeId
 	if eventTypeId != "" {
-		eventType, err := service.eventTypeDB.GetOne(Ident(eventTypeId))
+		eventType, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeId))
 		if err != nil {
 			return statusBadRequest(err)
 		}
@@ -433,11 +433,11 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 		// For each trigger,  apply the event data and submit job
 		var waitGroup sync.WaitGroup
 
-		results := make(map[Ident]*piazza.JsonResponse)
+		results := make(map[piazza.Ident]*piazza.JsonResponse)
 
 		for _, triggerID := range *triggerIDs {
 			waitGroup.Add(1)
-			go func(triggerID Ident) {
+			go func(triggerID piazza.Ident) {
 				defer waitGroup.Done()
 
 				log.Printf("\ntriggerID: %v\n", triggerID)
@@ -516,7 +516,10 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 	return statusCreated(event)
 }
 
-func (service *WorkflowService) sendAlert(eventId Ident, triggerId Ident, jobId Ident) error {
+func (service *WorkflowService) sendAlert(
+	eventId piazza.Ident,
+	triggerId piazza.Ident,
+	jobId piazza.Ident) error {
 	// Send alert
 	newid, err := service.newIdent()
 	if err != nil {
@@ -538,7 +541,7 @@ func (service *WorkflowService) sendAlert(eventId Ident, triggerId Ident, jobId 
 
 func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse {
 	s := c.Param("id")
-	id := Ident(s)
+	id := piazza.Ident(s)
 	// eventType := c.Param("eventType")
 	mapping, err := service.lookupEventTypeNameByEventID(id)
 	if err != nil {
@@ -547,7 +550,7 @@ func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse
 
 	//log.Printf("The Mapping is:  %s\n", mapping)
 
-	ok, err := service.eventDB.DeleteByID(mapping, Ident(id))
+	ok, err := service.eventDB.DeleteByID(mapping, piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -561,9 +564,9 @@ func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse
 //------------------------------------------
 
 func (service *WorkflowService) GetTrigger(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
+	id := piazza.Ident(c.Param("id"))
 
-	trigger, err := service.triggerDB.GetOne(Ident(id))
+	trigger, err := service.triggerDB.GetOne(piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -623,8 +626,8 @@ func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse
 }
 
 func (service *WorkflowService) DeleteTrigger(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-	ok, err := service.triggerDB.DeleteTrigger(Ident(id))
+	id := piazza.Ident(c.Param("id"))
+	ok, err := service.triggerDB.DeleteTrigger(piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -638,7 +641,7 @@ func (service *WorkflowService) DeleteTrigger(c *gin.Context) *piazza.JsonRespon
 //------------------------------------------
 
 func (service *WorkflowService) GetAlert(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
+	id := piazza.Ident(c.Param("id"))
 
 	alert, err := service.alertDB.GetOne(id)
 	if err != nil {
@@ -722,7 +725,7 @@ func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) DeleteAlert(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
+	id := piazza.Ident(c.Param("id"))
 	ok, err := service.alertDB.DeleteByID(id)
 	if err != nil {
 		return statusBadRequest(err)

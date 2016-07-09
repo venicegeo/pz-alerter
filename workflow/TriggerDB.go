@@ -87,13 +87,13 @@ func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerD
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
+func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error) {
 
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)
 	body, err := json.Marshal(ifaceObj)
 	if err != nil {
-		return NoIdent, err
+		return piazza.NoIdent, err
 	}
 
 	json := string(body)
@@ -112,27 +112,27 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id Ident) (Ident, error) {
 	//log.Printf("Posting percolation query: %s", body)
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
 	if err != nil {
-		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
 	}
 	if indexResult == nil {
-		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: no indexResult")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: no indexResult")
 	}
 	if !indexResult.Created {
-		return NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created")
 	}
 
 	//log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
 	//log.Printf("percolation id: %s", indexResult.Id)
-	trigger.PercolationId = Ident(indexResult.Id)
+	trigger.PercolationId = piazza.Ident(indexResult.Id)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
 	if err != nil {
 		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
-		return NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
 		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
-		return NoIdent, LoggedError("TriggerDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 
 	return id, nil
@@ -170,7 +170,7 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) (*[]Trigger, int64, e
 	return &triggers, count, nil
 }
 
-func (db *TriggerDB) GetOne(id Ident) (*Trigger, error) {
+func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
@@ -194,7 +194,7 @@ func (db *TriggerDB) GetOne(id Ident) (*Trigger, error) {
 	return &obj, nil
 }
 
-func (db *TriggerDB) DeleteTrigger(id Ident) (bool, error) {
+func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
 	trigger, err := db.GetOne(id)
 	if err != nil {

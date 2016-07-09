@@ -65,14 +65,14 @@ func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventT
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) PostData(obj interface{}, id Ident) (Ident, error) {
+func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
 
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		return NoIdent, LoggedError("EventTypeDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: not created")
 	}
 
 	return id, nil
@@ -110,7 +110,7 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) (*[]EventType, int6
 	return &eventTypes, count, nil
 }
 
-func (db *EventTypeDB) GetOne(id Ident) (*EventType, error) {
+func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
@@ -134,7 +134,7 @@ func (db *EventTypeDB) GetOne(id Ident) (*EventType, error) {
 	return &eventType, nil
 }
 
-func (db *EventTypeDB) DeleteByID(id Ident) (bool, error) {
+func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return false, LoggedError("EventTypeDB.DeleteById failed: %s", err)

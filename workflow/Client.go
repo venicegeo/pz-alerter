@@ -131,7 +131,7 @@ func (c *Client) deleteObject(endpoint string) error {
 	return nil
 }
 
-func (c *Client) GetEventType(id Ident) (*EventType, error) {
+func (c *Client) GetEventType(id piazza.Ident) (*EventType, error) {
 	out := &EventType{}
 	err := c.getObject("/eventType/"+id.String(), out)
 	return out, err
@@ -155,14 +155,14 @@ func (c *Client) PutEventType(eventType *EventType) (*EventType, error) {
 	return out, err
 }
 
-func (c *Client) DeleteEventType(id Ident) error {
+func (c *Client) DeleteEventType(id piazza.Ident) error {
 	err := c.deleteObject("/eventType/" + id.String())
 	return err
 }
 
 //---------------------------------------------------------------------------
 
-func (c *Client) GetEvent(id Ident) (*Event, error) {
+func (c *Client) GetEvent(id piazza.Ident) (*Event, error) {
 	out := &Event{}
 	err := c.getObject("/event/"+id.String(), out)
 	return out, err
@@ -174,7 +174,7 @@ func (c *Client) GetAllEvents() (*[]Event, error) {
 	return out, err
 }
 
-func (c *Client) GetAllEventsByEventType(eventTypeId Ident) (*[]Event, error) {
+func (c *Client) GetAllEventsByEventType(eventTypeId piazza.Ident) (*[]Event, error) {
 	out := &[]Event{}
 	err := c.getObject("/event?eventTypeId="+eventTypeId.String(), out)
 	return out, err
@@ -192,14 +192,14 @@ func (c *Client) PutEvent(event *Event) (*Event, error) {
 	return out, err
 }
 
-func (c *Client) DeleteEvent(id Ident) error {
+func (c *Client) DeleteEvent(id piazza.Ident) error {
 	err := c.deleteObject("/event/" + id.String())
 	return err
 }
 
 //---------------------------------------------------------------------------
 
-func (c *Client) GetTrigger(id Ident) (*Trigger, error) {
+func (c *Client) GetTrigger(id piazza.Ident) (*Trigger, error) {
 	out := &Trigger{}
 	err := c.getObject("/trigger/"+id.String(), out)
 	return out, err
@@ -223,14 +223,14 @@ func (c *Client) PutTrigger(trigger *Trigger) (*Trigger, error) {
 	return out, err
 }
 
-func (c *Client) DeleteTrigger(id Ident) error {
+func (c *Client) DeleteTrigger(id piazza.Ident) error {
 	err := c.deleteObject("/trigger/" + id.String())
 	return err
 }
 
 //---------------------------------------------------------------------------
 
-func (c *Client) GetAlert(id Ident) (*Alert, error) {
+func (c *Client) GetAlert(id piazza.Ident) (*Alert, error) {
 	out := &Alert{}
 	err := c.getObject("/alert/"+id.String(), out)
 	return out, err
@@ -254,7 +254,7 @@ func (c *Client) PutAlert(alert *Alert) (*Alert, error) {
 	return out, err
 }
 
-func (c *Client) DeleteAlert(id Ident) error {
+func (c *Client) DeleteAlert(id piazza.Ident) error {
 	err := c.deleteObject("/alert/" + id.String())
 	return err
 }

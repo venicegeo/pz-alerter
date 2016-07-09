@@ -86,14 +86,14 @@ func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, e
 	return &ardb, nil
 }
 
-func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
+func (db *AlertDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
 
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		return NoIdent, LoggedError("AlertDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: not created")
 	}
 
 	return id, nil
@@ -178,7 +178,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 	return &alerts, count, nil
 }
 
-func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
+func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
@@ -202,7 +202,7 @@ func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
 	return &alert, nil
 }
 
-func (db *AlertDB) DeleteByID(id Ident) (bool, error) {
+func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return false, LoggedError("AlertDB.DeleteById failed: %s", err)

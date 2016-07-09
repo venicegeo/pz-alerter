@@ -213,7 +213,7 @@ func makeTestEventType(eventTypeName string) *EventType {
 	return &EventType{Name: eventTypeName, Mapping: mapping}
 }
 
-func makeTestEvent(eventTypeID Ident) *Event {
+func makeTestEvent(eventTypeID piazza.Ident) *Event {
 	event := &Event{
 		EventTypeId: eventTypeID,
 		CreatedOn:   time.Now(),
@@ -224,7 +224,7 @@ func makeTestEvent(eventTypeID Ident) *Event {
 	return event
 }
 
-func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
+func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	trigger := &Trigger{
 		Title: "MY TRIGGER TITLE",
 		Condition: Condition{
@@ -418,7 +418,7 @@ func (suite *ServerTester) Test03Trigger() {
 	sleep()
 
 	//log.Printf("Creating new trigger:")
-	trigger := makeTestTrigger([]Ident{eventTypeID})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	id := respTrigger.TriggerId
@@ -480,7 +480,7 @@ func (suite *ServerTester) Test04Alert() {
 	sleep()
 
 	//log.Printf("Creating new trigger:")
-	trigger := makeTestTrigger([]Ident{eventTypeID})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("Trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	triggerID := respTrigger.TriggerId
@@ -558,7 +558,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	var eventTypeName1 = "Type1"
 	var eventTypeName2 = "Type2"
 
-	createEventType := func(typ string) Ident {
+	createEventType := func(typ string) piazza.Ident {
 		//log.Printf("Creating event type: %s\n", typ)
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
@@ -584,7 +584,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventTypeID
 	}
 
-	createEvent := func(eventTypeID Ident, eventTypeName string, value int) Ident {
+	createEvent := func(eventTypeID piazza.Ident, eventTypeName string, value int) piazza.Ident {
 		//log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
 			EventTypeId: eventTypeID,
@@ -611,7 +611,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventID
 	}
 
-	checkEvents := func(eventTypeId Ident, expected int) {
+	checkEvents := func(eventTypeId piazza.Ident, expected int) {
 		x, err := client.GetAllEventsByEventType(eventTypeId)
 		assert.NoError(err)
 		assert.Len(*x, expected)
@@ -680,7 +680,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 	var eventTypeName = "EventTypeA"
 
-	var et1ID Ident
+	var et1ID piazza.Ident
 	{
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num":      elasticsearch.MappingElementTypeInteger,
@@ -704,13 +704,13 @@ func (suite *ServerTester) Test06Workflow() {
 	}
 	sleep()
 
-	var t1ID Ident
+	var t1ID piazza.Ident
 	{
 		//log.Printf("Creating trigger:\n")
 		trigger := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
-				EventTypeIds: []Ident{et1ID},
+				EventTypeIds: []piazza.Ident{et1ID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -745,7 +745,7 @@ func (suite *ServerTester) Test06Workflow() {
 	}
 	sleep()
 
-	var e1ID Ident
+	var e1ID piazza.Ident
 	{
 		//log.Printf("Creating event:\n")
 		// will cause trigger TRG1
@@ -881,7 +881,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 
 	// Create MultiTrigger
 	//log.Printf("\tCreating trigger:")
-	trigger := makeTestTrigger([]Ident{eventTypeId1, eventTypeId2})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeId1, eventTypeId2})
 	//printJSON("\ttrigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	triggerId := respTrigger.TriggerId
