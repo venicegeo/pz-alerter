@@ -1,32 +1,26 @@
 #!/bin/bash
 
-# shellcheck disable=SC1091
-source 0-setup.sh
+url="http://pz-workflow.$PZDOMAIN"
 
-etId=$1
+eventtypeId=$1
+[ "$eventTypeId" != "" ] || ( echo error: \$eventTypeId missing ; exit 1 )
 
-cat > tmp <<foo
-{
-    "eventTypeId": "$etId",
+json='{
+    "eventTypeId": "'"$eventTypeId"'",
     "createdOn": "2007-05-05T14:30:00Z",
     "data": {
         "filename": "dataset-c",
         "severity": 5,
         "code": "PHONE"
     }
-}
-foo
-
-json=$(cat tmp)
+}'
 
 echo
 echo POST /v2/event
 echo "$json"
 
-ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/event)
+ret=$(curl -S -s -XPOST -d "$json" "$url"/event)
 
 echo RETURN:
 echo "$ret"
 echo
-
-rm tmp

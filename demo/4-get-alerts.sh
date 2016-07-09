@@ -1,12 +1,11 @@
 #!/bin/bash
 
-# shellcheck disable=SC1091
-source 0-setup.sh
+url="http://pz-workflow.$PZDOMAIN"
 
 echo
 echo GET /alert
 
-ret=$(curl -S -s -XGET "$WHOST"/alert)
+ret=$(curl -S -s -XGET "$url"/alert)
 
 echo RETURN:
 echo "$ret"

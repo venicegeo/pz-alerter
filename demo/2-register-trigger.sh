@@ -1,15 +1,16 @@
 #!/bin/bash
 
-# shellcheck disable=SC1091
-source 0-setup.sh
+url="http://pz-workflow.$PZDOMAIN"
 
-etId=$1
+eventtypeId=$1
+serviceId=$2
+[ "$eventTypeId" != "" ] || ( echo error: \$eventTypeId missing ; exit 1 )
+[ "$serviceId" != "" ] || ( echo error: \$serviceId missing ; exit 1 )
 
-cat > tmp <<foo
-{
+json='{
     "title": "High Severity",
     "condition": {
-        "eventTypeIds": ["$etId"],
+        "eventTypeIds": ["'"$eventTypeId"'"],
         "query": {
             "query": {
                 "bool": {
@@ -27,23 +28,18 @@ cat > tmp <<foo
         "jobType": {
             "type": "execute-service",
             "data": {
-                "serviceId": "ddd5134"
+                "serviceId": "'"$serviceId"'"
             }
         }
     }
-}
-foo
-
-json=$(cat tmp)
+}'
 
 echo
 echo POST /v2/trigger
 echo "$json"
 
-ret=$(curl -S -s -XPOST -d "$json" "$WHOST"/trigger)
+ret=$(curl -S -s -XPOST -d "$json" "$url"/trigger)
 
 echo RETURN:
 echo "$ret"
 echo
-
-rm tmp
