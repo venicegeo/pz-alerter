@@ -293,7 +293,9 @@ func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonRespons
 func (service *WorkflowService) GetAllEventTypes(c *gin.Context) *piazza.JsonResponse {
 	params := piazza.NewQueryParams(c.Request)
 
-	format, err := piazza.NewJsonPagination(params, defaultPagination)
+	ourpag := defaultPagination
+	ourpag.SortBy = "eventTypeId"
+	format, err := piazza.NewJsonPagination(params, ourpag)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -384,7 +386,9 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 		return statusBadRequest(err)
 	}
 
+	// if both specified, "by id"" wins
 	eventTypeId := c.Query("eventTypeId")
+	eventTypeName := c.Query("eventTypeName")
 
 	query := ""
 
@@ -395,9 +399,10 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 			return statusBadRequest(err)
 		}
 		query = eventType.Name
+	} else if eventTypeName != "" {
+		query = eventTypeName
 	}
 
-	log.Printf("filtering on: %s %s", eventTypeId, query)
 	m, count, err := service.eventDB.GetAll(query, format)
 	if err != nil {
 		return statusBadRequest(err)
@@ -595,7 +600,9 @@ func (service *WorkflowService) GetTrigger(c *gin.Context) *piazza.JsonResponse 
 func (service *WorkflowService) GetAllTriggers(c *gin.Context) *piazza.JsonResponse {
 	params := piazza.NewQueryParams(c.Request)
 
-	format, err := piazza.NewJsonPagination(params, defaultPagination)
+	ourpag := defaultPagination
+	ourpag.SortBy = "triggerId"
+	format, err := piazza.NewJsonPagination(params, ourpag)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -674,11 +681,12 @@ func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonRespons
 
 	params := piazza.NewQueryParams(c.Request)
 
-	format, err := piazza.NewJsonPagination(params, defaultPagination)
+	ourpag := defaultPagination
+	ourpag.SortBy = "alertId"
+	format, err := piazza.NewJsonPagination(params, ourpag)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-	format.SortBy = "alertId"
 
 	var all *[]Alert
 	var count int64
