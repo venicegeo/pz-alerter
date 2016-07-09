@@ -82,7 +82,7 @@ func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, e
 	if err != nil {
 		return nil, err
 	}
-	ardb := AlertDB{ResourceDB: rdb, mapping: "Alert"}
+	ardb := AlertDB{ResourceDB: rdb, mapping: "Alert2"}
 	return &ardb, nil
 }
 
