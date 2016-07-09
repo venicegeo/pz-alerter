@@ -2,19 +2,14 @@
 
 url="http://pz-workflow.$PZDOMAIN"
 
-cat > tmp <<foo
-{
-    "eventTypeId": "1234",
-    "name": "USDadtaEvent",
+json='{
+    "name": "USDadtaEvent1",
     "mapping": {
         "filename": "string",
         "code":     "string",
         "severity": "integer"
     }
-}
-foo
-
-json=$(cat tmp)
+}'
 
 echo
 echo POST /eventType
@@ -25,5 +20,3 @@ ret=$(curl -S -s -XPOST -d "$json" "$url"/eventType)
 echo RETURN:
 echo "$ret"
 echo
-
-rm tmp

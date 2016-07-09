@@ -2,10 +2,19 @@
 
 url="http://pz-workflow.$PZDOMAIN"
 
-eventtypeId=$1
+eventTypeId=$1
+if [ "$eventTypeId" == "" ]
+then
+    echo "error: \$eventTypeId missing"
+    exit 1
+fi
+
 serviceId=$2
-[ "$eventTypeId" != "" ] || ( echo error: \$eventTypeId missing ; exit 1 )
-[ "$serviceId" != "" ] || ( echo error: \$serviceId missing ; exit 1 )
+if [ "$serviceId" == "" ]
+then
+    echo "error: \$serviceId missing"
+    exit 1
+fi
 
 json='{
     "title": "High Severity",
