@@ -3,9 +3,9 @@
 url="http://pz-workflow.$PZDOMAIN"
 
 echo
-echo GET /alert
+echo GET /event
 
-ret=$(curl -S -s -XGET "$url"/alert?sortBy=createdOn)
+ret=$(curl -S -s -XGET "$url"/eventType?perPage=5)
 
 echo RETURN:
 echo "$ret"

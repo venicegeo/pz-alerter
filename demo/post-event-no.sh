@@ -11,7 +11,6 @@ fi
 
 json='{
     "eventTypeId": "'"$eventTypeId"'",
-    "createdOn": "2010-05-05T14:30:00Z",
     "data": {
         "filename": "dataset-a",
         "severity": 5,

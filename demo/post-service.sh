@@ -14,6 +14,6 @@ service='{
     }
 }'
 
-curl -X POST -u $PZUSER:$PZPASS -H 'Content-Type: application/json' \
+curl -S -s -X POST -u $PZUSER:$PZPASS -H 'Content-Type: application/json' \
     -d "$service" \
     $url/service
