@@ -75,7 +75,7 @@ type TriggerList []Trigger
 type Event struct {
 	EventId     Ident                  `json:"eventId"`
 	EventTypeId Ident                  `json:"eventTypeId" binding:"required"`
-	CreatedOn   time.Time              `json:"createdOn" binding:"required"`
+	CreatedOn   time.Time              `json:"createdOn"`
 	Data        map[string]interface{} `json:"data"`
 }
 
