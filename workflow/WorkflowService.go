@@ -140,13 +140,13 @@ func (service *WorkflowService) lookupEventTypeNameByEventID(id Ident) (string, 
 	return mapping, nil
 }
 
-func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) {
+func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) error {
 	//log.Printf("***********************\n")
 	//log.Printf("%s\n", jobInstance)
 
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
 	if err != nil {
-		log.Fatalf("Kafka-related failure (1): %s", err)
+		return errors.New("Kafka-related failure (1): " + err.Error())
 	}
 
 	// Get Space we are running in.   Default to int
@@ -163,11 +163,11 @@ func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) {
 
 	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
 	if err != nil {
-		log.Fatalf("Kafka-related failure (2): %s", err)
+		return errors.New("Kafka-related failure (2): " + err.Error())
 	}
 	defer func() {
 		if err := producer.Close(); err != nil {
-			log.Fatalf("Kafka-related failure (3): %s", err)
+			log.Fatalf("Kafka-related failure (3): " + err.Error())
 		}
 	}()
 
@@ -176,12 +176,14 @@ func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) {
 	_ = partition
 	_ = offset
 	if err != nil {
-		//log.Printf("FAILED to send message: %s\n", err)
+		return errors.New("Kafka-related failure (4): " + err.Error())
 	} else {
 		//log.Printf("> message sent to partition %d at offset %d\n", partition, offset)
 	}
 
 	//log.Printf("***********************\n")
+
+	return nil
 }
 
 func (service *WorkflowService) postToPzGatewayJobService(uri string, params map[string]string) (*http.Request, error) {
@@ -478,8 +480,8 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 				Job := trigger.Job
 				JobID, err := service.newIdent()
 				if err != nil {
-					panic(99) // TODO
-					//return statusBadRequest(err)
+					results[triggerID] = statusInternalServerError(err)
+					return
 				}
 
 				jobInstance, err := json.Marshal(Job)
@@ -497,64 +499,24 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 
 				//server.logger.Info("job submission: %s\n", jobString)
 
-				service.sendToKafka(jobString, JobID)
-
-				// Send alert
-				newid, err := service.newIdent()
+				err = service.sendToKafka(jobString, JobID)
 				if err != nil {
-					panic(99) // TODO
-				}
-
-				alert := Alert{AlertId: newid, EventId: event.EventId, TriggerId: triggerID, JobId: JobID}
-
-				//log.Printf("alert: id: %s, EventID: %s, TriggerID: %s, JobID: %s", alert.ID, alert.EventID, alert.TriggerID, alert.JobID)
-
-				_, alert_err := service.alertDB.PostData(&alert, alert.AlertId)
-				if alert_err != nil {
-					results[triggerID] = statusBadRequest(alert_err)
+					results[triggerID] = statusInternalServerError(err)
 					return
 				}
 
-				/**
-				// Figure out how to post the jobInstance to job manager server.
-				url, err := sysConfig.GetURL(piazza.PzGateway)
+				err = service.sendAlert(event.EventId, triggerID, JobID)
 				if err != nil {
-					StatusBadRequest(c, err)
+					results[triggerID] = statusInternalServerError(err)
 					return
 				}
-				gatewayURL := fmt.Sprintf("%s/job", url)
-				extraParams := map[string]string{
-					"body": jobInstance,
-				}
-
-				request, err := postToPzGatewayJobService(gatewayURL, extraParams)
-				if err != nil {
-					log.Fatal(err)
-				}
-
-				client := &http.Client{}
-				log.Printf(request.URL.String())
-				resp, err := client.Do(request)
-				if err != nil {
-					log.Fatal(err)
-				} else {
-					body := &bytes.Buffer{}
-					_, err := body.ReadFrom(resp.Body)
-					if err != nil {
-						log.Fatal(err)
-					}
-					resp.Body.Close()
-					log.Println(resp.StatusCode)
-					//    log.Println(resp.Header)
-					log.Println(body)
-				}
-				**/
 
 			}(triggerID)
 		}
 
 		waitGroup.Wait()
 
+		log.Printf("trigger results: %#v", results)
 		for _, v := range results {
 			if v != nil {
 				return v
@@ -563,6 +525,25 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 	}
 
 	return statusCreated(event)
+}
+
+func (service *WorkflowService) sendAlert(eventId Ident, triggerId Ident, jobId Ident) error {
+	// Send alert
+	newid, err := service.newIdent()
+	if err != nil {
+		return err
+	}
+
+	alert := Alert{AlertId: newid, EventId: eventId, TriggerId: triggerId, JobId: jobId}
+
+	log.Printf("Alert issued: %#v", alert)
+
+	_, alert_err := service.alertDB.PostData(&alert, alert.AlertId)
+	if alert_err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse {
