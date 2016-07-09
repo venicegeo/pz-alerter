@@ -238,45 +238,6 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 
 //------------------------------------------
 
-func (service *WorkflowService) GetEvents(c *gin.Context) *piazza.JsonResponse {
-	params := piazza.NewQueryParams(c.Request)
-
-	format, err := piazza.NewJsonPagination(params, defaultPagination)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	m, count, err := service.eventDB.GetAll("", format)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
-	bar := make([]interface{}, len(*m))
-
-	for i, e := range *m {
-		bar[i] = e
-	}
-
-	format.Count = int(count)
-
-	resp := statusOK(bar)
-	resp.Pagination = format
-	return resp
-}
-
-func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResponse {
-	id := Ident(c.Param("id"))
-	ok, err := service.eventTypeDB.DeleteByID(Ident(id))
-	if err != nil {
-		return statusBadRequest(err)
-	}
-	if !ok {
-		return statusNotFound(id)
-	}
-
-	return statusOK(nil)
-}
-
 func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonResponse {
 	id := Ident(c.Param("id"))
 
@@ -350,6 +311,19 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 	//log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
 
 	return statusCreated(eventType)
+}
+
+func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResponse {
+	id := Ident(c.Param("id"))
+	ok, err := service.eventTypeDB.DeleteByID(Ident(id))
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	if !ok {
+		return statusNotFound(id)
+	}
+
+	return statusOK(nil)
 }
 
 //------------------------------------------
