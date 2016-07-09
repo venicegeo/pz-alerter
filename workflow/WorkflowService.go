@@ -688,6 +688,7 @@ func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonRespons
 	if err != nil {
 		return statusBadRequest(err)
 	}
+	format.SortBy = "alertId"
 
 	var all *[]Alert
 	var count int64
