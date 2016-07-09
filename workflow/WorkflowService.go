@@ -149,6 +149,7 @@ func (service *WorkflowService) sendToKafka(jobInstance string, JobID Ident) err
 		return errors.New("Kafka-related failure (1): " + err.Error())
 	}
 
+	// TODO: this should live in SystemConfig!
 	// Get Space we are running in.   Default to int
 	space := os.Getenv("SPACE")
 	if space == "" {
@@ -198,10 +199,10 @@ func (service *WorkflowService) postToPzGatewayJobService(uri string, params map
 		return nil, err
 	}
 
-	req, error := http.NewRequest("POST", uri, body)
+	req, err := http.NewRequest("POST", uri, body)
 	req.Header.Add("Content-Type", writer.FormDataContentType())
 
-	return req, error
+	return req, err
 }
 
 //------------------------------------------
@@ -436,7 +437,7 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 
 	{
 		// Find triggers associated with event
-		//log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
+		log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
 		triggerIDs, err := service.eventDB.PercolateEventData(eventType.Name, event.Data, event.EventId)
 		if err != nil {
 			return statusBadRequest(err)
@@ -452,7 +453,7 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 			go func(triggerID Ident) {
 				defer waitGroup.Done()
 
-				//log.Printf("\ntriggerID: %v\n", triggerID)
+				log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := service.triggerDB.GetOne(triggerID)
 				if err != nil {
 					results[triggerID] = statusBadRequest(err)
@@ -487,17 +488,17 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 				jobInstance, err := json.Marshal(Job)
 				jobString := string(jobInstance)
 
-				//log.Printf("trigger: %v\n", trigger)
-				//log.Printf("\tJob: %v\n\n", jobString)
+				log.Printf("trigger: %v\n", trigger)
+				log.Printf("\tJob: %v\n\n", jobString)
 
 				// Not very robust,  need to find a better way
 				for key, value := range event.Data {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), 1)
 				}
 
-				//log.Printf("jobInstance: %s\n\n", jobString)
+				log.Printf("jobInstance: %s\n\n", jobString)
 
-				//server.logger.Info("job submission: %s\n", jobString)
+				service.logger.Info("job submission: %s\n", jobString)
 
 				err = service.sendToKafka(jobString, JobID)
 				if err != nil {
