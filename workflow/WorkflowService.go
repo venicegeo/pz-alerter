@@ -506,6 +506,7 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 					return
 				}
 
+				// TODO: should really just call service.PostAlert()
 				err = service.sendAlert(event.EventId, triggerID, JobID)
 				if err != nil {
 					results[triggerID] = statusInternalServerError(err)
@@ -536,6 +537,7 @@ func (service *WorkflowService) sendAlert(eventId Ident, triggerId Ident, jobId 
 	}
 
 	alert := Alert{AlertId: newid, EventId: eventId, TriggerId: triggerId, JobId: jobId}
+	alert.CreatedOn = time.Now()
 
 	log.Printf("Alert issued: %#v", alert)
 

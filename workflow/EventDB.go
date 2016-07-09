@@ -32,7 +32,7 @@ const (
 		"index.mapper.dynamic": false
 	}
 	"mappings": {
-		"Event": {
+		"Event2": {
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
