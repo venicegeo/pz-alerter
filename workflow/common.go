@@ -24,10 +24,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 )
 
-type WorkflowIDResponse struct {
-	ID Ident `json:"id"`
-}
-
 type Ident string
 
 const NoIdent Ident = ""
@@ -49,7 +45,7 @@ type Condition struct {
 
 // Job JSON struct
 type Job struct {
-	Username string                 `json:"userName" binding:"required"`
+	UserName string                 `json:"userName" binding:"required"`
 	JobType  map[string]interface{} `json:"jobType" binding:"required"`
 }
 
@@ -64,6 +60,8 @@ type Trigger struct {
 	Condition     Condition `json:"condition" binding:"required"`
 	Job           Job       `json:"job" binding:"required"`
 	PercolationId Ident     `json:"percolationId"`
+	UserName      string    `json:"userName"`
+	CreatedOn     time.Time `json:"createdOn"`
 }
 
 type TriggerList []Trigger
@@ -77,6 +75,7 @@ type Event struct {
 	EventTypeId Ident                  `json:"eventTypeId" binding:"required"`
 	CreatedOn   time.Time              `json:"createdOn"`
 	Data        map[string]interface{} `json:"data"`
+	UserName    string                 `json:"userName"`
 }
 
 type EventList []Event
@@ -87,6 +86,8 @@ type EventType struct {
 	EventTypeId Ident                                           `json:"eventTypeId"`
 	Name        string                                          `json:"name" binding:"required"`
 	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
+	UserName    string                                          `json:"userName"`
+	CreatedOn   time.Time                                       `json:"createdOn"`
 }
 
 type EventTypeList []EventType
@@ -100,6 +101,7 @@ type Alert struct {
 	EventId   Ident     `json:"eventId"`
 	JobId     Ident     `json:"jobId"`
 	CreatedOn time.Time `json:"createdOn"`
+	UserName  string    `json:"userName"`
 }
 
 type AlertList []Alert

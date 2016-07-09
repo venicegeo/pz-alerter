@@ -332,6 +332,8 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
+	eventType.CreatedOn = time.Now()
+
 	id, err := service.eventTypeDB.PostData(eventType, eventType.EventTypeId)
 	if err != nil {
 		return statusBadRequest(err)
@@ -636,6 +638,7 @@ func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse
 	if err != nil {
 		return statusBadRequest(err)
 	}
+	trigger.CreatedOn = time.Now()
 
 	_, err = service.triggerDB.PostTrigger(trigger, trigger.TriggerId)
 	if err != nil {

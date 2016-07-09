@@ -234,7 +234,7 @@ func (suite *ClientTester) Test15One() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
@@ -367,7 +367,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 			},
 		},
 		Job: Job{
-			Username: "test",
+			UserName: "test",
 			JobType: map[string]interface{}{
 				"type": "execute-service",
 				"data": map[string]interface{}{
@@ -465,7 +465,7 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
@@ -497,7 +497,7 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
