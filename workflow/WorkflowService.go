@@ -112,14 +112,10 @@ func (service *WorkflowService) Init(
 }
 
 func (s *WorkflowService) newIdent() (Ident, error) {
-	log.Printf("Service:newIdent()")
-
 	uuid, err := s.uuidgen.GetUuid()
 	if err != nil {
-		log.Printf("==> err .%#v. %s", err, uuid)
 		return NoIdent, err
 	}
-	log.Printf("==> %s", uuid)
 
 	return Ident(uuid), nil
 }

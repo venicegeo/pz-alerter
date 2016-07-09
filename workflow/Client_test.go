@@ -15,7 +15,6 @@
 package workflow
 
 import (
-	"log"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -50,7 +49,6 @@ func (suite *ClientTester) Test11Admin() {
 
 	client := suite.client
 
-	log.Printf("AdminStats:")
 	_, err := client.GetStats()
 	assert.NoError(err)
 }

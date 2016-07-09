@@ -77,103 +77,103 @@ func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
 	}
 	message := "Hi! I'm pz-workflow."
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetStats(c *gin.Context) {
 	resp := server.service.GetAdminStats()
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
 	resp := server.service.GetEventType(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllEventTypes(c *gin.Context) {
 	resp := server.service.GetAllEventTypes(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
 	resp := server.service.PostEventType(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
 	resp := server.service.DeleteEventType(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetEvent(c *gin.Context) {
 	resp := server.service.GetEvent(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllEvents(c *gin.Context) {
 	resp := server.service.GetAllEvents(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //func (server *WorkflowServer) handleGetEventsByEventType(c *gin.Context) {
 //	resp := server.service.GetEventsByEventType(c)
-//	c.JSON(resp.StatusCode, resp)
+//	c.IndentedJSON(resp.StatusCode, resp)
 //}
 
 func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 	resp := server.service.PostEvent(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
 	resp := server.service.DeleteEvent(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetTrigger(c *gin.Context) {
 	resp := server.service.GetTrigger(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllTriggers(c *gin.Context) {
 	resp := server.service.GetAllTriggers(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
 	resp := server.service.PostTrigger(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
 	resp := server.service.DeleteTrigger(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetAlert(c *gin.Context) {
 	resp := server.service.GetAlert(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllAlerts(c *gin.Context) {
 	resp := server.service.GetAllAlerts(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
 	resp := server.service.PostAlert(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteAlert(c *gin.Context) {
 	resp := server.service.DeleteAlert(c)
-	c.JSON(resp.StatusCode, resp)
+	c.IndentedJSON(resp.StatusCode, resp)
 }
