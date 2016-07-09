@@ -381,16 +381,18 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 	if err != nil {
 		return statusBadRequest(err)
 	}
+	format.SortBy = "eventId"
 
 	eventTypeId := c.Query("eventTypeId")
-
-	//log.Printf("FFF %s", eventTypeId)
 
 	query := ""
 
 	// Get the eventTypeName corresponding to the eventTypeId
 	if eventTypeId != "" {
-		eventType, _ := service.eventTypeDB.GetOne(Ident(eventTypeId))
+		eventType, err := service.eventTypeDB.GetOne(Ident(eventTypeId))
+		if err != nil {
+			return statusBadRequest(err)
+		}
 		query = eventType.Name
 	}
 
