@@ -22,7 +22,6 @@ import (
 	_ "io/ioutil"
 	"log"
 	"mime/multipart"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -149,12 +148,7 @@ func (service *WorkflowService) sendToKafka(jobInstance string, jobID piazza.Ide
 		return errors.New("Kafka-related failure (1): " + err.Error())
 	}
 
-	// TODO: this should live in SystemConfig!
-	// Get Space we are running in.   Default to int
-	space := os.Getenv("SPACE")
-	if space == "" {
-		space = "int"
-	}
+	space := service.sys.Space
 
 	topic := fmt.Sprintf("Request-Job-%s", space)
 	message := jobInstance
