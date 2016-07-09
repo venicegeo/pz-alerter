@@ -3,7 +3,7 @@
 url="http://pz-workflow.$PZDOMAIN"
 
 json='{
-    "name": "USDadtaEvent1",
+    "name": "USDadtaEvent1x",
     "mapping": {
         "filename": "string",
         "code":     "string",

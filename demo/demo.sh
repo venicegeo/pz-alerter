@@ -20,3 +20,7 @@ sh post-event-yes.sh $eventTypeId > tmp.5
 eventYesId=`grep eventId tmp.5 | cut -f 2 -d ":" | cut -f 1 -d "," | cut -d \" -f 2`
 echo EventId/yes: $eventYesId
 
+sleep 3
+sh get-all-alerts.sh > tmp.6
+grep $eventYesId tmp.6
+
