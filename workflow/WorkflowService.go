@@ -377,11 +377,12 @@ func (service *WorkflowService) GetEvent(c *gin.Context) *piazza.JsonResponse {
 func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonResponse {
 	params := piazza.NewQueryParams(c.Request)
 
-	format, err := piazza.NewJsonPagination(params, defaultPagination)
+	ourpag := defaultPagination
+	ourpag.SortBy = "eventId"
+	format, err := piazza.NewJsonPagination(params, ourpag)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-	format.SortBy = "eventId"
 
 	eventTypeId := c.Query("eventTypeId")
 
@@ -396,6 +397,7 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 		query = eventType.Name
 	}
 
+	log.Printf("filtering on: %s %s", eventTypeId, query)
 	m, count, err := service.eventDB.GetAll(query, format)
 	if err != nil {
 		return statusBadRequest(err)
