@@ -430,6 +430,8 @@ func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
 		return statusBadRequest(err)
 	}
 
+	event.CreatedOn = time.Now()
+
 	_, err = service.eventDB.PostData(eventType.Name, event, event.EventId)
 	if err != nil {
 		return statusBadRequest(err)
