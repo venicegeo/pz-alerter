@@ -72,7 +72,6 @@ type TriggerList []Trigger
 
 // posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
-// TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
 	EventId     Ident                  `json:"eventId"`
 	EventTypeId Ident                  `json:"eventTypeId" binding:"required"`
@@ -96,10 +95,11 @@ type EventTypeList []EventType
 
 // a notification, automatically created when an Trigger happens
 type Alert struct {
-	AlertId   Ident `json:"alertId"`
-	TriggerId Ident `json:"triggerId"`
-	EventId   Ident `json:"eventId"`
-	JobId     Ident `json:"jobId"`
+	AlertId   Ident     `json:"alertId"`
+	TriggerId Ident     `json:"triggerId"`
+	EventId   Ident     `json:"eventId"`
+	JobId     Ident     `json:"jobId"`
+	CreatedOn time.Time `json:"createdOn"`
 }
 
 type AlertList []Alert

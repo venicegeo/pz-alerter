@@ -65,6 +65,10 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				}
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				}
 			}
 		}
 	}

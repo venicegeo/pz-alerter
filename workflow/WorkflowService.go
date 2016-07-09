@@ -735,6 +735,8 @@ func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
 		return statusBadRequest(err)
 	}
 
+	alert.CreatedOn = time.Now()
+
 	_, err = service.alertDB.PostData(&alert, alert.AlertId)
 	if err != nil {
 		return statusInternalServerError(err)
