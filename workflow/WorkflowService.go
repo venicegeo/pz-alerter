@@ -19,22 +19,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	_ "io/ioutil"
 	"log"
 	"mime/multipart"
+	"net/http"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/Shopify/sarama"
-	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-
-	_ "io"
-	"net/http"
-	_ "net/url"
-
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
@@ -60,10 +54,31 @@ type WorkflowService struct {
 	sys *piazza.SystemConfig
 }
 
-var defaultPagination = &piazza.JsonPagination{
-	PerPage: 10,
+var defaultEventTypePagination = &piazza.JsonPagination{
+	PerPage: 50,
 	Page:    0,
-	SortBy:  "id",
+	SortBy:  "eventTypeId",
+	Order:   piazza.PaginationOrderAscending,
+}
+
+var defaultEventPagination = &piazza.JsonPagination{
+	PerPage: 50,
+	Page:    0,
+	SortBy:  "eventId",
+	Order:   piazza.PaginationOrderAscending,
+}
+
+var defaultTriggerPagination = &piazza.JsonPagination{
+	PerPage: 50,
+	Page:    0,
+	SortBy:  "triggerId",
+	Order:   piazza.PaginationOrderAscending,
+}
+
+var defaultAlertPagination = &piazza.JsonPagination{
+	PerPage: 50,
+	Page:    0,
+	SortBy:  "alertId",
 	Order:   piazza.PaginationOrderAscending,
 }
 
@@ -232,8 +247,7 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 
 //------------------------------------------
 
-func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonResponse {
-	id := piazza.Ident(c.Param("id"))
+func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonResponse {
 
 	event, err := service.eventTypeDB.GetOne(piazza.Ident(id))
 	if err != nil {
@@ -245,12 +259,9 @@ func (service *WorkflowService) GetEventType(c *gin.Context) *piazza.JsonRespons
 	return statusOK(event)
 }
 
-func (service *WorkflowService) GetAllEventTypes(c *gin.Context) *piazza.JsonResponse {
-	params := piazza.NewQueryParams(c.Request)
+func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 
-	ourpag := defaultPagination
-	ourpag.SortBy = "eventTypeId"
-	format, err := piazza.NewJsonPagination(params, ourpag)
+	format, err := piazza.NewJsonPagination(params, defaultEventTypePagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -273,13 +284,8 @@ func (service *WorkflowService) GetAllEventTypes(c *gin.Context) *piazza.JsonRes
 	return resp
 }
 
-func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonResponse {
-	eventType := &EventType{}
-	err := c.BindJSON(eventType)
-	if err != nil {
-		return statusBadRequest(err)
-	}
-
+func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
+	var err error
 	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	eventType.EventTypeId, err = service.newIdent()
@@ -307,8 +313,7 @@ func (service *WorkflowService) PostEventType(c *gin.Context) *piazza.JsonRespon
 	return statusCreated(eventType)
 }
 
-func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResponse {
-	id := piazza.Ident(c.Param("id"))
+func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
@@ -322,10 +327,8 @@ func (service *WorkflowService) DeleteEventType(c *gin.Context) *piazza.JsonResp
 
 //------------------------------------------
 
-func (service *WorkflowService) GetEvent(c *gin.Context) *piazza.JsonResponse {
+func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	// eventType := c.Param("eventType")
-	s := c.Param("id")
-	id := piazza.Ident(s)
 	// event, err := server.eventDB.GetOne(eventType, id)
 	mapping, err := service.lookupEventTypeNameByEventID(id)
 	if err != nil {
@@ -346,19 +349,16 @@ func (service *WorkflowService) GetEvent(c *gin.Context) *piazza.JsonResponse {
 	return statusOK(event)
 }
 
-func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonResponse {
-	params := piazza.NewQueryParams(c.Request)
+func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 
-	ourpag := defaultPagination
-	ourpag.SortBy = "eventId"
-	format, err := piazza.NewJsonPagination(params, ourpag)
+	format, err := piazza.NewJsonPagination(params, defaultEventPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
 
 	// if both specified, "by id"" wins
-	eventTypeId := c.Query("eventTypeId")
-	eventTypeName := c.Query("eventTypeName")
+	eventTypeId := params.Get("eventTypeId")
+	eventTypeName := params.Get("eventTypeName")
 
 	query := ""
 
@@ -391,12 +391,7 @@ func (service *WorkflowService) GetAllEvents(c *gin.Context) *piazza.JsonRespons
 	return resp
 }
 
-func (service *WorkflowService) PostEvent(c *gin.Context) *piazza.JsonResponse {
-	var event Event
-	err := c.BindJSON(&event)
-	if err != nil {
-		return statusBadRequest(err)
-	}
+func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 	eventTypeId := event.EventTypeId
 	eventType, err := service.eventTypeDB.GetOne(eventTypeId)
@@ -533,9 +528,7 @@ func (service *WorkflowService) sendAlert(
 	return nil
 }
 
-func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse {
-	s := c.Param("id")
-	id := piazza.Ident(s)
+func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	// eventType := c.Param("eventType")
 	mapping, err := service.lookupEventTypeNameByEventID(id)
 	if err != nil {
@@ -557,8 +550,7 @@ func (service *WorkflowService) DeleteEvent(c *gin.Context) *piazza.JsonResponse
 
 //------------------------------------------
 
-func (service *WorkflowService) GetTrigger(c *gin.Context) *piazza.JsonResponse {
-	id := piazza.Ident(c.Param("id"))
+func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
 
 	trigger, err := service.triggerDB.GetOne(piazza.Ident(id))
 	if err != nil {
@@ -570,12 +562,9 @@ func (service *WorkflowService) GetTrigger(c *gin.Context) *piazza.JsonResponse 
 	return statusOK(trigger)
 }
 
-func (service *WorkflowService) GetAllTriggers(c *gin.Context) *piazza.JsonResponse {
-	params := piazza.NewQueryParams(c.Request)
+func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 
-	ourpag := defaultPagination
-	ourpag.SortBy = "triggerId"
-	format, err := piazza.NewJsonPagination(params, ourpag)
+	format, err := piazza.NewJsonPagination(params, defaultTriggerPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -598,12 +587,8 @@ func (service *WorkflowService) GetAllTriggers(c *gin.Context) *piazza.JsonRespo
 	return resp
 }
 
-func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse {
-	trigger := &Trigger{}
-	err := c.BindJSON(trigger)
-	if err != nil {
-		return statusBadRequest(err)
-	}
+func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
+	var err error
 
 	trigger.TriggerId, err = service.newIdent()
 	if err != nil {
@@ -619,8 +604,8 @@ func (service *WorkflowService) PostTrigger(c *gin.Context) *piazza.JsonResponse
 	return statusCreated(trigger)
 }
 
-func (service *WorkflowService) DeleteTrigger(c *gin.Context) *piazza.JsonResponse {
-	id := piazza.Ident(c.Param("id"))
+func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
+
 	ok, err := service.triggerDB.DeleteTrigger(piazza.Ident(id))
 	if err != nil {
 		return statusBadRequest(err)
@@ -634,8 +619,7 @@ func (service *WorkflowService) DeleteTrigger(c *gin.Context) *piazza.JsonRespon
 
 //------------------------------------------
 
-func (service *WorkflowService) GetAlert(c *gin.Context) *piazza.JsonResponse {
-	id := piazza.Ident(c.Param("id"))
+func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 
 	alert, err := service.alertDB.GetOne(id)
 	if err != nil {
@@ -648,16 +632,10 @@ func (service *WorkflowService) GetAlert(c *gin.Context) *piazza.JsonResponse {
 	return statusOK(alert)
 }
 
-func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonResponse {
-	// TODO: conditionID := c.Query("condition")
-	//log.Printf("%#v", c.Request)
-	triggerId := c.Query("triggerId")
+func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	triggerId := params.Get("triggerId")
 
-	params := piazza.NewQueryParams(c.Request)
-
-	ourpag := defaultPagination
-	ourpag.SortBy = "alertId"
-	format, err := piazza.NewJsonPagination(params, ourpag)
+	format, err := piazza.NewJsonPagination(params, defaultAlertPagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -696,12 +674,8 @@ func (service *WorkflowService) GetAllAlerts(c *gin.Context) *piazza.JsonRespons
 	return resp
 }
 
-func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
-	var alert Alert
-	err := c.BindJSON(&alert)
-	if err != nil {
-		return statusBadRequest(err)
-	}
+func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
+	var err error
 
 	alert.AlertId, err = service.newIdent()
 	if err != nil {
@@ -718,8 +692,7 @@ func (service *WorkflowService) PostAlert(c *gin.Context) *piazza.JsonResponse {
 	return statusCreated(alert)
 }
 
-func (service *WorkflowService) DeleteAlert(c *gin.Context) *piazza.JsonResponse {
-	id := piazza.Ident(c.Param("id"))
+func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.alertDB.DeleteByID(id)
 	if err != nil {
 		return statusBadRequest(err)

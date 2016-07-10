@@ -17,7 +17,6 @@ package workflow
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
@@ -97,43 +96,14 @@ type Alert struct {
 	UserName  string       `json:"userName"`
 }
 
-type AlertList []Alert
-
-type AlertListById []Alert
-
-func (a AlertListById) Len() int {
-	return len(a)
-}
-func (a AlertListById) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-func (a AlertListById) Less(i, j int) bool {
-	return a[i].AlertId < a[j].AlertId
-}
-
-func (list AlertList) ToSortedArray() []Alert {
-	array := make([]Alert, len(list))
-	i := 0
-	for _, v := range list {
-		array[i] = v
-		i++
-	}
-	sort.Sort(AlertListById(array))
-	return array
-}
-
 //---------------------------------------------------------------------------
 
 type WorkflowAdminStats struct {
 	CreatedOn     time.Time `json:"createdOn"`
-	NumAlerts     int       `json:"numAlerts"`
+	NudmAlerts    int       `json:"numAlerts"`
 	NumConditions int       `json:"numConditions"`
 	NumEvents     int       `json:"numEvents"`
 	NumTriggers   int       `json:"numTriggers"`
-}
-
-type WorkflowAdminSettings struct {
-	Debug bool `json:"debug"`
 }
 
 func LoggedError(mssg string, args ...interface{}) error {

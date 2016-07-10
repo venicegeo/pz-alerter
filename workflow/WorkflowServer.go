@@ -88,92 +88,127 @@ func (server *WorkflowServer) handleGetStats(c *gin.Context) {
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
-	resp := server.service.GetEventType(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.GetEventType(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllEventTypes(c *gin.Context) {
-	resp := server.service.GetAllEventTypes(c)
+	params := piazza.NewQueryParams(c.Request)
+	resp := server.service.GetAllEventTypes(params)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
-	resp := server.service.PostEventType(c)
+	eventType := &EventType{}
+	err := c.BindJSON(eventType)
+	if err != nil {
+		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		c.IndentedJSON(resp.StatusCode, resp)
+		return
+	}
+	resp := server.service.PostEventType(eventType)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
-	resp := server.service.DeleteEventType(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.DeleteEventType(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetEvent(c *gin.Context) {
-	resp := server.service.GetEvent(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.GetEvent(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllEvents(c *gin.Context) {
-	resp := server.service.GetAllEvents(c)
+	params := piazza.NewQueryParams(c.Request)
+	resp := server.service.GetAllEvents(params)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
-//func (server *WorkflowServer) handleGetEventsByEventType(c *gin.Context) {
-//	resp := server.service.GetEventsByEventType(c)
-//	c.IndentedJSON(resp.StatusCode, resp)
-//}
-
 func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
-	resp := server.service.PostEvent(c)
+	event := &Event{}
+	err := c.BindJSON(event)
+	if err != nil {
+		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		c.IndentedJSON(resp.StatusCode, resp)
+		return
+	}
+	resp := server.service.PostEvent(event)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
-	resp := server.service.DeleteEvent(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.DeleteEvent(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetTrigger(c *gin.Context) {
-	resp := server.service.GetTrigger(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.GetTrigger(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllTriggers(c *gin.Context) {
-	resp := server.service.GetAllTriggers(c)
+	params := piazza.NewQueryParams(c.Request)
+	resp := server.service.GetAllTriggers(params)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
-	resp := server.service.PostTrigger(c)
+	trigger := &Trigger{}
+	err := c.BindJSON(trigger)
+	if err != nil {
+		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		c.IndentedJSON(resp.StatusCode, resp)
+		return
+	}
+	resp := server.service.PostTrigger(trigger)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
-	resp := server.service.DeleteTrigger(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.DeleteTrigger(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetAlert(c *gin.Context) {
-	resp := server.service.GetAlert(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.GetAlert(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleGetAllAlerts(c *gin.Context) {
-	resp := server.service.GetAllAlerts(c)
+	params := piazza.NewQueryParams(c.Request)
+	resp := server.service.GetAllAlerts(params)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
-	resp := server.service.PostAlert(c)
+	alert := &Alert{}
+	err := c.BindJSON(alert)
+	if err != nil {
+		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		c.IndentedJSON(resp.StatusCode, resp)
+		return
+	}
+	resp := server.service.PostAlert(alert)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
 
 func (server *WorkflowServer) handleDeleteAlert(c *gin.Context) {
-	resp := server.service.DeleteAlert(c)
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.DeleteAlert(id)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
