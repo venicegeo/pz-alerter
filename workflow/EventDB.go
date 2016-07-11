@@ -37,7 +37,8 @@ const (
 					"index": "not_analyzed"
 				},
 				"data": {
-					"type": "object",
+					"dynamic": true,
+					"properties": {}
 				},
 				"createdBy": {
 					"type": "string",

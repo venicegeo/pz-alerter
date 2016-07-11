@@ -45,7 +45,8 @@ const (
 					"index": "not_analyzed"
 				},
 				"mapping": {
-					"type": "object",
+					"dynamic": true,
+					"properties": {}
 				}
 			}
 		}

@@ -56,7 +56,8 @@ const (
 							"index": "not_analyzed"
 						},
 						"query": {
-							"type": "object",
+							"dynamic": true,
+							"properties": {}
 						}
 					}
 				},
@@ -67,7 +68,8 @@ const (
 							"index": "not_analyzed"
 						},
 						"jobType": {
-							"type": "object",
+							"dynamic": true,
+							"properties": {}
 						}
 					}
 				},
