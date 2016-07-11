@@ -24,9 +24,9 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const AlertDBMapping string = "Alert3"
-const TriggerDBMapping string = "Trigger3"
-const EventTypeDBMapping string = "EventType3"
+const AlertDBMapping string = "Alert"
+const TriggerDBMapping string = "Trigger"
+const EventTypeDBMapping string = "EventType"
 
 //---------------------------------------------------------------------------
 
