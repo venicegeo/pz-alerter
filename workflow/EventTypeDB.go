@@ -21,16 +21,8 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-//---------------------------------------------------------------------------
-
-type EventTypeDB struct {
-	*ResourceDB
-	mapping string
-}
-
-// TODO: these settings are not yet being used and may not be correct
 const (
-	eventTypeIndexSettings = `
+	EventTypeIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
@@ -56,13 +48,19 @@ const (
 `
 )
 
+type EventTypeDB struct {
+	*ResourceDB
+	mapping string
+}
+
 func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventTypeDB, error) {
 
 	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
-	etrdb := EventTypeDB{ResourceDB: rdb, mapping: "EventType"}
+	esi.SetMapping(EventTypeDBMapping, EventTypeIndexSettings)
+	etrdb := EventTypeDB{ResourceDB: rdb, mapping: EventTypeDBMapping}
 	return &etrdb, nil
 }
 
