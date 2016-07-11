@@ -91,7 +91,7 @@ type EventTypeList []EventType
 
 //---------------------------------------------------------------------------
 
-// a notification, automatically created when an Trigger happens
+// a notification, automatically created when a Trigger happens
 type Alert struct {
 	AlertId   piazza.Ident `json:"alertId"`
 	TriggerId piazza.Ident `json:"triggerId"`
