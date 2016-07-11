@@ -24,6 +24,10 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
+const AlertDBMapping string = "Alert3"
+const TriggerDBMapping string = "Trigger3"
+const EventTypeDBMapping string = "EventType3"
+
 //---------------------------------------------------------------------------
 
 // expresses the idea of "this ES query returns an event"
@@ -37,8 +41,8 @@ type Condition struct {
 
 // Job JSON struct
 type Job struct {
-	UserName string                 `json:"userName" binding:"required"`
-	JobType  map[string]interface{} `json:"jobType" binding:"required"`
+	CreatedBy string                 `json:"createdBy" binding:"required"`
+	JobType   map[string]interface{} `json:"jobType" binding:"required"`
 }
 
 //---------------------------------------------------------------------------
@@ -52,7 +56,7 @@ type Trigger struct {
 	Condition     Condition    `json:"condition" binding:"required"`
 	Job           Job          `json:"job" binding:"required"`
 	PercolationId piazza.Ident `json:"percolationId"`
-	UserName      string       `json:"userName"`
+	CreatedBy     string       `json:"createdBy"`
 	CreatedOn     time.Time    `json:"createdOn"`
 }
 
@@ -65,9 +69,9 @@ type TriggerList []Trigger
 type Event struct {
 	EventId     piazza.Ident           `json:"eventId"`
 	EventTypeId piazza.Ident           `json:"eventTypeId" binding:"required"`
-	CreatedOn   time.Time              `json:"createdOn"`
 	Data        map[string]interface{} `json:"data"`
-	UserName    string                 `json:"userName"`
+	CreatedBy   string                 `json:"createdBy"`
+	CreatedOn   time.Time              `json:"createdOn"`
 }
 
 type EventList []Event
@@ -78,7 +82,7 @@ type EventType struct {
 	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
 	Name        string                                          `json:"name" binding:"required"`
 	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
-	UserName    string                                          `json:"userName"`
+	CreatedBy   string                                          `json:"createdBy"`
 	CreatedOn   time.Time                                       `json:"createdOn"`
 }
 
@@ -92,8 +96,8 @@ type Alert struct {
 	TriggerId piazza.Ident `json:"triggerId"`
 	EventId   piazza.Ident `json:"eventId"`
 	JobId     piazza.Ident `json:"jobId"`
+	CreatedBy string       `json:"createdBy"`
 	CreatedOn time.Time    `json:"createdOn"`
-	UserName  string       `json:"userName"`
 }
 
 //---------------------------------------------------------------------------

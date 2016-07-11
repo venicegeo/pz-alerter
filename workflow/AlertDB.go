@@ -22,11 +22,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-type AlertDB struct {
-	*ResourceDB
-	mapping string
-}
-
+// TODO: these settings are not yet being used and may not be correct
 // The default settings for our Elasticsearch alerts index
 // Explanation:
 //   "index.mapper.dynamic": false
@@ -41,30 +37,30 @@ type AlertDB struct {
 //     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
 //     match on all of these separate strings, which was undesired behavior.
 const (
-	alertIndexSettings = `
+	AlertIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
-	}
+	},
 	"mappings": {
 		"Alert": {
 			"properties": {
 				"alertId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"triggerId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"jobId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"eventId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"createdOn": {
 					"type": "date",
 					"index": "not_analyzed"
@@ -76,13 +72,19 @@ const (
 `
 )
 
+type AlertDB struct {
+	*ResourceDB
+	mapping string
+}
+
 func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
 
 	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
-	ardb := AlertDB{ResourceDB: rdb, mapping: "Alert2"}
+	esi.SetMapping(AlertDBMapping, AlertIndexSettings)
+	ardb := AlertDB{ResourceDB: rdb, mapping: AlertDBMapping}
 	return &ardb, nil
 }
 

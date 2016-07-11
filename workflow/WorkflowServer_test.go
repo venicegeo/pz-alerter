@@ -238,7 +238,7 @@ func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 			},
 		},
 		Job: Job{
-			UserName: "test",
+			CreatedBy: "test",
 			JobType: map[string]interface{}{
 				"type": "execute-service",
 				"data": map[string]interface{}{
@@ -720,7 +720,7 @@ func (suite *ServerTester) Test06Workflow() {
 				},
 			},
 			Job: Job{
-				UserName: "test",
+				CreatedBy: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{

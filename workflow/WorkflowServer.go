@@ -72,9 +72,6 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
-	type T struct {
-		Message string
-	}
 	message := "Hi! I'm pz-workflow."
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
 	c.IndentedJSON(resp.StatusCode, resp)

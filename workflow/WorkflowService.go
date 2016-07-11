@@ -413,7 +413,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 	{
 		// Find triggers associated with event
-		log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
+		//log.Printf("Looking for triggers with eventType %s and matching %v", eventType.Name, event.Data)
 		triggerIDs, err := service.eventDB.PercolateEventData(eventType.Name, event.Data, event.EventId)
 		if err != nil {
 			return statusBadRequest(err)
@@ -429,7 +429,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 			go func(triggerID piazza.Ident) {
 				defer waitGroup.Done()
 
-				log.Printf("\ntriggerID: %v\n", triggerID)
+				//log.Printf("\ntriggerID: %v\n", triggerID)
 				trigger, err := service.triggerDB.GetOne(triggerID)
 				if err != nil {
 					results[triggerID] = statusBadRequest(err)
@@ -494,7 +494,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 		waitGroup.Wait()
 
-		log.Printf("trigger results: %#v", results)
+		//log.Printf("trigger results: %#v", results)
 		for _, v := range results {
 			if v != nil {
 				return v

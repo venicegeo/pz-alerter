@@ -22,17 +22,12 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-type TriggerDB struct {
-	*ResourceDB
-	mapping string
-}
-
 const (
-	triggerIndexSettings = `
+	TriggerIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
-	}
+	},
 	"mappings": {
 		"Trigger": {
 			"properties": {
@@ -77,13 +72,20 @@ const (
 `
 )
 
+
+type TriggerDB struct {
+	*ResourceDB
+	mapping string
+}
+
 func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
 	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
-	ardb := TriggerDB{ResourceDB: rdb, mapping: "Trigger"}
+	esi.SetMapping(TriggerDBMapping, TriggerIndexSettings)
+	ardb := TriggerDB{ResourceDB: rdb, mapping: TriggerDBMapping}
 	return &ardb, nil
 }
 
