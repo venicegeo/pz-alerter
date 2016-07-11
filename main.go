@@ -44,7 +44,7 @@ func main() {
 	}
 
 	//	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
-	uuidgen, err := pzuuidgen.NewPzUuidGenService(sys)
+	uuidgen, err := pzuuidgen.NewClient(sys)
 
 	if err != nil {
 		log.Fatal(err)

@@ -19,6 +19,7 @@ import (
 	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 type AlertDB struct {
@@ -64,6 +65,10 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				}
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				}
 			}
 		}
 	}
@@ -73,28 +78,28 @@ const (
 
 func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
 
-	rdb, err := NewResourceDB(service, esi, "")
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
-	ardb := AlertDB{ResourceDB: rdb, mapping: "Alert"}
+	ardb := AlertDB{ResourceDB: rdb, mapping: "Alert2"}
 	return &ardb, nil
 }
 
-func (db *AlertDB) PostData(obj interface{}, id Ident) (Ident, error) {
+func (db *AlertDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
 
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		return NoIdent, LoggedError("AlertDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: not created")
 	}
 
 	return id, nil
 }
 
-func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, int64, error) {
+func (db *AlertDB) GetAll(format *piazza.JsonPagination) (*[]Alert, int64, error) {
 	var alerts []Alert
 	var count = int64(-1)
 
@@ -126,7 +131,7 @@ func (db *AlertDB) GetAll(format elasticsearch.QueryFormat) (*[]Alert, int64, er
 	return &alerts, count, nil
 }
 
-func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerId string) (*[]Alert, int64, error) {
+func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId string) (*[]Alert, int64, error) {
 
 	alerts := []Alert{}
 	var count = int64(-1)
@@ -173,7 +178,7 @@ func (db *AlertDB) GetAllByTrigger(format elasticsearch.QueryFormat, triggerId s
 	return &alerts, count, nil
 }
 
-func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
+func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
@@ -197,7 +202,7 @@ func (db *AlertDB) GetOne(id Ident) (*Alert, error) {
 	return &alert, nil
 }
 
-func (db *AlertDB) DeleteByID(id Ident) (bool, error) {
+func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return false, LoggedError("AlertDB.DeleteById failed: %s", err)

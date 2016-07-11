@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 type EventDB struct {
@@ -54,7 +55,7 @@ const (
 func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
 
 	// Create with no settings specified
-	rdb, err := NewResourceDB(service, esi, "")
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
@@ -62,20 +63,20 @@ func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, e
 	return &erdb, nil
 }
 
-func (db *EventDB) PostData(mapping string, obj interface{}, id Ident) (Ident, error) {
+func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
 
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
-		return NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		return NoIdent, LoggedError("EventDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: not created")
 	}
 
 	return id, nil
 }
 
-func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]Event, int64, error) {
+func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) (*[]Event, int64, error) {
 	var events []Event
 	var count = int64(-1)
 
@@ -110,7 +111,7 @@ func (db *EventDB) GetAll(mapping string, format elasticsearch.QueryFormat) (*[]
 	return &events, count, nil
 }
 
-func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
+func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, error) {
 
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
@@ -134,7 +135,7 @@ func (db *EventDB) GetOne(mapping string, id Ident) (*Event, error) {
 	return &event, nil
 }
 
-func (db *EventDB) DeleteByID(mapping string, id Ident) (bool, error) {
+func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
 		return false, LoggedError("EventDB.DeleteById failed: %s", err)
@@ -161,7 +162,7 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 	return nil
 }
 
-func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id Ident) (*[]Ident, error) {
+func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
 
 	//log.Printf("percolating type %s with data %v", eventType, data)
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
@@ -175,9 +176,9 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	}
 
 	// add the triggers to the alert queue
-	ids := make([]Ident, len(percolateResponse.Matches))
+	ids := make([]piazza.Ident, len(percolateResponse.Matches))
 	for i, v := range percolateResponse.Matches {
-		ids[i] = Ident(v.Id)
+		ids[i] = piazza.Ident(v.Id)
 	}
 
 	//log.Printf("\t\ttriggerIds: %v", ids)

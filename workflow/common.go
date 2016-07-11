@@ -17,31 +17,19 @@ package workflow
 import (
 	"errors"
 	"fmt"
-	"sort"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
-
-type WorkflowIDResponse struct {
-	ID Ident `json:"id"`
-}
-
-type Ident string
-
-const NoIdent Ident = ""
-
-func (id Ident) String() string {
-	return string(id)
-}
 
 //---------------------------------------------------------------------------
 
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventTypeIds []Ident                `json:"eventTypeIds" binding:"required"`
+	EventTypeIds []piazza.Ident         `json:"eventTypeIds" binding:"required"`
 	Query        map[string]interface{} `json:"query" binding:"required"`
 }
 
@@ -49,7 +37,7 @@ type Condition struct {
 
 // Job JSON struct
 type Job struct {
-	Username string                 `json:"userName" binding:"required"`
+	UserName string                 `json:"userName" binding:"required"`
 	JobType  map[string]interface{} `json:"jobType" binding:"required"`
 }
 
@@ -59,11 +47,13 @@ type Job struct {
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
 type Trigger struct {
-	TriggerId     Ident     `json:"triggerId"`
-	Title         string    `json:"title" binding:"required"`
-	Condition     Condition `json:"condition" binding:"required"`
-	Job           Job       `json:"job" binding:"required"`
-	PercolationId Ident     `json:"percolationId"`
+	TriggerId     piazza.Ident `json:"triggerId"`
+	Title         string       `json:"title" binding:"required"`
+	Condition     Condition    `json:"condition" binding:"required"`
+	Job           Job          `json:"job" binding:"required"`
+	PercolationId piazza.Ident `json:"percolationId"`
+	UserName      string       `json:"userName"`
+	CreatedOn     time.Time    `json:"createdOn"`
 }
 
 type TriggerList []Trigger
@@ -72,12 +62,12 @@ type TriggerList []Trigger
 
 // posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
-// TODO: use the delayed-parsing, raw-message json thing?
 type Event struct {
-	EventId     Ident                  `json:"eventId"`
-	EventTypeId Ident                  `json:"eventTypeId" binding:"required"`
-	CreatedOn   time.Time              `json:"createdOn" binding:"required"`
+	EventId     piazza.Ident           `json:"eventId"`
+	EventTypeId piazza.Ident           `json:"eventTypeId" binding:"required"`
+	CreatedOn   time.Time              `json:"createdOn"`
 	Data        map[string]interface{} `json:"data"`
+	UserName    string                 `json:"userName"`
 }
 
 type EventList []Event
@@ -85,9 +75,11 @@ type EventList []Event
 //---------------------------------------------------------------------------
 
 type EventType struct {
-	EventTypeId Ident                                           `json:"eventTypeId"`
+	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
 	Name        string                                          `json:"name" binding:"required"`
 	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
+	UserName    string                                          `json:"userName"`
+	CreatedOn   time.Time                                       `json:"createdOn"`
 }
 
 type EventTypeList []EventType
@@ -96,35 +88,12 @@ type EventTypeList []EventType
 
 // a notification, automatically created when an Trigger happens
 type Alert struct {
-	AlertId   Ident `json:"alertId"`
-	TriggerId Ident `json:"triggerId"`
-	EventId   Ident `json:"eventId"`
-	JobId     Ident `json:"jobId"`
-}
-
-type AlertList []Alert
-
-type AlertListById []Alert
-
-func (a AlertListById) Len() int {
-	return len(a)
-}
-func (a AlertListById) Swap(i, j int) {
-	a[i], a[j] = a[j], a[i]
-}
-func (a AlertListById) Less(i, j int) bool {
-	return a[i].AlertId < a[j].AlertId
-}
-
-func (list AlertList) ToSortedArray() []Alert {
-	array := make([]Alert, len(list))
-	i := 0
-	for _, v := range list {
-		array[i] = v
-		i++
-	}
-	sort.Sort(AlertListById(array))
-	return array
+	AlertId   piazza.Ident `json:"alertId"`
+	TriggerId piazza.Ident `json:"triggerId"`
+	EventId   piazza.Ident `json:"eventId"`
+	JobId     piazza.Ident `json:"jobId"`
+	CreatedOn time.Time    `json:"createdOn"`
+	UserName  string       `json:"userName"`
 }
 
 //---------------------------------------------------------------------------
@@ -135,10 +104,6 @@ type WorkflowAdminStats struct {
 	NumConditions int       `json:"numConditions"`
 	NumEvents     int       `json:"numEvents"`
 	NumTriggers   int       `json:"numTriggers"`
-}
-
-type WorkflowAdminSettings struct {
-	Debug bool `json:"debug"`
 }
 
 func LoggedError(mssg string, args ...interface{}) error {

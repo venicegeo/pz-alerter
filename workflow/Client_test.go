@@ -15,23 +15,22 @@
 package workflow
 
 import (
-	"log"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	loggerPkg "github.com/venicegeo/pz-logger/logger"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
+	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 type ClientTester struct {
 	suite.Suite
-	logger     loggerPkg.IClient
-	uuidgenner uuidgenPkg.IUuidGenService
-	client     *Client
-	sys        *piazza.SystemConfig
+	logger  pzlogger.IClient
+	uuidgen pzuuidgen.IClient
+	client  *Client
+	sys     *piazza.SystemConfig
 }
 
 func (suite *ClientTester) SetupSuite() {
@@ -50,7 +49,6 @@ func (suite *ClientTester) Test11Admin() {
 
 	client := suite.client
 
-	log.Printf("AdminStats:")
 	_, err := client.GetStats()
 	assert.NoError(err)
 }
@@ -200,7 +198,7 @@ func (suite *ClientTester) Test15One() {
 
 	var eventTypeName = "EventTypeA"
 
-	var etID Ident
+	var etID piazza.Ident
 	{
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
@@ -210,7 +208,7 @@ func (suite *ClientTester) Test15One() {
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 
 		respEventType, err := client.PostEventType(eventType)
-		etID := respEventType.EventTypeId
+		etID = respEventType.EventTypeId
 		assert.NoError(err)
 
 		defer func() {
@@ -221,12 +219,12 @@ func (suite *ClientTester) Test15One() {
 
 	sleep()
 
-	var tID Ident
+	var tID piazza.Ident
 	{
 		x1 := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
-				EventTypeIds: []Ident{etID},
+				EventTypeIds: []piazza.Ident{etID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -236,7 +234,7 @@ func (suite *ClientTester) Test15One() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
@@ -258,7 +256,7 @@ func (suite *ClientTester) Test15One() {
 		}()
 	}
 
-	var e1ID Ident
+	var e1ID piazza.Ident
 	{
 		// will cause trigger t1ID
 		e1 := &Event{
@@ -283,7 +281,7 @@ func (suite *ClientTester) Test15One() {
 
 	sleep()
 
-	var e2ID Ident
+	var e2ID piazza.Ident
 	{
 		// will cause no triggers
 		e2 := &Event{
@@ -312,7 +310,7 @@ func (suite *ClientTester) Test15One() {
 	//	assert.Len(*ary, 2)
 	//}
 
-	var aID Ident
+	var aID piazza.Ident
 	{
 		if MOCKING {
 			t.Skip("Skipping test, because mocking")
@@ -359,7 +357,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	t1 := Trigger{
 		Title: "the x1 trigger",
 		Condition: Condition{
-			EventTypeIds: []Ident{etID},
+			EventTypeIds: []piazza.Ident{etID},
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -369,7 +367,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 			},
 		},
 		Job: Job{
-			Username: "test",
+			UserName: "test",
 			JobType: map[string]interface{}{
 				"type": "execute-service",
 				"data": map[string]interface{}{
@@ -414,7 +412,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 	//-----------------------------------------------------
 
-	var etC, etD, etE Ident
+	var etC, etD, etE piazza.Ident
 	{
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
@@ -452,12 +450,12 @@ func (suite *ClientTester) Test17Triggering() {
 
 	////////////////
 
-	var tA, tB Ident
+	var tA, tB piazza.Ident
 	{
 		t1 := &Trigger{
 			Title: "Trigger A",
 			Condition: Condition{
-				EventTypeIds: []Ident{etC},
+				EventTypeIds: []piazza.Ident{etC},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -467,7 +465,7 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
@@ -489,7 +487,7 @@ func (suite *ClientTester) Test17Triggering() {
 		t2 := &Trigger{
 			Title: "Trigger B",
 			Condition: Condition{
-				EventTypeIds: []Ident{etD},
+				EventTypeIds: []piazza.Ident{etD},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -499,7 +497,7 @@ func (suite *ClientTester) Test17Triggering() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
@@ -525,7 +523,7 @@ func (suite *ClientTester) Test17Triggering() {
 		assert.Len(*triggers, 2)
 	}
 
-	var eF, eG, eH Ident
+	var eF, eG, eH piazza.Ident
 	{
 		// will cause trigger TA
 		e1 := Event{
@@ -585,7 +583,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 	sleep()
 
-	var aI, aJ Ident
+	var aI, aJ piazza.Ident
 	{
 		if MOCKING {
 			t.Skip("Skipping test, because mocking")

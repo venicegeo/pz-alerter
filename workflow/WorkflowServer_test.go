@@ -24,8 +24,8 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	loggerPkg "github.com/venicegeo/pz-logger/logger"
-	uuidgenPkg "github.com/venicegeo/pz-uuidgen/uuidgen"
+	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 const MOCKING = true
@@ -80,17 +80,17 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	logger, err := loggerPkg.NewMockClient(sys)
+	logger, err := pzlogger.NewMockClient(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var uuidgen uuidgenPkg.IUuidGenService
+	var uuidgen pzuuidgen.IClient
 
 	if MOCKING {
-		uuidgen, err = uuidgenPkg.NewMockUuidGenService(sys)
+		uuidgen, err = pzuuidgen.NewMockClient(sys)
 	} else {
-		uuidgen, err = uuidgenPkg.NewPzUuidGenService(sys)
+		uuidgen, err = pzuuidgen.NewClient(sys)
 	}
 
 	if err != nil {
@@ -213,7 +213,7 @@ func makeTestEventType(eventTypeName string) *EventType {
 	return &EventType{Name: eventTypeName, Mapping: mapping}
 }
 
-func makeTestEvent(eventTypeID Ident) *Event {
+func makeTestEvent(eventTypeID piazza.Ident) *Event {
 	event := &Event{
 		EventTypeId: eventTypeID,
 		CreatedOn:   time.Now(),
@@ -224,7 +224,7 @@ func makeTestEvent(eventTypeID Ident) *Event {
 	return event
 }
 
-func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
+func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	trigger := &Trigger{
 		Title: "MY TRIGGER TITLE",
 		Condition: Condition{
@@ -238,7 +238,7 @@ func makeTestTrigger(eventTypeIDs []Ident) *Trigger {
 			},
 		},
 		Job: Job{
-			Username: "test",
+			UserName: "test",
 			JobType: map[string]interface{}{
 				"type": "execute-service",
 				"data": map[string]interface{}{
@@ -259,7 +259,7 @@ func sleep() {
 }
 
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
+
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -331,7 +331,9 @@ func (suite *ServerTester) Test02Event() {
 	eventTypeName := makeTestEventTypeName()
 	eventType := makeTestEventType(eventTypeName)
 	//printJSON("event type", eventType)
+	//log.Printf("CCC %#v", eventType)
 	respEventType, err := client.PostEventType(eventType)
+	//log.Printf("BBB %#v", respEventType)
 	eventTypeID := respEventType.EventTypeId
 	assert.NoError(err)
 	//printJSON("event type id", eventTypeID)
@@ -340,16 +342,16 @@ func (suite *ServerTester) Test02Event() {
 
 	//log.Printf("Creating new event:")
 	event := makeTestEvent(eventTypeID)
-	//printJSON("event", event)
 	respEvent, err := client.PostEvent(event)
+	//log.Printf("CCC %#v", event)
 	id := respEvent.EventId
 	assert.NoError(err)
 	//printJSON("event id", id)
 
 	sleep()
 
-	//log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err = client.GetAllEventsByEventType(eventTypeName)
+	//log.Printf("Getting list of events (type=%s):", eventTypeID)
+	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	//printJSON("Events", events)
@@ -373,7 +375,7 @@ func (suite *ServerTester) Test02Event() {
 	sleep()
 
 	//log.Printf("Getting list of events (type=%s):", eventTypeName)
-	events, err = client.GetAllEventsByEventType(eventTypeName)
+	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 0)
 	//printJSON("Events", events)
@@ -416,7 +418,7 @@ func (suite *ServerTester) Test03Trigger() {
 	sleep()
 
 	//log.Printf("Creating new trigger:")
-	trigger := makeTestTrigger([]Ident{eventTypeID})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	id := respTrigger.TriggerId
@@ -478,7 +480,7 @@ func (suite *ServerTester) Test04Alert() {
 	sleep()
 
 	//log.Printf("Creating new trigger:")
-	trigger := makeTestTrigger([]Ident{eventTypeID})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("Trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	triggerID := respTrigger.TriggerId
@@ -556,7 +558,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	var eventTypeName1 = "Type1"
 	var eventTypeName2 = "Type2"
 
-	eventtypeF := func(typ string) Ident {
+	createEventType := func(typ string) piazza.Ident {
 		//log.Printf("Creating event type: %s\n", typ)
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
@@ -582,7 +584,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventTypeID
 	}
 
-	eventF := func(eventTypeID Ident, eventTypeName string, value int) Ident {
+	createEvent := func(eventTypeID piazza.Ident, eventTypeName string, value int) piazza.Ident {
 		//log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
 			EventTypeId: eventTypeID,
@@ -609,14 +611,14 @@ func (suite *ServerTester) Test05EventMapping() {
 		return eventID
 	}
 
-	dumpEventsF := func(eventTypeName string, expected int) {
-		x, err := client.GetAllEventsByEventType(eventTypeName)
+	checkEvents := func(eventTypeId piazza.Ident, expected int) {
+		x, err := client.GetAllEventsByEventType(eventTypeId)
 		assert.NoError(err)
 		assert.Len(*x, expected)
 	}
 
-	et1Id := eventtypeF(eventTypeName1)
-	et2Id := eventtypeF(eventTypeName2)
+	et1Id := createEventType(eventTypeName1)
+	et2Id := createEventType(eventTypeName2)
 
 	{
 		x, err := client.GetAllEventTypes()
@@ -626,20 +628,18 @@ func (suite *ServerTester) Test05EventMapping() {
 
 	{
 		// no events yet!
-		x, err := client.GetAllEventsByEventType(eventTypeName1)
-		// TODO: this is a bug, mocked and real should both return same answer
+		x, err := client.GetAllEvents()
 		assert.NoError(err)
 		assert.Len(*x, 0)
 
-		x, err = client.GetAllEventsByEventType(eventTypeName2)
-		assert.NoError(err)
+		// We expect errors here because searching for an EventType that doesn't exist
+		// results in an error
+		x, err = client.GetAllEventsByEventType(et1Id)
+		assert.Error(err)
 		assert.Len(*x, 0)
-	}
-
-	{
-		x, err := client.GetAllEventTypes()
-		assert.NoError(err)
-		assert.Len(*x, 2)
+		x, err = client.GetAllEventsByEventType(et2Id)
+		assert.Error(err)
+		assert.Len(*x, 0)
 	}
 
 	{
@@ -648,14 +648,14 @@ func (suite *ServerTester) Test05EventMapping() {
 		assert.EqualValues(string(et1Id), string((*x).EventTypeId))
 	}
 
-	e1Id := eventF(et1Id, eventTypeName1, 17)
-	dumpEventsF(eventTypeName1, 1)
+	e1Id := createEvent(et1Id, eventTypeName1, 17)
+	checkEvents(et1Id, 1)
 
-	e2Id := eventF(et1Id, eventTypeName1, 18)
-	dumpEventsF(eventTypeName1, 2)
+	e2Id := createEvent(et1Id, eventTypeName1, 18)
+	checkEvents(et1Id, 2)
 
-	e3Id := eventF(et2Id, eventTypeName2, 19)
-	dumpEventsF(eventTypeName2, 1)
+	e3Id := createEvent(et2Id, eventTypeName2, 19)
+	checkEvents(et2Id, 1)
 
 	err = client.DeleteEvent(e1Id)
 	assert.NoError(err)
@@ -680,7 +680,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 	var eventTypeName = "EventTypeA"
 
-	var et1ID Ident
+	var et1ID piazza.Ident
 	{
 		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num":      elasticsearch.MappingElementTypeInteger,
@@ -704,13 +704,13 @@ func (suite *ServerTester) Test06Workflow() {
 	}
 	sleep()
 
-	var t1ID Ident
+	var t1ID piazza.Ident
 	{
 		//log.Printf("Creating trigger:\n")
 		trigger := &Trigger{
 			Title: "the x1 trigger",
 			Condition: Condition{
-				EventTypeIds: []Ident{et1ID},
+				EventTypeIds: []piazza.Ident{et1ID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -720,7 +720,7 @@ func (suite *ServerTester) Test06Workflow() {
 				},
 			},
 			Job: Job{
-				Username: "test",
+				UserName: "test",
 				JobType: map[string]interface{}{
 					"type": "execute-service",
 					"data": map[string]interface{}{
@@ -745,7 +745,7 @@ func (suite *ServerTester) Test06Workflow() {
 	}
 	sleep()
 
-	var e1ID Ident
+	var e1ID piazza.Ident
 	{
 		//log.Printf("Creating event:\n")
 		// will cause trigger TRG1
@@ -881,7 +881,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 
 	// Create MultiTrigger
 	//log.Printf("\tCreating trigger:")
-	trigger := makeTestTrigger([]Ident{eventTypeId1, eventTypeId2})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeId1, eventTypeId2})
 	//printJSON("\ttrigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	triggerId := respTrigger.TriggerId
