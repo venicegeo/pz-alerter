@@ -100,7 +100,7 @@ func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
 	eventType := &EventType{}
 	err := c.BindJSON(eventType)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
@@ -132,7 +132,7 @@ func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 	event := &Event{}
 	err := c.BindJSON(event)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
@@ -164,7 +164,7 @@ func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
 	trigger := &Trigger{}
 	err := c.BindJSON(trigger)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
@@ -196,7 +196,7 @@ func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
 	alert := &Alert{}
 	err := c.BindJSON(alert)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Message: err.Error()}
+		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
