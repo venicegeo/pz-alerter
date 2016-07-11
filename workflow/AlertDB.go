@@ -22,7 +22,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-// TODO: these settings are not yet being used and may not be correct
 // The default settings for our Elasticsearch alerts index
 // Explanation:
 //   "index.mapper.dynamic": false
@@ -61,12 +60,12 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
-				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
-				},
 				"createdBy": {
 					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date",
 					"index": "not_analyzed"
 				}
 			}
@@ -83,11 +82,10 @@ type AlertDB struct {
 
 func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
 
-	rdb, err := NewResourceDB(service, esi)
+	rdb, err := NewResourceDB(service, esi, AlertIndexSettings)
 	if err != nil {
 		return nil, err
 	}
-	esi.SetMapping(AlertDBMapping, AlertIndexSettings)
 	ardb := AlertDB{ResourceDB: rdb, mapping: AlertDBMapping}
 	return &ardb, nil
 }

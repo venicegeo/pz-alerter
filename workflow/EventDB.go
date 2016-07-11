@@ -21,41 +21,40 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-// TODO: these settings are not yet being used and may not be correct
-// const (
-// 	EventIndexSettings = `
-// {
-// 	"settings": {
-// 		"index.mapper.dynamic": false
-// 	},
-// 	"mappings": {
-// 		"_all": {
-// 			"properties": {
-// 				"eventTypeId": {
-// 					"type": "string",
-// 					"index": "not_analyzed"
-// 				},
-// 				"eventId": {
-// 					"type": "string",
-// 					"index": "not_analyzed"
-// 				},
-// 				"createdOn": {
-// 					"type": "date",
-// 					"index": "not_analyzed"
-// 				},
-// 				"createdBy": {
-// 					"type": "string",
-// 					"index": "not_analyzed"
-// 				},
-// 				"data": {
-// 					"dynamic": true
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-// `
-// )
+const (
+	EventIndexSettings = `
+{
+	"settings": {
+		"index.mapper.dynamic": false
+	},
+	"mappings": {
+		"_all": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"data": {
+					"type": "object",
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
+)
 
 type EventDB struct {
 	*ResourceDB
@@ -63,7 +62,7 @@ type EventDB struct {
 
 func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
 
-	rdb, err := NewResourceDB(service, esi)
+	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
 	if err != nil {
 		return nil, err
 	}
