@@ -39,18 +39,18 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
- 				"createdOn": {
- 					"type": "date",
- 					"index": "not_analyzed"
- 				},
- 				"createdBy": {
- 					"type": "string",
- 					"index": "not_analyzed"
- 				},
- 				"disabled": {
- 					"type": "bool",
- 					"index": "not_analyzed"
- 				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"disabled": {
+					"type": "bool",
+					"index": "not_analyzed"
+				},
 				"condition": {
 					"properties": {
 						"eventTypeIds": {
@@ -58,18 +58,18 @@ const (
 							"index": "not_analyzed"
 						},
 						"query": {
-							"dynamic": "true"
+							"type": "object",
 						}
 					}
 				},
 				"job": {
 					"properties": {
-						"userName": {
+						"createdBy": {
 							"type": "string",
 							"index": "not_analyzed"
 						},
 						"jobType": {
-							"dynamic": "true"
+							"type": "object",
 						}
 					}
 				},
@@ -91,11 +91,10 @@ type TriggerDB struct {
 
 func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	rdb, err := NewResourceDB(service, esi)
+	rdb, err := NewResourceDB(service, esi, TriggerIndexSettings)
 	if err != nil {
 		return nil, err
 	}
-	esi.SetMapping(TriggerDBMapping, TriggerIndexSettings)
 	ardb := TriggerDB{ResourceDB: rdb, mapping: TriggerDBMapping}
 	return &ardb, nil
 }

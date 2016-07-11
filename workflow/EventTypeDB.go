@@ -38,16 +38,16 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
- 				"createdOn": {
- 					"type": "date",
- 					"index": "not_analyzed"
- 				},
- 				"createdBy": {
- 					"type": "string",
- 					"index": "not_analyzed"
- 				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
 				"mapping": {
-					"dynamic": true
+					"type": "object",
 				}
 			}
 		}
@@ -63,11 +63,10 @@ type EventTypeDB struct {
 
 func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventTypeDB, error) {
 
-	rdb, err := NewResourceDB(service, esi)
+	rdb, err := NewResourceDB(service, esi, EventTypeIndexSettings)
 	if err != nil {
 		return nil, err
 	}
-	esi.SetMapping(EventTypeDBMapping, EventTypeIndexSettings)
 	etrdb := EventTypeDB{ResourceDB: rdb, mapping: EventTypeDBMapping}
 	return &etrdb, nil
 }

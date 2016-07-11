@@ -50,19 +50,21 @@ func main() {
 		log.Fatal(err)
 	}
 
-	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes")
+	// XXX
+	// Changing index names for testing purposes
+	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypestest")
 	if err != nil {
 		log.Fatal(err)
 	}
-	eventsIndex, err := elasticsearch.NewIndex(sys, "events")
+	eventsIndex, err := elasticsearch.NewIndex(sys, "eventstest")
 	if err != nil {
 		log.Fatal(err)
 	}
-	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers")
+	triggersIndex, err := elasticsearch.NewIndex(sys, "triggerstest")
 	if err != nil {
 		log.Fatal(err)
 	}
-	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts")
+	alertsIndex, err := elasticsearch.NewIndex(sys, "alertstest")
 	if err != nil {
 		log.Fatal(err)
 	}
