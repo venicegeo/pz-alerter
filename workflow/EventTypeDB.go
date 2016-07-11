@@ -24,11 +24,9 @@ import (
 const (
 	EventTypeIndexSettings = `
 {
-	"settings": {
-		"index.mapper.dynamic": false
-	},
 	"mappings": {
 		"EventType": {
+			"dynamic": "strict",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",

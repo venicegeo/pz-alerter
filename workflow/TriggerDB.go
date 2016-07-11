@@ -25,11 +25,9 @@ import (
 const (
 	TriggerIndexSettings = `
 {
-	"settings": {
-		"index.mapper.dynamic": false
-	},
 	"mappings": {
 		"Trigger": {
+			"dynamic": "strict",
 			"properties": {
 				"triggerId": {
 					"type": "string",
