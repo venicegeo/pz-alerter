@@ -21,7 +21,7 @@ type ResourceDB struct {
 	Esi     elasticsearch.IIndex
 }
 
-func NewResourceDB(service *WorkflowService, esi elasticsearch.IIndex) (*ResourceDB, error) {
+func NewResourceDB(service *WorkflowService, esi elasticsearch.IIndex, settings string) (*ResourceDB, error) {
 	db := &ResourceDB{
 		service: service,
 		Esi:     esi,
@@ -29,7 +29,7 @@ func NewResourceDB(service *WorkflowService, esi elasticsearch.IIndex) (*Resourc
 
 	// _ = esi.Delete()
 
-	err := esi.Create()
+	err := esi.Create(settings)
 	if err != nil {
 		return nil, err
 	}

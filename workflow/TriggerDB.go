@@ -22,17 +22,12 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-type TriggerDB struct {
-	*ResourceDB
-	mapping string
-}
-
 const (
-	triggerIndexSettings = `
+	TriggerIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
-	}
+	},
 	"mappings": {
 		"Trigger": {
 			"properties": {
@@ -44,6 +39,18 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
+ 				"createdOn": {
+ 					"type": "date",
+ 					"index": "not_analyzed"
+ 				},
+ 				"createdBy": {
+ 					"type": "string",
+ 					"index": "not_analyzed"
+ 				},
+ 				"disabled": {
+ 					"type": "byte",
+ 					"index": "not_analyzed"
+ 				},
 				"condition": {
 					"properties": {
 						"eventTypeIds": {
@@ -51,18 +58,18 @@ const (
 							"index": "not_analyzed"
 						},
 						"query": {
-							"dynamic": "true"
+							"type": "object",
 						}
 					}
 				},
 				"job": {
 					"properties": {
-						"userName": {
+						"createdBy": {
 							"type": "string",
 							"index": "not_analyzed"
 						},
 						"jobType": {
-							"dynamic": "true"
+							"type": "object",
 						}
 					}
 				},
@@ -77,13 +84,18 @@ const (
 `
 )
 
+type TriggerDB struct {
+	*ResourceDB
+	mapping string
+}
+
 func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
-	rdb, err := NewResourceDB(service, esi)
+	rdb, err := NewResourceDB(service, esi, TriggerIndexSettings)
 	if err != nil {
 		return nil, err
 	}
-	ardb := TriggerDB{ResourceDB: rdb, mapping: "Trigger"}
+	ardb := TriggerDB{ResourceDB: rdb, mapping: TriggerDBMapping}
 	return &ardb, nil
 }
 
