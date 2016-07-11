@@ -39,6 +39,14 @@ import (
 // 					"type": "string",
 // 					"index": "not_analyzed"
 // 				},
+// 				"createdOn": {
+// 					"type": "date",
+// 					"index": "not_analyzed"
+// 				},
+// 				"createdBy": {
+// 					"type": "string",
+// 					"index": "not_analyzed"
+// 				},
 // 				"data": {
 // 					"dynamic": true
 // 				}

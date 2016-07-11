@@ -104,7 +104,7 @@ type Alert struct {
 
 type WorkflowAdminStats struct {
 	CreatedOn     time.Time `json:"createdOn"`
-	NudmAlerts    int       `json:"numAlerts"`
+	NumAlerts     int       `json:"numAlerts"`
 	NumConditions int       `json:"numConditions"`
 	NumEvents     int       `json:"numEvents"`
 	NumTriggers   int       `json:"numTriggers"`
