@@ -27,6 +27,7 @@ type AlertDB struct {
 	mapping string
 }
 
+// TODO: these settings are not yet being used and may not be correct
 // The default settings for our Elasticsearch alerts index
 // Explanation:
 //   "index.mapper.dynamic": false
@@ -45,26 +46,26 @@ const (
 {
 	"settings": {
 		"index.mapper.dynamic": false
-	}
+	},
 	"mappings": {
 		"Alert": {
 			"properties": {
 				"alertId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"triggerId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"jobId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"eventId": {
 					"type": "string",
 					"index": "not_analyzed"
-				}
+				},
 				"createdOn": {
 					"type": "date",
 					"index": "not_analyzed"

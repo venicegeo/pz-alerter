@@ -28,12 +28,13 @@ type EventTypeDB struct {
 	mapping string
 }
 
+// TODO: these settings are not yet being used and may not be correct
 const (
 	eventTypeIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
-	}
+	},
 	"mappings": {
 		"EventType": {
 			"properties": {

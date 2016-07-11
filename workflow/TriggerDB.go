@@ -27,12 +27,13 @@ type TriggerDB struct {
 	mapping string
 }
 
+// TODO: these settings are not yet being used and may not be correct
 const (
 	triggerIndexSettings = `
 {
 	"settings": {
 		"index.mapper.dynamic": false
-	}
+	},
 	"mappings": {
 		"Trigger": {
 			"properties": {
