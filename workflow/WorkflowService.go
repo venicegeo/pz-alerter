@@ -439,6 +439,11 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 					results[triggerID] = statusNotFound(triggerID)
 					return
 				}
+				if trigger.Disabled == 1 {
+					results[triggerID] = statusOK(triggerID)
+					return
+				}
+
 				// Not the best way to do this, but should disallow Triggers from firing if they
 				// don't have the same Eventtype as the Event
 				// Would rather have this done via the percolation itself ...

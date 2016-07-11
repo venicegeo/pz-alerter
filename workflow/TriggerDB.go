@@ -48,7 +48,7 @@ const (
  					"index": "not_analyzed"
  				},
  				"disabled": {
- 					"type": "bool",
+ 					"type": "byte",
  					"index": "not_analyzed"
  				},
 				"condition": {
