@@ -39,6 +39,14 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
+ 				"createdOn": {
+ 					"type": "date",
+ 					"index": "not_analyzed"
+ 				},
+ 				"createdBy": {
+ 					"type": "string",
+ 					"index": "not_analyzed"
+ 				},
 				"condition": {
 					"properties": {
 						"eventTypeIds": {
@@ -71,7 +79,6 @@ const (
 }
 `
 )
-
 
 type TriggerDB struct {
 	*ResourceDB
