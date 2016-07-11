@@ -47,6 +47,10 @@ const (
  					"type": "string",
  					"index": "not_analyzed"
  				},
+ 				"disabled": {
+ 					"type": "bool",
+ 					"index": "not_analyzed"
+ 				},
 				"condition": {
 					"properties": {
 						"eventTypeIds": {
