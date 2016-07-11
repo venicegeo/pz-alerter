@@ -251,7 +251,7 @@ func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonRespon
 
 	event, err := service.eventTypeDB.GetOne(piazza.Ident(id))
 	if err != nil {
-		return statusBadRequest(err)
+		return statusNotFound(id)
 	}
 	if event == nil {
 		return statusNotFound(id)
@@ -332,14 +332,14 @@ func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	// event, err := server.eventDB.GetOne(eventType, id)
 	mapping, err := service.lookupEventTypeNameByEventID(id)
 	if err != nil {
-		return statusBadRequest(err)
+		return statusNotFound(id)
 	}
 
 	//log.Printf("The Mapping is:  %s\n", mapping)
 
 	event, err := service.eventDB.GetOne(mapping, id)
 	if err != nil {
-		return statusBadRequest(err)
+		return statusNotFound(id)
 
 	}
 	if event == nil {
@@ -559,7 +559,7 @@ func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse
 
 	trigger, err := service.triggerDB.GetOne(piazza.Ident(id))
 	if err != nil {
-		return statusBadRequest(err)
+		return statusNotFound(id)
 	}
 	if trigger == nil {
 		return statusNotFound(id)
@@ -628,7 +628,7 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 
 	alert, err := service.alertDB.GetOne(id)
 	if err != nil {
-		return statusBadRequest(err)
+		return statusNotFound(id)
 	}
 	if alert == nil {
 		return statusNotFound(id)
