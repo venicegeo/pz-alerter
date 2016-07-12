@@ -22,52 +22,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-// The default settings for our Elasticsearch alerts index
-// Explanation:
-//   "index": "not_analyzed"
-//     This means that these properties are not analyzed by Elasticsearch.
-//     Previously, these ids were analyzed by ES and thus broken up into chunks;
-//     in the case of a UUID this would happen via break-up by the "-" character.
-//     For example, the UUID "ab3142cd-1a8e-44f8-6a01-5ce8a9328fb2" would be broken
-//     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
-//     match on all of these separate strings, which was undesired behavior.
-const (
-	AlertIndexSettings = `
-{
-	"mappings": {
-		"Alert": {
-			"properties": {
-				"alertId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"triggerId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"jobId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"eventId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
-				}
-			}
-		}
-	}
-}
-`
-)
-
 type AlertDB struct {
 	*ResourceDB
 	mapping string

@@ -21,39 +21,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const (
-	EventIndexSettings = `
-{
-	"mappings": {
-		"_all": {
-			"properties": {
-				"eventTypeId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"eventId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"data": {
-					"dynamic": true,
-					"properties": {}
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
-				}
-			}
-		}
-	}
-}
-`
-)
-
 type EventDB struct {
 	*ResourceDB
 }
