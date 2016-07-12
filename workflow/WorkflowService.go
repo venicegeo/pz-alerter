@@ -217,11 +217,21 @@ func (service *WorkflowService) postToPzGatewayJobService(uri string, params map
 //------------------------------------------
 
 func statusOK(obj interface{}) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
+	err := resp.SetType()
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+	return resp
 }
 
 func statusCreated(obj interface{}) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusCreated, Data: obj}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusCreated, Data: obj}
+	err := resp.SetType()
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+	return resp
 }
 
 func statusBadRequest(err error) *piazza.JsonResponse {
