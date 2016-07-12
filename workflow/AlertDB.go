@@ -24,10 +24,6 @@ import (
 
 // The default settings for our Elasticsearch alerts index
 // Explanation:
-//   "index.mapper.dynamic": false
-//     This removes the ability for us to create new fields within documents
-//     after the type has been defined, rather than adding them in dynamically
-//     if they aren't recognized
 //   "index": "not_analyzed"
 //     This means that these properties are not analyzed by Elasticsearch.
 //     Previously, these ids were analyzed by ES and thus broken up into chunks;
@@ -38,9 +34,6 @@ import (
 const (
 	AlertIndexSettings = `
 {
-	"settings": {
-		"index.mapper.dynamic": false
-	},
 	"mappings": {
 		"Alert": {
 			"properties": {

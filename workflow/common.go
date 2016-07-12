@@ -24,9 +24,9 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const AlertDBMapping string = "Alert3"
-const TriggerDBMapping string = "Trigger3"
-const EventTypeDBMapping string = "EventType3"
+const AlertDBMapping string = "Alert"
+const TriggerDBMapping string = "Trigger"
+const EventTypeDBMapping string = "EventType"
 
 //---------------------------------------------------------------------------
 
@@ -91,7 +91,7 @@ type EventTypeList []EventType
 
 //---------------------------------------------------------------------------
 
-// a notification, automatically created when an Trigger happens
+// a notification, automatically created when a Trigger happens
 type Alert struct {
 	AlertId   piazza.Ident `json:"alertId"`
 	TriggerId piazza.Ident `json:"triggerId"`

@@ -25,9 +25,6 @@ import (
 const (
 	TriggerIndexSettings = `
 {
-	"settings": {
-		"index.mapper.dynamic": false
-	},
 	"mappings": {
 		"Trigger": {
 			"properties": {
@@ -39,18 +36,18 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
- 				"createdOn": {
- 					"type": "date",
- 					"index": "not_analyzed"
- 				},
- 				"createdBy": {
- 					"type": "string",
- 					"index": "not_analyzed"
- 				},
- 				"disabled": {
- 					"type": "byte",
- 					"index": "not_analyzed"
- 				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"disabled": {
+					"type": "byte",
+					"index": "not_analyzed"
+				},
 				"condition": {
 					"properties": {
 						"eventTypeIds": {
@@ -58,7 +55,8 @@ const (
 							"index": "not_analyzed"
 						},
 						"query": {
-							"type": "object",
+							"dynamic": true,
+							"properties": {}
 						}
 					}
 				},
@@ -69,7 +67,8 @@ const (
 							"index": "not_analyzed"
 						},
 						"jobType": {
-							"type": "object",
+							"dynamic": true,
+							"properties": {}
 						}
 					}
 				},
