@@ -126,7 +126,7 @@ const (
 	EventIndexSettings = `
 {
 	"mappings": {
-		"_all": {
+		"_default_": {
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
