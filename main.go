@@ -50,19 +50,19 @@ func main() {
 		log.Fatal(err)
 	}
 
-	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes")
+	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes", pzworkflow.EventTypeIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	eventsIndex, err := elasticsearch.NewIndex(sys, "events")
+	eventsIndex, err := elasticsearch.NewIndex(sys, "events", pzworkflow.EventIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers")
+	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers", pzworkflow.TriggerIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts")
+	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts", pzworkflow.AlertIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
