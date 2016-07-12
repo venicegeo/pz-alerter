@@ -30,6 +30,67 @@ const EventTypeDBMapping string = "EventType"
 
 //---------------------------------------------------------------------------
 
+const (
+	TriggerIndexSettings = `
+{
+	"mappings": {
+		"Trigger": {
+			"properties": {
+				"triggerId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"title": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"disabled": {
+					"type": "byte",
+					"index": "not_analyzed"
+				},
+				"condition": {
+					"properties": {
+						"eventTypeIds": {
+							"type": "string",
+							"index": "not_analyzed"
+						},
+						"query": {
+							"dynamic": true,
+							"properties": {}
+						}
+					}
+				},
+				"job": {
+					"properties": {
+						"createdBy": {
+							"type": "string",
+							"index": "not_analyzed"
+						},
+						"jobType": {
+							"dynamic": true,
+							"properties": {}
+						}
+					}
+				},
+				"percolationId": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
+)
+
 // expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
@@ -37,15 +98,11 @@ type Condition struct {
 	Query        map[string]interface{} `json:"query" binding:"required"`
 }
 
-//---------------------------------------------------------------------------
-
 // Job JSON struct
 type Job struct {
 	CreatedBy string                 `json:"createdBy" binding:"required"`
 	JobType   map[string]interface{} `json:"jobType" binding:"required"`
 }
-
-//---------------------------------------------------------------------------
 
 // when the and'ed set of Conditions all are true, do Something
 // Events are the results of the Conditions queries
@@ -65,6 +122,39 @@ type TriggerList []Trigger
 
 //---------------------------------------------------------------------------
 
+const (
+	EventIndexSettings = `
+{
+	"mappings": {
+		"_all": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"data": {
+					"dynamic": true,
+					"properties": {}
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
+)
+
 // posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {
@@ -79,6 +169,39 @@ type EventList []Event
 
 //---------------------------------------------------------------------------
 
+const (
+	EventTypeIndexSettings = `
+{
+	"mappings": {
+		"EventType": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"name": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"mapping": {
+					"dynamic": true,
+					"properties": {}
+				}
+			}
+		}
+	}
+}
+`
+)
+
 type EventType struct {
 	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
 	Name        string                                          `json:"name" binding:"required"`
@@ -90,6 +213,52 @@ type EventType struct {
 type EventTypeList []EventType
 
 //---------------------------------------------------------------------------
+
+// The default settings for our Elasticsearch alerts index
+// Explanation:
+//   "index": "not_analyzed"
+//     This means that these properties are not analyzed by Elasticsearch.
+//     Previously, these ids were analyzed by ES and thus broken up into chunks;
+//     in the case of a UUID this would happen via break-up by the "-" character.
+//     For example, the UUID "ab3142cd-1a8e-44f8-6a01-5ce8a9328fb2" would be broken
+//     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
+//     match on all of these separate strings, which was undesired behavior.
+const (
+	AlertIndexSettings = `
+{
+	"mappings": {
+		"Alert": {
+			"properties": {
+				"alertId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"triggerId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"jobId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
+)
 
 // a notification, automatically created when a Trigger happens
 type Alert struct {

@@ -22,67 +22,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const (
-	TriggerIndexSettings = `
-{
-	"mappings": {
-		"Trigger": {
-			"properties": {
-				"triggerId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"title": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"disabled": {
-					"type": "byte",
-					"index": "not_analyzed"
-				},
-				"condition": {
-					"properties": {
-						"eventTypeIds": {
-							"type": "string",
-							"index": "not_analyzed"
-						},
-						"query": {
-							"dynamic": true,
-							"properties": {}
-						}
-					}
-				},
-				"job": {
-					"properties": {
-						"createdBy": {
-							"type": "string",
-							"index": "not_analyzed"
-						},
-						"jobType": {
-							"dynamic": true,
-							"properties": {}
-						}
-					}
-				},
-				"percolationId": {
-					"type": "string",
-					"index": "not_analyzed"
-				}
-			}
-		}
-	}
-}
-`
-)
-
 type TriggerDB struct {
 	*ResourceDB
 	mapping string
