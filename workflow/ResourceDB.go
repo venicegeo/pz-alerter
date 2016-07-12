@@ -29,7 +29,7 @@ func NewResourceDB(service *WorkflowService, esi elasticsearch.IIndex, settings 
 
 	// _ = esi.Delete()
 
-	err := esi.Create()
+	err := esi.Create(settings)
 	if err != nil {
 		return nil, err
 	}
