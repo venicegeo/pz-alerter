@@ -24,3 +24,4 @@ sleep 3
 sh get-all-alerts.sh > tmp.6
 grep $eventYesId tmp.6
 
+rm -f tmp.?

@@ -33,7 +33,7 @@ json='{
     },
     "job": {
         "task": "alert the user",
-        "userName": "test",
+        "createdBy": "test",
         "jobType": {
             "type": "execute-service",
             "data": {
