@@ -27,7 +27,6 @@ const (
 {
 	"mappings": {
 		"Trigger": {
-			"dynamic": "strict",
 			"properties": {
 				"triggerId": {
 					"type": "string",

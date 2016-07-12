@@ -36,7 +36,6 @@ const (
 {
 	"mappings": {
 		"Alert": {
-			"dynamic": "strict",
 			"properties": {
 				"alertId": {
 					"type": "string",

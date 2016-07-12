@@ -26,7 +26,6 @@ const (
 {
 	"mappings": {
 		"_all": {
-			"dynamic": "strict",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
