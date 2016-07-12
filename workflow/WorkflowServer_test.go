@@ -104,25 +104,25 @@ func TestRunSuite(t *testing.T) {
 		triggersIndex = elasticsearch.NewMockIndex("triggers")
 		alertsIndex = elasticsearch.NewMockIndex("alerts")
 	} else {
-		eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes$", "")
+		eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes$")
 		if err != nil {
 			log.Fatal(err)
 		}
 		//log.Printf("eventtypesIndex: %s\n", eventtypesIndex.IndexName())
 
-		eventsIndex, err = elasticsearch.NewIndex(sys, "events$", "")
+		eventsIndex, err = elasticsearch.NewIndex(sys, "events$")
 		if err != nil {
 			log.Fatal(err)
 		}
 		//log.Printf("eventsIndex: %s\n", eventsIndex.IndexName())
 
-		triggersIndex, err = elasticsearch.NewIndex(sys, "triggers$", "")
+		triggersIndex, err = elasticsearch.NewIndex(sys, "triggers$")
 		if err != nil {
 			log.Fatal(err)
 		}
 		//log.Printf("triggersIndex: %s\n", triggersIndex.IndexName())
 
-		alertsIndex, err = elasticsearch.NewIndex(sys, "alerts$", "")
+		alertsIndex, err = elasticsearch.NewIndex(sys, "alerts$")
 		if err != nil {
 			log.Fatal(err)
 		}
