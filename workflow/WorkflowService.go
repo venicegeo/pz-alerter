@@ -296,12 +296,12 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 
 func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	var err error
-	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	eventType.EventTypeId, err = service.newIdent()
 	if err != nil {
 		return statusBadRequest(err)
 	}
+	log.Printf("New EventType/1: %#v", eventType)
 
 	eventType.CreatedOn = time.Now()
 
@@ -310,7 +310,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
+	log.Printf("New EventType/2: %#v", eventType)
 
 	err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
