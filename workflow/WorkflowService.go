@@ -450,7 +450,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 					return
 				}
 				if trigger.Disabled == 1 {
-					results[triggerID] = statusOK(triggerID)
+					//results[triggerID] = statusOK(triggerID)
 					return
 				}
 
@@ -510,7 +510,8 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 		waitGroup.Wait()
 
 		//log.Printf("trigger results: %#v", results)
-		for _, v := range results {
+		for k, v := range results {
+			log.Printf("%#v %#v", k, v)
 			if v != nil {
 				return v
 			}
