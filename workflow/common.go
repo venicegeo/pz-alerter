@@ -291,3 +291,17 @@ func isUuid(uuid string) bool {
 	check := uuidpkg.Parse(uuid)
 	return check != nil
 }
+
+//---------------------------------------------------------------------------
+
+func init() {
+	piazza.JsonResponseDataTypes["*workflow.EventType"] = "eventtype"
+	piazza.JsonResponseDataTypes["*[]workflow.EventType"] = "eventtype-list"
+	piazza.JsonResponseDataTypes["*workflow.Event"] = "event"
+	piazza.JsonResponseDataTypes["*[]workflow.Event"] = "event-list"
+	piazza.JsonResponseDataTypes["*workflow.Trigger"] = "trigger"
+	piazza.JsonResponseDataTypes["*[]workflow.Trigger"] = "trigger-list"
+	piazza.JsonResponseDataTypes["*workflow.Alert"] = "alert"
+	piazza.JsonResponseDataTypes["*[]workflow.Alert"] = "alert-list"
+	piazza.JsonResponseDataTypes["workflow.WorkflowAdminStats"] = "workflowstats"
+}
