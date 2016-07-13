@@ -17,6 +17,8 @@ package workflow
 import (
 	"encoding/json"
 	"log"
+	"math/rand"
+	"strconv"
 	"testing"
 	"time"
 
@@ -202,8 +204,9 @@ func (suite *ServerTester) TearDownSuite() {
 
 //---------------------------------------------------------------------------
 
+// Generate random names
 func makeTestEventTypeName() string {
-	return "MYTYPE"
+	return "MYTYPE" + strconv.Itoa(rand.Int())
 }
 
 func makeTestEventType(eventTypeName string) *EventType {
@@ -679,7 +682,7 @@ func (suite *ServerTester) Test06Workflow() {
 	assertNoData(suite.T(), suite.client)
 	defer assertNoData(suite.T(), suite.client)
 
-	var eventTypeName = "EventTypeA"
+	eventTypeName := makeTestEventTypeName()
 
 	var et1ID piazza.Ident
 	{
