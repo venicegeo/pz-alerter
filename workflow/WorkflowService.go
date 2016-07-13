@@ -310,7 +310,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
+	log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
@@ -318,7 +318,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	//log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
+	log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
 
 	return statusCreated(eventType)
 }
