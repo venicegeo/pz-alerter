@@ -18,6 +18,7 @@ fi
 
 json='{
     "title": "High Severity",
+    "disabled": 0,
     "condition": {
         "eventTypeIds": ["'"$eventTypeId"'"],
         "query": {
@@ -33,7 +34,7 @@ json='{
     },
     "job": {
         "task": "alert the user",
-        "userName": "test",
+        "createdBy": "test",
         "jobType": {
             "type": "execute-service",
             "data": {

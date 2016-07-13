@@ -217,11 +217,21 @@ func (service *WorkflowService) postToPzGatewayJobService(uri string, params map
 //------------------------------------------
 
 func statusOK(obj interface{}) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
+	err := resp.SetType()
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+	return resp
 }
 
 func statusCreated(obj interface{}) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusCreated, Data: obj}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusCreated, Data: obj}
+	err := resp.SetType()
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+	return resp
 }
 
 func statusBadRequest(err error) *piazza.JsonResponse {
@@ -286,12 +296,12 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 
 func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	var err error
-	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
 
 	eventType.EventTypeId, err = service.newIdent()
 	if err != nil {
 		return statusBadRequest(err)
 	}
+	log.Printf("New EventType/1: %#v", eventType)
 
 	eventType.CreatedOn = time.Now()
 
@@ -300,7 +310,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
+	log.Printf("New EventType/2: %#v", eventType)
 
 	err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
@@ -308,7 +318,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	//log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
+	log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
 
 	return statusCreated(eventType)
 }
@@ -440,7 +450,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 					return
 				}
 				if trigger.Disabled == 1 {
-					results[triggerID] = statusOK(triggerID)
+					//results[triggerID] = statusOK(triggerID)
 					return
 				}
 
@@ -500,7 +510,8 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 		waitGroup.Wait()
 
 		//log.Printf("trigger results: %#v", results)
-		for _, v := range results {
+		for k, v := range results {
+			log.Printf("%#v %#v", k, v)
 			if v != nil {
 				return v
 			}

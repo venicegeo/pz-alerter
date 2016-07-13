@@ -53,7 +53,7 @@ func NewClient(sys *piazza.SystemConfig,
 func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
 	et := EventType{}
 
-	err := piazza.SuperConverter(resp.Data, &et)
+	err := resp.ExtractData(&et)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
 func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
 	ets := []EventType{}
 
-	err := piazza.SuperConverter(resp.Data, &ets)
+	err := resp.ExtractData(&ets)
 	if err != nil {
 		return nil, err
 	}
@@ -72,16 +72,7 @@ func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
 	return &ets, nil
 }
 
-//---------------------------------------------------------------------------
-
-func asObject(resp *piazza.JsonResponse, out interface{}) error {
-	err := piazza.SuperConverter(resp.Data, out)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
+//---------------------------------------------------------------------
 
 func (c *Client) getObject(endpoint string, out interface{}) error {
 	resp := piazza.HttpGetJson(c.url + endpoint)
@@ -92,7 +83,11 @@ func (c *Client) getObject(endpoint string, out interface{}) error {
 		return resp.ToError()
 	}
 
-	return asObject(resp, out)
+	err := resp.ExtractData(out)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) error {
@@ -103,8 +98,11 @@ func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) e
 	if resp.StatusCode != http.StatusCreated {
 		return resp.ToError()
 	}
-
-	return asObject(resp, out)
+	err := resp.ExtractData(out)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) error {
@@ -116,7 +114,12 @@ func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) er
 		return resp.ToError()
 	}
 
-	return asObject(resp, out)
+	err := resp.ExtractData(out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (c *Client) deleteObject(endpoint string) error {
@@ -130,6 +133,8 @@ func (c *Client) deleteObject(endpoint string) error {
 
 	return nil
 }
+
+//---------------------------------------------------------------------
 
 func (c *Client) GetEventType(id piazza.Ident) (*EventType, error) {
 	out := &EventType{}
@@ -259,7 +264,7 @@ func (c *Client) DeleteAlert(id piazza.Ident) error {
 	return err
 }
 
-//////////////////////////////////////////////////////////////////////////////
+//---------------------------------------------------------------------
 
 func (c *Client) GetStats() (*WorkflowAdminStats, error) {
 	out := &WorkflowAdminStats{}
