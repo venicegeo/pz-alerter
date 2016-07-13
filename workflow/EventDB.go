@@ -83,6 +83,12 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) (*[]Eve
 	return &events, count, nil
 }
 
+// Function to check if an EventType name exists
+// This is easier to check in EventDB, as the mappings use the EventType.Name
+func (db *EventDB) NameExists(name string) bool {
+	return db.Esi.TypeExists(name)
+}
+
 func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, error) {
 
 	getResult, err := db.Esi.GetByID(mapping, id.String())

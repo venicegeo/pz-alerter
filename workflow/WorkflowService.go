@@ -286,7 +286,11 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 
 func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	var err error
-	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
+
+	// Check if our EventType.Name already exists
+	if service.eventDB.NameExists(eventType.Name) {
+		return statusBadRequest(errors.New("EventType Name already exists!"))
+	}
 
 	eventType.EventTypeId, err = service.newIdent()
 	if err != nil {
@@ -300,15 +304,11 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	//log.Printf("New EventType with id: %s\n", eventType.EventTypeId)
-
 	err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping)
 	if err != nil {
 		service.eventTypeDB.DeleteByID(id)
 		return statusBadRequest(err)
 	}
-
-	//log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
 
 	return statusCreated(eventType)
 }
