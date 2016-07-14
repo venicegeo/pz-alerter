@@ -38,6 +38,7 @@ import (
 type LockedAdminStats struct {
 	sync.Mutex
 	WorkflowAdminStats
+	origin string
 }
 
 var origin string
@@ -54,6 +55,8 @@ type WorkflowService struct {
 	uuidgen pzuuidgen.IClient
 
 	sys *piazza.SystemConfig
+
+	origin string
 }
 
 var defaultEventTypePagination = &piazza.JsonPagination{
@@ -124,7 +127,7 @@ func (service *WorkflowService) Init(
 		return err
 	}
 
-	origin = string(sys.Name)
+	service.origin = string(sys.Name)
 
 	return nil
 }
