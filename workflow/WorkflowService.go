@@ -290,10 +290,12 @@ func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonRespon
 
 func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 
+	log.Printf("GetAllEventTypes: %#v", defaultEventTypePagination)
 	format, err := piazza.NewJsonPagination(params, defaultEventTypePagination)
 	if err != nil {
 		return statusBadRequest(err)
 	}
+	log.Printf("GetAllEventTypes: %#v", format)
 
 	ets, count, err := service.eventTypeDB.GetAll(format)
 	if err != nil {
