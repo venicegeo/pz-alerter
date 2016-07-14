@@ -298,7 +298,11 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	var err error
 	// Check if our EventType.Name already exists
 	if service.eventDB.NameExists(eventType.Name) {
-		return statusBadRequest(errors.New("EventType Name already exists!"))
+		id, err := service.eventTypeDB.GetIdByName(eventType.Name)
+		if err != nil {
+			return statusInternalServerError(err)
+		}
+		return statusBadRequest(LoggedError("EventType Name already exists under EventTypeId %s", id))
 	}
 
 	eventType.EventTypeId, err = service.newIdent()
