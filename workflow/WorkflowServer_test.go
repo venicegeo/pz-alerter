@@ -230,7 +230,7 @@ func makeTestEvent(eventTypeID piazza.Ident) *Event {
 func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	trigger := &Trigger{
 		Title:    "MY TRIGGER TITLE",
-		Disabled: 0,
+		Disabled: false,
 		Condition: Condition{
 			EventTypeIds: eventTypeIDs,
 			Query: map[string]interface{}{
