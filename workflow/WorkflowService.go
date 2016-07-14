@@ -40,6 +40,8 @@ type LockedAdminStats struct {
 	WorkflowAdminStats
 }
 
+var origin string
+
 type WorkflowService struct {
 	eventTypeDB *EventTypeDB
 	eventDB     *EventDB
@@ -121,6 +123,8 @@ func (service *WorkflowService) Init(
 	if err != nil {
 		return err
 	}
+
+	origin = string(sys.Name)
 
 	return nil
 }
@@ -235,15 +239,27 @@ func statusCreated(obj interface{}) *piazza.JsonResponse {
 }
 
 func statusBadRequest(err error) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
+	return &piazza.JsonResponse{
+		StatusCode: http.StatusBadRequest,
+		Message:    err.Error(),
+		Origin:     origin,
+	}
 }
 
 func statusInternalServerError(err error) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusInternalServerError, Message: err.Error()}
+	return &piazza.JsonResponse{
+		StatusCode: http.StatusInternalServerError,
+		Message:    err.Error(),
+		Origin:     origin,
+	}
 }
 
 func statusNotFound(id piazza.Ident) *piazza.JsonResponse {
-	return &piazza.JsonResponse{StatusCode: http.StatusNotFound, Message: string(id)}
+	return &piazza.JsonResponse{
+		StatusCode: http.StatusNotFound,
+		Message:    string(id),
+		Origin:     origin,
+	}
 }
 
 //------------------------------------------
