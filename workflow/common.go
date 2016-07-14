@@ -115,7 +115,7 @@ type Trigger struct {
 	PercolationId piazza.Ident `json:"percolationId"`
 	CreatedBy     string       `json:"createdBy"`
 	CreatedOn     time.Time    `json:"createdOn"`
-	Disabled      bool         `json:"disabled"` // TODO: this will panic() if using a bool instead of a byte???
+	Disabled      bool         `json:"disabled"`
 }
 
 type TriggerList []Trigger
