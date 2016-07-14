@@ -28,6 +28,7 @@ type WorkflowServer struct {
 
 	Routes  []piazza.RouteData
 	service *WorkflowService
+	origin  string
 }
 
 //---------------------------------------------------------------------------
@@ -66,6 +67,8 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 		{"GET", "/admin/stats", server.handleGetStats},
 	}
 
+	server.origin = service.origin
+
 	return nil
 }
 
@@ -100,7 +103,11 @@ func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
 	eventType := &EventType{}
 	err := c.BindJSON(eventType)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
@@ -132,7 +139,11 @@ func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 	event := &Event{}
 	err := c.BindJSON(event)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
@@ -164,7 +175,11 @@ func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
 	trigger := &Trigger{}
 	err := c.BindJSON(trigger)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
@@ -196,7 +211,11 @@ func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
 	alert := &Alert{}
 	err := c.BindJSON(alert)
 	if err != nil {
-		resp := &piazza.JsonResponse{StatusCode: http.StatusBadRequest, Message: err.Error()}
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
 		c.IndentedJSON(resp.StatusCode, resp)
 		return
 	}
