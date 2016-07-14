@@ -479,7 +479,6 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 					return
 				}
 				if trigger.Disabled == true {
-					//results[triggerID] = statusOK(triggerID)
 					return
 				}
 
