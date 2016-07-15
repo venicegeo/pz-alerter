@@ -85,7 +85,7 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err)
+		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
 	}
 	if getResult == nil {
 		return nil, LoggedError("EventTypeDB.GetOne failed: no getResult")
@@ -103,6 +103,31 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
 	}
 
 	return &eventType, nil
+}
+
+func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
+
+	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
+	if err != nil {
+		return nil, LoggedError("EventTypeDB.GetOneByName failed: %s", err.Error())
+	}
+	if getResult == nil {
+		return nil, LoggedError("EventTypeDB.GetOneByName failed: no getResult")
+	}
+
+	// This should not happen once we have 1 to 1 mappings of EventTypes to names
+	if getResult.NumberMatched() > 1 {
+		return nil, LoggedError("EventTypeDB.GetOneByName failed: matched more than one EventType!")
+	}
+
+	src := getResult.GetHit(0).Source
+	var eventType EventType
+	err = json.Unmarshal(*src, &eventType)
+	if err != nil {
+		return nil, err
+	}
+
+	return &eventType.EventTypeId, nil
 }
 
 func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {

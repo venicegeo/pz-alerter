@@ -26,8 +26,7 @@ type Client struct {
 	logger logger.IClient
 }
 
-func NewClient(sys *piazza.SystemConfig,
-	logger logger.IClient) (*Client, error) {
+func NewClient(sys *piazza.SystemConfig, logger logger.IClient) (*Client, error) {
 
 	var err error
 
@@ -48,10 +47,10 @@ func NewClient(sys *piazza.SystemConfig,
 	return service, nil
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
-	et := EventType{}
+	var et EventType
 
 	err := resp.ExtractData(&et)
 	if err != nil {
@@ -62,7 +61,7 @@ func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
 }
 
 func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
-	ets := []EventType{}
+	var ets []EventType
 
 	err := resp.ExtractData(&ets)
 	if err != nil {
@@ -72,7 +71,7 @@ func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
 	return &ets, nil
 }
 
-//---------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func (c *Client) getObject(endpoint string, out interface{}) error {
 	resp := piazza.HttpGetJson(c.url + endpoint)
@@ -134,7 +133,7 @@ func (c *Client) deleteObject(endpoint string) error {
 	return nil
 }
 
-//---------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func (c *Client) GetEventType(id piazza.Ident) (*EventType, error) {
 	out := &EventType{}
@@ -165,7 +164,7 @@ func (c *Client) DeleteEventType(id piazza.Ident) error {
 	return err
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func (c *Client) GetEvent(id piazza.Ident) (*Event, error) {
 	out := &Event{}
@@ -202,7 +201,7 @@ func (c *Client) DeleteEvent(id piazza.Ident) error {
 	return err
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func (c *Client) GetTrigger(id piazza.Ident) (*Trigger, error) {
 	out := &Trigger{}
@@ -233,7 +232,7 @@ func (c *Client) DeleteTrigger(id piazza.Ident) error {
 	return err
 }
 
-//---------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func (c *Client) GetAlert(id piazza.Ident) (*Alert, error) {
 	out := &Alert{}
@@ -264,7 +263,7 @@ func (c *Client) DeleteAlert(id piazza.Ident) error {
 	return err
 }
 
-//---------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
 func (c *Client) GetStats() (*WorkflowAdminStats, error) {
 	out := &WorkflowAdminStats{}

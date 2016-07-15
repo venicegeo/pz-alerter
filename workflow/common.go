@@ -53,7 +53,7 @@ const (
 					"index": "not_analyzed"
 				},
 				"disabled": {
-					"type": "byte",
+					"type": "boolean",
 					"index": "not_analyzed"
 				},
 				"condition": {
@@ -115,7 +115,7 @@ type Trigger struct {
 	PercolationId piazza.Ident `json:"percolationId"`
 	CreatedBy     string       `json:"createdBy"`
 	CreatedOn     time.Time    `json:"createdOn"`
-	Disabled      byte         `json:"disabled"` // TODO: this will panic() if using a bool instead of a byte???
+	Disabled      bool         `json:"disabled"`
 }
 
 type TriggerList []Trigger

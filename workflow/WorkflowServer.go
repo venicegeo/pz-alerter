@@ -15,6 +15,7 @@
 package workflow
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -95,6 +96,8 @@ func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
 
 func (server *WorkflowServer) handleGetAllEventTypes(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
+	log.Printf("handleGetAllEventTypes/1: %#v", c.Request.URL)
+	log.Printf("handleGetAllEventTypes/2: %#v", params)
 	resp := server.service.GetAllEventTypes(params)
 	c.IndentedJSON(resp.StatusCode, resp)
 }
