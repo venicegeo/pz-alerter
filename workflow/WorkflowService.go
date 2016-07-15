@@ -406,7 +406,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	}
 	eventTypeName := eventType.Name
 
-	eventID, err = service.newIdent()
+	eventID, err := service.newIdent()
 	if err != nil {
 		return statusBadRequest(err)
 	}
