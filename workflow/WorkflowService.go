@@ -389,20 +389,26 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	}
 
 	// if both specified, "by id"" wins
-	eventTypeId := params.Get("eventTypeId")
-	eventTypeName := params.Get("eventTypeName")
+	eventTypeId, err := params.AsString("eventTypeId", nil)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	eventTypeName, err := params.AsString("eventTypeName", nil)
+	if err != nil {
+		return statusBadRequest(err)
+	}
 
 	query := ""
 
 	// Get the eventTypeName corresponding to the eventTypeId
-	if eventTypeId != "" {
-		eventType, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeId))
+	if eventTypeId != nil {
+		eventType, err := service.eventTypeDB.GetOne(piazza.Ident(*eventTypeId))
 		if err != nil {
 			return statusBadRequest(err)
 		}
 		query = eventType.Name
-	} else if eventTypeName != "" {
-		query = eventTypeName
+	} else if eventTypeName != nil {
+		query = *eventTypeName
 	}
 
 	m, count, err := service.eventDB.GetAll(query, format)
@@ -671,7 +677,10 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerId := params.Get("triggerId")
+	triggerId, err := params.AsString("triggerId", nil)
+	if err != nil {
+		return statusBadRequest(err)
+	}
 
 	format, err := piazza.NewJsonPagination(params, defaultAlertPagination)
 	if err != nil {
@@ -681,13 +690,13 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 	var all *[]Alert
 	var count int64
 
-	if isUuid(triggerId) {
+	if triggerId != nil && isUuid(*triggerId) {
 		//log.Printf("Getting alerts with trigger %s", triggerId)
-		all, count, err = service.alertDB.GetAllByTrigger(format, triggerId)
+		all, count, err = service.alertDB.GetAllByTrigger(format, *triggerId)
 		if err != nil {
 			return statusBadRequest(err)
 		}
-	} else if triggerId == "" {
+	} else if triggerId == nil {
 		//log.Printf("Getting all alerts %#v", service)
 		all, count, err = service.alertDB.GetAll(format)
 		if err != nil {
