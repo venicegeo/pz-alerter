@@ -18,7 +18,7 @@ fi
 
 json='{
     "title": "High Severity",
-    "disabled": 0,
+    "disabled": false,
     "condition": {
         "eventTypeIds": ["'"$eventTypeId"'"],
         "query": {
