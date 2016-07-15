@@ -2,8 +2,10 @@
 
 url="http://pz-workflow.$PZDOMAIN"
 
+name=testevent-`date "+%s"`
+
 json='{
-    "name": "USDadtaEvent2",
+    "name": "'"$name"'",
     "mapping": {
         "filename": "string",
         "code":     "string",
