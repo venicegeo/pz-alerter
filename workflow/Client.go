@@ -26,8 +26,7 @@ type Client struct {
 	logger logger.IClient
 }
 
-func NewClient(sys *piazza.SystemConfig,
-	logger logger.IClient) (*Client, error) {
+func NewClient(sys *piazza.SystemConfig, logger logger.IClient) (*Client, error) {
 
 	var err error
 
@@ -51,7 +50,7 @@ func NewClient(sys *piazza.SystemConfig,
 //------------------------------------------------------------------------------
 
 func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
-	et := EventType{}
+	var et EventType
 
 	err := resp.ExtractData(&et)
 	if err != nil {
@@ -62,7 +61,7 @@ func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
 }
 
 func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
-	ets := []EventType{}
+	var ets []EventType
 
 	err := resp.ExtractData(&ets)
 	if err != nil {
