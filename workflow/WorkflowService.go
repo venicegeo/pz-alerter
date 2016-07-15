@@ -347,7 +347,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	log.Printf("EventType Mapping: %s, Name: %s\n", eventType.Mapping, eventType.Name)
+	service.logger.Info("Posted EventType %#v with EventTypeId %s", eventType, eventTypeID)
 
 	return statusCreated(eventType)
 }
@@ -360,6 +360,8 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 	if !ok {
 		return statusNotFound(id)
 	}
+
+	service.logger.Info("Deleted EventType with EventTypeId %s", id)
 
 	return statusOK(nil)
 }
@@ -449,6 +451,8 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	if err != nil {
 		return statusBadRequest(err)
 	}
+
+	service.logger.Info("Posted Event %#v with EventId %s", event, eventID)
 
 	{
 		// Find triggers associated with event
@@ -590,6 +594,8 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 		return statusNotFound(id)
 	}
 
+	service.logger.Info("Deleted Event with EventId %s", id)
+
 	return statusOK(nil)
 }
 
@@ -646,6 +652,8 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
+	service.logger.Info("Posted Trigger %#v with TriggerId %s", trigger, triggerID)
+
 	return statusCreated(trigger)
 }
 
@@ -658,6 +666,8 @@ func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonRespo
 	if !ok {
 		return statusNotFound(id)
 	}
+
+	service.logger.Info("Deleted Trigger with TriggerId %s", id)
 
 	return statusOK(nil)
 }
@@ -734,6 +744,8 @@ func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
 		return statusInternalServerError(err)
 	}
 
+	service.logger.Info("Posted Alert %#v with AlertId %s", alert, alertID)
+
 	return statusCreated(alert)
 }
 
@@ -745,6 +757,8 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 	if !ok {
 		return statusNotFound(id)
 	}
+
+	service.logger.Info("Deleted Alert with AlertId %s", id)
 
 	return statusOK(nil)
 }
