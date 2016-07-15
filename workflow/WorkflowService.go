@@ -624,14 +624,10 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-<<<<<<< HEAD
 	triggerId, err := params.AsString("triggerId", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-=======
-	triggerID := params.Get("triggerId")
->>>>>>> master
 
 	format, err := piazza.NewJsonPagination(params, defaultAlertPagination)
 	if err != nil {
@@ -641,7 +637,6 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 	var all *[]Alert
 	var count int64
 
-<<<<<<< HEAD
 	if triggerId != nil && isUuid(*triggerId) {
 		//log.Printf("Getting alerts with trigger %s", triggerId)
 		all, count, err = service.alertDB.GetAllByTrigger(format, *triggerId)
@@ -650,14 +645,6 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 		}
 	} else if triggerId == nil {
 		//log.Printf("Getting all alerts %#v", service)
-=======
-	if isUuid(triggerID) {
-		all, count, err = service.alertDB.GetAllByTrigger(format, triggerID)
-		if err != nil {
-			return statusBadRequest(err)
-		}
-	} else if triggerID == "" {
->>>>>>> master
 		all, count, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return statusBadRequest(err)
