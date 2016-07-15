@@ -16,7 +16,6 @@ package workflow
 
 import (
 	"encoding/json"
-	"log"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -28,7 +27,6 @@ type AlertDB struct {
 }
 
 func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
-
 	rdb, err := NewResourceDB(service, esi, AlertIndexSettings)
 	if err != nil {
 		return nil, err
@@ -83,8 +81,7 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) (*[]Alert, int64, error
 }
 
 func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId string) (*[]Alert, int64, error) {
-
-	alerts := []Alert{}
+	var alerts []Alert
 	var count = int64(-1)
 
 	exists := db.Esi.TypeExists(db.mapping)
@@ -92,18 +89,14 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 		return &alerts, count, nil
 	}
 
-	log.Printf("Type exists: %s", db.mapping)
-
 	// This will be an Elasticsearch term query of roughly the following structure:
 	// { "term": { "_id": triggerId } }
 	// This matches the '_id' field of the Elasticsearch document exactly
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerId)
 	if err != nil {
-		log.Printf("Error: %s", err)
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
 	}
 	if searchResult == nil {
-		log.Printf("Search returned nil")
 		return nil, count, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult")
 	}
 
@@ -113,10 +106,8 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 		if count == 0 {
 			return &alerts, count, nil
 		}
-		log.Printf("Adding %d search results", count)
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
-			log.Printf("Adding search result: %v", *hit.Source)
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
 				return nil, count, err
@@ -125,12 +116,10 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 		}
 	}
 
-	log.Printf("Returning alerts by trigger...")
 	return &alerts, count, nil
 }
 
 func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, error) {
-
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
 		return nil, LoggedError("AlertDB.GetOne failed: %s", err)
