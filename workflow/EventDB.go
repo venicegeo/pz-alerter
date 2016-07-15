@@ -26,7 +26,6 @@ type EventDB struct {
 }
 
 func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
-
 	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
 	if err != nil {
 		return nil, err
@@ -36,7 +35,6 @@ func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, e
 }
 
 func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
-
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
@@ -83,6 +81,23 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) (*[]Eve
 	return &events, count, nil
 }
 
+func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error) {
+	var mapping string = ""
+
+	types, err := db.Esi.GetTypes()
+	if err != nil {
+		return "", err
+	}
+	for _, typ := range types {
+		if db.Esi.ItemExists(typ, id.String()) {
+			mapping = typ
+			break
+		}
+	}
+
+	return mapping, nil
+}
+
 // Function to check if an EventType name exists
 // This is easier to check in EventDB, as the mappings use the EventType.Name
 func (db *EventDB) NameExists(name string) bool {
@@ -90,7 +105,6 @@ func (db *EventDB) NameExists(name string) bool {
 }
 
 func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, error) {
-
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
 		return nil, LoggedError("EventDB.GetOne failed: %s", err)
@@ -126,7 +140,6 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 }
 
 func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
-
 	jsn, err := elasticsearch.ConstructMappingSchema(name, mapping)
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
@@ -141,10 +154,7 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 }
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
-
-	//log.Printf("percolating type %s with data %v", eventType, data)
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
-	//log.Printf("percolateResponse: %v", percolateResponse)
 
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
@@ -158,8 +168,6 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	for i, v := range percolateResponse.Matches {
 		ids[i] = piazza.Ident(v.Id)
 	}
-
-	//log.Printf("\t\ttriggerIds: %v", ids)
 
 	return &ids, nil
 }

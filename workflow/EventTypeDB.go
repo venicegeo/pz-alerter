@@ -85,7 +85,7 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err)
+		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
 	}
 	if getResult == nil {
 		return nil, LoggedError("EventTypeDB.GetOne failed: no getResult")
@@ -105,11 +105,11 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
 	return &eventType, nil
 }
 
-func (db *EventTypeDB) GetIdByName(name string) (*piazza.Ident, error) {
+func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 
 	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
 	if err != nil {
-		return nil, LoggedError("EventTypeDB.GetOneByName failed: %s", err)
+		return nil, LoggedError("EventTypeDB.GetOneByName failed: %s", err.Error())
 	}
 	if getResult == nil {
 		return nil, LoggedError("EventTypeDB.GetOneByName failed: no getResult")
