@@ -266,20 +266,17 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		return statusBadRequest(err)
 	}
 
-	ets, count, err := service.eventTypeDB.GetAll(format)
+	eventtypes, count, err := service.eventTypeDB.GetAll(format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-
-	bar := make([]interface{}, len(*ets))
-
-	for i, e := range *ets {
-		bar[i] = e
+	if eventtypes == nil {
+		return statusInternalServerError(errors.New("getalleventtypes returned nil"))
 	}
 
 	format.Count = int(count)
 
-	resp := statusOK(bar)
+	resp := statusOK(eventtypes)
 	resp.Pagination = format
 	return resp
 }
@@ -386,20 +383,14 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 		query = *eventTypeName
 	}
 
-	m, count, err := service.eventDB.GetAll(query, format)
+	events, count, err := service.eventDB.GetAll(query, format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
 
-	bar := make([]interface{}, len(*m))
-
-	for i, e := range *m {
-		bar[i] = e
-	}
-
 	format.Count = int(count)
 
-	resp := statusOK(bar)
+	resp := statusOK(events)
 	resp.Pagination = format
 	return resp
 }
@@ -559,20 +550,17 @@ func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *
 		return statusBadRequest(err)
 	}
 
-	m, count, err := service.triggerDB.GetAll(format)
+	triggers, count, err := service.triggerDB.GetAll(format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-
-	bar := make([]interface{}, len(*m))
-
-	for i, e := range *m {
-		bar[i] = e
+	if triggers == nil {
+		return statusInternalServerError(errors.New("getallevents returned nil"))
 	}
 
 	format.Count = int(count)
 
-	resp := statusOK(bar)
+	resp := statusOK(triggers)
 	resp.Pagination = format
 	return resp
 }
@@ -634,34 +622,34 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 		return statusBadRequest(err)
 	}
 
-	var all *[]Alert
+	var alerts *[]Alert
 	var count int64
 
 	if triggerId != nil && isUuid(*triggerId) {
 		//log.Printf("Getting alerts with trigger %s", triggerId)
-		all, count, err = service.alertDB.GetAllByTrigger(format, *triggerId)
+		alerts, count, err = service.alertDB.GetAllByTrigger(format, *triggerId)
 		if err != nil {
 			return statusBadRequest(err)
 		}
+		if alerts == nil {
+			return statusInternalServerError(errors.New("getallalerts returned nil"))
+		}
 	} else if triggerId == nil {
 		//log.Printf("Getting all alerts %#v", service)
-		all, count, err = service.alertDB.GetAll(format)
+		alerts, count, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return statusBadRequest(err)
+		}
+		if alerts == nil {
+			return statusInternalServerError(errors.New("getallalerts returned nil"))
 		}
 	} else { // Malformed triggerID
 		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
-	bar := make([]interface{}, len(*all))
-
-	for i, e := range *all {
-		bar[i] = e
-	}
-
 	format.Count = int(count)
 
-	resp := statusOK(bar)
+	resp := statusOK(alerts)
 	resp.Pagination = format
 	return resp
 }
