@@ -395,8 +395,8 @@ func (suite *ClientTester) Test16TriggerResource() {
 
 	triggers, err := client.GetAllTriggers()
 	assert.NoError(err)
-	assert.Len(*triggers, 1)
-	assert.EqualValues(t1ID, (*triggers)[0].TriggerId)
+	assert.Len(triggers, 1)
+	assert.EqualValues(t1ID, triggers[0].TriggerId)
 }
 
 func (suite *ClientTester) Test17Triggering() {
@@ -520,7 +520,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 		triggers, err := client.GetAllTriggers()
 		assert.NoError(err)
-		assert.Len(*triggers, 2)
+		assert.Len(triggers, 2)
 	}
 
 	var eF, eG, eH piazza.Ident
