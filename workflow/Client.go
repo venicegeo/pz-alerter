@@ -74,15 +74,18 @@ func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
 //------------------------------------------------------------------------------
 
 func (c *Client) getObject(endpoint string, out interface{}) error {
+	//log.Printf("** ** ** %s", reflect.TypeOf(out).String())
 	resp := piazza.HttpGetJson(c.url + endpoint)
+	//log.Printf("** ** ** %s", reflect.TypeOf(resp.Data).String())
 	if resp.IsError() {
 		return resp.ToError()
 	}
 	if resp.StatusCode != http.StatusOK {
 		return resp.ToError()
 	}
-
+	//log.Printf("getObject/1 %#v", out)
 	err := resp.ExtractData(out)
+	//log.Printf("getObject/2 %#v", out)
 	if err != nil {
 		return err
 	}
@@ -209,9 +212,9 @@ func (c *Client) GetTrigger(id piazza.Ident) (*Trigger, error) {
 	return out, err
 }
 
-func (c *Client) GetAllTriggers() (*[]Trigger, error) {
-	out := &[]Trigger{}
-	err := c.getObject("/trigger", out)
+func (c *Client) GetAllTriggers() ([]Trigger, error) {
+	out := []Trigger{}
+	err := c.getObject("/trigger", &out)
 	return out, err
 }
 

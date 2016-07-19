@@ -46,39 +46,37 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 	return id, nil
 }
 
-func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) (*[]Event, int64, error) {
-	var events []Event
-	var count = int64(-1)
+func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, error) {
+	events := []Event{}
 
 	exists := true
 	if mapping != "" {
 		exists = db.Esi.TypeExists(mapping)
 	}
 	if !exists {
-		return nil, count, LoggedError("Type %s does not exist", mapping)
+		return nil, LoggedError("Type %s does not exist", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
 	if err != nil {
-		return nil, count, LoggedError("EventDB.GetAll failed: %s", err)
+		return nil, LoggedError("EventDB.GetAll failed: %s", err)
 	}
 	if searchResult == nil {
-		return nil, count, LoggedError("EventDB.GetAll failed: no searchResult")
+		return nil, LoggedError("EventDB.GetAll failed: no searchResult")
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
-		count = searchResult.NumberMatched()
 		for _, hit := range *searchResult.GetHits() {
 			var event Event
 			err := json.Unmarshal(*hit.Source, &event)
 			if err != nil {
-				return nil, count, err
+				return nil, err
 			}
 			events = append(events, event)
 		}
 	}
 
-	return &events, count, nil
+	return events, nil
 }
 
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error) {

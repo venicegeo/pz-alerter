@@ -49,36 +49,34 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 	return id, nil
 }
 
-func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) (*[]EventType, int64, error) {
-	var eventTypes []EventType
-	var count = int64(-1)
+func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, error) {
+	eventTypes := []EventType{}
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
-		return &eventTypes, count, nil
+		return eventTypes, nil
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, count, LoggedError("EventTypeDB.GetAll failed: %s", err)
+		return nil, LoggedError("EventTypeDB.GetAll failed: %s", err)
 	}
 	if searchResult == nil {
-		return nil, count, LoggedError("EventTypeDB.GetAll failed: no searchResult")
+		return nil, LoggedError("EventTypeDB.GetAll failed: no searchResult")
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
-		count = searchResult.NumberMatched()
 		for _, hit := range *searchResult.GetHits() {
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
 			if err != nil {
-				return nil, count, err
+				return nil, err
 			}
 			eventTypes = append(eventTypes, eventType)
 		}
 	}
 
-	return &eventTypes, count, nil
+	return eventTypes, nil
 }
 
 func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {

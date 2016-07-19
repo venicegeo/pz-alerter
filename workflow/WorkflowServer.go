@@ -15,7 +15,6 @@
 package workflow
 
 import (
-	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -78,12 +77,12 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
 	message := "Hi! I'm pz-workflow."
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleGetStats(c *gin.Context) {
 	resp := server.service.GetAdminStats()
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 //---------------------------------------------------------------------------
@@ -91,15 +90,13 @@ func (server *WorkflowServer) handleGetStats(c *gin.Context) {
 func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetEventType(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleGetAllEventTypes(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
-	log.Printf("handleGetAllEventTypes/1: %#v", c.Request.URL)
-	log.Printf("handleGetAllEventTypes/2: %#v", params)
 	resp := server.service.GetAllEventTypes(params)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
@@ -111,17 +108,17 @@ func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
 			Message:    err.Error(),
 			Origin:     server.origin,
 		}
-		c.IndentedJSON(resp.StatusCode, resp)
+		piazza.GinReturnJson(c, resp)
 		return
 	}
 	resp := server.service.PostEventType(eventType)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteEventType(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 //---------------------------------------------------------------------------
@@ -129,13 +126,13 @@ func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
 func (server *WorkflowServer) handleGetEvent(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetEvent(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleGetAllEvents(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllEvents(params)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
@@ -147,17 +144,17 @@ func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 			Message:    err.Error(),
 			Origin:     server.origin,
 		}
-		c.IndentedJSON(resp.StatusCode, resp)
+		piazza.GinReturnJson(c, resp)
 		return
 	}
 	resp := server.service.PostEvent(event)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteEvent(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 //---------------------------------------------------------------------------
@@ -165,13 +162,13 @@ func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
 func (server *WorkflowServer) handleGetTrigger(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetTrigger(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleGetAllTriggers(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllTriggers(params)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
@@ -183,17 +180,17 @@ func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
 			Message:    err.Error(),
 			Origin:     server.origin,
 		}
-		c.IndentedJSON(resp.StatusCode, resp)
+		piazza.GinReturnJson(c, resp)
 		return
 	}
 	resp := server.service.PostTrigger(trigger)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteTrigger(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 //---------------------------------------------------------------------------
@@ -201,13 +198,13 @@ func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
 func (server *WorkflowServer) handleGetAlert(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetAlert(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleGetAllAlerts(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllAlerts(params)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
@@ -223,11 +220,11 @@ func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
 		return
 	}
 	resp := server.service.PostAlert(alert)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleDeleteAlert(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteAlert(id)
-	c.IndentedJSON(resp.StatusCode, resp)
+	piazza.GinReturnJson(c, resp)
 }

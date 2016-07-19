@@ -266,21 +266,21 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		return statusBadRequest(err)
 	}
 
-	ets, count, err := service.eventTypeDB.GetAll(format)
+	eventtypes, err := service.eventTypeDB.GetAll(format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-
-	bar := make([]interface{}, len(*ets))
-
-	for i, e := range *ets {
-		bar[i] = e
+	if eventtypes == nil {
+		return statusInternalServerError(errors.New("getalleventtypes returned nil"))
 	}
 
-	format.Count = int(count)
+	resp := statusOK(eventtypes)
 
-	resp := statusOK(bar)
-	resp.Pagination = format
+	if len(eventtypes) > 0 {
+		format.Count = int(len(eventtypes))
+		resp.Pagination = format
+	}
+
 	return resp
 }
 
@@ -386,21 +386,18 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 		query = *eventTypeName
 	}
 
-	m, count, err := service.eventDB.GetAll(query, format)
+	events, err := service.eventDB.GetAll(query, format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
 
-	bar := make([]interface{}, len(*m))
+	resp := statusOK(events)
 
-	for i, e := range *m {
-		bar[i] = e
+	if len(events) > 0 {
+		format.Count = int(len(events))
+		resp.Pagination = format
 	}
 
-	format.Count = int(count)
-
-	resp := statusOK(bar)
-	resp.Pagination = format
 	return resp
 }
 
@@ -559,21 +556,21 @@ func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *
 		return statusBadRequest(err)
 	}
 
-	m, count, err := service.triggerDB.GetAll(format)
+	triggers, err := service.triggerDB.GetAll(format)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-
-	bar := make([]interface{}, len(*m))
-
-	for i, e := range *m {
-		bar[i] = e
+	if triggers == nil {
+		return statusInternalServerError(errors.New("getalltriggers returned nil"))
 	}
 
-	format.Count = int(count)
+	resp := statusOK(triggers)
 
-	resp := statusOK(bar)
-	resp.Pagination = format
+	if len(triggers) > 0 {
+		format.Count = int(len(triggers))
+		resp.Pagination = format
+	}
+
 	return resp
 }
 
@@ -634,35 +631,37 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 		return statusBadRequest(err)
 	}
 
-	var all *[]Alert
-	var count int64
+	var alerts []Alert
 
 	if triggerId != nil && isUuid(*triggerId) {
 		//log.Printf("Getting alerts with trigger %s", triggerId)
-		all, count, err = service.alertDB.GetAllByTrigger(format, *triggerId)
+		alerts, err = service.alertDB.GetAllByTrigger(format, *triggerId)
 		if err != nil {
 			return statusBadRequest(err)
 		}
+		if alerts == nil {
+			return statusInternalServerError(errors.New("getallalerts returned nil"))
+		}
 	} else if triggerId == nil {
 		//log.Printf("Getting all alerts %#v", service)
-		all, count, err = service.alertDB.GetAll(format)
+		alerts, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return statusBadRequest(err)
+		}
+		if alerts == nil {
+			return statusInternalServerError(errors.New("getallalerts returned nil"))
 		}
 	} else { // Malformed triggerID
 		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
-	bar := make([]interface{}, len(*all))
+	resp := statusOK(alerts)
 
-	for i, e := range *all {
-		bar[i] = e
+	if len(alerts) > 0 {
+		format.Count = int(len(alerts))
+		resp.Pagination = format
 	}
 
-	format.Count = int(count)
-
-	resp := statusOK(bar)
-	resp.Pagination = format
 	return resp
 }
 
