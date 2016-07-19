@@ -99,7 +99,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
-		count = searchResult.NumberMatched()
+		count = searchResult.TotalHits()
 		// If we don't find any alerts by the given triggerId, don't error out, just return an empty list
 		if count == 0 {
 			return alerts, nil

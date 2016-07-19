@@ -114,7 +114,7 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 	}
 
 	// This should not happen once we have 1 to 1 mappings of EventTypes to names
-	if getResult.NumberMatched() > 1 {
+	if getResult.TotalHits() > 1 {
 		return nil, LoggedError("EventTypeDB.GetOneByName failed: matched more than one EventType!")
 	}
 
