@@ -318,7 +318,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted EventType %#v with EventTypeId %s", eventType, eventTypeID)
+	service.logger.Info("Posted EventType with EventTypeId %s", eventType, eventTypeID)
 
 	return statusCreated(eventType)
 }
@@ -422,7 +422,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 		return statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted Event %#v with EventId %s", event, eventID)
+	service.logger.Info("Posted Event with EventId %s", event, eventID)
 
 	{
 		// Find triggers associated with event
@@ -587,7 +587,7 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted Trigger %#v with TriggerId %s", trigger, triggerID)
+	service.logger.Info("Posted Trigger with TriggerId %s", trigger, triggerID)
 
 	return statusCreated(trigger)
 }
@@ -621,7 +621,7 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerId, err := params.AsString("triggerId", nil)
+	triggerID, err := params.AsString("triggerId", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -633,17 +633,15 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 
 	var alerts []Alert
 
-	if triggerId != nil && isUuid(*triggerId) {
-		//log.Printf("Getting alerts with trigger %s", triggerId)
-		alerts, err = service.alertDB.GetAllByTrigger(format, *triggerId)
+	if triggerID != nil && isUuid(*triggerID) {
+		alerts, err = service.alertDB.GetAllByTrigger(format, *triggerID)
 		if err != nil {
 			return statusBadRequest(err)
 		}
 		if alerts == nil {
 			return statusInternalServerError(errors.New("getallalerts returned nil"))
 		}
-	} else if triggerId == nil {
-		//log.Printf("Getting all alerts %#v", service)
+	} else if triggerID == nil {
 		alerts, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return statusBadRequest(err)
@@ -651,7 +649,7 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 		if alerts == nil {
 			return statusInternalServerError(errors.New("getallalerts returned nil"))
 		}
-	} else { // Malformed triggerID
+	} else {
 		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
@@ -679,7 +677,7 @@ func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
 		return statusInternalServerError(err)
 	}
 
-	service.logger.Info("Posted Alert %#v with AlertId %s", alert, alertID)
+	service.logger.Info("Posted Alert with AlertId %s", alert, alertID)
 
 	return statusCreated(alert)
 }
