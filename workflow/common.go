@@ -52,7 +52,7 @@ const (
 					"type": "string",
 					"index": "not_analyzed"
 				},
-				"disabled": {
+				"enabled": {
 					"type": "boolean",
 					"index": "not_analyzed"
 				},
@@ -115,7 +115,7 @@ type Trigger struct {
 	PercolationId piazza.Ident `json:"percolationId"`
 	CreatedBy     string       `json:"createdBy"`
 	CreatedOn     time.Time    `json:"createdOn"`
-	Disabled      bool         `json:"disabled"`
+	Enabled       bool         `json:"enabled"`
 }
 
 type TriggerList []Trigger
