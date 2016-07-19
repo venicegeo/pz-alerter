@@ -10,9 +10,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 	  workflow.vm.network :forwarded_port, host: 14400, guest: 14400
 	  workflow.vm.synced_folder "../", "/vagrant/workflow"
 	  workflow.vm.provider "virtualbox" do |v|
-		v.memory = 1024
-		v.cpus = 1
-		v.name = "pz-workflow"
+	  	v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+		v.customize ["modifyvm", :id, "--memory", "512"]
       end
   end
 end
