@@ -48,20 +48,20 @@ func (db *AlertDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, err
 	return id, nil
 }
 
-func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, error) {
+func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error) {
 	alerts := []Alert{}
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
-		return alerts, nil
+		return alerts, 0, nil
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, LoggedError("AlertDB.GetAll failed: %s", err)
+		return nil, 0, LoggedError("AlertDB.GetAll failed: %s", err)
 	}
 	if searchResult == nil {
-		return nil, LoggedError("AlertDB.GetAll failed: no searchResult")
+		return nil, 0, LoggedError("AlertDB.GetAll failed: no searchResult")
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -69,22 +69,22 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, error) {
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			alerts = append(alerts, alert)
 		}
 	}
 
-	return alerts, nil
+	return alerts, searchResult.TotalHits(), nil
 }
 
-func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId string) ([]Alert, error) {
+func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId string) ([]Alert, int64, error) {
 	alerts := []Alert{}
 	var count = int64(-1)
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
-		return alerts, nil
+		return alerts, 0, nil
 	}
 
 	// This will be an Elasticsearch term query of roughly the following structure:
@@ -92,29 +92,29 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 	// This matches the '_id' field of the Elasticsearch document exactly
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerId)
 	if err != nil {
-		return nil, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
+		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
 	}
 	if searchResult == nil {
-		return nil, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult")
+		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult")
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		count = searchResult.TotalHits()
 		// If we don't find any alerts by the given triggerId, don't error out, just return an empty list
 		if count == 0 {
-			return alerts, nil
+			return alerts, 0, nil
 		}
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			alerts = append(alerts, alert)
 		}
 	}
 
-	return alerts, nil
+	return alerts, searchResult.TotalHits(), nil
 }
 
 func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, error) {

@@ -88,20 +88,20 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	return id, nil
 }
 
-func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, error) {
+func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
 	exists := db.Esi.TypeExists(db.mapping)
 	if !exists {
-		return triggers, nil
+		return triggers, 0, nil
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, LoggedError("TriggerDB.GetAll failed: %s", err)
+		return nil, 0, LoggedError("TriggerDB.GetAll failed: %s", err)
 	}
 	if searchResult == nil {
-		return nil, LoggedError("TriggerDB.GetAll failed: no searchResult")
+		return nil, 0, LoggedError("TriggerDB.GetAll failed: no searchResult")
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -110,12 +110,12 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, error) {
 			var trigger Trigger
 			err := json.Unmarshal(*hit.Source, &trigger)
 			if err != nil {
-				return nil, err
+				return nil, 0, err
 			}
 			triggers = append(triggers, trigger)
 		}
 	}
-	return triggers, nil
+	return triggers, searchResult.TotalHits(), nil
 }
 
 func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, error) {
