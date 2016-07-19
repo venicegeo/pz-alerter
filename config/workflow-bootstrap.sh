@@ -11,9 +11,6 @@ sudo tar -C /usr/local -xzf go1.6.2.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >>/home/vagrant/.bash_profile
 export PATH=$PATH:/usr/local/go/bin
 
-echo go help.
-go help
-
 apt-get -y install git
 
 # build and start the go app
@@ -42,4 +39,4 @@ echo 'exit 0' >> rc.local
 
 #start the app
 cd /home/vagrant/workspace/gostuff/bin
-./pz-workflow
+nohup ./pz-workflow &
