@@ -634,7 +634,7 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 	var alerts []Alert
 	var totalHits int64
 
-	if triggerID != nil && isUuid(*triggerID) {
+	if triggerID != nil && isUUID(*triggerID) {
 		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, *triggerID)
 		if err != nil {
 			return statusBadRequest(err)
