@@ -17,6 +17,7 @@ package workflow
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
@@ -24,14 +25,13 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const AlertDBMapping string = "Alert"
+//-TRIGGER----------------------------------------------------------------------
+
+// TriggerDBMapping is the name of the Elasticsearch type to which Triggers are added
 const TriggerDBMapping string = "Trigger"
-const EventTypeDBMapping string = "EventType"
 
-//---------------------------------------------------------------------------
-
-const (
-	TriggerIndexSettings = `
+// TriggerIndexSettings is the mapping for the "trigger" index in Elasticsearch
+const TriggerIndexSettings = `
 {
 	"mappings": {
 		"Trigger": {
@@ -89,9 +89,8 @@ const (
 	}
 }
 `
-)
 
-// expresses the idea of "this ES query returns an event"
+// Condition expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
 	EventTypeIds []piazza.Ident         `json:"eventTypeIds" binding:"required"`
@@ -104,7 +103,7 @@ type Job struct {
 	JobType   map[string]interface{} `json:"jobType" binding:"required"`
 }
 
-// when the and'ed set of Conditions all are true, do Something
+// Trigger does something when the and'ed set of Conditions all are true
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
 type Trigger struct {
@@ -118,12 +117,13 @@ type Trigger struct {
 	Enabled       bool         `json:"enabled"`
 }
 
+// TriggerList is a list of triggers
 type TriggerList []Trigger
 
-//---------------------------------------------------------------------------
+//-EVENT------------------------------------------------------------------------
 
-const (
-	EventIndexSettings = `
+// EventIndexSettings is the mapping for the "events" index in Elasticsearch
+const EventIndexSettings = `
 {
 	"mappings": {
 		"_default_": {
@@ -148,14 +148,17 @@ const (
 					"type": "date",
 					"index": "not_analyzed"
 				}
+				"cron": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
 			}
 		}
 	}
 }
 `
-)
 
-// posted by some source (service, user, etc) to indicate Something Happened
+// An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {
 	EventId     piazza.Ident           `json:"eventId"`
@@ -163,14 +166,19 @@ type Event struct {
 	Data        map[string]interface{} `json:"data"`
 	CreatedBy   string                 `json:"createdBy"`
 	CreatedOn   time.Time              `json:"createdOn"`
+	Cron        string                 `json:"cron"`
 }
 
+// EventList is a list of events
 type EventList []Event
 
-//---------------------------------------------------------------------------
+//-EVENTTYPE--------------------------------------------------------------------
 
-const (
-	EventTypeIndexSettings = `
+// EventTypeDBMapping is the name of the Elasticsearch type to which Events are added
+const EventTypeDBMapping string = "EventType"
+
+// EventTypeIndexSettings is the mapping for the "eventtypes" index in Elasticsearch
+const EventTypeIndexSettings = `
 {
 	"mappings": {
 		"EventType": {
@@ -200,8 +208,8 @@ const (
 	}
 }
 `
-)
 
+// EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
 	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
 	Name        string                                          `json:"name" binding:"required"`
@@ -210,11 +218,15 @@ type EventType struct {
 	CreatedOn   time.Time                                       `json:"createdOn"`
 }
 
+// EventTypeList is a list of EventTypes
 type EventTypeList []EventType
 
-//---------------------------------------------------------------------------
+//-ALERT------------------------------------------------------------------------
 
-// The default settings for our Elasticsearch alerts index
+// AlertDBMapping is the name of the Elasticsearch type to which Alerts are added
+const AlertDBMapping string = "Alert"
+
+// AlertIndexSettings are the default settings for our Elasticsearch alerts index
 // Explanation:
 //   "index": "not_analyzed"
 //     This means that these properties are not analyzed by Elasticsearch.
@@ -223,8 +235,7 @@ type EventTypeList []EventType
 //     For example, the UUID "ab3142cd-1a8e-44f8-6a01-5ce8a9328fb2" would be broken
 //     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
 //     match on all of these separate strings, which was undesired behavior.
-const (
-	AlertIndexSettings = `
+const AlertIndexSettings = `
 {
 	"mappings": {
 		"Alert": {
@@ -258,9 +269,8 @@ const (
 	}
 }
 `
-)
 
-// a notification, automatically created when a Trigger happens
+// Alert is a notification, automatically created when a Trigger happens
 type Alert struct {
 	AlertId   piazza.Ident `json:"alertId"`
 	TriggerId piazza.Ident `json:"triggerId"`
@@ -270,8 +280,9 @@ type Alert struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
-//---------------------------------------------------------------------------
+//-UTILITY----------------------------------------------------------------------
 
+// WorkflowAdminStats reports meta details on the Workflow Service
 type WorkflowAdminStats struct {
 	CreatedOn     time.Time `json:"createdOn"`
 	NumAlerts     int       `json:"numAlerts"`
@@ -280,19 +291,19 @@ type WorkflowAdminStats struct {
 	NumTriggers   int       `json:"numTriggers"`
 }
 
+// LoggedError logs the error's message and creates an error
 func LoggedError(mssg string, args ...interface{}) error {
 	str := fmt.Sprintf(mssg, args)
-	//log.Printf(str)
+	log.Printf(str)
 	return errors.New(str)
 }
 
-// Checks to see if the Uuid is valid
-func isUuid(uuid string) bool {
-	check := uuidpkg.Parse(uuid)
-	return check != nil
+// isUUID checks to see if the UUID is valid
+func isUUID(uuid string) bool {
+	return uuidpkg.Parse(uuid) != nil
 }
 
-//---------------------------------------------------------------------------
+//-INIT-------------------------------------------------------------------------
 
 func init() {
 	piazza.JsonResponseDataTypes["*workflow.EventType"] = "eventtype"
