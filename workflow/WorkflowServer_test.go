@@ -94,17 +94,17 @@ func TestRunSuite(t *testing.T) {
 	} else {
 		uuidgen, err = pzuuidgen.NewClient(sys)
 	}
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex elasticsearch.IIndex
+	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex elasticsearch.IIndex
 	if MOCKING {
 		eventtypesIndex = elasticsearch.NewMockIndex("eventtypes")
 		eventsIndex = elasticsearch.NewMockIndex("events")
 		triggersIndex = elasticsearch.NewMockIndex("triggers")
 		alertsIndex = elasticsearch.NewMockIndex("alerts")
+		cronIndex = elasticsearch.NewMockIndex("crons")
 	} else {
 		eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes$", "")
 		if err != nil {
@@ -129,10 +129,16 @@ func TestRunSuite(t *testing.T) {
 			log.Fatal(err)
 		}
 		//log.Printf("alertsIndex: %s\n", alertsIndex.IndexName())
+
+		cronIndex, err = elasticsearch.NewIndex(sys, "crons$", "")
+		if err != nil {
+			log.Fatal(err)
+		}
+		//log.Printf("cronsIndex: %s\n", cronsIndex.IndexName())
 	}
 
 	workflowService := &WorkflowService{}
-	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
+	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex)
 	if err != nil {
 		log.Fatal(err)
 	}

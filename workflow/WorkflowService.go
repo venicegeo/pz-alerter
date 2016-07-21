@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+	cron "github.com/robfig/cron"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
@@ -48,6 +49,7 @@ type WorkflowService struct {
 	eventDB     *EventDB
 	triggerDB   *TriggerDB
 	alertDB     *AlertDB
+	cronDB      *CronDB
 
 	stats LockedAdminStats
 
@@ -55,6 +57,8 @@ type WorkflowService struct {
 	uuidgen pzuuidgen.IClient
 
 	sys *piazza.SystemConfig
+
+	cron *cron.Cron
 
 	origin string
 }
@@ -96,7 +100,8 @@ func (service *WorkflowService) Init(
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
 	triggersIndex elasticsearch.IIndex,
-	alertsIndex elasticsearch.IIndex) error {
+	alertsIndex elasticsearch.IIndex,
+	cronIndex elasticsearch.IIndex) error {
 
 	service.sys = sys
 
@@ -127,7 +132,19 @@ func (service *WorkflowService) Init(
 		return err
 	}
 
+	service.cronDB, err = NewCronDB(service, cronIndex)
+	if err != nil {
+		return err
+	}
+
+	service.cron = cron.New()
+
 	service.origin = string(sys.Name)
+
+	err = service.initCron()
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -401,6 +418,30 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	return resp
 }
 
+// PostRepeatingEvent TODO
+func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
+	_, err := cron.Parse(event.Cron)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+
+	eventID, err := service.newIdent()
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+	event.EventId = eventID
+
+	service.cron.AddFunc(event.Cron, func() { service.PostEvent(event) })
+
+	err = service.cronDB.PostData(event, eventID)
+	if err != nil {
+		return statusInternalServerError(err)
+	}
+
+	return statusCreated(event)
+}
+
+// PostEvent TODO
 func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	eventTypeID := event.EventTypeId
 	eventType, err := service.eventTypeDB.GetOne(eventTypeID)
@@ -695,4 +736,17 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 	service.logger.Info("Deleted Alert with AlertId %s", id)
 
 	return statusOK(nil)
+}
+
+func (service *WorkflowService) initCron() error {
+	events, err := service.cronDB.GetAll()
+	if err != nil {
+		return errors.New("Unable to get all from CronDB")
+	}
+
+	for _, e := range *events {
+		service.cron.AddFunc(e.Cron, func() { service.PostEvent(&e) })
+	}
+
+	return nil
 }

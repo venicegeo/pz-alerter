@@ -147,7 +147,14 @@ func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
-	resp := server.service.PostEvent(event)
+
+	var resp *piazza.JsonResponse
+
+	if event.Cron != "" {
+		resp = server.service.PostRepeatingEvent(event)
+	} else {
+		resp = server.service.PostEvent(event)
+	}
 	piazza.GinReturnJson(c, resp)
 }
 

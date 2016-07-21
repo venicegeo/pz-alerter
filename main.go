@@ -66,14 +66,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	cronIndex, err := elasticsearch.NewIndex(sys, "crons", pzworkflow.CronIndexSettings)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	logger.Info("pz-workflow starting...")
 
 	workflowService := &pzworkflow.WorkflowService{}
-	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex)
+	err = workflowService.Init(
+		sys,
+		logger,
+		uuidgen,
+		eventtypesIndex,
+		eventsIndex,
+		triggersIndex,
+		alertsIndex,
+		cronIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	workflowServer := &pzworkflow.WorkflowServer{}
 	err = workflowServer.Init(workflowService)
 	if err != nil {

@@ -280,6 +280,12 @@ type Alert struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
+//-CRON-------------------------------------------------------------------------
+
+const CronIndexSettings = EventIndexSettings
+
+const cronDBMapping = "Cron"
+
 //-UTILITY----------------------------------------------------------------------
 
 // WorkflowAdminStats reports meta details on the Workflow Service
