@@ -149,8 +149,8 @@ func (service *WorkflowService) Init(
 	return nil
 }
 
-func (s *WorkflowService) newIdent() (piazza.Ident, error) {
-	uuid, err := s.uuidgen.GetUuid()
+func (service *WorkflowService) newIdent() (piazza.Ident, error) {
+	uuid, err := service.uuidgen.GetUuid()
 	if err != nil {
 		return piazza.NoIdent, err
 	}
