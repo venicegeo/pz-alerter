@@ -452,7 +452,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 	eventID, err := service.newIdent()
 	if err != nil {
-		return statusBadRequest(err)
+		return statusInternalServerError(err)
 	}
 	event.EventId = eventID
 
@@ -679,17 +679,15 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, *triggerID)
 		if err != nil {
 			return statusBadRequest(err)
-		}
-		if alerts == nil {
-			return statusInternalServerError(errors.New("getallalerts returned nil"))
+		} else if alerts == nil {
+			return statusInternalServerError(errors.New("GetAllAlerts returned nil"))
 		}
 	} else if triggerID == nil {
 		alerts, totalHits, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return statusBadRequest(err)
-		}
-		if alerts == nil {
-			return statusInternalServerError(errors.New("getallalerts returned nil"))
+		} else if alerts == nil {
+			return statusInternalServerError(errors.New("GetAllAlerts returned nil"))
 		}
 	} else {
 		return statusBadRequest(errors.New("Malformed triggerId query parameter"))
