@@ -87,6 +87,11 @@ func main() {
 		log.Fatal(err)
 	}
 
+	err = workflowService.InitCron()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	workflowServer := &pzworkflow.WorkflowServer{}
 	err = workflowServer.Init(workflowService)
 	if err != nil {

@@ -39,7 +39,6 @@ func NewCronDB(service *WorkflowService, esi elasticsearch.IIndex) (*CronDB, err
 
 // PostData TODO
 func (db *CronDB) PostData(obj interface{}, id piazza.Ident) error {
-
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
 		return LoggedError("CronDB.PostData failed: %s", err)

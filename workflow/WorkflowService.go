@@ -141,11 +141,6 @@ func (service *WorkflowService) Init(
 
 	service.origin = string(sys.Name)
 
-	err = service.initCron()
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -736,7 +731,7 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 	return statusOK(nil)
 }
 
-func (service *WorkflowService) initCron() error {
+func (service *WorkflowService) InitCron() error {
 	events, err := service.cronDB.GetAll()
 	if err != nil {
 		return errors.New("Unable to get all from CronDB")
