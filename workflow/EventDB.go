@@ -96,8 +96,8 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error)
 	return mapping, nil
 }
 
-// Function to check if an EventType name exists
-// This is easier to check in EventDB, as the mappings use the EventType.Name
+// NameExists checks if an EventType name exists.
+// This is easier to check in EventDB, as the mappings use the EventType.Name.
 func (db *EventDB) NameExists(name string) bool {
 	return db.Esi.TypeExists(name)
 }
