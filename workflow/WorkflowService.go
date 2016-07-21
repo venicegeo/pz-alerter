@@ -38,7 +38,7 @@ import (
 
 type LockedAdminStats struct {
 	sync.Mutex
-	WorkflowAdminStats
+	workflowAdminStats
 	origin string
 }
 
@@ -257,7 +257,7 @@ func statusNotFound(id piazza.Ident) *piazza.JsonResponse {
 
 func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 	service.stats.Lock()
-	t := service.stats.WorkflowAdminStats
+	t := service.stats.workflowAdminStats
 	service.stats.Unlock()
 	return statusOK(t)
 }

@@ -288,8 +288,7 @@ const cronDBMapping = "Cron"
 
 //-UTILITY----------------------------------------------------------------------
 
-// WorkflowAdminStats reports meta details on the Workflow Service
-type WorkflowAdminStats struct {
+type workflowAdminStats struct {
 	CreatedOn     time.Time `json:"createdOn"`
 	NumAlerts     int       `json:"numAlerts"`
 	NumConditions int       `json:"numConditions"`
@@ -320,5 +319,5 @@ func init() {
 	piazza.JsonResponseDataTypes["[]workflow.Trigger"] = "trigger-list"
 	piazza.JsonResponseDataTypes["*workflow.Alert"] = "alert"
 	piazza.JsonResponseDataTypes["[]workflow.Alert"] = "alert-list"
-	piazza.JsonResponseDataTypes["workflow.WorkflowAdminStats"] = "workflowstats"
+	piazza.JsonResponseDataTypes["workflow.workflowAdminStats"] = "workflowstats"
 }
