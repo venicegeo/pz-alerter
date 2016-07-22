@@ -127,6 +127,7 @@ const EventIndexSettings = `
 {
 	"mappings": {
 		"_default_": {
+			"dynamic": "false",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
@@ -147,8 +148,8 @@ const EventIndexSettings = `
 				"createdOn": {
 					"type": "date",
 					"index": "not_analyzed"
-				}
-				"cron": {
+				},
+				"cronSpec": {
 					"type": "string",
 					"index": "not_analyzed"
 				}
@@ -166,7 +167,7 @@ type Event struct {
 	Data        map[string]interface{} `json:"data"`
 	CreatedBy   string                 `json:"createdBy"`
 	CreatedOn   time.Time              `json:"createdOn"`
-	Cron        string                 `json:"cron"`
+	CronSpec    string                 `json:"cronSpec"`
 }
 
 // EventList is a list of events
@@ -280,10 +281,15 @@ type Alert struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
+//-CRON-------------------------------------------------------------------------
+
+const CronIndexSettings = EventIndexSettings
+
+const cronDBMapping = "Cron"
+
 //-UTILITY----------------------------------------------------------------------
 
-// WorkflowAdminStats reports meta details on the Workflow Service
-type WorkflowAdminStats struct {
+type workflowAdminStats struct {
 	CreatedOn     time.Time `json:"createdOn"`
 	NumAlerts     int       `json:"numAlerts"`
 	NumConditions int       `json:"numConditions"`
@@ -314,5 +320,5 @@ func init() {
 	piazza.JsonResponseDataTypes["[]workflow.Trigger"] = "trigger-list"
 	piazza.JsonResponseDataTypes["*workflow.Alert"] = "alert"
 	piazza.JsonResponseDataTypes["[]workflow.Alert"] = "alert-list"
-	piazza.JsonResponseDataTypes["workflow.WorkflowAdminStats"] = "workflowstats"
+	piazza.JsonResponseDataTypes["workflow.workflowAdminStats"] = "workflowstats"
 }

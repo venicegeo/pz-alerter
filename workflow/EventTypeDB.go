@@ -107,15 +107,15 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 
 	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
 	if err != nil {
-		return nil, LoggedError("EventTypeDB.GetOneByName failed: %s", err.Error())
+		return nil, LoggedError("EventTypeDB.GetIDByName failed: %s", err.Error())
 	}
 	if getResult == nil {
-		return nil, LoggedError("EventTypeDB.GetOneByName failed: no getResult")
+		return nil, LoggedError("EventTypeDB.GetIDByName failed: no getResult")
 	}
 
 	// This should not happen once we have 1 to 1 mappings of EventTypes to names
 	if getResult.TotalHits() > 1 {
-		return nil, LoggedError("EventTypeDB.GetOneByName failed: matched more than one EventType!")
+		return nil, LoggedError("EventTypeDB.GetIDByName failed: matched more than one EventType!")
 	}
 
 	src := getResult.GetHit(0).Source
