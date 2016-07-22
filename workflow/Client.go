@@ -75,7 +75,9 @@ func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
 
 func (c *Client) getObject(endpoint string, out interface{}) error {
 	//log.Printf("** ** ** %s", reflect.TypeOf(out).String())
-	resp := piazza.HttpGetJson(c.url + endpoint)
+
+	h := piazza.Http{BaseUrl: c.url}
+	resp := h.PzGet(endpoint)
 	//log.Printf("** ** ** %s", reflect.TypeOf(resp.Data).String())
 	if resp.IsError() {
 		return resp.ToError()
@@ -93,7 +95,8 @@ func (c *Client) getObject(endpoint string, out interface{}) error {
 }
 
 func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) error {
-	resp := piazza.HttpPostJson(c.url+endpoint, obj)
+	h := piazza.Http{BaseUrl: c.url}
+	resp := h.PzPost(endpoint, obj)
 	if resp.IsError() {
 		return resp.ToError()
 	}
@@ -108,7 +111,8 @@ func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) e
 }
 
 func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) error {
-	resp := piazza.HttpPutJson(c.url+endpoint, obj)
+	h := piazza.Http{BaseUrl: c.url}
+	resp := h.PzPut(endpoint, obj)
 	if resp.IsError() {
 		return resp.ToError()
 	}
@@ -125,7 +129,8 @@ func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) er
 }
 
 func (c *Client) deleteObject(endpoint string) error {
-	resp := piazza.HttpDeleteJson(c.url + endpoint)
+	h := piazza.Http{BaseUrl: c.url}
+	resp := h.PzDelete(endpoint)
 	if resp.IsError() {
 		return resp.ToError()
 	}
