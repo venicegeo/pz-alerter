@@ -127,6 +127,7 @@ const EventIndexSettings = `
 {
 	"mappings": {
 		"_default_": {
+			"dynamic": "false",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
@@ -147,8 +148,8 @@ const EventIndexSettings = `
 				"createdOn": {
 					"type": "date",
 					"index": "not_analyzed"
-				}
-				"cron": {
+				},
+				"cronSpec": {
 					"type": "string",
 					"index": "not_analyzed"
 				}
