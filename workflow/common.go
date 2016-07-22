@@ -166,7 +166,7 @@ type Event struct {
 	Data        map[string]interface{} `json:"data"`
 	CreatedBy   string                 `json:"createdBy"`
 	CreatedOn   time.Time              `json:"createdOn"`
-	Cron        string                 `json:"cron"`
+	CronSpec    string                 `json:"cronSpec"`
 }
 
 // EventList is a list of events

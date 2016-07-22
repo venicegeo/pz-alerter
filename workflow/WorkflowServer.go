@@ -150,7 +150,7 @@ func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 
 	var resp *piazza.JsonResponse
 
-	if event.Cron != "" {
+	if event.CronSpec != "" {
 		resp = server.service.PostRepeatingEvent(event)
 	} else {
 		resp = server.service.PostEvent(event)

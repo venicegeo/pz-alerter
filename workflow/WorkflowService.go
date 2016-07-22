@@ -413,9 +413,16 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	return resp
 }
 
-// PostRepeatingEvent TODO
+// PostRepeatingEvent deals with events that have a "cron" field specified.
+// This field is checked for validity, and then set up to repeat at the interval
+// specified by the CronSpec.
+// The createdBy field of each subsequent event is filled with the eventId of
+// this initial event, so that searching for events created by the initial event
+// is easier.
+// TODO: search by createdBy
 func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
-	_, err := cron.Parse(event.Cron)
+	log.Println("Posted Repeating Event")
+	_, err := cron.Parse(event.CronSpec)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -426,10 +433,27 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	}
 	event.EventId = eventID
 
-	service.cron.AddFunc(event.Cron, func() { service.PostEvent(event) })
+	service.addCron(event)
 
 	err = service.cronDB.PostData(event, eventID)
 	if err != nil {
+		return statusInternalServerError(err)
+	}
+
+	// Post the event in the database, WITHOUT "triggering"
+	eventTypeID := event.EventTypeId
+	eventType, err := service.eventTypeDB.GetOne(eventTypeID)
+	if err != nil {
+		return statusBadRequest(err)
+	}
+	eventTypeName := eventType.Name
+
+	_, err = service.eventDB.PostData(eventTypeName, event, eventID)
+	if err != nil {
+		// If we fail, need to also remove from cronDB
+		// We don't check for errors here because if we've reached this point,
+		// the eventID will be in the cronDB
+		service.cronDB.DeleteByID(eventID)
 		return statusInternalServerError(err)
 	}
 
@@ -734,12 +758,33 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 func (service *WorkflowService) InitCron() error {
 	events, err := service.cronDB.GetAll()
 	if err != nil {
-		return errors.New("Unable to get all from CronDB")
+		return LoggedError("WorkflowService.InitCron: Unable to get all from CronDB")
 	}
 
 	for _, e := range *events {
-		service.cron.AddFunc(e.Cron, func() { service.PostEvent(&e) })
+		err = service.addCron(&e)
+		if err != nil {
+			return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
+		}
 	}
 
+	service.cron.Start()
+
 	return nil
+}
+
+// addCron adds an event to the cron instance.
+// The EventId will be added by the PostEvent function.
+// The CronSpec field is not needed for generated events. (??)
+func (service *WorkflowService) addCron(event *Event) error {
+	err := service.cron.AddFunc(event.CronSpec, func() {
+		ev := &Event{
+			EventTypeId: event.EventTypeId,
+			Data:        event.Data,
+			CreatedOn:   time.Now(),
+			CreatedBy:   event.EventId.String(),
+		}
+		service.PostEvent(ev)
+	})
+	return err
 }

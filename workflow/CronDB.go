@@ -78,3 +78,15 @@ func (db *CronDB) GetAll() (*[]Event, error) {
 
 	return &events, nil
 }
+
+func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {
+	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
+	if err != nil {
+		return false, LoggedError("CronDB.DeleteById failed: %s", err)
+	}
+	if deleteResult == nil {
+		return false, LoggedError("CronDB.DeleteById failed: no deleteResult")
+	}
+
+	return deleteResult.Found, nil
+}
