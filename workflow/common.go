@@ -149,7 +149,7 @@ const EventIndexSettings = `
 					"type": "date",
 					"index": "not_analyzed"
 				},
-				"cronSpec": {
+				"cronSchedule": {
 					"type": "string",
 					"index": "not_analyzed"
 				}
@@ -162,12 +162,12 @@ const EventIndexSettings = `
 // An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {
-	EventId     piazza.Ident           `json:"eventId"`
-	EventTypeId piazza.Ident           `json:"eventTypeId" binding:"required"`
-	Data        map[string]interface{} `json:"data"`
-	CreatedBy   string                 `json:"createdBy"`
-	CreatedOn   time.Time              `json:"createdOn"`
-	CronSpec    string                 `json:"cronSpec"`
+	EventId      piazza.Ident           `json:"eventId"`
+	EventTypeId  piazza.Ident           `json:"eventTypeId" binding:"required"`
+	Data         map[string]interface{} `json:"data"`
+	CreatedBy    string                 `json:"createdBy"`
+	CreatedOn    time.Time              `json:"createdOn"`
+	CronSchedule string                 `json:"cronSchedule"`
 }
 
 // EventList is a list of events

@@ -421,16 +421,16 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	return resp
 }
 
-// PostRepeatingEvent deals with events that have a "cron" field specified.
+// PostRepeatingEvent deals with events that have a "CronSchedule" field specified.
 // This field is checked for validity, and then set up to repeat at the interval
-// specified by the CronSpec.
+// specified by the CronSchedule.
 // The createdBy field of each subsequent event is filled with the eventId of
 // this initial event, so that searching for events created by the initial event
 // is easier.
 // TODO: search by createdBy
 func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	log.Println("Posted Repeating Event")
-	_, err := cron.Parse(event.CronSpec)
+	_, err := cron.Parse(event.CronSchedule)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -785,9 +785,9 @@ func (service *WorkflowService) InitCron() error {
 
 // addCron adds an event to the cron instance.
 // The EventId will be added by the PostEvent function.
-// The CronSpec field is not needed for generated events. (??)
+// The CronSchedule field is not needed for generated events. (??)
 func (service *WorkflowService) addCron(event *Event) error {
-	err := service.cron.AddFunc(event.CronSpec, func() {
+	err := service.cron.AddFunc(event.CronSchedule, func() {
 		ev := &Event{
 			EventTypeId: event.EventTypeId,
 			Data:        event.Data,
