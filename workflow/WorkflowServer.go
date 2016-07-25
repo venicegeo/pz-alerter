@@ -223,7 +223,7 @@ func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
 			Message:    err.Error(),
 			Origin:     server.origin,
 		}
-		c.IndentedJSON(resp.StatusCode, resp)
+		piazza.GinReturnJson(c, resp)
 		return
 	}
 	resp := server.service.PostAlert(alert)
