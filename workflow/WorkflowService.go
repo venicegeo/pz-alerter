@@ -766,15 +766,17 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 
 // InitCron TODO
 func (service *WorkflowService) InitCron() error {
-	events, err := service.cronDB.GetAll()
-	if err != nil {
-		return LoggedError("WorkflowService.InitCron: Unable to get all from CronDB")
-	}
-
-	for _, e := range *events {
-		err = service.addCron(&e)
+	if service.cronDB.Exists() {
+		events, err := service.cronDB.GetAll()
 		if err != nil {
-			return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
+			return LoggedError("WorkflowService.InitCron: Unable to get all from CronDB")
+		}
+
+		for _, e := range *events {
+			err = service.addCron(&e)
+			if err != nil {
+				return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
+			}
 		}
 	}
 

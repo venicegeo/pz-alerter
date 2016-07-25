@@ -79,6 +79,15 @@ func (db *CronDB) GetAll() (*[]Event, error) {
 	return &events, nil
 }
 
+// Exists checks to see if the database exists
+func (db *CronDB) Exists() bool {
+	exists := db.Esi.IndexExists()
+	if exists {
+		exists = db.Esi.TypeExists(db.mapping)
+	}
+	return exists
+}
+
 func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
