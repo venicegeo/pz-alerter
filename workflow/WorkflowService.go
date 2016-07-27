@@ -384,11 +384,11 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	}
 
 	// if both specified, "by id"" wins
-	eventTypeID, err := params.AsString("eventTypeId", nil)
+	eventTypeID, err := params.GetAsString("eventTypeId", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-	eventTypeName, err := params.AsString("eventTypeName", nil)
+	eventTypeName, err := params.GetAsString("eventTypeName", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -701,7 +701,7 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerID, err := params.AsString("triggerId", nil)
+	triggerID, err := params.GetAsString("triggerId", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
