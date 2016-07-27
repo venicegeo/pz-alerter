@@ -149,6 +149,12 @@ func (c *Client) GetEventType(id piazza.Ident) (*EventType, error) {
 	return out, err
 }
 
+func (c *Client) GetEventTypeByName(name string) (*EventType, error) {
+	out := &EventType{}
+	err := c.getObject("/eventTypeByName/"+name, out)
+	return out, err
+}
+
 func (c *Client) GetAllEventTypes() (*[]EventType, error) {
 	out := &[]EventType{}
 	err := c.getObject("/eventType", out)

@@ -112,6 +112,8 @@ func (service *WorkflowService) Init(
 
 	var err error
 
+	log.Println("*********** WORKFLOW SERVICE INIT ***************")
+
 	service.logger = logger
 	service.uuidgen = uuidgen
 
@@ -141,6 +143,73 @@ func (service *WorkflowService) Init(
 	}
 
 	service.cron = cron.New()
+
+	// allow the database time to settle
+	//time.Sleep(time.Second * 5)
+	pollingFn := elasticsearch.GetData(func() (bool, error) {
+		exists:=eventtypesIndex.IndexExists()
+		types, err := eventtypesIndex.GetTypes()
+		if err != nil {
+			//handle error
+			fmt.Print("error getting types")
+		}
+		fmt.Println("Getting %d types...", len(types))
+		for _, typ := range types {
+			fmt.Println(typ)
+		}
+		fmt.Printf("Exists: %t", exists)
+		return exists, nil
+	})
+
+	pollOk, pollErr := elasticsearch.PollFunction(pollingFn)
+	if pollErr != nil {
+		fmt.Print("ERROR", pollErr, "\n")
+	}
+	fmt.Print("SETUP INDEX\n", pollOk, "\n")
+
+	// TODO: Create system level event types (piazza:ingest and piazza:executionComplete)
+	// Ingest event type
+	ingestEventType := &EventType{}
+	ingestEventType.Name = "piazza:ingest"
+	ingestEventTypeMapping := map[string]elasticsearch.MappingElementTypeName{
+		"dataId":   "string",
+		"dataType": "string",
+		"epsg":     "short",
+		"minX":     "long",
+		"minY":     "long",
+		"maxX":     "long",
+		"maxY":     "long",
+		"hosted":   "boolean",
+	}
+	ingestEventType.Mapping = ingestEventTypeMapping
+	log.Println("  Creating piazza:ingest eventtype")
+	postedIngestEventType := service.PostEventType(ingestEventType)
+	log.Printf("  Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+	if postedIngestEventType.StatusCode == 201 {
+		// everything is ok
+		//service.logger.Info("Created EventType with EventTypeId %s", postedIngestEventType.Data)
+		log.Printf("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+	} else {
+		// something is wrong
+		//service.logger.Info("Problem creating EventType %s", postedIngestEventType.StatusCode)
+		log.Printf("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+	}
+
+	// Execution Completed event type
+	executionCompletedType := &EventType{}
+	executionCompletedType.Name = "piazza:executionComplete"
+	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
+		"jobId":    "string",
+		"status":   "string",
+		"dataId":   "string",
+	}
+	executionCompletedType.Mapping = executionCompletedTypeMapping
+	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
+	if postedExecutionCompletedType.StatusCode == 201 {
+		// everything is ok
+	} else {
+		// something is wrong or it was already there
+	}
 
 	service.origin = string(sys.Name)
 
@@ -274,6 +343,19 @@ func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonRespon
 		return statusNotFound(id)
 	}
 	return statusOK(event)
+}
+
+func (service *WorkflowService) GetEventTypeByName(name string) *piazza.JsonResponse {
+
+	eventTypeId, err := service.eventTypeDB.GetIDByName(name)
+	if err != nil {
+		return statusNotFound(piazza.Ident(name))
+	}
+	if eventTypeId == nil {
+		return statusNotFound(piazza.Ident(name))
+	}
+	eventType, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeId.String()))
+	return statusOK(eventType)
 }
 
 // GetAllEventTypes TODO

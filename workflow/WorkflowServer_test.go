@@ -47,7 +47,7 @@ func assertNoData(t *testing.T, client *Client) {
 
 	ts, err := client.GetAllEventTypes()
 	assert.NoError(err)
-	assert.Len(*ts, 0)
+	assert.Len(*ts, 2)
 
 	//es, err := workflow.GetAllEvents("")
 	//if err == nil {
@@ -281,7 +281,7 @@ func (suite *ServerTester) Test01EventType() {
 	//log.Printf("Getting list of event types:")
 	typs, err := client.GetAllEventTypes()
 	assert.NoError(err)
-	assert.Len(*typs, 0)
+	assert.Len(*typs, 2)
 	//printJSON("EventTypes", typs)
 
 	//log.Printf("Creating new Event Type:")
@@ -298,7 +298,7 @@ func (suite *ServerTester) Test01EventType() {
 	//log.Printf("Getting list of event types:")
 	typs, err = client.GetAllEventTypes()
 	assert.NoError(err)
-	assert.Len(*typs, 1)
+	assert.Len(*typs, 3)
 
 	//printJSON("EventTypes", typs)
 
@@ -306,6 +306,12 @@ func (suite *ServerTester) Test01EventType() {
 	respTyp, err := client.GetEventType(id)
 	assert.NoError(err)
 	assert.EqualValues(string(id), string(respTyp.EventTypeId))
+
+	if MOCKING == false {
+		respTyp2, err := client.GetEventTypeByName(respTyp.Name)
+		assert.NoError(err)
+		assert.EqualValues(string(respTyp.EventTypeId), string(respTyp2.EventTypeId))
+	}
 
 	//printJSON("Got Event type", typ)
 	//log.Printf("Deleting Event type by Id: %s", id)
@@ -318,7 +324,7 @@ func (suite *ServerTester) Test01EventType() {
 	//log.Printf("Getting list of event types:")
 	typs, err = client.GetAllEventTypes()
 	assert.NoError(err)
-	assert.Len(*typs, 0)
+	assert.Len(*typs, 2)
 
 	//printJSON("EventTypes", typs)
 }
@@ -633,7 +639,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	{
 		x, err := client.GetAllEventTypes()
 		assert.NoError(err)
-		assert.Len(*x, 2)
+		assert.Len(*x, 4)
 	}
 
 	{

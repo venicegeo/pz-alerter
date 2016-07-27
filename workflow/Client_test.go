@@ -179,12 +179,29 @@ func (suite *ClientTester) Test14EventTypeResource() {
 
 	eventTypes, err := client.GetAllEventTypes()
 	assert.NoError(err)
-	assert.Len(*eventTypes, 1)
-	assert.EqualValues(id, (*eventTypes)[0].EventTypeId)
+	assert.Len(*eventTypes, 3)
+
+	// Find the right event type and assert
+	var theType EventType
+	for _, eventtyp := range *eventTypes {
+		if eventtyp.EventTypeId == id {
+			theType = eventtyp
+		}
+	}
+	assert.EqualValues(id, theType.EventTypeId)
 
 	tmp, err := client.GetEventType(id)
 	assert.NoError(err)
 	assert.EqualValues(id, tmp.EventTypeId)
+
+	{
+		if MOCKING {
+			t.Skip("Skipping test, because mocking")
+		}
+		tmp2, err := client.GetEventTypeByName(tmp.Name)
+		assert.NoError(err)
+		assert.EqualValues(tmp.EventTypeId, tmp2.EventTypeId)
+	}
 }
 
 func (suite *ClientTester) Test15One() {
@@ -435,7 +452,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 		eventTypes, err := client.GetAllEventTypes()
 		assert.NoError(err)
-		assert.Len(*eventTypes, 3)
+		assert.Len(*eventTypes, 5)
 	}
 	sleep()
 
