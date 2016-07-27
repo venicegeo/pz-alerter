@@ -69,28 +69,28 @@ var defaultEventTypePagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "eventTypeId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 var defaultEventPagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "eventId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 var defaultTriggerPagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "triggerId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 var defaultAlertPagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "alertId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 //------------------------------------------------------------------------------
