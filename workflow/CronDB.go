@@ -89,7 +89,7 @@ func (db *CronDB) Exists() bool {
 }
 
 func (db *CronDB) itemExists(id piazza.Ident) bool {
-	return db.Esi.ItemExists(db.mapping, id)
+	return db.Esi.ItemExists(db.mapping, id.String())
 }
 
 func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {

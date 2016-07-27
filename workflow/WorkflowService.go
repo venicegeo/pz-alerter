@@ -440,7 +440,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	}
 	event.EventId = eventID
 
-	service.cron.AddJob(e.CronSchedule, cronEvent{e, service})
+	service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
 
 	err = service.cronDB.PostData(event, eventID)
 	if err != nil {
@@ -451,7 +451,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	eventTypeID := event.EventTypeId
 	eventType, err := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil {
-		service.cron.Remove(eventID)
+		service.cron.Remove(eventID.String())
 		return statusBadRequest(err)
 	}
 	eventTypeName := eventType.Name
@@ -462,7 +462,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
 		service.cronDB.DeleteByID(eventID)
-		service.cron.Remove(eventID)
+		service.cron.Remove(eventID.String())
 		return statusInternalServerError(err)
 	}
 
@@ -603,7 +603,7 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 
 	// If it's a cron event, remove from cronDB, stop cronjob
 	if service.cronDB.itemExists(id) {
-		ok, err := service.cronDB.DeleteByID(mapping, piazza.Ident(id))
+		ok, err := service.cronDB.DeleteByID(piazza.Ident(id))
 		if err != nil {
 			return statusBadRequest(err)
 		}
@@ -786,7 +786,7 @@ func (service *WorkflowService) InitCron() error {
 		}
 
 		for _, e := range *events {
-			service.cron.AddJob(e.CronSchedule, cronEvent{e, service})
+			service.cron.AddJob(e.CronSchedule, cronEvent{&e, service})
 			if err != nil {
 				return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
 			}
@@ -799,20 +799,20 @@ func (service *WorkflowService) InitCron() error {
 }
 
 type cronEvent struct {
-	event   *Event
+	*Event
 	service *WorkflowService
 }
 
 func (c cronEvent) Run() {
 	ev := &Event{
-		EventTypeId: c.event.EventTypeId,
-		Data:        c.event.Data,
+		EventTypeId: c.EventTypeId,
+		Data:        c.Data,
 		CreatedOn:   time.Now(),
-		CreatedBy:   c.event.EventId.String(),
+		CreatedBy:   c.EventId.String(),
 	}
 	c.service.PostEvent(ev)
 }
 
 func (c cronEvent) Key() string {
-	return c.event.EventId
+	return c.EventId.String()
 }
