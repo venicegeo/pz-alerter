@@ -130,6 +130,7 @@ const EventIndexSettings = `
 	},
 	"mappings": {
 		"_default_": {
+			"dynamic": "strict",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
