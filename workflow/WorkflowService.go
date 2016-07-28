@@ -112,8 +112,6 @@ func (service *WorkflowService) Init(
 
 	var err error
 
-	log.Println("*********** WORKFLOW SERVICE INIT ***************")
-
 	service.logger = logger
 	service.uuidgen = uuidgen
 
@@ -151,13 +149,16 @@ func (service *WorkflowService) Init(
 		types, err := eventtypesIndex.GetTypes()
 		if err != nil {
 			//handle error
-			fmt.Print("error getting types")
+			fmt.Println("error getting types")
 		}
-		fmt.Println("Getting %d types...", len(types))
+		fmt.Printf("Getting %d types...\n", len(types))
+		if len(types) == 0 {
+			return false, nil
+		}
 		for _, typ := range types {
 			fmt.Println(typ)
 		}
-		fmt.Printf("Exists: %t", exists)
+		fmt.Printf("Exists: %t\n", exists)
 		return exists, nil
 	})
 
@@ -167,7 +168,6 @@ func (service *WorkflowService) Init(
 	}
 	fmt.Print("SETUP INDEX\n", pollOk, "\n")
 
-	// TODO: Create system level event types (piazza:ingest and piazza:executionComplete)
 	// Ingest event type
 	ingestEventType := &EventType{}
 	ingestEventType.Name = "piazza:ingest"
