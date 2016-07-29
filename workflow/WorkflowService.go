@@ -187,12 +187,10 @@ func (service *WorkflowService) Init(
 	log.Printf("  Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	if postedIngestEventType.StatusCode == 201 {
 		// everything is ok
-		//service.logger.Info("Created EventType with EventTypeId %s", postedIngestEventType.Data)
-		log.Printf("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	} else {
 		// something is wrong
-		//service.logger.Info("Problem creating EventType %s", postedIngestEventType.StatusCode)
-		log.Printf("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+		service.logger.Info("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	}
 
 	// Execution Completed event type
@@ -207,8 +205,10 @@ func (service *WorkflowService) Init(
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
 	if postedExecutionCompletedType.StatusCode == 201 {
 		// everything is ok
+		service.logger.Info("  SUCCESS Created piazza:executionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
 	} else {
 		// something is wrong or it was already there
+		service.logger.Info("  ERROR creating piazza:excutionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
 	}
 
 	service.origin = string(sys.Name)
