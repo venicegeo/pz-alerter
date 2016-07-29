@@ -551,7 +551,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 				// Not very robust,  need to find a better way
 				for key, value := range event.Data {
-					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), 1)
+					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), -1)
 				}
 
 				service.logger.Info("job submission: %s\n", jobString)
