@@ -1,0 +1,20 @@
+package: github.com/venicegeo/pz-workflow
+import:
+- package: github.com/Shopify/sarama
+- package: github.com/gin-gonic/gin
+- package: github.com/pborman/uuid
+- package: github.com/vegertar/cron
+- package: github.com/venicegeo/pz-gocommon
+  subpackages:
+  - elasticsearch
+  - gocommon
+- package: github.com/venicegeo/pz-logger
+  subpackages:
+  - logger
+- package: github.com/venicegeo/pz-uuidgen
+  subpackages:
+  - uuidgen
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
+  - suite

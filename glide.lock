@@ -1,0 +1,70 @@
+hash: a85aa0e27c7a0b518f3bd9905f34a324d4fef280fe2a9a99e4a49d441ca9e0a6
+updated: 2016-07-29T16:35:42.730480848-04:00
+imports:
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/eapache/go-resiliency
+  version: b86b1ec0dd4209a588dc1285cdd471e73525c0b3
+  subpackages:
+  - breaker
+- name: github.com/eapache/go-xerial-snappy
+  version: bb955e01b9346ac19dc29eb16586c90ded99a98c
+- name: github.com/eapache/queue
+  version: ded5959c0d4e360646dc9e9908cff48666781367
+- name: github.com/fvbock/endless
+  version: 2cdc20a776897c0f406853c048c33e2c1a9f0ebf
+- name: github.com/gin-gonic/gin
+  version: f931d1ea80ae95a6fc739213cdd9399bd2967fb6
+  subpackages:
+  - binding
+  - render
+- name: github.com/golang/protobuf
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
+  subpackages:
+  - proto
+- name: github.com/golang/snappy
+  version: d9eb7a3d35ec988b8585d4a0068e462c27d28380
+- name: github.com/klauspost/crc32
+  version: 19b0b332c9e4516a6370a0456e6182c3b5036720
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+- name: github.com/pborman/uuid
+  version: c55201b036063326c5b1b89ccfe45a184973d073
+- name: github.com/Shopify/sarama
+  version: e8020bffa1cae3ddf8068cb03416fc53d1627f3d
+- name: github.com/stretchr/testify
+  version: d77da356e56a7428ad25149ca77381849a6a5232
+  subpackages:
+  - assert
+  - suite
+- name: github.com/vegertar/cron
+  version: 5ac5cfd06ab8d01d4cb729441c7db2ac9fbe11b3
+- name: github.com/venicegeo/pz-gocommon
+  version: 6e17d75eaae57907f5db5ecd06b800b53c64a363
+  subpackages:
+  - elasticsearch
+  - gocommon
+- name: github.com/venicegeo/pz-logger
+  version: dc2c8d01ebf2beecc37e1d3d5a24f9b7c2415714
+  subpackages:
+  - logger
+- name: github.com/venicegeo/pz-uuidgen
+  version: 3ef1b3bd90e749839f72a356f7b777b1c9872730
+  subpackages:
+  - uuidgen
+- name: golang.org/x/net
+  version: f315505cf3349909cdf013ea56690da34e96a451
+  subpackages:
+  - context
+- name: gopkg.in/go-playground/validator.v8
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
+- name: gopkg.in/olivere/elastic.v3
+  version: 787ebbb5a7600662bca364e4e8ca959f315e442f
+  subpackages:
+  - backoff
+  - uritemplates
+- name: gopkg.in/yaml.v2
+  version: e4d366fc3c7938e2958e662b4258c7a89e1f0e3e
+devImports: []
