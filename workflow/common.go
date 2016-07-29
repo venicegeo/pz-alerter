@@ -125,9 +125,12 @@ type TriggerList []Trigger
 // EventIndexSettings is the mapping for the "events" index in Elasticsearch
 const EventIndexSettings = `
 {
+	"settings": {
+		"index.mapping.coerce": false
+	},
 	"mappings": {
 		"_default_": {
-			"dynamic": "false",
+			"dynamic": "strict",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",

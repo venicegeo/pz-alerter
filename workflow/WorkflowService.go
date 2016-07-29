@@ -27,7 +27,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	cron "github.com/robfig/cron"
+	cron "github.com/vegertar/cron"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
@@ -69,28 +69,28 @@ var defaultEventTypePagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "eventTypeId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 var defaultEventPagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "eventId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 var defaultTriggerPagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "triggerId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 var defaultAlertPagination = &piazza.JsonPagination{
 	PerPage: 50,
 	Page:    0,
 	SortBy:  "alertId",
-	Order:   piazza.PaginationOrderAscending,
+	Order:   piazza.SortOrderAscending,
 }
 
 //------------------------------------------------------------------------------
@@ -417,7 +417,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted EventType with EventTypeId %s", eventType, eventTypeID)
+	service.logger.Info("Posted EventType with EventTypeId %s", eventTypeID)
 
 	return statusCreated(eventType)
 }
@@ -466,11 +466,11 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	}
 
 	// if both specified, "by id"" wins
-	eventTypeID, err := params.AsString("eventTypeId", nil)
+	eventTypeID, err := params.GetAsString("eventTypeId", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
-	eventTypeName, err := params.AsString("eventTypeName", nil)
+	eventTypeName, err := params.GetAsString("eventTypeName", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -509,7 +509,6 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 // The createdBy field of each subsequent event is filled with the eventId of
 // this initial event, so that searching for events created by the initial event
 // is easier.
-// TODO: search by createdBy
 func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	log.Println("Posted Repeating Event")
 	_, err := cron.Parse(event.CronSchedule)
@@ -523,7 +522,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	}
 	event.EventId = eventID
 
-	service.addCron(event)
+	service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
 
 	err = service.cronDB.PostData(event, eventID)
 	if err != nil {
@@ -534,6 +533,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	eventTypeID := event.EventTypeId
 	eventType, err := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil {
+		service.cron.Remove(eventID.String())
 		return statusBadRequest(err)
 	}
 	eventTypeName := eventType.Name
@@ -544,6 +544,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
 		service.cronDB.DeleteByID(eventID)
+		service.cron.Remove(eventID.String())
 		return statusInternalServerError(err)
 	}
 
@@ -572,7 +573,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 		return statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted Event with EventId %s", event, eventID)
+	service.logger.Info("Posted Event with EventId %s", eventID)
 
 	{
 		// Find triggers associated with event
@@ -656,9 +657,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 		waitGroup.Wait()
 
-		//log.Printf("trigger results: %#v", results)
 		for _, v := range results {
-			// log.Printf("%#v %#v", k, v)
 			if v != nil {
 				return v
 			}
@@ -680,6 +679,18 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 	}
 	if !ok {
 		return statusNotFound(id)
+	}
+
+	// If it's a cron event, remove from cronDB, stop cronjob
+	if service.cronDB.itemExists(id) {
+		ok, err := service.cronDB.DeleteByID(piazza.Ident(id))
+		if err != nil {
+			return statusBadRequest(err)
+		}
+		if !ok {
+			return statusNotFound(id)
+		}
+		service.cron.Remove(id.String())
 	}
 
 	service.logger.Info("Deleted Event with EventId %s", id)
@@ -736,7 +747,7 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 		return statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted Trigger with TriggerId %s", trigger, triggerID)
+	service.logger.Info("Posted Trigger with TriggerId %s", triggerID)
 
 	return statusCreated(trigger)
 }
@@ -770,7 +781,7 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerID, err := params.AsString("triggerId", nil)
+	triggerID, err := params.GetAsString("triggerId", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -826,7 +837,7 @@ func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
 		return statusInternalServerError(err)
 	}
 
-	service.logger.Info("Posted Alert with AlertId %s", alert, alertID)
+	service.logger.Info("Posted Alert with AlertId %s", alertID)
 
 	return statusCreated(alert)
 }
@@ -855,7 +866,7 @@ func (service *WorkflowService) InitCron() error {
 		}
 
 		for _, e := range *events {
-			err = service.addCron(&e)
+			service.cron.AddJob(e.CronSchedule, cronEvent{&e, service})
 			if err != nil {
 				return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
 			}
@@ -867,18 +878,21 @@ func (service *WorkflowService) InitCron() error {
 	return nil
 }
 
-// addCron adds an event to the cron instance.
-// The EventId will be added by the PostEvent function.
-// The CronSchedule field is not needed for generated events. (??)
-func (service *WorkflowService) addCron(event *Event) error {
-	err := service.cron.AddFunc(event.CronSchedule, func() {
-		ev := &Event{
-			EventTypeId: event.EventTypeId,
-			Data:        event.Data,
-			CreatedOn:   time.Now(),
-			CreatedBy:   event.EventId.String(),
-		}
-		service.PostEvent(ev)
-	})
-	return err
+type cronEvent struct {
+	*Event
+	service *WorkflowService
+}
+
+func (c cronEvent) Run() {
+	ev := &Event{
+		EventTypeId: c.EventTypeId,
+		Data:        c.Data,
+		CreatedOn:   time.Now(),
+		CreatedBy:   c.EventId.String(),
+	}
+	c.service.PostEvent(ev)
+}
+
+func (c cronEvent) Key() string {
+	return c.EventId.String()
 }
