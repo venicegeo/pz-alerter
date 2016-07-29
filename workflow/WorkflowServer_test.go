@@ -195,21 +195,6 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------------
 
-/**
-func (suite *ServerTester) SetupSuite() {
-	assertNoData(suite.T(), suite.client)
-
-	//log.Printf("--- SetupSuite --- \n")
-}
-func (suite *ServerTester) TearDownSuite() {
-	assertNoData(suite.T(), suite.client)
-
-	//log.Printf("--- TearDownSuite --- \n")
-}
-**/
-
-//---------------------------------------------------------------------------
-
 // Generate random names
 func makeTestEventTypeName() string {
 	return "MYTYPE" + strconv.Itoa(rand.Int())
