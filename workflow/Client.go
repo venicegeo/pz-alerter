@@ -16,17 +16,18 @@ package workflow
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	logger "github.com/venicegeo/pz-logger/logger"
+	loggerpkg "github.com/venicegeo/pz-logger/logger"
 )
 
 type Client struct {
 	url    string
-	logger logger.IClient
+	logger loggerpkg.IClient
 }
 
-func NewClient(sys *piazza.SystemConfig, logger logger.IClient) (*Client, error) {
+func NewClient(sys *piazza.SystemConfig, logger loggerpkg.IClient) (*Client, error) {
 
 	var err error
 
@@ -43,6 +44,24 @@ func NewClient(sys *piazza.SystemConfig, logger logger.IClient) (*Client, error)
 	}
 
 	service.logger.Info("Client started")
+
+	return service, nil
+}
+
+func NewClient2(url string, apiKey string) (*Client, error) {
+
+	var err error
+
+	loggerUrl := strings.Replace(url, "workflow", "logger", 1)
+	logger, err := loggerpkg.NewClient2(loggerUrl, apiKey)
+	if err != nil {
+		return nil, err
+	}
+
+	service := &Client{
+		url:    url,
+		logger: logger,
+	}
 
 	return service, nil
 }
