@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
@@ -290,15 +291,45 @@ const CronIndexSettings = EventIndexSettings
 
 const cronDBMapping = "Cron"
 
-//-UTILITY----------------------------------------------------------------------
+//-- Stats ------------------------------------------------------------
 
-type workflowAdminStats struct {
-	CreatedOn     time.Time `json:"createdOn"`
-	NumAlerts     int       `json:"numAlerts"`
-	NumConditions int       `json:"numConditions"`
-	NumEvents     int       `json:"numEvents"`
-	NumTriggers   int       `json:"numTriggers"`
+type workflowStats struct {
+	sync.Mutex
+	CreatedOn        time.Time `json:"createdOn"`
+	NumEventTypes    int       `json:"numEventTypes"`
+	NumEvents        int       `json:"numEvents"`
+	NumTriggers      int       `json:"numTriggers"`
+	NumAlerts        int       `json:"numAlerts"`
+	NumTriggeredJobs int       `json:"numTriggeredJobs"`
 }
+
+func (stats *workflowStats) incrCounter(counter *int) {
+	stats.Lock()
+	*counter++
+	stats.Unlock()
+}
+
+func (stats *workflowStats) IncrEventTypes() {
+	stats.incrCounter(&stats.NumEventTypes)
+}
+
+func (stats *workflowStats) IncrEvents() {
+	stats.incrCounter(&stats.NumEvents)
+}
+
+func (stats *workflowStats) IncrTriggers() {
+	stats.incrCounter(&stats.NumTriggers)
+}
+
+func (stats *workflowStats) IncrAlerts() {
+	stats.incrCounter(&stats.NumAlerts)
+}
+
+func (stats *workflowStats) IncrTriggerJobs() {
+	stats.incrCounter(&stats.NumTriggeredJobs)
+}
+
+//-UTILITY----------------------------------------------------------------------
 
 // LoggedError logs the error's message and creates an error
 func LoggedError(mssg string, args ...interface{}) error {
@@ -323,5 +354,5 @@ func init() {
 	piazza.JsonResponseDataTypes["[]workflow.Trigger"] = "trigger-list"
 	piazza.JsonResponseDataTypes["*workflow.Alert"] = "alert"
 	piazza.JsonResponseDataTypes["[]workflow.Alert"] = "alert-list"
-	piazza.JsonResponseDataTypes["workflow.workflowAdminStats"] = "workflowstats"
+	piazza.JsonResponseDataTypes["workflow.workflowStats"] = "workflowstats"
 }

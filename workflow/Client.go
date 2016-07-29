@@ -292,8 +292,8 @@ func (c *Client) DeleteAlert(id piazza.Ident) error {
 
 //------------------------------------------------------------------------------
 
-func (c *Client) GetStats() (*workflowAdminStats, error) {
-	out := &workflowAdminStats{}
+func (c *Client) GetStats() (*workflowStats, error) {
+	out := &workflowStats{}
 	err := c.getObject("/admin/stats", out)
 	return out, err
 
