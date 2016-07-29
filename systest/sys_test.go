@@ -12,60 +12,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package uuidgen_systest
+package workflow_systest
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
-	uuidpkg "github.com/pborman/uuid"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	"github.com/venicegeo/pz-uuidgen/uuidgen"
+	"github.com/venicegeo/pz-workflow/workflow"
 )
 
 func sleep() {
 	time.Sleep(1 * time.Second)
 }
 
-type UuidgenTester struct {
+type WorkflowTester struct {
 	suite.Suite
-	client *uuidgen.Client
+	client *workflow.Client
 	url    string
 	apiKey string
 }
 
-func (suite *UuidgenTester) setupFixture() {
+func (suite *WorkflowTester) setupFixture() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	var err error
 
-	suite.url = "https://pz-uuidgen.int.geointservices.io"
+	suite.url = "https://pz-workflow.int.geointservices.io"
 
 	suite.apiKey, err = piazza.GetApiKey("int")
 	assert.NoError(err)
 
-	client, err := uuidgen.NewClient2(suite.url, suite.apiKey)
+	client, err := workflow.NewClient2(suite.url, suite.apiKey)
 	assert.NoError(err)
 	suite.client = client
 }
 
-func (suite *UuidgenTester) teardownFixture() {
+func (suite *WorkflowTester) teardownFixture() {
 }
 
 func TestRunSuite(t *testing.T) {
-	s := &UuidgenTester{}
+	s := &WorkflowTester{}
 	suite.Run(t, s)
 }
 
-func isValid(uuid string) bool {
-	return uuidpkg.Parse(uuid) != nil
-}
-
-func (suite *UuidgenTester) TestGet() {
+func (suite *WorkflowTester) TestGet() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -74,13 +70,13 @@ func (suite *UuidgenTester) TestGet() {
 
 	client := suite.client
 
-	uuid, err := client.GetUuid()
+	eventTypes, err := client.GetAllEventTypes()
 	assert.NoError(err)
 
-	assert.True(isValid(uuid))
+	assert.True(len(*eventTypes) > 1)
 }
 
-func (suite *UuidgenTester) TestPost() {
+func (suite *WorkflowTester) TestPost() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -89,21 +85,23 @@ func (suite *UuidgenTester) TestPost() {
 
 	client := suite.client
 
-	uuids, err := client.PostUuids(17)
-	assert.NoError(err)
-	assert.Len(*uuids, 17)
+	uniq := "systest$" + strconv.Itoa(time.Now().Nanosecond())
 
-	for i := 0; i < 17; i++ {
-		a := (*uuids)[i]
-		assert.True(isValid(a))
-		for j := i + 1; j < 17; j++ {
-			b := (*uuids)[j]
-			assert.NotEqual(a, b)
-		}
+	eventType := &workflow.EventType{
+		Name: uniq,
+		Mapping: map[string]elasticsearch.MappingElementTypeName{
+			"filename": elasticsearch.MappingElementTypeString,
+			"code":     elasticsearch.MappingElementTypeString,
+			"severity": elasticsearch.MappingElementTypeInteger,
+		},
 	}
+
+	ack, err := client.PostEventType(eventType)
+	assert.NoError(err)
+	assert.NotNil(ack)
 }
 
-func (suite *UuidgenTester) TestAdmin() {
+func (suite *WorkflowTester) TestAdmin() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -115,6 +113,5 @@ func (suite *UuidgenTester) TestAdmin() {
 	stats, err := client.GetStats()
 	assert.NoError(err, "GetFromAdminStats")
 
-	assert.NotZero(stats.NumUUIDs)
-	assert.NotZero(stats.NumRequests)
+	assert.NotZero(stats.NumEvents)
 }
