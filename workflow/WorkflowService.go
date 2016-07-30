@@ -542,6 +542,10 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 				}
 
 				jobInstance, err := json.Marshal(job)
+				if err != nil {
+					results[triggerID] = service.statusInternalError(err)
+					return
+				}
 				jobString := string(jobInstance)
 
 				// Not very robust,  need to find a better way
