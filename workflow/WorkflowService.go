@@ -15,12 +15,10 @@
 package workflow
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -178,24 +176,6 @@ func (service *WorkflowService) sendToKafka(jobInstance string, jobID piazza.Ide
 	}
 
 	return nil
-}
-
-func (service *WorkflowService) postToPzGatewayJobService(uri string, params map[string]string) (*http.Request, error) {
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	for key, val := range params {
-		_ = writer.WriteField(key, val)
-	}
-	err := writer.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	req, err := http.NewRequest("POST", uri, body)
-	req.Header.Add("Content-Type", writer.FormDataContentType())
-
-	return req, err
 }
 
 //---------------------------------------------------------------------
