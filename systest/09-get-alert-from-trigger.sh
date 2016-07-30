@@ -9,11 +9,11 @@ then
     exit 1
 fi
 
-echo
-echo GET /alert
+#echo GET /alert
 
-ret=$($curl -XGET $url/alert/triggerId=$triggerId)
+ret=$($curl -XGET $url/alert?triggerId=$triggerId)
 
-echo RETURN:
-echo "$ret"
-echo
+#echo RETURN:
+#echo "$ret"
+
+echo `extract alertId "$ret"`
