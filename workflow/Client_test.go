@@ -235,13 +235,11 @@ func (suite *ClientTester) Test15One() {
 			},
 			Job: Job{
 				CreatedBy: "test",
-				JobType: map[string]interface{}{
-					"type": "execute-service",
-					"data": map[string]interface{}{
-						// "dataInputs": map[string]interface{},
-						// "dataOutput": map[string]interface{},
-						"serviceId": "ddd5134",
-					},
+				Type:      "execute-service",
+				Data: map[string]interface{}{
+					// "dataInputs": map[string]interface{},
+					// "dataOutput": map[string]interface{},
+					"serviceId": "ddd5134",
 				},
 			},
 		}
@@ -368,13 +366,11 @@ func (suite *ClientTester) Test16TriggerResource() {
 		},
 		Job: Job{
 			CreatedBy: "test",
-			JobType: map[string]interface{}{
-				"type": "execute-service",
-				"data": map[string]interface{}{
-					// "dataInputs": map[string]interface{},
-					// "dataOutput": map[string]interface{},
-					"serviceId": "ddd5134",
-				},
+			Type:      "execute-service",
+			Data: map[string]interface{}{
+				// "dataInputs": map[string]interface{},
+				// "dataOutput": map[string]interface{},
+				"serviceId": "ddd5134",
 			},
 		},
 	}
@@ -466,13 +462,11 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 			Job: Job{
 				CreatedBy: "test",
-				JobType: map[string]interface{}{
-					"type": "execute-service",
-					"data": map[string]interface{}{
-						// "dataInputs": map[string]interface{},
-						// "dataOutput": map[string]interface{},
-						"serviceId": "ddd5134",
-					},
+				Type:      "execute-service",
+				Data: map[string]interface{}{
+					// "dataInputs": map[string]interface{},
+					// "dataOutput": map[string]interface{},
+					"serviceId": "ddd5134",
 				},
 			},
 		}
@@ -498,13 +492,11 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 			Job: Job{
 				CreatedBy: "test",
-				JobType: map[string]interface{}{
-					"type": "execute-service",
-					"data": map[string]interface{}{
-						// "dataInputs": map[string]interface{},
-						// "dataOutput": map[string]interface{},
-						"serviceId": "ddd5134",
-					},
+				Type:      "execute-service",
+				Data: map[string]interface{}{
+					// "dataInputs": map[string]interface{},
+					// "dataOutput": map[string]interface{},
+					"serviceId": "ddd5134",
 				},
 			},
 		}

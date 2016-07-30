@@ -101,7 +101,8 @@ type Condition struct {
 // Job JSON struct
 type Job struct {
 	CreatedBy string                 `json:"createdBy" binding:"required"`
-	JobType   map[string]interface{} `json:"jobType" binding:"required"`
+	Data      map[string]interface{} `json:"data" binding:"required"`
+	Type      string                 `json:"type" binding:"required"`
 }
 
 // Trigger does something when the and'ed set of Conditions all are true
