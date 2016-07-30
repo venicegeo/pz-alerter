@@ -42,6 +42,7 @@ type WorkflowTester struct {
 	serviceId     piazza.Ident
 	eventIdY      piazza.Ident
 	eventIdN      piazza.Ident
+	alertId       piazza.Ident
 	jobId         piazza.Ident
 	dataId        piazza.Ident
 }
@@ -122,7 +123,9 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	assert.IsType(stringType, data["serviceId"])
 	serviceId := data["serviceId"].(string)
 	assert.NotEmpty(serviceId)
+
 	suite.serviceId = piazza.Ident(serviceId)
+	log.Printf("ServiceId: %s", suite.serviceId)
 }
 
 //---------------------------------------------------------------------
@@ -149,6 +152,8 @@ func (suite *WorkflowTester) Test02PostEventType() {
 	assert.NotNil(ack)
 
 	suite.eventTypeId = ack.EventTypeId
+	log.Printf("EventTypeId: %s", suite.eventTypeId)
+
 }
 
 func (suite *WorkflowTester) Test03GetEventType() {
@@ -179,8 +184,11 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
+	//suite.eventTypeId = "77bbe4c6-b1ac-4bbb-8e86-0f6e6a731c39"
+	//suite.serviceId = "61985d9c-d4d0-45d9-a655-7dcf2dc08fad"
+
 	client := suite.client
-	log.Printf("%s %s", suite.eventTypeId, suite.serviceId)
+
 	trigger := &workflow.Trigger{
 		Name:    suite.triggerName,
 		Enabled: true,
@@ -196,32 +204,34 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 		},
 		Job: workflow.Job{
 			CreatedBy: "test",
-			JobType: map[string]interface{}{
-				"type": "execute-service",
-				"data": map[string]interface{}{
-					"dataInputs": map[string]interface{}{
-						"": map[string]interface{}{
-							"content":  `{"name":"ME", "count":"5"}`,
-							"type":     "body",
-							"mimeType": "application/json",
-						},
+			//	JobType: map[string]interface{}{
+			Type: "execute-service",
+			Data: map[string]interface{}{
+				"dataInputs": map[string]interface{}{
+					"": map[string]interface{}{
+						"content":  `{"name":"ME", "count":"5"}`,
+						"type":     "body",
+						"mimeType": "application/json",
 					},
-					"dataOutput": []map[string]string{
-						{
-							"mimeType": "application/json",
-							"type":     "text",
-						},
-					},
-					"serviceId": suite.serviceId,
 				},
+				"dataOutput": [](map[string]interface{}){
+					{
+						"mimeType": "application/json",
+						"type":     "text",
+					},
+				},
+				"serviceId": suite.serviceId,
 			},
+			//	},
 		},
 	}
 
 	ack, err := client.PostTrigger(trigger)
 	assert.NoError(err)
 	assert.NotNil(ack)
+
 	suite.triggerId = ack.TriggerId
+	log.Printf("TriggerId: %s", suite.triggerId)
 }
 
 func (suite *WorkflowTester) Test05GetTrigger() {
@@ -274,11 +284,13 @@ func (suite *WorkflowTester) Test06PostEvent() {
 	assert.NoError(err)
 	assert.NotNil(ack)
 	suite.eventIdY = ack.EventId
+	log.Printf("EventIdY: %s", suite.eventIdY)
 
 	ack, err = client.PostEvent(eventN)
 	assert.NoError(err)
 	assert.NotNil(ack)
 	suite.eventIdN = ack.EventId
+	log.Printf("EventIdN: %s", suite.eventIdN)
 }
 
 func (suite *WorkflowTester) Test07GetEvent() {
@@ -341,7 +353,11 @@ func (suite *WorkflowTester) Test09GetAlert() {
 	assert.Len(*items, 1)
 	assert.EqualValues(suite.eventIdY, (*items)[0].EventId)
 
+	suite.alertId = (*items)[0].AlertId
+	log.Printf("AlertId: %s", suite.alertId)
+
 	suite.jobId = (*items)[0].JobId
+	log.Printf("JobId: %s", suite.jobId)
 }
 
 //---------------------------------------------------------------------
@@ -405,10 +421,12 @@ func (suite *WorkflowTester) Test10GetJob() {
 	assert.True(ok)
 	id, ok := result["dataId"].(string)
 	assert.True(ok)
+
 	suite.dataId = piazza.Ident(id)
+	log.Printf("DataId: %s", suite.dataId)
 }
 
-func (suite *WorkflowTester) Test11GetData() {
+func (suite *WorkflowTester) xTest11GetData() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -445,7 +463,7 @@ func (suite *WorkflowTester) Test11GetData() {
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) Test99Admin() {
+func (suite *WorkflowTester) xTest99Admin() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -462,37 +480,4 @@ func (suite *WorkflowTester) Test99Admin() {
 	assert.NotZero(stats.NumTriggers)
 	assert.NotZero(stats.NumAlerts)
 	assert.NotZero(stats.NumTriggeredJobs)
-}
-
-var x = map[string]interface{}{
-	"type": "data",
-	"data": map[string]interface{}{
-		"dataId": "4c5b214a-8ccd-417f-9b12-90569873f8e6",
-		"dataType": map[string]interface{}{
-			"type":     interface{}(nil),
-			"content":  "{\n    \"Message\": \"Hi. I'm pzsvc-hello.\"\n}",
-			"mimeType": interface{}(nil)},
-		"metadata": map[string]interface{}{
-			"statusType":          interface{}(nil),
-			"networkAvailable":    interface{}(nil),
-			"metadata":            interface{}(nil),
-			"numericKeyValueList": interface{}(nil),
-			"availability":        interface{}(nil),
-			"classType":           interface{}(nil),
-			"clientCertRequired":  interface{}(nil),
-			"textKeyValueList":    interface{}(nil),
-			"createdBy":           "pz-sc-ingest",
-			"name":                interface{}(nil),
-			"description":         interface{}(nil),
-			"format":              interface{}(nil),
-			"tags":                interface{}(nil),
-			"credentialsRequired": interface{}(nil),
-			"version":             interface{}(nil),
-			"qos":                 interface{}(nil),
-			"preAuthRequired":     interface{}(nil),
-			"contacts":            interface{}(nil),
-			"reason":              interface{}(nil),
-			"createdOn":           "2016-07-30T06:55:16.833Z",
-		},
-	},
 }
