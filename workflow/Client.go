@@ -236,8 +236,8 @@ func (c *Client) GetTrigger(id piazza.Ident) (*Trigger, error) {
 	return out, err
 }
 
-func (c *Client) GetAllTriggers() ([]Trigger, error) {
-	out := []Trigger{}
+func (c *Client) GetAllTriggers() (*[]Trigger, error) {
+	out := &[]Trigger{}
 	err := c.getObject("/trigger", &out)
 	return out, err
 }
@@ -264,6 +264,12 @@ func (c *Client) DeleteTrigger(id piazza.Ident) error {
 func (c *Client) GetAlert(id piazza.Ident) (*Alert, error) {
 	out := &Alert{}
 	err := c.getObject("/alert/"+id.String(), out)
+	return out, err
+}
+
+func (c *Client) GetAlertByTrigger(id piazza.Ident) (*[]Alert, error) {
+	out := &[]Alert{}
+	err := c.getObject("/alert?triggerId="+id.String(), out)
 	return out, err
 }
 

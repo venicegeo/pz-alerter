@@ -222,7 +222,7 @@ func (suite *ClientTester) Test15One() {
 	var tID piazza.Ident
 	{
 		x1 := &Trigger{
-			Title: "the x1 trigger",
+			Name: "the x1 trigger",
 			Condition: Condition{
 				EventTypeIds: []piazza.Ident{etID},
 				Query: map[string]interface{}{
@@ -355,7 +355,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	}()
 
 	t1 := Trigger{
-		Title: "the x1 trigger",
+		Name: "the x1 trigger",
 		Condition: Condition{
 			EventTypeIds: []piazza.Ident{etID},
 			Query: map[string]interface{}{
@@ -396,7 +396,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	triggers, err := client.GetAllTriggers()
 	assert.NoError(err)
 	assert.Len(triggers, 1)
-	assert.EqualValues(t1ID, triggers[0].TriggerId)
+	assert.EqualValues(t1ID, (*triggers)[0].TriggerId)
 }
 
 func (suite *ClientTester) Test17Triggering() {
@@ -453,7 +453,7 @@ func (suite *ClientTester) Test17Triggering() {
 	var tA, tB piazza.Ident
 	{
 		t1 := &Trigger{
-			Title: "Trigger A",
+			Name: "Trigger A",
 			Condition: Condition{
 				EventTypeIds: []piazza.Ident{etC},
 				Query: map[string]interface{}{
@@ -485,7 +485,7 @@ func (suite *ClientTester) Test17Triggering() {
 		}()
 
 		t2 := &Trigger{
-			Title: "Trigger B",
+			Name: "Trigger B",
 			Condition: Condition{
 				EventTypeIds: []piazza.Ident{etD},
 				Query: map[string]interface{}{

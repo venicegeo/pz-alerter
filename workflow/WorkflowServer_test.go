@@ -220,7 +220,7 @@ func makeTestEvent(eventTypeID piazza.Ident) *Event {
 
 func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	trigger := &Trigger{
-		Title:   "MY TRIGGER TITLE",
+		Name:    "MY TRIGGER TITLE",
 		Enabled: true,
 		Condition: Condition{
 			EventTypeIds: eventTypeIDs,
@@ -703,7 +703,7 @@ func (suite *ServerTester) Test06Workflow() {
 	{
 		//log.Printf("Creating trigger:\n")
 		trigger := &Trigger{
-			Title: "the x1 trigger",
+			Name: "the x1 trigger",
 			Condition: Condition{
 				EventTypeIds: []piazza.Ident{et1ID},
 				Query: map[string]interface{}{

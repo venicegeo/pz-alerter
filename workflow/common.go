@@ -109,7 +109,7 @@ type Job struct {
 // Job is the JobMessage to submit back to Pz
 type Trigger struct {
 	TriggerId     piazza.Ident `json:"triggerId"`
-	Title         string       `json:"title" binding:"required"`
+	Name          string       `json:"name" binding:"required"`
 	Condition     Condition    `json:"condition" binding:"required"`
 	Job           Job          `json:"job" binding:"required"`
 	PercolationId piazza.Ident `json:"percolationId"`
