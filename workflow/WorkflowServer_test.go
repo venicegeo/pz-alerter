@@ -60,7 +60,7 @@ func assertNoData(t *testing.T, client *Client) {
 
 	xs, err := client.GetAllTriggers()
 	assert.NoError(err)
-	assert.Len(xs, 0)
+	assert.Len(*xs, 0)
 }
 
 func TestRunSuite(t *testing.T) {
@@ -397,7 +397,7 @@ func (suite *ServerTester) Test03Trigger() {
 	//log.Printf("Getting list of triggers:")
 	triggers, err := client.GetAllTriggers()
 	assert.NoError(err)
-	assert.Len(triggers, 0)
+	assert.Len(*triggers, 0)
 
 	//printJSON("triggers", triggers)
 
@@ -441,7 +441,7 @@ func (suite *ServerTester) Test03Trigger() {
 	//log.Printf("Getting list of triggers:")
 	triggers, err = client.GetAllTriggers()
 	assert.NoError(err)
-	assert.Len(triggers, 0)
+	assert.Len(*triggers, 0)
 	//printJSON("triggers", triggers)
 
 	//log.Printf("Delete event type by id: %s", eventTypeID)
