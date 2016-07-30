@@ -426,7 +426,7 @@ func (suite *WorkflowTester) Test10GetJob() {
 	log.Printf("DataId: %s", suite.dataId)
 }
 
-func (suite *WorkflowTester) xTest11GetData() {
+func (suite *WorkflowTester) Test11GetData() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -463,7 +463,7 @@ func (suite *WorkflowTester) xTest11GetData() {
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) xTest99Admin() {
+func (suite *WorkflowTester) Test99Admin() {
 	t := suite.T()
 	assert := assert.New(t)
 

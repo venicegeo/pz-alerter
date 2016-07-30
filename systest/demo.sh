@@ -7,13 +7,13 @@ eventTypeId=`sh 02-post-eventtype.sh`
 echo EventTypeId: $eventTypeId
 
 t=`sh 03-get-eventtype.sh $eventTypeId`
-echo check: $t
+echo . check: $t
 
 triggerId=`sh 04-post-trigger.sh $eventTypeId $serviceId`
 echo TriggerId: $triggerId
 
 t=`sh 05-get-trigger.sh $triggerId`
-echo check: $t
+echo . check: $t
 
 eventIdY=`sh 06-post-event-yes.sh $eventTypeId`
 echo EventIdY: $eventIdY
@@ -22,16 +22,22 @@ eventIdN=`sh 06-post-event-no.sh $eventTypeId`
 echo EventIdN: $eventIdN
 
 t=`sh 07-get-event.sh $eventIdY`
-echo check: $t
+echo . check: $t
 
 alertId=`sh 08-post-alert.sh`
-echo AlertId: $alertId
+echo . AlertId: $alertId
 
 t=`sh 09-get-alert.sh $alertId`
-echo check: $t
+echo . check: $t
 
-alertIds=`sh 09-get-alerts-from-trigger.sh $triggerId`
-echo AlertIds: $alertIds
+alertId=`sh 09-get-alert-from-trigger.sh $triggerId`
+echo AlertId: $alertId
 
-#jobId=`sh 09-get-job-from-alert.sh $alertId`
-#echo JobId: $jobId
+jobId=`sh 09-get-job-from-alert.sh $alertId`
+echo JobId: $jobId
+
+dataId=`sh 10-get-job.sh $jobId`
+echo DataId: $dataId
+
+info=`sh 11-get-data.sh $dataId`
+echo Info: $info
