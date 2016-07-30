@@ -1,6 +1,6 @@
 #!/bin/bash
 
-url="http://pz-workflow.$PZDOMAIN"
+source setup.sh
 
 triggerId=$1
 if [ "$triggerId" == "" ]
@@ -12,10 +12,7 @@ fi
 echo
 echo GET /alert
 
-cmd="curl -S -s -XGET $url/alert?perPage=10&sortBy=createdOn&triggerId=$triggerId"
-echo $cmd
-
-ret=$($cmd)
+ret=$($curl -XGET $url/alert/triggerId=$triggerId)
 
 echo RETURN:
 echo "$ret"

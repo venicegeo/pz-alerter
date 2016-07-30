@@ -1,26 +1,37 @@
 #!/bin/bash
 
-sh post-service.sh > tmp.1
-serviceId=`grep serviceId tmp.1 | cut -f 2 -d ":" | cut -d \" -f 2`
+serviceId=`sh 01-register-service.sh`
 echo ServiceId: $serviceId
 
-sh post-eventtype.sh > tmp.2
-eventTypeId=`grep eventTypeId tmp.2 | cut -f 2 -d ":" | cut -f 1 -d "," | cut -d \" -f 2`
+eventTypeId=`sh 02-post-eventtype.sh`
 echo EventTypeId: $eventTypeId
 
-sh post-trigger.sh $eventTypeId $serviceId > tmp.3
-triggerId=`grep triggerId tmp.3 | cut -f 2 -d ":" | cut -f 1 -d "," | cut -d \" -f 2`
+t=`sh 03-get-eventtype.sh $eventTypeId`
+echo check: $t
+
+triggerId=`sh 04-post-trigger.sh $eventTypeId $serviceId`
 echo TriggerId: $triggerId
 
-sh post-event-no.sh $eventTypeId > tmp.4
-eventNoId=`grep eventId tmp.4 | cut -f 2 -d ":" | cut -f 1 -d "," | cut -d \" -f 2`
-echo EventId/no: $eventNoId
+t=`sh 05-get-trigger.sh $triggerId`
+echo check: $t
 
-sh post-event-yes.sh $eventTypeId > tmp.5
-eventYesId=`grep eventId tmp.5 | cut -f 2 -d ":" | cut -f 1 -d "," | cut -d \" -f 2`
-echo EventId/yes: $eventYesId
+eventIdY=`sh 06-post-event-yes.sh $eventTypeId`
+echo EventIdY: $eventIdY
 
-sleep 3
-sh get-alerts-by-trigger.sh $triggerId
+eventIdN=`sh 06-post-event-no.sh $eventTypeId`
+echo EventIdN: $eventIdN
 
-rm -f tmp.?
+t=`sh 07-get-event.sh $eventIdY`
+echo check: $t
+
+alertId=`sh 08-post-alert.sh`
+echo AlertId: $alertId
+
+t=`sh 09-get-alert.sh $alertId`
+echo check: $t
+
+alertIds=`sh 09-get-alerts-from-trigger.sh $triggerId`
+echo AlertIds: $alertIds
+
+#jobId=`sh 09-get-job-from-alert.sh $alertId`
+#echo JobId: $jobId
