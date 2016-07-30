@@ -15,6 +15,7 @@
 package workflow_systest
 
 import (
+	"log"
 	"strconv"
 	"strings"
 	"testing"
@@ -109,10 +110,11 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	}
 
 	obj := map[string]interface{}{}
-	resp, err := h.Post("/service", jsn2, &obj)
+	code, err := h.Post("/service", jsn2, &obj)
 	assert.NoError(err)
-	assert.NotNil(resp)
-
+	assert.Equal(200, code)
+	assert.NotNil(obj)
+	log.Printf("== %#v", obj)
 	assert.IsType(map[string]interface{}{}, obj["data"])
 	data := obj["data"].(map[string]interface{})
 	var s string
@@ -178,6 +180,17 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 
 	client := suite.client
 
+	dataInputs := map[string]interface{}{
+		"alpha": "foxy",
+		"beta":  999,
+	}
+	dataOutputs := []map[string]string{
+		{
+			"mimeType": "application/json",
+			"type":     "text",
+		},
+	}
+
 	trigger := &workflow.Trigger{
 		Name:    suite.triggerName,
 		Enabled: true,
@@ -196,9 +209,9 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 			JobType: map[string]interface{}{
 				"type": "execute-service",
 				"data": map[string]interface{}{
-					// "dataInputs": map[string]interface{},
-					// "dataOutput": map[string]interface{},
-					"serviceId": suite.serviceId,
+					"dataInputs": dataInputs,
+					"dataOutput": dataOutputs,
+					"serviceId":  suite.serviceId,
 				},
 			},
 		},
@@ -326,6 +339,8 @@ func (suite *WorkflowTester) Test09GetAlert() {
 	assert.NotNil(items)
 	assert.Len(*items, 1)
 	assert.EqualValues(suite.eventIdY, (*items)[0].EventId)
+
+	log.Printf("%#v", (*items)[0])
 }
 
 //---------------------------------------------------------------------
