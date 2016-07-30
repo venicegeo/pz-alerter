@@ -15,7 +15,6 @@
 package workflow_systest
 
 import (
-	"log"
 	"strconv"
 	"strings"
 	"testing"
@@ -41,7 +40,10 @@ type WorkflowTester struct {
 	eventTypeId   piazza.Ident
 	eventTypeName string
 	triggerName   string
-	serviceId     string
+	triggerId     piazza.Ident
+	serviceId     piazza.Ident
+	eventIdY      piazza.Ident
+	eventIdN      piazza.Ident
 }
 
 func (suite *WorkflowTester) setupFixture() {
@@ -72,7 +74,7 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (suite *WorkflowTester) xTest00Init() {
+func (suite *WorkflowTester) Test00Init() {
 	//t := suite.T()
 	//assert := assert.New(t)
 
@@ -87,52 +89,42 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	jsn :=
-		`{
-		"url" : "http://pzsvc-hello.int.geointservices.io",
-		"contractUrl" : "http://pzsvc-hello.int.geointservices.io",
-		"method" : "GET",
-		"resourceMetadata" : {
-			"name" : "HELLO World Test",
-			"description" : "Hello world test",
-			"classType" : "U"
-		}
-	}`
-	_ = jsn
 	jsn2 := map[string]interface{}{
-		"serviceId":   "0bcc6896-642e-4a30-a01e-6bd0467b57ba",
 		"url":         "http://pzsvc-hello.int.geointservices.io",
 		"contractUrl": "http://pzsvc-hello.int.geointservices.io",
 		"method":      "GET",
 		"resourceMetadata": map[string]interface{}{
-			"name":        "HELLO World Test",
-			"description": "Hello world test",
+			"name":        "Hello World test",
+			"description": "This is the test of Hello World",
 			"classType":   "U",
 		},
 	}
 
 	url := strings.Replace(suite.url, "workflow", "gateway", 1)
 	h := piazza.Http{
-		BaseUrl:    url,
-		ApiKey:     suite.apiKey,
-		Preflight:  piazza.SimplePreflight,
-		Postflight: piazza.SimplePostflight,
+		BaseUrl: url,
+		ApiKey:  suite.apiKey,
+		//Preflight:  piazza.SimplePreflight,
+		//Postflight: piazza.SimplePostflight,
 	}
-	//body := strings.NewReader(jsn)
 
 	obj := map[string]interface{}{}
 	resp, err := h.Post("/service", jsn2, &obj)
 	assert.NoError(err)
 	assert.NotNil(resp)
 
-	//raw, err := ioutil.ReadAll(resp.Body)
-	//assert.NoError(err)
-	log.Printf("%#v", obj)
+	assert.IsType(map[string]interface{}{}, obj["data"])
+	data := obj["data"].(map[string]interface{})
+	var s string
+	assert.IsType(s, data["serviceId"])
+	serviceId := data["serviceId"].(string)
+	assert.NotEmpty(serviceId)
+	suite.serviceId = piazza.Ident(serviceId)
 }
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) xTest02PostEventType() {
+func (suite *WorkflowTester) Test02PostEventType() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -156,7 +148,7 @@ func (suite *WorkflowTester) xTest02PostEventType() {
 	suite.eventTypeId = ack.EventTypeId
 }
 
-func (suite *WorkflowTester) xTest03GetEventType() {
+func (suite *WorkflowTester) Test03GetEventType() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -169,15 +161,15 @@ func (suite *WorkflowTester) xTest03GetEventType() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
-	item, err := client.GetEventType((*items)[0].EventTypeId)
+	item, err := client.GetEventType(suite.eventTypeId)
 	assert.NoError(err)
 	assert.NotNil(item)
-	assert.EqualValues((*items)[0].EventTypeId, item.EventTypeId)
+	assert.EqualValues(suite.eventTypeId, item.EventTypeId)
 }
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) xTest04PostTrigger() {
+func (suite *WorkflowTester) Test04PostTrigger() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -187,15 +179,14 @@ func (suite *WorkflowTester) xTest04PostTrigger() {
 	client := suite.client
 
 	trigger := &workflow.Trigger{
-		Title:   suite.triggerName,
+		Name:    suite.triggerName,
 		Enabled: true,
-
 		Condition: workflow.Condition{
 			EventTypeIds: []piazza.Ident{suite.eventTypeId},
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
-						"num": 17,
+						"beta": 17,
 					},
 				},
 			},
@@ -216,9 +207,10 @@ func (suite *WorkflowTester) xTest04PostTrigger() {
 	ack, err := client.PostTrigger(trigger)
 	assert.NoError(err)
 	assert.NotNil(ack)
+	suite.triggerId = ack.TriggerId
 }
 
-func (suite *WorkflowTester) xTest04Gets() {
+func (suite *WorkflowTester) Test05GetTrigger() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -227,19 +219,118 @@ func (suite *WorkflowTester) xTest04Gets() {
 
 	client := suite.client
 
-	items, err := client.GetAllEventTypes()
+	items, err := client.GetAllTriggers()
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
-	item, err := client.GetEventType((*items)[0].EventTypeId)
+	item, err := client.GetTrigger(suite.triggerId)
 	assert.NoError(err)
 	assert.NotNil(item)
-	assert.EqualValues((*items)[0].EventTypeId, item.EventTypeId)
+	assert.EqualValues(suite.triggerId, item.TriggerId)
 }
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) xTest99Admin() {
+func (suite *WorkflowTester) Test06PostEvent() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	eventY := &workflow.Event{
+		EventTypeId: suite.eventTypeId,
+		Data: map[string]interface{}{
+			"beta":  17,
+			"alpha": "quick brown fox",
+		},
+	}
+
+	eventN := &workflow.Event{
+		EventTypeId: suite.eventTypeId,
+		Data: map[string]interface{}{
+			"beta":  71,
+			"alpha": "lazy dog",
+		},
+	}
+
+	ack, err := client.PostEvent(eventY)
+	assert.NoError(err)
+	assert.NotNil(ack)
+	suite.eventIdY = ack.EventId
+
+	ack, err = client.PostEvent(eventN)
+	assert.NoError(err)
+	assert.NotNil(ack)
+	suite.eventIdN = ack.EventId
+}
+
+func (suite *WorkflowTester) Test07GetEvent() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	items, err := client.GetAllEvents()
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
+	item, err := client.GetEvent(suite.eventIdY)
+	assert.NoError(err)
+	assert.NotNil(item)
+	assert.EqualValues(suite.eventIdY, item.EventId)
+}
+
+//---------------------------------------------------------------------
+
+func (suite *WorkflowTester) Test08PostAlert() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	alert := &workflow.Alert{
+		TriggerId: "x",
+		EventId:   "y",
+		JobId:     "z",
+	}
+
+	ack, err := client.PostAlert(alert)
+	assert.NoError(err)
+	assert.NotNil(ack)
+}
+
+func (suite *WorkflowTester) Test09GetAlert() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	items, err := client.GetAllAlerts()
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
+	items, err = client.GetAlertByTrigger(suite.triggerId)
+	assert.NoError(err)
+	assert.NotNil(items)
+	assert.Len(*items, 1)
+	assert.EqualValues(suite.eventIdY, (*items)[0].EventId)
+}
+
+//---------------------------------------------------------------------
+
+func (suite *WorkflowTester) Test99Admin() {
 	t := suite.T()
 	assert := assert.New(t)
 
