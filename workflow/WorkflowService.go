@@ -365,9 +365,28 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		return statusBadRequest(err)
 	}
 
-	eventtypes, totalHits, err := service.eventTypeDB.GetAll(format)
+	var totalHits int64
+	var eventtypes []EventType
+	nameParam, err := params.AsString("name", nil)
 	if err != nil {
 		return statusBadRequest(err)
+	}
+	if (nameParam != nil) {
+		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParam)
+		if (err != nil) {
+			return statusBadRequest(err)
+		}
+		eventtype, err := service.eventTypeDB.GetOne(eventtypeid)
+		if err != nil {
+			return statusBadRequest(err)
+		}
+		eventtypes = []EventType{eventtype}
+		totalHits = 1
+	} else {
+		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format)
+		if err != nil {
+			return statusBadRequest(err)
+		}
 	}
 	if eventtypes == nil {
 		return statusInternalServerError(errors.New("getalleventtypes returned nil"))

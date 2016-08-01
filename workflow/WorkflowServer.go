@@ -42,7 +42,6 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 
 		{"GET", "/eventType", server.handleGetAllEventTypes},
 		{"GET", "/eventType/:id", server.handleGetEventType},
-		{"GET", "/eventTypeByName/:name", server.handleGetEventTypeByName},
 		{"POST", "/eventType", server.handlePostEventType},
 		// TODO: PUT
 		{"DELETE", "/eventType/:id", server.handleDeleteEventType},
@@ -91,12 +90,6 @@ func (server *WorkflowServer) handleGetStats(c *gin.Context) {
 func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetEventType(id)
-	piazza.GinReturnJson(c, resp)
-}
-
-func (server *WorkflowServer) handleGetEventTypeByName(c *gin.Context) {
-	name := c.Param("name")
-	resp := server.service.GetEventTypeByName(name)
 	piazza.GinReturnJson(c, resp)
 }
 
