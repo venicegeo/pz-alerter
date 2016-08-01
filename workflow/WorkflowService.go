@@ -345,19 +345,6 @@ func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonRespon
 	return statusOK(event)
 }
 
-func (service *WorkflowService) GetEventTypeByName(name string) *piazza.JsonResponse {
-
-	eventTypeId, err := service.eventTypeDB.GetIDByName(name)
-	if err != nil {
-		return statusNotFound(piazza.Ident(name))
-	}
-	if eventTypeId == nil {
-		return statusNotFound(piazza.Ident(name))
-	}
-	eventType, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeId.String()))
-	return statusOK(eventType)
-}
-
 // GetAllEventTypes TODO
 func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 	format, err := piazza.NewJsonPagination(params, defaultEventTypePagination)
@@ -367,7 +354,7 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 
 	var totalHits int64
 	var eventtypes []EventType
-	nameParam, err := params.AsString("name", nil)
+	nameParam, err := params.GetAsString("name", nil)
 	if err != nil {
 		return statusBadRequest(err)
 	}
@@ -376,11 +363,15 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		if (err != nil) {
 			return statusBadRequest(err)
 		}
-		eventtype, err := service.eventTypeDB.GetOne(eventtypeid)
+		if eventtypeid == nil {
+			return statusNotFound(piazza.Ident(nameParam))
+		}
+		eventtype, err := service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
 		if err != nil {
 			return statusBadRequest(err)
 		}
-		eventtypes = []EventType{eventtype}
+		eventtypes = make([]EventType, 1)
+		append(eventtypes, eventtype)
 		totalHits = 1
 	} else {
 		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format)
