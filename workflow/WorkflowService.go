@@ -535,6 +535,9 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 				service.logger.Info("job submission: %s\n", jobString)
 
+				log.Printf("JOB ID: %s", jobID)
+				log.Printf("JOB STRING: %s", jobString)
+
 				err = service.sendToKafka(jobString, jobID)
 				if err != nil {
 					results[triggerID] = service.statusInternalError(err)
