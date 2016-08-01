@@ -36,7 +36,13 @@ json='{
         "jobType":{
             "type": "execute-service",
             "data": {
-                "dataInputs": {},
+                "dataInputs": {
+                 "": {
+                    "content": "'"$args"'",
+                    "type":     "body",
+                    "mimeType": "application/json"
+                }
+                },
                 "dataOutput": [
                     {
                         "mimeType": "application/json",
@@ -51,11 +57,6 @@ json='{
 
 
 # inside dataInputs{}
-##  "": {
-##                    "content": "'"$args"'",
-##                    "type":     "body",
-##                    "mimeType": "application/json"
-##                }
 
 #echo POST /trigger
 #echo "$json"

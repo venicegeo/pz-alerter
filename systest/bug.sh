@@ -1,8 +1,6 @@
 #!/bin/bash
 
-curl="curl -S -s -u $PZKEY: -H Content-Type:application/json"
-
-url="http://pz-gateway.int.geointservices.io"
+source setup.sh
 
 eventTypeId="77bbe4c6-b1ac-4bbb-8e86-0f6e6a731c39"
 serviceId="61985d9c-d4d0-45d9-a655-7dcf2dc08fad"
@@ -30,20 +28,32 @@ json='{
     }
 }'
 
-echo
+# run the job
 echo POST /job
 echo "$json"
+ret=$($curl -XPOST -d "$json" "$url"/job)
 
-$curl -XPOST -d "$json" "$url"/job > tmp
-
+# show results
 echo RETURN:
-cat tmp
-echo
+echo "$ret"
 
-
-jobId=`cat tmp | grep jobId | cut -f 2 -d ":" | cut -f 1 -d "," | cut -d \" -f 2`
+# get returned job id
+jobId=`extract jobId "$ret"`
 echo JOB ID: $jobId
 
+# check the job status
+ret=$($curl -XGET $url/job/$jobId)
+echo "$ret"
 
-# get status on the job
-$curl -XGET $url/job/$jobId
+# check the job status harder
+sleep 2
+ret=$($curl -XGET $url/job/$jobId)
+echo "$ret"
+
+# get the data id
+dataId=`extract dataId "$ret"`
+echo DataId: $dataId
+
+# get the data
+ret=$($curl -XGET $url/data/$dataId)
+echo "$ret"

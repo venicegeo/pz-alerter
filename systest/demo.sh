@@ -16,28 +16,31 @@ t=`sh 05-get-trigger.sh $triggerId`
 echo . check: $t
 
 eventIdY=`sh 06-post-event-yes.sh $eventTypeId`
-echo EventIdY: $eventIdY
+echo 06 EventIdY: $eventIdY
 
 eventIdN=`sh 06-post-event-no.sh $eventTypeId`
-echo EventIdN: $eventIdN
+echo 06 EventIdN: $eventIdN
 
 t=`sh 07-get-event.sh $eventIdY`
-echo . check: $t
+echo . 07 check: $t
 
 alertId=`sh 08-post-alert.sh`
-echo . AlertId: $alertId
+echo . 08 AlertId: $alertId
 
 t=`sh 09-get-alert.sh $alertId`
-echo . check: $t
+echo . 09 check: $t
 
 alertId=`sh 09-get-alert-from-trigger.sh $triggerId`
-echo AlertId: $alertId
+echo 09 AlertId: $alertId
 
 jobId=`sh 09-get-job-from-alert.sh $alertId`
-echo JobId: $jobId
+echo 09 JobId: $jobId
 
-dataId=`sh 10-get-job.sh $jobId`
-echo DataId: $dataId
+jobId=`sh 10-get-job.sh $jobId`
+echo . 10 JobId: $jobId
+
+dataId=`sh 10-get-data-from-job.sh $jobId`
+echo 10 DataId: $dataId
 
 info=`sh 11-get-data.sh $dataId`
-echo Info: $info
+echo 11 results: $info

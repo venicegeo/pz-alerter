@@ -4,7 +4,7 @@ set -e
 source setup.sh
 
 service='{
-    "url": "'"http://pzsvc-hello.$PZDOMAIN/"'",
+    "url": "'"http://pzsvc-hello.$PZDOMAIN/hello"'",
     "contractUrl": "http://helloContract",
     "method": "POST",
     "resourceMetadata": {
