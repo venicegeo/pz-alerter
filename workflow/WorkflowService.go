@@ -359,7 +359,7 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		return statusBadRequest(err)
 	}
 	if (nameParam != nil) {
-		nameParamValue := nameParam
+		nameParamValue := *nameParam
 		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParamValue)
 		if (err != nil) {
 			return statusBadRequest(err)
