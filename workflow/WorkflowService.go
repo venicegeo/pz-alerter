@@ -371,7 +371,7 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		if err != nil {
 			return statusBadRequest(err)
 		}
-		eventtypes = make([]EventType, 1)
+		eventtypes = make([]EventType, 0)
 		eventtypes = append(eventtypes, *eventtype)
 		totalHits = 1
 	} else {
