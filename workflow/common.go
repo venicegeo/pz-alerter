@@ -98,11 +98,14 @@ type Condition struct {
 	Query        map[string]interface{} `json:"query" binding:"required"`
 }
 
-// Job JSON struct
-type Job struct {
-	CreatedBy string                 `json:"createdBy" binding:"required"`
-	Data      map[string]interface{} `json:"data" binding:"required"`
-	Type      string                 `json:"type" binding:"required"`
+type JobRequest struct {
+	CreatedBy string  `json:"createdBy"`
+	JobType   JobType `json:"jobType" binding:"required"`
+}
+
+type JobType struct {
+	Data map[string]interface{} `json:"data" binding:"required"`
+	Type string                 `json:"type" binding:"required"`
 }
 
 // Trigger does something when the and'ed set of Conditions all are true
@@ -112,7 +115,7 @@ type Trigger struct {
 	TriggerId     piazza.Ident `json:"triggerId"`
 	Name          string       `json:"name" binding:"required"`
 	Condition     Condition    `json:"condition" binding:"required"`
-	Job           Job          `json:"job" binding:"required"`
+	Job           JobRequest   `json:"job" binding:"required"`
 	PercolationId piazza.Ident `json:"percolationId"`
 	CreatedBy     string       `json:"createdBy"`
 	CreatedOn     time.Time    `json:"createdOn"`

@@ -202,27 +202,27 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 				},
 			},
 		},
-		Job: workflow.Job{
+		Job: workflow.JobRequest{
 			CreatedBy: "test",
-			//	JobType: map[string]interface{}{
-			Type: "execute-service",
-			Data: map[string]interface{}{
-				"dataInputs": map[string]interface{}{
-					"": map[string]interface{}{
-						"content":  `{"name":"ME", "count":"5"}`,
-						"type":     "body",
-						"mimeType": "application/json",
+			JobType: workflow.JobType{
+				Type: "execute-service",
+				Data: map[string]interface{}{
+					"dataInputs": map[string]interface{}{
+						"": map[string]interface{}{
+							"content":  `{"name":"ME", "count":"5"}`,
+							"type":     "body",
+							"mimeType": "application/json",
+						},
 					},
-				},
-				"dataOutput": [](map[string]interface{}){
-					{
-						"mimeType": "application/json",
-						"type":     "text",
+					"dataOutput": [](map[string]interface{}){
+						{
+							"mimeType": "application/json",
+							"type":     "text",
+						},
 					},
+					"serviceId": suite.serviceId,
 				},
-				"serviceId": suite.serviceId,
 			},
-			//	},
 		},
 	}
 

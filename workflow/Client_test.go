@@ -233,13 +233,15 @@ func (suite *ClientTester) Test15One() {
 					},
 				},
 			},
-			Job: Job{
+			Job: JobRequest{
 				CreatedBy: "test",
-				Type:      "execute-service",
-				Data: map[string]interface{}{
-					// "dataInputs": map[string]interface{},
-					// "dataOutput": map[string]interface{},
-					"serviceId": "ddd5134",
+				JobType: JobType{
+					Type: "execute-service",
+					Data: map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
 				},
 			},
 		}
@@ -364,13 +366,15 @@ func (suite *ClientTester) Test16TriggerResource() {
 				},
 			},
 		},
-		Job: Job{
+		Job: JobRequest{
 			CreatedBy: "test",
-			Type:      "execute-service",
-			Data: map[string]interface{}{
-				// "dataInputs": map[string]interface{},
-				// "dataOutput": map[string]interface{},
-				"serviceId": "ddd5134",
+			JobType: JobType{
+				Type: "execute-service",
+				Data: map[string]interface{}{
+					// "dataInputs": map[string]interface{},
+					// "dataOutput": map[string]interface{},
+					"serviceId": "ddd5134",
+				},
 			},
 		},
 	}
@@ -460,13 +464,15 @@ func (suite *ClientTester) Test17Triggering() {
 					},
 				},
 			},
-			Job: Job{
+			Job: JobRequest{
 				CreatedBy: "test",
-				Type:      "execute-service",
-				Data: map[string]interface{}{
-					// "dataInputs": map[string]interface{},
-					// "dataOutput": map[string]interface{},
-					"serviceId": "ddd5134",
+				JobType: JobType{
+					Type: "execute-service",
+					Data: map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
 				},
 			},
 		}
@@ -490,13 +496,15 @@ func (suite *ClientTester) Test17Triggering() {
 					},
 				},
 			},
-			Job: Job{
+			Job: JobRequest{
 				CreatedBy: "test",
-				Type:      "execute-service",
-				Data: map[string]interface{}{
-					// "dataInputs": map[string]interface{},
-					// "dataOutput": map[string]interface{},
-					"serviceId": "ddd5134",
+				JobType: JobType{
+					Type: "execute-service",
+					Data: map[string]interface{}{
+						// "dataInputs": map[string]interface{},
+						// "dataOutput": map[string]interface{},
+						"serviceId": "ddd5134",
+					},
 				},
 			},
 		}
