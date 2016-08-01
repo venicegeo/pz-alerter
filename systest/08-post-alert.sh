@@ -1,7 +1,6 @@
 #!/bin/bash
 
 source setup.sh
-url="http://pz-workflow.$PZDOMAIN"
 
 json='{
     "triggerId": "22",
@@ -12,7 +11,7 @@ json='{
 #echo POST /alert
 #echo "$json"
 
-ret=$($curl -XPOST -d "$json" "$url"/alert)
+ret=$($curl -XPOST -d "$json" "$workflowurl"/alert)
 
 #echo RETURN:
 #echo "$ret"

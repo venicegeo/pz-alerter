@@ -16,7 +16,6 @@ service='{
 
 #echo POST
 #echo "$service"
-
 ret=$($curl -XPOST -d "$service" $url/service)
 
 #echo RETURN:

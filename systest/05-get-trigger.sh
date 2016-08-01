@@ -1,7 +1,6 @@
 #!/bin/bash
 
 source setup.sh
-url="http://pz-workflow.$PZDOMAIN"
 
 triggerId=$1
 if [ "$triggerId" == "" ]
@@ -12,7 +11,7 @@ fi
 
 #echo GET /trigger
 
-ret=$($curl -S -s -XGET -d "$json" "$url"/trigger/$triggerId)
+ret=$($curl -S -s -XGET -d "$json" "$workflowurl"/trigger/$triggerId)
 
 #echo RETURN:
 #echo "$ret"

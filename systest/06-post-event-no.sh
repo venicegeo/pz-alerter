@@ -2,8 +2,6 @@
 
 source setup.sh
 
-#url="http://pz-workflow.$PZDOMAIN"
-
 eventTypeId=$1
 if [ "$eventTypeId" == "" ]
 then

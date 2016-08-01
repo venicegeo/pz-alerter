@@ -1,19 +1,23 @@
 #!/bin/bash
 
+set -e
+
+source setup.sh
+
 serviceId=`sh 01-register-service.sh`
-echo ServiceId: $serviceId
+echo 01 ServiceId: $serviceId
 
 eventTypeId=`sh 02-post-eventtype.sh`
-echo EventTypeId: $eventTypeId
+echo 02 EventTypeId: $eventTypeId
 
 t=`sh 03-get-eventtype.sh $eventTypeId`
-echo . check: $t
+echo . 03 check: $t
 
 triggerId=`sh 04-post-trigger.sh $eventTypeId $serviceId`
-echo TriggerId: $triggerId
+echo 04 TriggerId: $triggerId
 
 t=`sh 05-get-trigger.sh $triggerId`
-echo . check: $t
+echo . 05 check: $t
 
 eventIdY=`sh 06-post-event-yes.sh $eventTypeId`
 echo 06 EventIdY: $eventIdY
