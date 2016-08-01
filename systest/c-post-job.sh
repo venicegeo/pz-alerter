@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-url="http://pz-gateway.$PZDOMAIN"
+source setup.sh
 
 serviceId=$1
 [ "$serviceId" != "" ] || ( echo error: \$serviceId missing ; exit 1 )
@@ -15,6 +15,6 @@ job='{
     }
 }'
 
-curl -X POST -u $PZUSER:$PZPASS -H 'Content-Type: application/json' \
-    -d "$job" \
-    $url/job
+ret=$($curl -X POST -d "$job" $url/job)
+
+echo "$ret"
