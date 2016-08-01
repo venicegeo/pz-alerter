@@ -359,19 +359,20 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 		return statusBadRequest(err)
 	}
 	if (nameParam != nil) {
-		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParam)
+		nameParamValue := nameParam
+		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParamValue)
 		if (err != nil) {
 			return statusBadRequest(err)
 		}
 		if eventtypeid == nil {
-			return statusNotFound(piazza.Ident(nameParam))
+			return statusNotFound(piazza.Ident(nameParamValue))
 		}
 		eventtype, err := service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
 		if err != nil {
 			return statusBadRequest(err)
 		}
 		eventtypes = make([]EventType, 1)
-		append(eventtypes, eventtype)
+		eventtypes = append(eventtypes, *eventtype)
 		totalHits = 1
 	} else {
 		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format)
