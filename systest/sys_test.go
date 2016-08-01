@@ -209,7 +209,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 				Data: map[string]interface{}{
 					"dataInputs": map[string]interface{}{
 						"": map[string]interface{}{
-							"content":  `{"name":"ME", "count":"5"}`,
+							"content":  `{"name":"ME", "count":5}`,
 							"type":     "body",
 							"mimeType": "application/json",
 						},
@@ -373,10 +373,10 @@ func (suite *WorkflowTester) Test10GetJob() {
 
 	url := strings.Replace(suite.url, "workflow", "gateway", 1)
 	h := piazza.Http{
-		BaseUrl:    url,
-		ApiKey:     suite.apiKey,
-		Preflight:  piazza.SimplePreflight,
-		Postflight: piazza.SimplePostflight,
+		BaseUrl: url,
+		ApiKey:  suite.apiKey,
+		//Preflight:  piazza.SimplePreflight,
+		//Postflight: piazza.SimplePostflight,
 	}
 
 	var data map[string]interface{}
@@ -453,12 +453,16 @@ func (suite *WorkflowTester) Test11GetData() {
 	data, ok := obj["data"].(map[string]interface{})
 	assert.True(ok)
 
-	log.Printf("## %#v", obj)
-	result, ok := data["result"].(map[string]interface{})
+	dataType, ok := data["dataType"].(map[string]interface{})
 	assert.True(ok)
-	id, ok := result["dataId"].(string)
+	content, ok := dataType["content"].(string)
 	assert.True(ok)
-	suite.dataId = piazza.Ident(id)
+
+	jsn := `{
+		"greeting": "Hello, ME!", 
+		"countSquared": 25
+	}`
+	assert.JSONEq(jsn, content)
 }
 
 //---------------------------------------------------------------------
