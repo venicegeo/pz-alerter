@@ -32,26 +32,30 @@ json='{
         }
     },
     "job": {
-        "createdBy":"foo",
-        "type": "execute-service",
-        "data": {
-            "dataInputs": {
-                "": {
-                    "content": "'"$args"'",
-                    "type":     "body",
-                    "mimeType": "application/json"
-                }
-            },
-            "dataOutput": [
-                {
-                    "mimeType": "application/json",
-                    "type":     "text"
-                }
-            ],
-            "serviceId": "'"$serviceId"'"
+        "createdBy": "sdgsreg",
+        "jobType":{
+            "type": "execute-service",
+            "data": {
+                "dataInputs": {},
+                "dataOutput": [
+                    {
+                        "mimeType": "application/json",
+                      "type":     "text"
+                    }
+                ],
+                "serviceId": "'"$serviceId"'"
+            }
         }
     }
 }'
+
+
+# inside dataInputs{}
+##  "": {
+##                    "content": "'"$args"'",
+##                    "type":     "body",
+##                    "mimeType": "application/json"
+##                }
 
 #echo POST /trigger
 #echo "$json"
