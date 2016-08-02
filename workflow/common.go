@@ -46,8 +46,7 @@ const TriggerIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
+					"type": "date"
 				},
 				"createdBy": {
 					"type": "string",
@@ -135,7 +134,6 @@ const EventIndexSettings = `
 	},
 	"mappings": {
 		"_default_": {
-			"dynamic": "strict",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
@@ -146,7 +144,6 @@ const EventIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"data": {
-					"dynamic": true,
 					"properties": {}
 				},
 				"createdBy": {
@@ -154,8 +151,7 @@ const EventIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
+					"type": "date"
 				},
 				"cronSchedule": {
 					"type": "string",
@@ -201,8 +197,7 @@ const EventTypeIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
+					"type": "date"
 				},
 				"createdBy": {
 					"type": "string",
@@ -270,8 +265,7 @@ const AlertIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"createdOn": {
-					"type": "date",
-					"index": "not_analyzed"
+					"type": "date"
 				}
 			}
 		}
