@@ -118,6 +118,10 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 		return nil, LoggedError("EventTypeDB.GetIDByName failed: matched more than one EventType!")
 	}
 
+	if getResult.TotalHits() == 0 {
+		return nil, LoggedError("EventTypeDB.GetIDByName failed: %s matched no existing EventTypeIds", name)
+	}
+
 	src := getResult.GetHit(0).Source
 	var eventType EventType
 	err = json.Unmarshal(*src, &eventType)
