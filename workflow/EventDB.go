@@ -17,6 +17,8 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -25,6 +27,17 @@ import (
 type EventDB struct {
 	*ResourceDB
 }
+
+type ObjIdent struct {
+	Index int
+	Type  string
+}
+type ObjPair struct {
+	OpenIndex   int
+	ClosedIndex int
+}
+
+var closed, open = "closed", "open"
 
 func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
 	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
@@ -139,12 +152,10 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 }
 
 func (db *EventDB) AddMapping(name string, mapping interface{}) error {
-	fmt.Printf("Creating mapping in EventDB: %s\n%s\n", name, mapping)
 	jsn, err := ConstructEventMappingSchema(name, MappingInterfaceToString(mapping))
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
-	fmt.Printf("%s\n", jsn)
 
 	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
@@ -157,7 +168,6 @@ func (db *EventDB) AddMapping(name string, mapping interface{}) error {
 // ConstructEventMappingSchema takes a map of parameter names to datatypes and
 // returns the corresponding ES DSL for it.
 func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString, error) {
-	fmt.Printf("ConstructEventMappingSchema recieved mapping:\n%s\n", mapping)
 	const template string = `{
 			"%s":{
 				"dynamic": false,
@@ -169,27 +179,20 @@ func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString
 				}
 			}
 		}`
-
-	/*
-		stuff := make([]string, len(items))
-		i := 0
-		for k, v := range items {
-			stuff[i] = fmt.Sprintf(`"%s": {"type":"%s"}`, k, v)
-			i++
-		}
-
-		json := fmt.Sprintf(template, name, strings.Join(stuff, ","))
-	*/
-	json := fmt.Sprintf(template, name, mapping)
+	_, esdsl := ConvertSchemaToESDSL(mapping, true)
+	json := fmt.Sprintf(template, name, esdsl)
 	return piazza.JsonString(json), nil
 }
 
-func ConvertJsonToESDSL(str string) (string, string) {
-	str = removeWhitespace(str)
+func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
+	str = RemoveWhitespace(str)
+	if removeEnds {
+		str = str[1 : len(str)-1]
+	}
 	//-------------Find all open and closed brackets----------------------------
 	idents := []ObjIdent{}
 	for i := 0; i < len(str); i++ {
-		char := charAt(str, i)
+		char := CharAt(str, i)
 		if char == "{" {
 			idents = append(idents, ObjIdent{i, open})
 		} else if char == "}" {
@@ -223,7 +226,7 @@ func ConvertJsonToESDSL(str string) (string, string) {
 	}
 	//-------------Add properties after each open index-------------------------
 	for i := 0; i < len(pairs); i++ {
-		str = insertString(str, `"properties":{`, pairs[i].OpenIndex+1)
+		str = InsertString(str, `"properties":{`, pairs[i].OpenIndex+1)
 		for j := i + 1; j < len(pairs); j++ {
 			pairs[j].OpenIndex += 14
 		}
@@ -235,7 +238,7 @@ func ConvertJsonToESDSL(str string) (string, string) {
 	}
 	//-------------Add a closed bracket at each closed index--------------------
 	for i := 0; i < len(pairs); i++ {
-		str = insertString(str, `}`, pairs[i].ClosedIndex)
+		str = InsertString(str, `}`, pairs[i].ClosedIndex)
 		for j := i + 1; j < len(pairs); j++ {
 			if pairs[j].OpenIndex >= pairs[i].ClosedIndex {
 				pairs[j].OpenIndex++
@@ -250,10 +253,10 @@ func ConvertJsonToESDSL(str string) (string, string) {
 	//-------------Seperate pieces of mapping onto seperate lines---------------
 	temp := ""
 	for i := 0; i < len(str); i++ {
-		if charAt(str, i) == "{" || charAt(str, i) == "}" || charAt(str, i) == "," {
-			temp += "\n" + charAt(str, i) + "\n"
+		if CharAt(str, i) == "{" || CharAt(str, i) == "}" || CharAt(str, i) == "," {
+			temp += "\n" + CharAt(str, i) + "\n"
 		} else {
-			temp += charAt(str, i)
+			temp += CharAt(str, i)
 		}
 	}
 	lines := strings.Split(temp, "\n")
@@ -278,23 +281,6 @@ func formatKeyValue(str string) string {
 	//TODO CHECK TO SEE IF PARTS[1] IS A VALID TYPE
 	res := fmt.Sprintf(`%s:{"type":%s}`, parts[0], parts[1])
 	return res
-}
-
-func charAt(str string, index int) string {
-	return str[index : index+1]
-}
-
-func removeWhitespace(str string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, str)
-}
-
-func insertString(str, insert string, index int) string {
-	return str[:index] + insert + str[index:]
 }
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {

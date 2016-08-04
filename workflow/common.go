@@ -19,8 +19,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
+	"unicode"
 
 	uuidpkg "github.com/pborman/uuid"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -229,7 +231,7 @@ func MappingStringToInterface(mapping string) interface{} {
 	data := []byte(mapping)
 	source := (*json.RawMessage)(&data)
 	var res interface{}
-	//TODO
+	//TODO HANDLE ERROR BETTER
 	err := json.Unmarshal(*source, &res)
 	if err != nil {
 		println("ERROR:", err.Error())
@@ -238,7 +240,7 @@ func MappingStringToInterface(mapping string) interface{} {
 }
 func MappingInterfaceToString(mapping interface{}) string {
 	data, err := json.MarshalIndent(mapping, " ", "   ")
-	//TODO
+	//TODO HANDLE ERROR BETTER
 	if err != nil {
 		println("ERROR:", err.Error())
 	}
@@ -359,6 +361,23 @@ func LoggedError(mssg string, args ...interface{}) error {
 // isUUID checks to see if the UUID is valid
 func isUUID(uuid string) bool {
 	return uuidpkg.Parse(uuid) != nil
+}
+
+func CharAt(str string, index int) string {
+	return str[index : index+1]
+}
+
+func RemoveWhitespace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
+}
+
+func InsertString(str, insert string, index int) string {
+	return str[:index] + insert + str[index:]
 }
 
 //-INIT-------------------------------------------------------------------------

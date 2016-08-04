@@ -157,62 +157,48 @@ func (service *WorkflowService) Init(
 	}
 	fmt.Print("SETUP INDEX\n", pollOk, "\n")
 
-	//TEST
-	println("Creating test event type")
-	testEventType := &EventType{}
-	testEventType.Name = "piazza:test"
-	testEventTypeMapping := `{
-		"minX": "long",
-		"maxX": "long"
+	// Ingest event type
+	println("Creating injest event type")
+	ingestEventType := &EventType{}
+	ingestEventType.Name = "piazza:ingest"
+	ingestEventTypeMapping := `{
+		"dataId":   "string",
+		"dataType": "string",
+		"epsg":     "short",
+		"minX":     "long",
+		"minY":     "long",
+		"maxX":     "long",
+		"maxY":     "long",
+		"hosted":   "boolean"
 	}`
+	ingestEventType.Mapping = MappingStringToInterface(ingestEventTypeMapping)
+	log.Println("  Creating piazza:ingest eventtype")
+	postedIngestEventType := service.PostEventType(ingestEventType)
+	log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
+	if postedIngestEventType.StatusCode == 201 { // everything is ok
+		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
+	} else { // something is wrong
+		service.logger.Info("  ERROR creating piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
+	}
 
-	testEventType.Mapping = MappingStringToInterface(testEventTypeMapping)
-	postedTestEventType := service.PostEventType(testEventType)
-	println(postedTestEventType.StatusCode)
-	/*
-		// Ingest event type
-		println("Creating injest event type")
-		ingestEventType := &EventType{}
-		ingestEventType.Name = "piazza:ingest"
-		ingestEventTypeMapping := map[string]elasticsearch.MappingElementTypeName{
-			"dataId":   "string",
-			"dataType": "string",
-			"epsg":     "short",
-			"minX":     "long",
-			"minY":     "long",
-			"maxX":     "long",
-			"maxY":     "long",
-			"hosted":   "boolean",
-		}
-		ingestEventType.Mapping = ingestEventTypeMapping
-		log.Println("  Creating piazza:ingest eventtype")
-		postedIngestEventType := service.PostEventType(ingestEventType)
-		log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
-		if postedIngestEventType.StatusCode == 201 { // everything is ok
-			service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
-		} else { // something is wrong
-			service.logger.Info("  ERROR creating piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
-		}
-
-		// Execution Completed event type
-		println("Creating exectution completed event type")
-		executionCompletedType := &EventType{}
-		executionCompletedType.Name = "piazza:executionComplete"
-		executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
-			"jobId":  "string",
-			"status": "string",
-			"dataId": "string",
-		}
-		executionCompletedType.Mapping = executionCompletedTypeMapping
-		log.Println("  Creating piazza:executionComplete eventtype")
-		postedExecutionCompletedType := service.PostEventType(executionCompletedType)
-		log.Printf("  Created piazza:executionComplete eventtype: %d", postedIngestEventType.StatusCode)
-		if postedExecutionCompletedType.StatusCode == 201 { // everything is ok
-			service.logger.Info("  SUCCESS Created piazza:executionComplete eventtype: %d", postedExecutionCompletedType.StatusCode)
-		} else { // something is wrong or it was already there
-			service.logger.Info("  ERROR creating piazza:excutionComplete eventtype: %d", postedExecutionCompletedType.StatusCode)
-		}
-	*/
+	// Execution Completed event type
+	println("Creating execution completed event type")
+	executionCompletedType := &EventType{}
+	executionCompletedType.Name = "piazza:executionComplete"
+	executionCompletedTypeMapping := `{
+		"jobId":  "string",
+		"status": "string",
+		"dataId": "string"
+	}`
+	executionCompletedType.Mapping = MappingStringToInterface(executionCompletedTypeMapping)
+	log.Println("  Creating piazza:executionComplete eventtype")
+	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
+	log.Printf("  Created piazza:executionComplete eventtype: %d", postedIngestEventType.StatusCode)
+	if postedExecutionCompletedType.StatusCode == 201 { // everything is ok
+		service.logger.Info("  SUCCESS Created piazza:executionComplete eventtype: %d", postedExecutionCompletedType.StatusCode)
+	} else { // something is wrong or it was already there
+		service.logger.Info("  ERROR creating piazza:excutionComplete eventtype: %d", postedExecutionCompletedType.StatusCode)
+	}
 
 	service.origin = string(sys.Name)
 
