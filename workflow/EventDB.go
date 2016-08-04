@@ -184,6 +184,119 @@ func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString
 	return piazza.JsonString(json), nil
 }
 
+func ConvertJsonToESDSL(str string) (string, string) {
+	str = removeWhitespace(str)
+	//-------------Find all open and closed brackets----------------------------
+	idents := []ObjIdent{}
+	for i := 0; i < len(str); i++ {
+		char := charAt(str, i)
+		if char == "{" {
+			idents = append(idents, ObjIdent{i, open})
+		} else if char == "}" {
+			idents = append(idents, ObjIdent{i, closed})
+		}
+	}
+	//-------------Match brackets into pairs------------------------------------
+	pairs := []ObjPair{}
+	pairMap := map[int]int{}
+	for len(idents) > 0 {
+		for i := 0; i < len(idents)-1; i++ {
+			a := idents[i]
+			b := idents[i+1]
+			if a.Type == open && b.Type == closed {
+				pairMap[a.Index] = b.Index
+				idents = append(idents[:i], idents[i+1:]...)
+				idents = append(idents[:i], idents[i+1:]...)
+				break
+			}
+		}
+	}
+	//-------------Sort pairs based off open bracket index----------------------
+	keys := []int{}
+	for k, _ := range pairMap {
+		keys = append(keys, k)
+	}
+	sort.Ints(keys)
+	for _, k := range keys {
+		v := pairMap[k]
+		pairs = append(pairs, ObjPair{k, v})
+	}
+	//-------------Add properties after each open index-------------------------
+	for i := 0; i < len(pairs); i++ {
+		str = insertString(str, `"properties":{`, pairs[i].OpenIndex+1)
+		for j := i + 1; j < len(pairs); j++ {
+			pairs[j].OpenIndex += 14
+		}
+		for j := 0; j < len(pairs); j++ {
+			if pairs[j].ClosedIndex >= pairs[i].OpenIndex {
+				pairs[j].ClosedIndex += 14
+			}
+		}
+	}
+	//-------------Add a closed bracket at each closed index--------------------
+	for i := 0; i < len(pairs); i++ {
+		str = insertString(str, `}`, pairs[i].ClosedIndex)
+		for j := i + 1; j < len(pairs); j++ {
+			if pairs[j].OpenIndex >= pairs[i].ClosedIndex {
+				pairs[j].OpenIndex++
+			}
+		}
+		for j := 0; j < len(pairs); j++ {
+			if pairs[j].ClosedIndex >= pairs[i].ClosedIndex {
+				pairs[j].ClosedIndex++
+			}
+		}
+	}
+	//-------------Seperate pieces of mapping onto seperate lines---------------
+	temp := ""
+	for i := 0; i < len(str); i++ {
+		if charAt(str, i) == "{" || charAt(str, i) == "}" || charAt(str, i) == "," {
+			temp += "\n" + charAt(str, i) + "\n"
+		} else {
+			temp += charAt(str, i)
+		}
+	}
+	lines := strings.Split(temp, "\n")
+	fixed := []string{}
+	//-------------Format individual values-------------------------------------
+	for _, line := range lines {
+		if strings.Contains(line, `":"`) {
+			fixed = append(fixed, formatKeyValue(line))
+		} else {
+			fixed = append(fixed, line)
+		}
+	}
+	temp = ""
+	for _, line := range fixed {
+		temp += line
+	}
+	return temp, "{" + temp + "}"
+}
+
+func formatKeyValue(str string) string {
+	parts := strings.Split(str, ":")
+	//TODO CHECK TO SEE IF PARTS[1] IS A VALID TYPE
+	res := fmt.Sprintf(`%s:{"type":%s}`, parts[0], parts[1])
+	return res
+}
+
+func charAt(str string, index int) string {
+	return str[index : index+1]
+}
+
+func removeWhitespace(str string) string {
+	return strings.Map(func(r rune) rune {
+		if unicode.IsSpace(r) {
+			return -1
+		}
+		return r
+	}, str)
+}
+
+func insertString(str, insert string, index int) string {
+	return str[:index] + insert + str[index:]
+}
+
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
 
