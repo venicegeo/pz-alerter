@@ -134,7 +134,7 @@ func (service *WorkflowService) Init(
 	// allow the database time to settle
 	//time.Sleep(time.Second * 5)
 	pollingFn := elasticsearch.GetData(func() (bool, error) {
-		exists:=eventtypesIndex.IndexExists()
+		exists := eventtypesIndex.IndexExists()
 		types, err := eventtypesIndex.GetTypes()
 		if err != nil {
 			//handle error
@@ -176,28 +176,28 @@ func (service *WorkflowService) Init(
 	log.Printf("  Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	if postedIngestEventType.StatusCode == 201 {
 		// everything is ok
-		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
 	} else {
 		// something is wrong
-		service.logger.Info("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+		service.logger.Info("  ERROR creating piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
 	}
 
 	// Execution Completed event type
 	executionCompletedType := &EventType{}
 	executionCompletedType.Name = "piazza:executionComplete"
 	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
-		"jobId":    "string",
-		"status":   "string",
-		"dataId":   "string",
+		"jobId":  "string",
+		"status": "string",
+		"dataId": "string",
 	}
 	executionCompletedType.Mapping = executionCompletedTypeMapping
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
 	if postedExecutionCompletedType.StatusCode == 201 {
 		// everything is ok
-		service.logger.Info("  SUCCESS Created piazza:executionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
+		service.logger.Info("  SUCCESS Created piazza:executionComplete eventtype: %d", postedExecutionCompletedType.StatusCode)
 	} else {
 		// something is wrong or it was already there
-		service.logger.Info("  ERROR creating piazza:excutionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
+		service.logger.Info("  ERROR creating piazza:excutionComplete eventtype: %d", postedExecutionCompletedType.StatusCode)
 	}
 
 	service.origin = string(sys.Name)
@@ -329,10 +329,10 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	if (nameParam != nil) {
+	if nameParam != nil {
 		nameParamValue := *nameParam
 		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParamValue)
-		if (err != nil) {
+		if err != nil {
 			return service.statusBadRequest(err)
 		}
 		if eventtypeid == nil {

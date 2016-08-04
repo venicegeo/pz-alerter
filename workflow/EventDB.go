@@ -16,6 +16,8 @@ package workflow
 
 import (
 	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -138,7 +140,7 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 }
 
 func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
-	jsn, err := elasticsearch.ConstructMappingSchema(name, mapping)
+	jsn, err := ConstructEventMappingSchema(name, mapping)
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
@@ -149,6 +151,35 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 	}
 
 	return nil
+}
+
+// ConstructEventMappingSchema takes a map of parameter names to datatypes and
+// returns the corresponding ES DSL for it.
+func ConstructEventMappingSchema(name string, items map[string]elasticsearch.MappingElementTypeName) (piazza.JsonString, error) {
+	const template string = `{
+			"%s":{
+				"dynamic": false,
+				"properties":{
+					"data": {
+						"dynamic": "strict",
+						"properties": {
+							%s
+						}
+					}
+				}
+			}
+		}`
+
+	stuff := make([]string, len(items))
+	i := 0
+	for k, v := range items {
+		stuff[i] = fmt.Sprintf(`"%s": {"type":"%s"}`, k, v)
+		i++
+	}
+
+	json := fmt.Sprintf(template, name, strings.Join(stuff, ","))
+
+	return piazza.JsonString(json), nil
 }
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
