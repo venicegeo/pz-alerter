@@ -17,7 +17,6 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -139,11 +138,13 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 	return deleteResult.Found, nil
 }
 
-func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
-	jsn, err := ConstructEventMappingSchema(name, mapping)
+func (db *EventDB) AddMapping(name string, mapping interface{}) error {
+	fmt.Printf("Creating mapping in EventDB: %s\n%s\n", name, mapping)
+	jsn, err := ConstructEventMappingSchema(name, MappingInterfaceToString(mapping))
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
+	fmt.Printf("%s\n", jsn)
 
 	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
@@ -155,30 +156,31 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 
 // ConstructEventMappingSchema takes a map of parameter names to datatypes and
 // returns the corresponding ES DSL for it.
-func ConstructEventMappingSchema(name string, items map[string]elasticsearch.MappingElementTypeName) (piazza.JsonString, error) {
+func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString, error) {
+	fmt.Printf("ConstructEventMappingSchema recieved mapping:\n%s\n", mapping)
 	const template string = `{
 			"%s":{
 				"dynamic": false,
 				"properties":{
 					"data": {
 						"dynamic": "strict",
-						"properties": {
-							%s
-						}
+						"properties": %s
 					}
 				}
 			}
 		}`
 
-	stuff := make([]string, len(items))
-	i := 0
-	for k, v := range items {
-		stuff[i] = fmt.Sprintf(`"%s": {"type":"%s"}`, k, v)
-		i++
-	}
+	/*
+		stuff := make([]string, len(items))
+		i := 0
+		for k, v := range items {
+			stuff[i] = fmt.Sprintf(`"%s": {"type":"%s"}`, k, v)
+			i++
+		}
 
-	json := fmt.Sprintf(template, name, strings.Join(stuff, ","))
-
+		json := fmt.Sprintf(template, name, strings.Join(stuff, ","))
+	*/
+	json := fmt.Sprintf(template, name, mapping)
 	return piazza.JsonString(json), nil
 }
 

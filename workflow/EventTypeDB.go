@@ -23,7 +23,7 @@ import (
 
 type EventTypeDB struct {
 	*ResourceDB
-	mapping string
+	typ string
 }
 
 func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventTypeDB, error) {
@@ -32,13 +32,12 @@ func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventT
 	if err != nil {
 		return nil, err
 	}
-	etrdb := EventTypeDB{ResourceDB: rdb, mapping: EventTypeDBMapping}
+	etrdb := EventTypeDB{ResourceDB: rdb, typ: EventTypeDBMapping}
 	return &etrdb, nil
 }
 
 func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
-
-	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
+	indexResult, err := db.Esi.PostData(db.typ, id.String(), obj)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
@@ -52,12 +51,12 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64, error) {
 	eventTypes := []EventType{}
 
-	exists := db.Esi.TypeExists(db.mapping)
+	exists := db.Esi.TypeExists(db.typ)
 	if !exists {
 		return eventTypes, 0, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
+	searchResult, err := db.Esi.FilterByMatchAll(db.typ, format)
 	if err != nil {
 		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err)
 	}
@@ -80,8 +79,7 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 }
 
 func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
-
-	getResult, err := db.Esi.GetByID(db.mapping, id.String())
+	getResult, err := db.Esi.GetByID(db.typ, id.String())
 	if err != nil {
 		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
 	}
@@ -105,7 +103,7 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
 
 func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 
-	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
+	getResult, err := db.Esi.FilterByTermQuery(db.typ, "name", name)
 	if err != nil {
 		return nil, LoggedError("EventTypeDB.GetIDByName failed: %s", err.Error())
 	}
@@ -129,7 +127,7 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 }
 
 func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
-	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
+	deleteResult, err := db.Esi.DeleteByID(db.typ, string(id))
 	if err != nil {
 		return false, LoggedError("EventTypeDB.DeleteById failed: %s", err)
 	}

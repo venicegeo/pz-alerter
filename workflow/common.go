@@ -15,6 +15,7 @@
 package workflow
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -22,7 +23,6 @@ import (
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -215,15 +215,35 @@ const EventTypeIndexSettings = `
 
 // EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
-	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
-	Name        string                                          `json:"name" binding:"required"`
-	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
-	CreatedBy   string                                          `json:"createdBy"`
-	CreatedOn   time.Time                                       `json:"createdOn"`
+	EventTypeId piazza.Ident `json:"eventTypeId"`
+	Name        string       `json:"name" binding:"required"`
+	Mapping     interface{}  `json:"mapping" binding:"required"`
+	CreatedBy   string       `json:"createdBy"`
+	CreatedOn   time.Time    `json:"createdOn"`
 }
 
 // EventTypeList is a list of EventTypes
 type EventTypeList []EventType
+
+func MappingStringToInterface(mapping string) interface{} {
+	data := []byte(mapping)
+	source := (*json.RawMessage)(&data)
+	var res interface{}
+	//TODO
+	err := json.Unmarshal(*source, &res)
+	if err != nil {
+		println("ERROR:", err.Error())
+	}
+	return res
+}
+func MappingInterfaceToString(mapping interface{}) string {
+	data, err := json.MarshalIndent(mapping, " ", "   ")
+	//TODO
+	if err != nil {
+		println("ERROR:", err.Error())
+	}
+	return string(data)
+}
 
 //-ALERT------------------------------------------------------------------------
 
