@@ -19,10 +19,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
-	"unicode"
 
 	uuidpkg "github.com/pborman/uuid"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -361,23 +359,6 @@ func LoggedError(mssg string, args ...interface{}) error {
 // isUUID checks to see if the UUID is valid
 func isUUID(uuid string) bool {
 	return uuidpkg.Parse(uuid) != nil
-}
-
-func CharAt(str string, index int) string {
-	return str[index : index+1]
-}
-
-func RemoveWhitespace(str string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, str)
-}
-
-func InsertString(str, insert string, index int) string {
-	return str[:index] + insert + str[index:]
 }
 
 //-INIT-------------------------------------------------------------------------

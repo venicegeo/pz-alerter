@@ -16,6 +16,7 @@ package workflow
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -179,20 +180,23 @@ func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString
 				}
 			}
 		}`
-	_, esdsl := ConvertSchemaToESDSL(mapping, true)
+	_, esdsl, err := ConvertSchemaToESDSL(mapping, true)
+	if err != nil {
+		return piazza.JsonString(""), err
+	}
 	json := fmt.Sprintf(template, name, esdsl)
 	return piazza.JsonString(json), nil
 }
 
-func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
-	str = RemoveWhitespace(str)
+func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string, error) {
+	str = elasticsearch.RemoveWhitespace(str)
 	if removeEnds {
 		str = str[1 : len(str)-1]
 	}
 	//-------------Find all open and closed brackets----------------------------
 	idents := []ObjIdent{}
 	for i := 0; i < len(str); i++ {
-		char := CharAt(str, i)
+		char := elasticsearch.CharAt(str, i)
 		if char == "{" {
 			idents = append(idents, ObjIdent{i, open})
 		} else if char == "}" {
@@ -226,7 +230,7 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
 	}
 	//-------------Add properties after each open index-------------------------
 	for i := 0; i < len(pairs); i++ {
-		str = InsertString(str, `"properties":{`, pairs[i].OpenIndex+1)
+		str = elasticsearch.InsertString(str, `"properties":{`, pairs[i].OpenIndex+1)
 		for j := i + 1; j < len(pairs); j++ {
 			pairs[j].OpenIndex += 14
 		}
@@ -238,7 +242,7 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
 	}
 	//-------------Add a closed bracket at each closed index--------------------
 	for i := 0; i < len(pairs); i++ {
-		str = InsertString(str, `}`, pairs[i].ClosedIndex)
+		str = elasticsearch.InsertString(str, `}`, pairs[i].ClosedIndex)
 		for j := i + 1; j < len(pairs); j++ {
 			if pairs[j].OpenIndex >= pairs[i].ClosedIndex {
 				pairs[j].OpenIndex++
@@ -253,10 +257,10 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
 	//-------------Seperate pieces of mapping onto seperate lines---------------
 	temp := ""
 	for i := 0; i < len(str); i++ {
-		if CharAt(str, i) == "{" || CharAt(str, i) == "}" || CharAt(str, i) == "," {
-			temp += "\n" + CharAt(str, i) + "\n"
+		if elasticsearch.CharAt(str, i) == "{" || elasticsearch.CharAt(str, i) == "}" || elasticsearch.CharAt(str, i) == "," {
+			temp += "\n" + elasticsearch.CharAt(str, i) + "\n"
 		} else {
-			temp += CharAt(str, i)
+			temp += elasticsearch.CharAt(str, i)
 		}
 	}
 	lines := strings.Split(temp, "\n")
@@ -264,7 +268,11 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
 	//-------------Format individual values-------------------------------------
 	for _, line := range lines {
 		if strings.Contains(line, `":"`) {
-			fixed = append(fixed, formatKeyValue(line))
+			formatedLine, err := formatKeyValue(line)
+			if err != nil {
+				return "", "", err
+			}
+			fixed = append(fixed, formatedLine)
 		} else {
 			fixed = append(fixed, line)
 		}
@@ -273,14 +281,18 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string) {
 	for _, line := range fixed {
 		temp += line
 	}
-	return temp, "{" + temp + "}"
+	return temp, "{" + temp + "}", nil
 }
 
-func formatKeyValue(str string) string {
+func formatKeyValue(str string) (string, error) {
 	parts := strings.Split(str, ":")
-	//TODO CHECK TO SEE IF PARTS[1] IS A VALID TYPE
+	value := strings.Replace(parts[1], "\"", "", -1)
+	valid := elasticsearch.IsValidMappingType(value)
+	if !valid {
+		return "", errors.New(fmt.Sprintf(" '%s' was not recognized as a valid mapping type", value))
+	}
 	res := fmt.Sprintf(`%s:{"type":%s}`, parts[0], parts[1])
-	return res
+	return res, nil
 }
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
