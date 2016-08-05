@@ -285,7 +285,41 @@ type Alert struct {
 
 //-CRON-------------------------------------------------------------------------
 
-const CronIndexSettings = EventIndexSettings
+const CronIndexSettings = `
+{
+	"settings": {
+		"index.mapping.coerce": false
+	},
+	"mappings": {
+		"Cron": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"data": {
+					"properties": {}
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date"
+				},
+				"cronSchedule": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
 
 const cronDBMapping = "Cron"
 
