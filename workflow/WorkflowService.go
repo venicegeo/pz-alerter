@@ -506,6 +506,8 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	}
 	event.EventId = eventID
 
+	event.CreatedOn = time.Now()
+
 	service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
 
 	err = service.cronDB.PostData(event, eventID)
