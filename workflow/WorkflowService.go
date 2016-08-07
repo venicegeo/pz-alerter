@@ -134,13 +134,16 @@ func (service *WorkflowService) Init(
 	// allow the database time to settle
 	//time.Sleep(time.Second * 5)
 	pollingFn := elasticsearch.GetData(func() (bool, error) {
-		exists:=eventtypesIndex.IndexExists()
+		exists, err := eventtypesIndex.IndexExists()
+		if err != nil {
+			return false, err
+		}
 		types, err := eventtypesIndex.GetTypes()
 		if err != nil {
 			//handle error
 			fmt.Println("error getting types")
 		}
-		fmt.Printf("Getting %d types...\n", len(types))
+		//log.Printf("Getting %d types...", len(types))
 		if len(types) == 0 {
 			return false, nil
 		}
@@ -173,7 +176,7 @@ func (service *WorkflowService) Init(
 	ingestEventType.Mapping = ingestEventTypeMapping
 	log.Println("  Creating piazza:ingest eventtype")
 	postedIngestEventType := service.PostEventType(ingestEventType)
-	log.Printf("  Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+	log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
 	if postedIngestEventType.StatusCode == 201 {
 		// everything is ok
 		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
@@ -186,9 +189,9 @@ func (service *WorkflowService) Init(
 	executionCompletedType := &EventType{}
 	executionCompletedType.Name = "piazza:executionComplete"
 	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
-		"jobId":    "string",
-		"status":   "string",
-		"dataId":   "string",
+		"jobId":  "string",
+		"status": "string",
+		"dataId": "string",
 	}
 	executionCompletedType.Mapping = executionCompletedTypeMapping
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
@@ -329,10 +332,10 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	if (nameParam != nil) {
+	if nameParam != nil {
 		nameParamValue := *nameParam
 		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParamValue)
-		if (err != nil) {
+		if err != nil {
 			return service.statusBadRequest(err)
 		}
 		if eventtypeid == nil {
@@ -369,7 +372,11 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	// Check if our EventType.Name already exists
 	name := eventType.Name
-	if service.eventDB.NameExists(name) {
+	ok, err := service.eventDB.NameExists(name)
+	if err != nil {
+		return service.statusInternalError(err)
+	}
+	if ok {
 		id, err := service.eventTypeDB.GetIDByName(name)
 		if err != nil {
 			return service.statusInternalError(err)
@@ -679,7 +686,11 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 	}
 
 	// If it's a cron event, remove from cronDB, stop cronjob
-	if service.cronDB.itemExists(id) {
+	ok, err = service.cronDB.itemExists(id)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	if ok {
 		ok, err := service.cronDB.DeleteByID(piazza.Ident(id))
 		if err != nil {
 			return service.statusBadRequest(err)
@@ -862,7 +873,11 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 
 // InitCron TODO
 func (service *WorkflowService) InitCron() error {
-	if service.cronDB.Exists() {
+	ok, err := service.cronDB.Exists()
+	if err != nil {
+		return err
+	}
+	if ok {
 		events, err := service.cronDB.GetAll()
 		if err != nil {
 			return LoggedError("WorkflowService.InitCron: Unable to get all from CronDB")

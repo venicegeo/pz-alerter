@@ -51,7 +51,10 @@ func (db *AlertDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, err
 func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error) {
 	alerts := []Alert{}
 
-	exists := db.Esi.TypeExists(db.mapping)
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return alerts, 0, err
+	}
 	if !exists {
 		return alerts, 0, nil
 	}
@@ -82,7 +85,10 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 	alerts := []Alert{}
 	var count = int64(-1)
 
-	exists := db.Esi.TypeExists(db.mapping)
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return alerts, 0, err
+	}
 	if !exists {
 		return alerts, 0, nil
 	}

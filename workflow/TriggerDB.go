@@ -91,7 +91,10 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
-	exists := db.Esi.TypeExists(db.mapping)
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return triggers, 0, err
+	}
 	if !exists {
 		return triggers, 0, nil
 	}

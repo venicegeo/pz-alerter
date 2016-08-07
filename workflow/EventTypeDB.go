@@ -52,7 +52,10 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64, error) {
 	eventTypes := []EventType{}
 
-	exists := db.Esi.TypeExists(db.mapping)
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return eventTypes, 0, err
+	}
 	if !exists {
 		return eventTypes, 0, nil
 	}
