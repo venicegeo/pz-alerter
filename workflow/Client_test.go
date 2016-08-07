@@ -68,8 +68,6 @@ func (suite *ClientTester) Test12AlertResource() {
 	id := respAlert.AlertId
 	assert.NoError(err)
 
-	sleep()
-
 	alerts, err := client.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
@@ -89,8 +87,6 @@ func (suite *ClientTester) Test12AlertResource() {
 
 	err = client.DeleteAlert(id)
 	assert.NoError(err)
-
-	sleep()
 
 	alert, err = client.GetAlert(id)
 	assert.Error(err)
@@ -146,8 +142,6 @@ func (suite *ClientTester) Test13EventResource() {
 	//assert.Len(*events, 1)
 	//assert.EqualValues(eID, (*events)[0].ID)
 
-	sleep()
-
 	tmp, err := client.GetEvent(eID)
 	assert.NoError(err)
 	assert.EqualValues(eID, tmp.EventId)
@@ -175,8 +169,6 @@ func (suite *ClientTester) Test14EventTypeResource() {
 		assert.NoError(err)
 	}()
 
-	sleep()
-
 	eventTypes, err := client.GetAllEventTypes()
 	assert.NoError(err)
 	assert.Len(*eventTypes, 3)
@@ -193,15 +185,6 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	tmp, err := client.GetEventType(id)
 	assert.NoError(err)
 	assert.EqualValues(id, tmp.EventTypeId)
-
-	{
-		if MOCKING {
-			t.Skip("Skipping test, because mocking")
-		}
-		tmp2, err := client.GetEventTypeByName(tmp.Name)
-		assert.NoError(err)
-		assert.EqualValues(tmp.EventTypeId, tmp2.EventTypeId)
-	}
 }
 
 func (suite *ClientTester) Test15One() {
@@ -233,8 +216,6 @@ func (suite *ClientTester) Test15One() {
 			assert.NoError(err)
 		}()
 	}
-
-	sleep()
 
 	var tID piazza.Ident
 	{
@@ -296,8 +277,6 @@ func (suite *ClientTester) Test15One() {
 		}()
 	}
 
-	sleep()
-
 	var e2ID piazza.Ident
 	{
 		// will cause no triggers
@@ -316,33 +295,6 @@ func (suite *ClientTester) Test15One() {
 
 		defer func() {
 			err := client.DeleteEvent(e2ID)
-			assert.NoError(err)
-		}()
-	}
-	sleep()
-
-	//{
-	//	ary, err := client.GetAllEvents("")
-	//	assert.NoError(err)
-	//	assert.Len(*ary, 2)
-	//}
-
-	var aID piazza.Ident
-	{
-		if MOCKING {
-			t.Skip("Skipping test, because mocking")
-		}
-		alerts, err := client.GetAllAlerts()
-		assert.NoError(err)
-		assert.Len(*alerts, 1)
-		alert0 := (*alerts)[0]
-		assert.EqualValues(e1ID, alert0.EventId)
-		assert.EqualValues(tID, alert0.TriggerId)
-
-		aID = alert0.AlertId
-
-		defer func() {
-			err := client.DeleteAlert(aID)
 			assert.NoError(err)
 		}()
 	}
@@ -404,8 +356,6 @@ func (suite *ClientTester) Test16TriggerResource() {
 		assert.NoError(err)
 	}()
 
-	sleep()
-
 	tmp, err := client.GetTrigger(t1ID)
 	assert.NoError(err)
 	assert.EqualValues(t1ID, tmp.TriggerId)
@@ -448,13 +398,10 @@ func (suite *ClientTester) Test17Triggering() {
 		etE = respEventTypeE.EventTypeId
 		assert.NoError(err)
 
-		sleep()
-
 		eventTypes, err := client.GetAllEventTypes()
 		assert.NoError(err)
 		assert.Len(*eventTypes, 5)
 	}
-	sleep()
 
 	defer func() {
 		client.DeleteEventType(etC)
@@ -467,7 +414,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 	////////////////
 
-	var tA, tB piazza.Ident
+	var tB piazza.Ident
 	{
 		t1 := &Trigger{
 			Name: "Trigger A",
@@ -533,8 +480,6 @@ func (suite *ClientTester) Test17Triggering() {
 			assert.NoError(err)
 		}()
 
-		sleep()
-
 		triggers, err := client.GetAllTriggers()
 		assert.NoError(err)
 		assert.Len(*triggers, 2)
@@ -594,44 +539,6 @@ func (suite *ClientTester) Test17Triggering() {
 		assert.NoError(err)
 		defer func() {
 			client.DeleteEvent(eH)
-			assert.NoError(err)
-		}()
-	}
-
-	sleep()
-
-	var aI, aJ piazza.Ident
-	{
-		if MOCKING {
-			t.Skip("Skipping test, because mocking")
-		}
-		alerts, err := client.GetAllAlerts()
-		assert.NoError(err)
-		assert.Len(*alerts, 2)
-
-		var alert0, alert1 *Alert
-		if (*alerts)[0].EventId == eF {
-			alert0 = &(*alerts)[0]
-			alert1 = &(*alerts)[1]
-		} else {
-			alert0 = &(*alerts)[1]
-			alert1 = &(*alerts)[0]
-		}
-
-		aI = alert0.AlertId
-		aJ = alert1.AlertId
-
-		assert.EqualValues(alert0.TriggerId, tA)
-		assert.EqualValues(alert0.EventId, eF)
-		assert.EqualValues(alert1.TriggerId, tB)
-		assert.EqualValues(alert1.EventId, eG)
-
-		defer func() {
-			client.DeleteAlert(aI)
-			assert.NoError(err)
-		}()
-		defer func() {
-			client.DeleteAlert(aJ)
 			assert.NoError(err)
 		}()
 	}

@@ -138,27 +138,29 @@ func (service *WorkflowService) Init(
 		if err != nil {
 			return false, err
 		}
+		if !exists {
+			return false, nil
+		}
 		types, err := eventtypesIndex.GetTypes()
 		if err != nil {
-			//handle error
-			fmt.Println("error getting types")
+			return false, err
 		}
 		//log.Printf("Getting %d types...", len(types))
 		if len(types) == 0 {
 			return false, nil
 		}
-		for _, typ := range types {
-			fmt.Println(typ)
-		}
-		fmt.Printf("Exists: %t\n", exists)
+		/*for _, typ := range types {
+			log.Printf(typ)
+		}*/
 		return exists, nil
 	})
 
-	pollOk, pollErr := elasticsearch.PollFunction(pollingFn)
-	if pollErr != nil {
-		fmt.Print("ERROR", pollErr, "\n")
+	_, err = elasticsearch.PollFunction(pollingFn)
+	if err != nil {
+		//log.Printf("ERROR: %#v", err)
+		return err
 	}
-	fmt.Print("SETUP INDEX\n", pollOk, "\n")
+	//log.Printf("SETUP INDEX: %t", ok)
 
 	// Ingest event type
 	ingestEventType := &EventType{}
@@ -174,9 +176,9 @@ func (service *WorkflowService) Init(
 		"hosted":   "boolean",
 	}
 	ingestEventType.Mapping = ingestEventTypeMapping
-	log.Println("  Creating piazza:ingest eventtype")
+	//log.Println("  Creating piazza:ingest eventtype")
 	postedIngestEventType := service.PostEventType(ingestEventType)
-	log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
+	//log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
 	if postedIngestEventType.StatusCode == 201 {
 		// everything is ok
 		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
