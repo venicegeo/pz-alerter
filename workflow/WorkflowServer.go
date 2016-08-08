@@ -179,7 +179,7 @@ func (server *WorkflowServer) handleGetAllTriggers(c *gin.Context) {
 }
 
 func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
-	trigger := &Trigger{}
+	trigger := &Trigger{Enabled: true}
 	err := c.BindJSON(trigger)
 	if err != nil {
 		resp := &piazza.JsonResponse{
