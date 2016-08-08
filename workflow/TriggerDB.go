@@ -39,6 +39,8 @@ func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerD
 
 func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error) {
 
+	//trigger.Job.JobType.Data.
+
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)
 	body, err := json.Marshal(ifaceObj)
