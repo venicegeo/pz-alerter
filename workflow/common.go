@@ -19,10 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -166,12 +168,13 @@ const EventIndexSettings = `
 // An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {
-	EventId      piazza.Ident           `json:"eventId"`
-	EventTypeId  piazza.Ident           `json:"eventTypeId" binding:"required"`
-	Data         map[string]interface{} `json:"data"`
+	EventId     piazza.Ident `json:"eventId"`
+	EventTypeId piazza.Ident `json:"eventTypeId" binding:"required"`
+	//Data         interface{}  `json:"data"`
 	CreatedBy    string                 `json:"createdBy"`
 	CreatedOn    time.Time              `json:"createdOn"`
 	CronSchedule string                 `json:"cronSchedule"`
+	Data         map[string]interface{} `json:"data"`
 }
 
 // EventList is a list of events
@@ -225,8 +228,8 @@ type EventType struct {
 // EventTypeList is a list of EventTypes
 type EventTypeList []EventType
 
-func MappingStringToInterface(mapping string) interface{} {
-	data := []byte(mapping)
+func StructStringToInterface(stru string) interface{} {
+	data := []byte(stru)
 	source := (*json.RawMessage)(&data)
 	var res interface{}
 	//TODO HANDLE ERROR BETTER
@@ -236,13 +239,52 @@ func MappingStringToInterface(mapping string) interface{} {
 	}
 	return res
 }
-func MappingInterfaceToString(mapping interface{}) string {
-	data, err := json.MarshalIndent(mapping, " ", "   ")
+func StructInterfaceToString(stru interface{}) string {
+	data, err := json.MarshalIndent(stru, " ", "   ")
 	//TODO HANDLE ERROR BETTER
 	if err != nil {
 		println("ERROR:", err.Error())
 	}
 	return string(data)
+}
+func GetVariablesFromStructInterface(stru interface{}) ([]string, []string) {
+	str := StructInterfaceToString(stru)
+	str = elasticsearch.RemoveWhitespace(str)
+	temp := ""
+	bracketOpen := false
+	for i := 0; i < len(str); i++ {
+		if elasticsearch.CharAt(str, i) == "[" {
+			bracketOpen = true
+		} else if elasticsearch.CharAt(str, i) == "]" {
+			bracketOpen = false
+		}
+		if elasticsearch.CharAt(str, i) == "{" || elasticsearch.CharAt(str, i) == "}" || (elasticsearch.CharAt(str, i) == "," && !bracketOpen) {
+			temp += "\n" + elasticsearch.CharAt(str, i) + "\n"
+		} else {
+			temp += elasticsearch.CharAt(str, i)
+		}
+	}
+	lines := strings.Split(temp, "\n")
+	keys := []string{}
+	values := []string{}
+	for _, line := range lines {
+		if strings.Contains(line, `":`) && !strings.Contains(line, `":{`) {
+			parts := strings.Split(line, `":`)
+			parts[0] = parts[0][1:]
+			if strings.HasPrefix(parts[1], `"`) {
+				parts[1] = parts[1][1:]
+			}
+			if strings.HasSuffix(parts[1], ",") {
+				parts[1] = parts[1][:len(parts[1])-1]
+			}
+			if strings.HasSuffix(parts[1], `"`) {
+				parts[1] = parts[1][:len(parts[1])-1]
+			}
+			keys = append(keys, parts[0])
+			values = append(values, parts[1])
+		}
+	}
+	return keys, values
 }
 
 //-ALERT------------------------------------------------------------------------

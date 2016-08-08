@@ -16,7 +16,6 @@ package workflow
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -49,8 +48,44 @@ func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, e
 	return &erdb, nil
 }
 
-func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
-	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
+func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+	event, ok := obj.(*Event)
+	if !ok {
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: was not given an event")
+	}
+	{ //ARRAY CHECK
+		eventTypeJson := db.service.GetEventType(event.EventTypeId)
+		eventTypeObj := eventTypeJson.Data
+		eventType, ok := eventTypeObj.(*EventType)
+		if !ok {
+			return piazza.NoIdent, LoggedError("EvenDB.PostData failed: unable to obtain specified eventtype")
+		}
+		eventTypeMappingKeys,
+			eventTypeMappingValues := GetVariablesFromStructInterface(eventType.Mapping)
+		eventDataKeys, eventDataValues := GetVariablesFromStructInterface(event.Data)
+		var evKey, evValue, eKey, eValue string
+		for i := 0; i < len(eventTypeMappingKeys); i++ {
+			evKey = eventTypeMappingKeys[i]
+			evValue = eventTypeMappingValues[i]
+			for j := 0; j < len(eventDataKeys); j++ {
+				eKey = eventDataKeys[j]
+				eValue = eventDataValues[j]
+				if evKey != eKey {
+					continue
+				}
+				if !elasticsearch.IsValidArrayTypeMapping(evValue) {
+					if elasticsearch.ValueIsValidArray(eValue) {
+						return piazza.NoIdent, LoggedError("EventDB.PostData failed: an array was passed into a non-array field: %s", eKey)
+					}
+				} else {
+					if !elasticsearch.ValueIsValidArray(eValue) {
+						return piazza.NoIdent, LoggedError("EventDB.PostData failed: a non-array was passed into an array field: %s", eKey)
+					}
+				}
+			}
+		}
+	}
+	indexResult, err := db.Esi.PostData(typ, id.String(), obj)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 	}
@@ -153,7 +188,7 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 }
 
 func (db *EventDB) AddMapping(name string, mapping interface{}) error {
-	jsn, err := ConstructEventMappingSchema(name, MappingInterfaceToString(mapping))
+	jsn, err := ConstructEventMappingSchema(name, StructInterfaceToString(mapping))
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
@@ -229,14 +264,15 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string, error) {
 		pairs = append(pairs, ObjPair{k, v})
 	}
 	//-------------Add properties after each open index-------------------------
+	propertiesAddition := `"dynamic":"strict","properties":{`
 	for i := 0; i < len(pairs); i++ {
-		str = elasticsearch.InsertString(str, `"properties":{`, pairs[i].OpenIndex+1)
+		str = elasticsearch.InsertString(str, propertiesAddition, pairs[i].OpenIndex+1)
 		for j := i + 1; j < len(pairs); j++ {
-			pairs[j].OpenIndex += 14
+			pairs[j].OpenIndex += len(propertiesAddition)
 		}
 		for j := 0; j < len(pairs); j++ {
 			if pairs[j].ClosedIndex >= pairs[i].OpenIndex {
-				pairs[j].ClosedIndex += 14
+				pairs[j].ClosedIndex += len(propertiesAddition)
 			}
 		}
 	}
@@ -256,8 +292,14 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string, error) {
 	}
 	//-------------Seperate pieces of mapping onto seperate lines---------------
 	temp := ""
+	bracketOpen := false
 	for i := 0; i < len(str); i++ {
-		if elasticsearch.CharAt(str, i) == "{" || elasticsearch.CharAt(str, i) == "}" || elasticsearch.CharAt(str, i) == "," {
+		if elasticsearch.CharAt(str, i) == "[" {
+			bracketOpen = true
+		} else if elasticsearch.CharAt(str, i) == "]" {
+			bracketOpen = false
+		}
+		if elasticsearch.CharAt(str, i) == "{" || elasticsearch.CharAt(str, i) == "}" || (elasticsearch.CharAt(str, i) == "," && !bracketOpen) {
 			temp += "\n" + elasticsearch.CharAt(str, i) + "\n"
 		} else {
 			temp += elasticsearch.CharAt(str, i)
@@ -287,10 +329,19 @@ func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string, error) {
 func formatKeyValue(str string) (string, error) {
 	parts := strings.Split(str, ":")
 	value := strings.Replace(parts[1], "\"", "", -1)
+	key := strings.Replace(parts[0], "\"", "", -1)
 	valid := elasticsearch.IsValidMappingType(value)
-	if !valid {
-		return "", errors.New(fmt.Sprintf(" '%s' was not recognized as a valid mapping type", value))
+	dynamic := key == "dynamic"
+	if dynamic {
+		if value != "strict" && value != "true" && value != "false" {
+			return "", LoggedError(" %s was not recognized as a valid dynamic type", value)
+		}
+		return str, nil
+	} else if !valid {
+		return "", LoggedError(" %s was not recognized as a valid mapping type", value)
 	}
+	parts[1] = strings.Replace(parts[1], "[", "", -1)
+	parts[1] = strings.Replace(parts[1], "]", "", -1)
 	res := fmt.Sprintf(`%s:{"type":%s}`, parts[0], parts[1])
 	return res, nil
 }
