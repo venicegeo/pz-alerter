@@ -38,10 +38,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	serviceControllerURL, err := sys.GetAddress("pz-servicecontroller")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	logger, err := pzlogger.NewClient(sys)
 	if err != nil {

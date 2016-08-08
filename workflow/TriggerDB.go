@@ -17,6 +17,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -39,7 +40,32 @@ func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerD
 
 func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error) {
 
-	//trigger.Job.JobType.Data.
+	{ //CHECK SERVICE EXIST
+		jobData := trigger.Job.JobType.Data
+		serviceId := jobData["serviceId"]
+		strServiceId, ok := serviceId.(string)
+		if !ok {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
+		}
+		serviceControllerURL, err := db.service.sys.GetAddress("pz-servicecontroller")
+		if err != nil {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to find ServiceController: %s", err)
+		}
+		serviceControllerURL += "/service/" + strServiceId
+		serviceControllerURL = "http://" + serviceControllerURL
+		req, err := http.NewRequest("GET", serviceControllerURL, nil)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
+		}
+		client := &http.Client{}
+		response, err := client.Do(req)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to reach ServiceController: %s", err)
+		}
+		if response.StatusCode != 200 {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData serviceId %s does not exist", strServiceId)
+		}
+	}
 
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)
