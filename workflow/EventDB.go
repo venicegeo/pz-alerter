@@ -61,8 +61,14 @@ func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazz
 			return piazza.NoIdent, LoggedError("EvenDB.PostData failed: unable to obtain specified eventtype")
 		}
 		eventTypeMappingKeys,
-			eventTypeMappingValues := GetVariablesFromStructInterface(eventType.Mapping)
-		eventDataKeys, eventDataValues := GetVariablesFromStructInterface(event.Data)
+			eventTypeMappingValues, err := GetVariablesFromStructInterface(eventType.Mapping)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		}
+		eventDataKeys, eventDataValues, err := GetVariablesFromStructInterface(event.Data)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		}
 		var evKey, evValue, eKey, eValue string
 		for i := 0; i < len(eventTypeMappingKeys); i++ {
 			evKey = eventTypeMappingKeys[i]
@@ -188,7 +194,11 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 }
 
 func (db *EventDB) AddMapping(name string, mapping interface{}) error {
-	jsn, err := ConstructEventMappingSchema(name, StructInterfaceToString(mapping))
+	strMapping, err := StructInterfaceToString(mapping)
+	if err != nil {
+		return LoggedError("EventDB.AddMapping failed: %s", err)
+	}
+	jsn, err := ConstructEventMappingSchema(name, strMapping)
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}

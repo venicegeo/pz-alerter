@@ -228,27 +228,22 @@ type EventType struct {
 // EventTypeList is a list of EventTypes
 type EventTypeList []EventType
 
-func StructStringToInterface(stru string) interface{} {
+func StructStringToInterface(stru string) (interface{}, error) {
 	data := []byte(stru)
 	source := (*json.RawMessage)(&data)
 	var res interface{}
-	//TODO HANDLE ERROR BETTER
 	err := json.Unmarshal(*source, &res)
-	if err != nil {
-		println("ERROR:", err.Error())
-	}
-	return res
+	return res, err
 }
-func StructInterfaceToString(stru interface{}) string {
+func StructInterfaceToString(stru interface{}) (string, error) {
 	data, err := json.MarshalIndent(stru, " ", "   ")
-	//TODO HANDLE ERROR BETTER
-	if err != nil {
-		println("ERROR:", err.Error())
-	}
-	return string(data)
+	return string(data), err
 }
-func GetVariablesFromStructInterface(stru interface{}) ([]string, []string) {
-	str := StructInterfaceToString(stru)
+func GetVariablesFromStructInterface(stru interface{}) ([]string, []string, error) {
+	str, err := StructInterfaceToString(stru)
+	if err != nil {
+		return nil, nil, err
+	}
 	str = elasticsearch.RemoveWhitespace(str)
 	temp := ""
 	bracketOpen := false
@@ -284,7 +279,7 @@ func GetVariablesFromStructInterface(stru interface{}) ([]string, []string) {
 			values = append(values, parts[1])
 		}
 	}
-	return keys, values
+	return keys, values, nil
 }
 
 //-ALERT------------------------------------------------------------------------
