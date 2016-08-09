@@ -79,28 +79,24 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 	return eventTypes, searchResult.TotalHits(), nil
 }
 
-func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, error) {
+func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
+		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
 	}
 	if getResult == nil {
-		return nil, LoggedError("EventTypeDB.GetOne failed: no getResult")
-	}
-
-	if !getResult.Found {
-		return nil, nil
+		return nil, true, LoggedError("EventTypeDB.GetOne failed: no getResult")
 	}
 
 	src := getResult.Source
 	var eventType EventType
 	err = json.Unmarshal(*src, &eventType)
 	if err != nil {
-		return nil, err
+		return nil, getResult.Found, err
 	}
 
-	return &eventType, nil
+	return &eventType, getResult.Found, nil
 }
 
 func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
