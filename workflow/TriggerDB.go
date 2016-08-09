@@ -154,7 +154,7 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("TriggerDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("TriggerDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("TriggerDB.DeleteById failed: no deleteResult")
@@ -165,7 +165,7 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
 	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationId))
 	if err != nil {
-		return false, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
+		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}
 	if deleteResult2 == nil {
 		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult")

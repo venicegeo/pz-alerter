@@ -95,7 +95,7 @@ func (db *CronDB) itemExists(id piazza.Ident) bool {
 func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("CronDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("CronDB.DeleteById failed: no deleteResult")

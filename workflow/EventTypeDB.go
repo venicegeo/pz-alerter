@@ -135,7 +135,7 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, error) {
 func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("EventTypeDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("EventTypeDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("EventTypeDB.DeleteById failed: no deleteResult")

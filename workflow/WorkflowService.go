@@ -134,7 +134,7 @@ func (service *WorkflowService) Init(
 	// allow the database time to settle
 	//time.Sleep(time.Second * 5)
 	pollingFn := elasticsearch.GetData(func() (bool, error) {
-		exists:=eventtypesIndex.IndexExists()
+		exists := eventtypesIndex.IndexExists()
 		types, err := eventtypesIndex.GetTypes()
 		if err != nil {
 			//handle error
@@ -186,9 +186,9 @@ func (service *WorkflowService) Init(
 	executionCompletedType := &EventType{}
 	executionCompletedType.Name = "piazza:executionComplete"
 	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
-		"jobId":    "string",
-		"status":   "string",
-		"dataId":   "string",
+		"jobId":  "string",
+		"status": "string",
+		"dataId": "string",
 	}
 	executionCompletedType.Mapping = executionCompletedTypeMapping
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
@@ -329,10 +329,10 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	if (nameParam != nil) {
+	if nameParam != nil {
 		nameParamValue := *nameParam
 		eventtypeid, err := service.eventTypeDB.GetIDByName(nameParamValue)
-		if (err != nil) {
+		if err != nil {
 			return service.statusBadRequest(err)
 		}
 		if eventtypeid == nil {
@@ -409,11 +409,11 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
-	if err != nil {
-		return service.statusBadRequest(err)
-	}
 	if !ok {
 		return service.statusNotFound(id)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	service.logger.Info("Deleted EventType with EventTypeId %s", id)
@@ -673,21 +673,21 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 	}
 
 	ok, err := service.eventDB.DeleteByID(mapping, piazza.Ident(id))
-	if err != nil {
-		return service.statusBadRequest(err)
-	}
 	if !ok {
 		return service.statusNotFound(id)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	// If it's a cron event, remove from cronDB, stop cronjob
 	if service.cronDB.itemExists(id) {
 		ok, err := service.cronDB.DeleteByID(piazza.Ident(id))
-		if err != nil {
-			return service.statusBadRequest(err)
-		}
 		if !ok {
 			return service.statusNotFound(id)
+		}
+		if err != nil {
+			return service.statusBadRequest(err)
 		}
 		service.cron.Remove(id.String())
 	}
@@ -755,11 +755,11 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 
 func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.triggerDB.DeleteTrigger(piazza.Ident(id))
-	if err != nil {
-		return service.statusBadRequest(err)
-	}
 	if !ok {
 		return service.statusNotFound(id)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	service.logger.Info("Deleted Trigger with TriggerId %s", id)
@@ -848,11 +848,11 @@ func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
 // DeleteAlert TODO
 func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.alertDB.DeleteByID(id)
-	if err != nil {
-		return service.statusBadRequest(err)
-	}
 	if !ok {
 		return service.statusNotFound(id)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	service.logger.Info("Deleted Alert with AlertId %s", id)

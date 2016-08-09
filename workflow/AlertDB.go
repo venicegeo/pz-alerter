@@ -143,7 +143,7 @@ func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, error) {
 func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("AlertDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("AlertDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("AlertDB.DeleteById failed: no deleteResult")
