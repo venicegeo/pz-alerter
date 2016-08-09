@@ -433,13 +433,12 @@ func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusNotFound(id)
 	}
 
-	event, err := service.eventDB.GetOne(mapping, id)
-	if err != nil {
+	event, found, err := service.eventDB.GetOne(mapping, id)
+	if !found {
 		return service.statusNotFound(id)
-
 	}
-	if event == nil {
-		return service.statusNotFound(id)
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	return service.statusOK(event)
@@ -593,13 +592,13 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 			go func(triggerID piazza.Ident) {
 				defer waitGroup.Done()
 
-				trigger, err := service.triggerDB.GetOne(triggerID)
-				if err != nil {
-					results[triggerID] = service.statusBadRequest(err)
+				trigger, found, err := service.triggerDB.GetOne(triggerID)
+				if !found {
+					results[triggerID] = service.statusNotFound(triggerID)
 					return
 				}
-				if trigger == nil {
-					results[triggerID] = service.statusNotFound(triggerID)
+				if err != nil {
+					results[triggerID] = service.statusBadRequest(err)
 					return
 				}
 				if trigger.Enabled == false {
@@ -713,12 +712,12 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 //------------------------------------------------------------------------------
 
 func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
-	trigger, err := service.triggerDB.GetOne(piazza.Ident(id))
-	if err != nil {
+	trigger, found, err := service.triggerDB.GetOne(piazza.Ident(id))
+	if !found {
 		return service.statusNotFound(id)
 	}
-	if trigger == nil {
-		return service.statusNotFound(id)
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 	return service.statusOK(trigger)
 }
@@ -783,12 +782,12 @@ func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonRespo
 //---------------------------------------------------------------------
 
 func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
-	alert, err := service.alertDB.GetOne(id)
-	if err != nil {
+	alert, found, err := service.alertDB.GetOne(id)
+	if !found {
 		return service.statusNotFound(id)
 	}
-	if alert == nil {
-		return service.statusNotFound(id)
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	return service.statusOK(alert)
