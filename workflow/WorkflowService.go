@@ -523,11 +523,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	// Post the event in the database, WITHOUT "triggering"
 	eventTypeID := event.EventTypeId
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
-	if !found {
-		service.cron.Remove(eventID.String())
-		return service.statusNotFound(err)
-	}
-	if err != nil {
+	if err != nil || !found {
 		service.cron.Remove(eventID.String())
 		return service.statusBadRequest(err)
 	}
@@ -552,10 +548,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	eventTypeID := event.EventTypeId
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
-	if !found {
-		return service.statusNotFound(err)
-	}
-	if err != nil {
+	if err != nil || !found {
 		return service.statusBadRequest(err)
 	}
 	eventTypeName := eventType.Name
