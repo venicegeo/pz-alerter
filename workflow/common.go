@@ -218,11 +218,11 @@ const EventTypeIndexSettings = `
 
 // EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
-	EventTypeId piazza.Ident `json:"eventTypeId"`
-	Name        string       `json:"name" binding:"required"`
-	Mapping     interface{}  `json:"mapping" binding:"required"`
-	CreatedBy   string       `json:"createdBy"`
-	CreatedOn   time.Time    `json:"createdOn"`
+	EventTypeId piazza.Ident           `json:"eventTypeId"`
+	Name        string                 `json:"name" binding:"required"`
+	Mapping     map[string]interface{} `json:"mapping" binding:"required"`
+	CreatedBy   string                 `json:"createdBy"`
+	CreatedOn   time.Time              `json:"createdOn"`
 }
 
 // EventTypeList is a list of EventTypes
@@ -253,7 +253,9 @@ func GetVariablesFromStructInterface(stru interface{}) ([]string, []string, erro
 		} else if elasticsearch.CharAt(str, i) == "]" {
 			bracketOpen = false
 		}
-		if elasticsearch.CharAt(str, i) == "{" || elasticsearch.CharAt(str, i) == "}" || (elasticsearch.CharAt(str, i) == "," && !bracketOpen) {
+		if elasticsearch.CharAt(str, i) == "{" {
+			temp += elasticsearch.CharAt(str, i) + "\n"
+		} else if elasticsearch.CharAt(str, i) == "}" || (elasticsearch.CharAt(str, i) == "," && !bracketOpen) {
 			temp += "\n" + elasticsearch.CharAt(str, i) + "\n"
 		} else {
 			temp += elasticsearch.CharAt(str, i)
@@ -266,13 +268,7 @@ func GetVariablesFromStructInterface(stru interface{}) ([]string, []string, erro
 		if strings.Contains(line, `":`) && !strings.Contains(line, `":{`) {
 			parts := strings.Split(line, `":`)
 			parts[0] = parts[0][1:]
-			if strings.HasPrefix(parts[1], `"`) {
-				parts[1] = parts[1][1:]
-			}
 			if strings.HasSuffix(parts[1], ",") {
-				parts[1] = parts[1][:len(parts[1])-1]
-			}
-			if strings.HasSuffix(parts[1], `"`) {
 				parts[1] = parts[1][:len(parts[1])-1]
 			}
 			keys = append(keys, parts[0])

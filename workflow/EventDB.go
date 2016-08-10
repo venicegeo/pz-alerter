@@ -69,7 +69,7 @@ func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazz
 		if err != nil {
 			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 		}
-		var evKey, evValue, eKey, eValue string
+		var evKey, eKey, evValue, eValue string
 		for i := 0; i < len(eventTypeMappingKeys); i++ {
 			evKey = eventTypeMappingKeys[i]
 			evValue = eventTypeMappingValues[i]
@@ -78,6 +78,9 @@ func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazz
 				eValue = eventDataValues[j]
 				if evKey != eKey {
 					continue
+				}
+				if strings.HasPrefix(evValue, "\"") && strings.HasSuffix(evValue, "\"") {
+					evValue = evValue[1 : len(evValue)-1]
 				}
 				if !elasticsearch.IsValidArrayTypeMapping(evValue) {
 					if elasticsearch.ValueIsValidArray(eValue) {
