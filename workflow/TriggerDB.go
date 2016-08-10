@@ -118,35 +118,31 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, er
 	return triggers, searchResult.TotalHits(), nil
 }
 
-func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, error) {
+func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("TriggerDB.GetOne failed: %s", err)
+		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, LoggedError("TriggerDB.GetOne failed: no getResult")
-	}
-
-	if !getResult.Found {
-		return nil, nil
+		return nil, true, LoggedError("TriggerDB.GetOne failed: no getResult")
 	}
 
 	src := getResult.Source
 	var obj Trigger
 	err = json.Unmarshal(*src, &obj)
 	if err != nil {
-		return nil, err
+		return nil, getResult.Found, err
 	}
 
-	return &obj, nil
+	return &obj, getResult.Found, nil
 }
 
 func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
-	trigger, err := db.GetOne(id)
+	trigger, found, err := db.GetOne(id)
 	if err != nil {
-		return false, err
+		return found, err
 	}
 	if trigger == nil {
 		return false, nil
