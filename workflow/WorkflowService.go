@@ -54,34 +54,6 @@ type WorkflowService struct {
 	origin string
 }
 
-var defaultEventTypePagination = &piazza.JsonPagination{
-	PerPage: 50,
-	Page:    0,
-	SortBy:  "eventTypeId",
-	Order:   piazza.SortOrderAscending,
-}
-
-var defaultEventPagination = &piazza.JsonPagination{
-	PerPage: 50,
-	Page:    0,
-	SortBy:  "eventId",
-	Order:   piazza.SortOrderAscending,
-}
-
-var defaultTriggerPagination = &piazza.JsonPagination{
-	PerPage: 50,
-	Page:    0,
-	SortBy:  "triggerId",
-	Order:   piazza.SortOrderAscending,
-}
-
-var defaultAlertPagination = &piazza.JsonPagination{
-	PerPage: 50,
-	Page:    0,
-	SortBy:  "alertId",
-	Order:   piazza.SortOrderAscending,
-}
-
 //------------------------------------------------------------------------------
 
 // Init TODO
@@ -318,7 +290,7 @@ func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonRespon
 
 // GetAllEventTypes TODO
 func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	format, err := piazza.NewJsonPagination(params, defaultEventTypePagination)
+	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -446,7 +418,7 @@ func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 
 // GetAllEvents TODO
 func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	format, err := piazza.NewJsonPagination(params, defaultEventPagination)
+	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -716,7 +688,7 @@ func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse
 }
 
 func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	format, err := piazza.NewJsonPagination(params, defaultTriggerPagination)
+	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -792,7 +764,7 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 		return service.statusBadRequest(err)
 	}
 
-	format, err := piazza.NewJsonPagination(params, defaultAlertPagination)
+	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
