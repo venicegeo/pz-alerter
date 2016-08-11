@@ -349,17 +349,20 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	// Check if our EventType.Name already exists
 	name := eventType.Name
-	ok, found, err := service.eventDB.NameExists(name)
-	if err != nil || !found {
+	found, err := service.eventDB.NameExists(name)
+	if err != nil {
 		return service.statusInternalError(err)
 	}
-	if ok {
-		id, err := service.eventTypeDB.GetIDByName(name)
-		if err != nil {
-			return service.statusInternalError(err)
-		}
+	if found {
+		return service.statusBadRequest(LoggedError("EventType Name already exists"))
+	}
+	id1, ok, err := service.eventTypeDB.GetIDByName(name)
+	if err != nil {
+		return service.statusInternalError(err)
+	}
+	if !ok {
 		return service.statusBadRequest(
-			LoggedError("EventType Name already exists under EventTypeId %s", id))
+			LoggedError("EventType Name already exists under EventTypeId %s", id1))
 	}
 
 	eventTypeID, err := service.newIdent()
