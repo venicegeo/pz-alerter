@@ -31,6 +31,7 @@ func main() {
 		piazza.PzLogger,
 		piazza.PzUuidgen,
 		piazza.PzKafka,
+		piazza.PzServiceController,
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)
