@@ -17,6 +17,7 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -38,6 +39,26 @@ func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerD
 }
 
 func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error) {
+
+	{ //CHECK SERVICE EXISTS
+		jobData := trigger.Job.JobType.Data
+		serviceId := jobData["serviceId"]
+		strServiceId, ok := serviceId.(string)
+		if !ok {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData faile: serviceId field not of type string")
+		}
+		serviceControllerURL, err := db.service.sys.GetURL("pz-servicecontroller")
+		if err != nil {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to find ServiceController: %s", err)
+		}
+		response, err := http.Get(serviceControllerURL)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
+		}
+		if response.StatusCode != 200 {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData: serviceId %s does not exist", strServiceId)
+		}
+	}
 
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)
@@ -121,35 +142,31 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, er
 	return triggers, searchResult.TotalHits(), nil
 }
 
-func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, error) {
+func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("TriggerDB.GetOne failed: %s", err)
+		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, LoggedError("TriggerDB.GetOne failed: no getResult")
-	}
-
-	if !getResult.Found {
-		return nil, nil
+		return nil, true, LoggedError("TriggerDB.GetOne failed: no getResult")
 	}
 
 	src := getResult.Source
 	var obj Trigger
 	err = json.Unmarshal(*src, &obj)
 	if err != nil {
-		return nil, err
+		return nil, getResult.Found, err
 	}
 
-	return &obj, nil
+	return &obj, getResult.Found, nil
 }
 
 func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
-	trigger, err := db.GetOne(id)
+	trigger, found, err := db.GetOne(id)
 	if err != nil {
-		return false, err
+		return found, err
 	}
 	if trigger == nil {
 		return false, nil
@@ -157,7 +174,7 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("TriggerDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("TriggerDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("TriggerDB.DeleteById failed: no deleteResult")
@@ -168,7 +185,7 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
 	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationId))
 	if err != nil {
-		return false, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
+		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}
 	if deleteResult2 == nil {
 		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult")

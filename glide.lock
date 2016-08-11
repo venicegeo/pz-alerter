@@ -42,7 +42,7 @@ imports:
 - name: github.com/vegertar/cron
   version: 5ac5cfd06ab8d01d4cb729441c7db2ac9fbe11b3
 - name: github.com/venicegeo/pz-gocommon
-  version: 6e17d75eaae57907f5db5ecd06b800b53c64a363
+  version: 854ed6b11d5ca7a810440a1c91d6c5f5447f6ed1
   subpackages:
   - elasticsearch
   - gocommon

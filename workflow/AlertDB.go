@@ -123,33 +123,29 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 	return alerts, searchResult.TotalHits(), nil
 }
 
-func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, error) {
+func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error) {
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("AlertDB.GetOne failed: %s", err)
+		return nil, getResult.Found, LoggedError("AlertDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, LoggedError("AlertDB.GetOne failed: no getResult")
-	}
-
-	if !getResult.Found {
-		return nil, nil
+		return nil, true, LoggedError("AlertDB.GetOne failed: no getResult")
 	}
 
 	src := getResult.Source
 	var alert Alert
 	err = json.Unmarshal(*src, &alert)
 	if err != nil {
-		return nil, err
+		return nil, getResult.Found, err
 	}
 
-	return &alert, nil
+	return &alert, getResult.Found, nil
 }
 
 func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("AlertDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("AlertDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("AlertDB.DeleteById failed: no deleteResult")
