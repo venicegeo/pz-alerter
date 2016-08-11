@@ -47,19 +47,13 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		if !ok {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData faile: serviceId field not of type string")
 		}
-		serviceControllerURL, err := db.service.sys.GetAddress("pz-servicecontroller")
+		serviceControllerURL, err := db.service.sys.GetURL("pz-servicecontroller")
 		if err != nil {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to find ServiceController: %s", err)
 		}
-		serviceControllerURL = "http://" + serviceControllerURL + "/service/" + strServiceId
-		req, err := http.NewRequest("GET", serviceControllerURL, nil)
+		response, err := http.Get(serviceControllerURL)
 		if err != nil {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
-		}
-		client := &http.Client{}
-		response, err := client.Do(req)
-		if err != nil {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to reach ServiceController: %s", err)
 		}
 		if response.StatusCode != 200 {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData: serviceId %s does not exist", strServiceId)
