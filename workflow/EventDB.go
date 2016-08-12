@@ -16,6 +16,7 @@ package workflow
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -58,7 +59,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 		}
 	}
 	if !exists {
-		return nil, 0, LoggedError("Type %s does not exist", mapping)
+		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
