@@ -15,7 +15,6 @@
 package workflow
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -24,6 +23,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
+
+const loopAmount = 5000
 
 type MappingTester struct {
 	suite.Suite
@@ -190,69 +191,216 @@ var mappingTestData = []([2]string){
 	}`,
 	},
 	{ // 5
-		`{ "a":{"aa":"string","b":{"bb":"long","c":{"cc":"integer","d":{"dd":"short","e":{"ee":"byte","f":{"ff":"double","g":{"gg":"float","h":{"hh":"date","i":{"ii":"boolean","j":{"jj":"binary","k":{"kk":"geo_point","l":{"ll":"geo_shape","m":{"mm":"ip","n":{"nn":"completion"}}}}}}}}}}}}}} }`,
-		`{"a":{"properties":{"aa":{"type":"string"},"b":{"properties":{"bb":{"type":"long"},"c":{"properties":{"cc":{"type":"integer"},"d":{"properties":{"dd":{"type":"short"},"e":{"properties":{"ee":{"type":"byte"},"f":{"properties":{"ff":{"type":"double"},"g":{"properties":{"gg":{"type":"float"},"h":{"properties":{"hh":{"type":"date"},"i":{"properties":{"ii":{"type":"boolean"},"j":{"properties":{"jj":{"type":"binary"},"k":{"properties":{"kk":{"type":"geo_point"},"l":{"properties":{"ll":{"type":"geo_shape"},"m":{"properties":{"mm":{"type":"ip"},"n":{"properties":{"nn":{"type":"completion"}}}}}}}}}}}}}}}}}}}}}}}}}}}}}}`,
+		`{ "a":
+			{"aa":"string",
+			"b":{
+				"bb":"long",
+				"c":{
+					"cc":"integer",
+					"d":{
+						"dd":"short",
+						"e":{
+							"ee":"byte",
+							"f":{
+								"ff":"double",
+								"g":{
+									"gg":"float",
+									"h":{
+										"hh":"date",
+										"i":{
+											"ii":"boolean",
+											"j":{
+												"jj":"binary",
+													"k":{
+														"kk":"geo_point",
+														"l":{
+															"ll":"geo_shape",
+															"m":{
+																"mm":"ip",
+																"n":{
+																	"nn":"completion"
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}`,
+		`{"a":{
+			"dynamic":"strict",
+			"properties":{
+				"aa":{"type":"string"},
+				"b":{
+					"dynamic":"strict",
+					"properties":{
+						"bb":{"type":"long"},
+						"c":{
+							"dynamic":"strict",
+							"properties":{
+								"cc":{"type":"integer"},
+								"d":{
+									"dynamic":"strict",
+									"properties":{
+										"dd":{"type":"short"},
+										"e":{
+											"dynamic":"strict",
+											"properties":{
+												"ee":{"type":"byte"},
+												"f":{
+													"dynamic":"strict",
+													"properties":{
+														"ff":{"type":"double"},
+														"g":{
+															"dynamic":"strict",
+															"properties":{
+																"gg":{"type":"float"},
+																"h":{
+																	"dynamic":"strict",
+																	"properties":{
+																		"hh":{"type":"date"},
+																		"i":{
+																			"dynamic":"strict",
+																			"properties":{
+																				"ii":{"type":"boolean"},
+																				"j":{
+																					"dynamic":"strict",
+																					"properties":{
+																						"jj":{"type":"binary"},
+																						"k":{
+																							"dynamic":"strict",
+																							"properties":{
+																								"kk":{"type":"geo_point"},
+																								"l":{
+																									"dynamic":"strict",
+																									"properties":{
+																										"ll":{"type":"geo_shape"},
+																										"m":{
+																											"dynamic":"strict",
+																											"properties":{
+																												"mm":{"type":"ip"},
+																												"n":{
+																													"dynamic":"strict",
+																													"properties":{
+																														"nn":{"type":"completion"}
+																													}
+																												}
+																											}
+																										}
+																									}
+																								}
+																							}
+																						}
+																					}
+																				}
+																			}
+																		}
+																	}
+																}
+															}
+														}
+													}
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}}`,
 	},
 }
 
 //---------------------------------------------------------------------------
 
-func (suite *MappingTester) xTest20Mappings() {
+func (suite *MappingTester) Test20Mappings() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	for idx, pair := range mappingTestData {
-		input := pair[0]
-		expectedOutput := pair[1]
+	for i := 0; i < loopAmount; i++ {
+		for idx, pair := range mappingTestData {
+			input := pair[0]
+			expectedOutput := pair[1]
 
-		{
-			log.Printf("======================================================")
-			log.Printf("test %d", idx)
+			{
+				inputTree := map[string]interface{}{}
+				expectedOutputTree := map[string]interface{}{}
 
-			inputTree := map[string]interface{}{}
+				temp, err := structStringToInterface(input)
+				assert.NoError(err)
+				inputTree = temp.(map[string]interface{})
 
-			err := json.Unmarshal([]byte(input), &inputTree)
-			assert.NoError(err)
+				temp, err = structStringToInterface(expectedOutput)
+				assert.NoError(err)
+				expectedOutputTree = temp.(map[string]interface{})
 
-			outputTree, err := visitNode(inputTree)
-			assert.NoError(err)
+				outputTree, err := visitNode(inputTree)
+				assert.NoError(err)
 
-			err = doVerification(expectedOutput, outputTree)
-			assert.NoError(err, fmt.Sprintf("failed %d\n", idx))
+				err = doVerification(expectedOutputTree, outputTree)
+				assert.NoError(err, fmt.Sprintf("failed %d\n", idx))
+			}
 		}
 	}
 }
 
-func doVerification(str string, obj map[string]interface{}) error {
+func (suite *MappingTester) Test21Mappings() {
+	t := suite.T()
+	assert := assert.New(t)
 
-	var expected bytes.Buffer
-	err := json.Compact(&expected, []byte(str))
-	if err != nil {
-		return err
-	}
+	for i := 0; i < loopAmount; i++ {
+		for idx, pair := range mappingTestData {
+			input := pair[0]
+			expectedOutput := pair[1]
 
-	actualBytes, err := json.Marshal(obj)
-	if err != nil {
-		return err
-	}
+			{
+				inputTree := map[string]interface{}{}
+				expectedOutputTree := map[string]interface{}{}
 
-	var actual bytes.Buffer
-	err = json.Compact(&expected, actualBytes)
-	if err != nil {
-		return err
-	}
+				temp, err := structStringToInterface(input)
+				assert.NoError(err)
+				inputTree = temp.(map[string]interface{})
 
-	s1 := expected.String()
-	s2 := actual.String()
-	//log.Printf("%d %d %d", len(s1), len(s2), strings.Compare(s1, s2))
-	/*for i := 0; i < len(s1); i++ {
-		if s1[i] != s2[i] {
-			log.Printf("%d: %s %s", i, string(s1[i]), string(s2[i]))
+				temp, err = structStringToInterface(expectedOutput)
+				assert.NoError(err)
+				expectedOutputTree = temp.(map[string]interface{})
+
+				outputTree, err := StringBuildMapping(inputTree)
+				assert.NoError(err)
+
+				err = doVerification(expectedOutputTree, outputTree)
+				assert.NoError(err, fmt.Sprintf("failed %d\n", idx))
+			}
 		}
-	}*/
-	if strings.Compare(s1, s2) != 0 {
-		//printBytes(expected.Bytes())
-		//printBytes(actual)
+	}
+}
+
+func doVerification(expecte map[string]interface{}, actua map[string]interface{}) error {
+
+	expected, err := structInterfaceToString(expecte)
+	if err != nil {
+		return err
+	}
+	expected = removeWhitespace(expected)
+	actual, err := structInterfaceToString(actua)
+	if err != nil {
+		return err
+	}
+	actual = removeWhitespace(actual)
+	if strings.Compare(expected, actual) != 0 {
+		println(expected)
+		println()
+		println(actual)
 		return fmt.Errorf("nope")
 	}
 	return nil
