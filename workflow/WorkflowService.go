@@ -171,7 +171,7 @@ func (service *WorkflowService) Init(
 		"maxY":     "long",
 		"hosted":   "boolean"
 	}`
-	ingestMappingInterface, _ := StructStringToInterface(ingestEventTypeMapping)
+	ingestMappingInterface, _ := piazza.StructStringToInterface(ingestEventTypeMapping)
 	ingestEventType.Mapping, _ = ingestMappingInterface.(map[string]interface{})
 	log.Println("  Creating piazza:ingest eventtype")
 	postedIngestEventType := service.PostEventType(ingestEventType)
@@ -191,7 +191,7 @@ func (service *WorkflowService) Init(
 		"status": "string",
 		"dataId": "string"
 	}`
-	executionCompletedMappingInterface, _ := StructStringToInterface(executionCompletedTypeMapping)
+	executionCompletedMappingInterface, _ := piazza.StructStringToInterface(executionCompletedTypeMapping)
 	executionCompletedType.Mapping, _ = executionCompletedMappingInterface.(map[string]interface{})
 	log.Println("  Creating piazza:executionComplete eventtype")
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)

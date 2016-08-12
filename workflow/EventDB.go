@@ -60,11 +60,11 @@ func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazz
 			return piazza.NoIdent, LoggedError("EvenDB.PostData failed: unable to obtain specified eventtype")
 		}
 		eventTypeMappingKeys,
-			eventTypeMappingValues, err := GetVariablesFromStructInterface(eventType.Mapping)
+			eventTypeMappingValues, err := piazza.GetVariablesFromStructInterface(eventType.Mapping)
 		if err != nil {
 			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 		}
-		eventDataKeys, eventDataValues, err := GetVariablesFromStructInterface(event.Data)
+		eventDataKeys, eventDataValues, err := piazza.GetVariablesFromStructInterface(event.Data)
 		if err != nil {
 			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 		}
@@ -82,11 +82,11 @@ func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazz
 					evValue = evValue[1 : len(evValue)-1]
 				}
 				if !elasticsearch.IsValidArrayTypeMapping(evValue) {
-					if elasticsearch.ValueIsValidArray(eValue) {
+					if piazza.ValueIsValidArray(eValue) {
 						return piazza.NoIdent, LoggedError("EventDB.PostData failed: an array was passed into a non-array field: %s", eKey)
 					}
 				} else {
-					if !elasticsearch.ValueIsValidArray(eValue) {
+					if !piazza.ValueIsValidArray(eValue) {
 						return piazza.NoIdent, LoggedError("EventDB.PostData failed: a non-array was passed into an array field: %s", eKey)
 					}
 				}
@@ -232,7 +232,7 @@ func ConstructEventMappingSchema(name string, mapping map[string]interface{}) (p
 	if err != nil {
 		return piazza.JsonString(""), err
 	}
-	strDsl, err := StructInterfaceToString(esdsl)
+	strDsl, err := piazza.StructInterfaceToString(esdsl)
 	if err != nil {
 		return piazza.JsonString(""), err
 	}
@@ -285,6 +285,12 @@ func handleNonleaf(k string, v interface{}) (map[string]interface{}, error) {
 }
 
 func handleLeaf(k string, v interface{}) (map[string]interface{}, error) {
+	if !elasticsearch.IsValidMappingType(v) {
+		return nil, LoggedError(" %s was not recognized as a valid mapping type", v)
+	}
+	if elasticsearch.IsValidArrayTypeMapping(v) {
+		v = v.(string)[1 : len(v.(string))-1]
+	}
 	tree := map[string]interface{}{}
 	tree["type"] = v
 	return tree, nil

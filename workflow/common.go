@@ -15,16 +15,13 @@
 package workflow
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"sync"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -227,56 +224,6 @@ type EventType struct {
 
 // EventTypeList is a list of EventTypes
 type EventTypeList []EventType
-
-func StructStringToInterface(stru string) (interface{}, error) {
-	data := []byte(stru)
-	source := (*json.RawMessage)(&data)
-	var res interface{}
-	err := json.Unmarshal(*source, &res)
-	return res, err
-}
-func StructInterfaceToString(stru interface{}) (string, error) {
-	data, err := json.MarshalIndent(stru, " ", "   ")
-	return string(data), err
-}
-func GetVariablesFromStructInterface(stru interface{}) ([]string, []string, error) {
-	str, err := StructInterfaceToString(stru)
-	if err != nil {
-		return nil, nil, err
-	}
-	str = elasticsearch.RemoveWhitespace(str)
-	temp := ""
-	bracketOpen := false
-	for i := 0; i < len(str); i++ {
-		if elasticsearch.CharAt(str, i) == "[" {
-			bracketOpen = true
-		} else if elasticsearch.CharAt(str, i) == "]" {
-			bracketOpen = false
-		}
-		if elasticsearch.CharAt(str, i) == "{" {
-			temp += elasticsearch.CharAt(str, i) + "\n"
-		} else if elasticsearch.CharAt(str, i) == "}" || (elasticsearch.CharAt(str, i) == "," && !bracketOpen) {
-			temp += "\n" + elasticsearch.CharAt(str, i) + "\n"
-		} else {
-			temp += elasticsearch.CharAt(str, i)
-		}
-	}
-	lines := strings.Split(temp, "\n")
-	keys := []string{}
-	values := []string{}
-	for _, line := range lines {
-		if strings.Contains(line, `":`) && !strings.Contains(line, `":{`) {
-			parts := strings.Split(line, `":`)
-			parts[0] = parts[0][1:]
-			if strings.HasSuffix(parts[1], ",") {
-				parts[1] = parts[1][:len(parts[1])-1]
-			}
-			keys = append(keys, parts[0])
-			values = append(values, parts[1])
-		}
-	}
-	return keys, values, nil
-}
 
 //-ALERT------------------------------------------------------------------------
 
