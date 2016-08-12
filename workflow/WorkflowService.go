@@ -407,13 +407,10 @@ func IsSystemEvent(name string) bool {
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id)
-	if !found {
-		return service.statusNotFound(err)
+	if !found || err != nil{
+		// Let the actual delete handle these cases
 	}
-	if err != nil {
-		return service.statusBadRequest(err)
-	}
-	if IsSystemEvent(eventType.Name) {
+	if eventType != nil && IsSystemEvent(eventType.Name) {
 		return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
 	}
 
