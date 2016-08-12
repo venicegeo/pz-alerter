@@ -48,15 +48,18 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData faile: serviceId field not of type string")
 		}
 		serviceControllerURL, err := db.service.sys.GetURL("pz-servicecontroller")
-		if err != nil {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to find ServiceController: %s", err)
-		}
-		response, err := http.Get(serviceControllerURL)
-		if err != nil {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
-		}
-		if response.StatusCode != 200 {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData: serviceId %s does not exist", strServiceId)
+		if err == nil {
+			// TODO:
+			// if err is nil, we have a servicecontroller to talk to
+			// if err is not nil, we'll assume we are mocking (which means
+			// we have no servicecontroller client to mock)
+			response, err := http.Get(serviceControllerURL)
+			if err != nil {
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
+			}
+			if response.StatusCode != 200 {
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData: serviceId %s does not exist", strServiceId)
+			}
 		}
 	}
 
