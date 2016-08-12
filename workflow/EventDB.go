@@ -17,7 +17,6 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -197,11 +196,12 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 }
 
 func (db *EventDB) AddMapping(name string, mapping interface{}) error {
-	strMapping, err := StructInterfaceToString(mapping)
-	if err != nil {
-		return LoggedError("EventDB.AddMapping failed: %s", err)
+	mapMapping, ok := mapping.(map[string]interface{})
+	if !ok {
+		return LoggedError("EventDB.AddMapping failed: mapping is not of type map[string]interface{}")
 	}
-	jsn, err := ConstructEventMappingSchema(name, strMapping)
+
+	jsn, err := ConstructEventMappingSchema(name, mapMapping)
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
@@ -216,7 +216,7 @@ func (db *EventDB) AddMapping(name string, mapping interface{}) error {
 
 // ConstructEventMappingSchema takes a map of parameter names to datatypes and
 // returns the corresponding ES DSL for it.
-func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString, error) {
+func ConstructEventMappingSchema(name string, mapping map[string]interface{}) (piazza.JsonString, error) {
 	const template string = `{
 			"%s":{
 				"dynamic": false,
@@ -228,135 +228,66 @@ func ConstructEventMappingSchema(name string, mapping string) (piazza.JsonString
 				}
 			}
 		}`
-	_, esdsl, err := ConvertSchemaToESDSL(mapping, true)
+	esdsl, err := buildMapping(mapping)
 	if err != nil {
 		return piazza.JsonString(""), err
 	}
-	json := fmt.Sprintf(template, name, esdsl)
+	strDsl, err := StructInterfaceToString(esdsl)
+	if err != nil {
+		return piazza.JsonString(""), err
+	}
+	json := fmt.Sprintf(template, name, strDsl)
 	return piazza.JsonString(json), nil
 }
 
-func ConvertSchemaToESDSL(str string, removeEnds bool) (string, string, error) {
-	str = elasticsearch.RemoveWhitespace(str)
-	if removeEnds {
-		str = str[1 : len(str)-1]
-	}
-	//-------------Find all open and closed brackets----------------------------
-	idents := []ObjIdent{}
-	for i := 0; i < len(str); i++ {
-		char := elasticsearch.CharAt(str, i)
-		if char == "{" {
-			idents = append(idents, ObjIdent{i, open})
-		} else if char == "}" {
-			idents = append(idents, ObjIdent{i, closed})
-		}
-	}
-	//-------------Match brackets into pairs------------------------------------
-	pairs := []ObjPair{}
-	pairMap := map[int]int{}
-	for len(idents) > 0 {
-		for i := 0; i < len(idents)-1; i++ {
-			a := idents[i]
-			b := idents[i+1]
-			if a.Type == open && b.Type == closed {
-				pairMap[a.Index] = b.Index
-				idents = append(idents[:i], idents[i+1:]...)
-				idents = append(idents[:i], idents[i+1:]...)
-				break
-			}
-		}
-	}
-	//-------------Sort pairs based off open bracket index----------------------
-	keys := []int{}
-	for k, _ := range pairMap {
-		keys = append(keys, k)
-	}
-	sort.Ints(keys)
-	for _, k := range keys {
-		v := pairMap[k]
-		pairs = append(pairs, ObjPair{k, v})
-	}
-	//-------------Add properties after each open index-------------------------
-	propertiesAddition := `"dynamic":"strict","properties":{`
-	for i := 0; i < len(pairs); i++ {
-		str = elasticsearch.InsertString(str, propertiesAddition, pairs[i].OpenIndex+1)
-		for j := i + 1; j < len(pairs); j++ {
-			pairs[j].OpenIndex += len(propertiesAddition)
-		}
-		for j := 0; j < len(pairs); j++ {
-			if pairs[j].ClosedIndex >= pairs[i].OpenIndex {
-				pairs[j].ClosedIndex += len(propertiesAddition)
-			}
-		}
-	}
-	//-------------Add a closed bracket at each closed index--------------------
-	for i := 0; i < len(pairs); i++ {
-		str = elasticsearch.InsertString(str, `}`, pairs[i].ClosedIndex)
-		for j := i + 1; j < len(pairs); j++ {
-			if pairs[j].OpenIndex >= pairs[i].ClosedIndex {
-				pairs[j].OpenIndex++
-			}
-		}
-		for j := 0; j < len(pairs); j++ {
-			if pairs[j].ClosedIndex >= pairs[i].ClosedIndex {
-				pairs[j].ClosedIndex++
-			}
-		}
-	}
-	//-------------Seperate pieces of mapping onto seperate lines---------------
-	temp := ""
-	bracketOpen := false
-	for i := 0; i < len(str); i++ {
-		if elasticsearch.CharAt(str, i) == "[" {
-			bracketOpen = true
-		} else if elasticsearch.CharAt(str, i) == "]" {
-			bracketOpen = false
-		}
-		if elasticsearch.CharAt(str, i) == "{" || elasticsearch.CharAt(str, i) == "}" || (elasticsearch.CharAt(str, i) == "," && !bracketOpen) {
-			temp += "\n" + elasticsearch.CharAt(str, i) + "\n"
-		} else {
-			temp += elasticsearch.CharAt(str, i)
-		}
-	}
-	lines := strings.Split(temp, "\n")
-	fixed := []string{}
-	//-------------Format individual values-------------------------------------
-	for _, line := range lines {
-		if strings.Contains(line, `":"`) {
-			formatedLine, err := formatKeyValue(line)
-			if err != nil {
-				return "", "", err
-			}
-			fixed = append(fixed, formatedLine)
-		} else {
-			fixed = append(fixed, line)
-		}
-	}
-	temp = ""
-	for _, line := range fixed {
-		temp += line
-	}
-	return temp, "{" + temp + "}", nil
+func buildMapping(input map[string]interface{}) (map[string]interface{}, error) {
+	return visitNode(input)
 }
 
-func formatKeyValue(str string) (string, error) {
-	parts := strings.Split(str, ":")
-	value := strings.Replace(parts[1], "\"", "", -1)
-	key := strings.Replace(parts[0], "\"", "", -1)
-	valid := elasticsearch.IsValidMappingType(value)
-	dynamic := key == "dynamic"
-	if dynamic {
-		if value != "strict" && value != "true" && value != "false" {
-			return "", LoggedError(" %s was not recognized as a valid dynamic type", value)
+func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) {
+	outputObj := map[string]interface{}{}
+
+	for k, v := range inputObj {
+		switch t := v.(type) {
+
+		case string:
+			tree, err := handleLeaf(k, v)
+			if err != nil {
+				return nil, err
+			}
+			outputObj[k] = tree
+
+		case map[string]interface{}:
+			tree, err := handleNonleaf(k, v)
+			if err != nil {
+				return nil, err
+			}
+			outputObj[k] = tree
+
+		default:
+			return nil, fmt.Errorf("unexpected type %T\n", t)
 		}
-		return str, nil
-	} else if !valid {
-		return "", LoggedError(" %s was not recognized as a valid mapping type", value)
 	}
-	parts[1] = strings.Replace(parts[1], "[", "", -1)
-	parts[1] = strings.Replace(parts[1], "]", "", -1)
-	res := fmt.Sprintf(`%s:{"type":%s}`, parts[0], parts[1])
-	return res, nil
+	return outputObj, nil
+}
+
+func handleNonleaf(k string, v interface{}) (map[string]interface{}, error) {
+	subtree, err := visitNode(v.(map[string]interface{}))
+	if err != nil {
+		return nil, err
+	}
+
+	wrapperTree := map[string]interface{}{}
+	wrapperTree["dynamic"] = "strict"
+	wrapperTree["properties"] = subtree
+
+	return wrapperTree, err
+}
+
+func handleLeaf(k string, v interface{}) (map[string]interface{}, error) {
+	tree := map[string]interface{}{}
+	tree["type"] = v
+	return tree, nil
 }
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {

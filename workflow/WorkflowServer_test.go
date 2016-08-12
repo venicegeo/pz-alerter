@@ -82,7 +82,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	logger, err := pzlogger.NewMockClient(sys)
+	logger, err := pzlogger.NewMockClient()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestRunSuite(t *testing.T) {
 	var uuidgen pzuuidgen.IClient
 
 	if MOCKING {
-		uuidgen, err = pzuuidgen.NewMockClient(sys)
+		uuidgen, err = pzuuidgen.NewMockClient()
 	} else {
 		uuidgen, err = pzuuidgen.NewClient(sys)
 	}
@@ -201,7 +201,7 @@ func makeTestEventTypeName() string {
 }
 
 func makeTestEventType(eventTypeName string) *EventType {
-	mapping := map[string]elasticsearch.MappingElementTypeName{
+	mapping := map[string]interface{}{
 		"num": elasticsearch.MappingElementTypeInteger,
 	}
 	return &EventType{Name: eventTypeName, Mapping: mapping}
@@ -561,7 +561,7 @@ func (suite *ServerTester) Test05EventMapping() {
 
 	createEventType := func(typ string) piazza.Ident {
 		//log.Printf("Creating event type: %s\n", typ)
-		mapping := map[string]elasticsearch.MappingElementTypeName{
+		mapping := map[string]interface{}{
 			"num": elasticsearch.MappingElementTypeInteger,
 		}
 		//printJSON("mapping", mapping)
@@ -683,7 +683,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 	var et1ID piazza.Ident
 	{
-		mapping := map[string]elasticsearch.MappingElementTypeName{
+		mapping := map[string]interface{}{
 			"num":      elasticsearch.MappingElementTypeInteger,
 			"str":      elasticsearch.MappingElementTypeString,
 			"userName": elasticsearch.MappingElementTypeString,
@@ -829,7 +829,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert := assert.New(t)
 	client := suite.client
 
-	var mapping = map[string]elasticsearch.MappingElementTypeName{
+	var mapping = map[string]interface{}{
 		"num":      elasticsearch.MappingElementTypeInteger,
 		"str":      elasticsearch.MappingElementTypeString,
 		"userName": elasticsearch.MappingElementTypeString,
