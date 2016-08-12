@@ -356,11 +356,11 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	if found {
 		return service.statusBadRequest(LoggedError("EventType Name already exists"))
 	}
-	id1, ok, err := service.eventTypeDB.GetIDByName(name)
+	id1, found, err := service.eventTypeDB.GetIDByName(name)
 	if err != nil {
 		return service.statusInternalError(err)
 	}
-	if !ok {
+	if found {
 		return service.statusBadRequest(
 			LoggedError("EventType Name already exists under EventTypeId %s", id1))
 	}
@@ -377,7 +377,6 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-
 	mapping := eventType.Mapping
 
 	err = service.eventDB.AddMapping(name, mapping)
