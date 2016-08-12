@@ -34,6 +34,9 @@ import (
 
 //------------------------------------------------------------------------------
 
+const ingestTypeName = "piazza:ingest"
+const executeTypeName = "piazza:executionComplete"
+
 // WorkflowService TODO
 type WorkflowService struct {
 	eventTypeDB *EventTypeDB
@@ -136,7 +139,7 @@ func (service *WorkflowService) Init(
 
 	// Ingest event type
 	ingestEventType := &EventType{}
-	ingestEventType.Name = "piazza:ingest"
+	ingestEventType.Name = ingestTypeName
 	ingestEventTypeMapping := map[string]elasticsearch.MappingElementTypeName{
 		"dataId":   "string",
 		"dataType": "string",
@@ -161,7 +164,7 @@ func (service *WorkflowService) Init(
 
 	// Execution Completed event type
 	executionCompletedType := &EventType{}
-	executionCompletedType.Name = "piazza:executionComplete"
+	executionCompletedType.Name = executeTypeName
 	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
 		"jobId":  "string",
 		"status": "string",
@@ -392,8 +395,28 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	return service.statusCreated(eventType)
 }
 
+// TODO: Instead, check if createdBy=system
+func IsSystemEvent(name string) bool {
+	systemEvents := map[string]bool {
+		ingestTypeName: true,
+		executeTypeName: true,
+	}
+	return systemEvents[name]
+}
+
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
+	eventType, found, err := service.eventTypeDB.GetOne(id)
+	if !found {
+		return service.statusNotFound(err)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	if IsSystemEvent(eventType.Name) {
+		return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
+	}
+
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if !ok {
 		return service.statusNotFound(err)
