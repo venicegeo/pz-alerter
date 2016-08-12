@@ -16,6 +16,7 @@ package workflow
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -126,10 +127,10 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error) {
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("AlertDB.GetOne failed: %s", err)
+		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, true, LoggedError("AlertDB.GetOne failed: no getResult")
+		return nil, true, fmt.Errorf("AlertDB.GetOne failed: %s no getResult", id.String())
 	}
 
 	src := getResult.Source
@@ -145,10 +146,14 @@ func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error) {
 func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, LoggedError("AlertDB.DeleteById failed: %s", err)
+		return deleteResult.Found, fmt.Errorf("AlertDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
-		return false, LoggedError("AlertDB.DeleteById failed: no deleteResult")
+		return false, fmt.Errorf("AlertDB.DeleteById failed: no deleteResult")
+	}
+
+	if !deleteResult.Found {
+		return false, fmt.Errorf("AlertDB.DeleteById failed: not found")
 	}
 
 	return deleteResult.Found, nil
