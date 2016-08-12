@@ -116,6 +116,9 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	mappingTester := &MappingTester{}
+	suite.Run(t, mappingTester)
+
 	serverTester := &ServerTester{client: client, sys: sys}
 	suite.Run(t, serverTester)
 
