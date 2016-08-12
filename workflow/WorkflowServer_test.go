@@ -202,6 +202,16 @@ func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 }
 
 //---------------------------------------------------------------------------
+func (suite *ServerTester) Test00Version() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	client := suite.client
+
+	version, err := client.GetVersion()
+	assert.NoError(err)
+	assert.EqualValues("1.0.0", version.Version)
+}
 
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()

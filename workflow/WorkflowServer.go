@@ -31,6 +31,8 @@ type WorkflowServer struct {
 	origin  string
 }
 
+const Version = "1.0.0"
+
 //---------------------------------------------------------------------------
 
 func (server *WorkflowServer) Init(service *WorkflowService) error {
@@ -39,6 +41,7 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 
 	server.Routes = []piazza.RouteData{
 		{"GET", "/", server.handleGetRoot},
+		{"GET", "/version", server.handleGetVersion},
 
 		{"GET", "/eventType", server.handleGetAllEventTypes},
 		{"GET", "/eventType/:id", server.handleGetEventType},
@@ -77,6 +80,12 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
 	message := "Hi! I'm pz-workflow."
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *WorkflowServer) handleGetVersion(c *gin.Context) {
+	version := piazza.Version{Version: Version}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: version}
 	piazza.GinReturnJson(c, resp)
 }
 
