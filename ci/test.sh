@@ -24,6 +24,7 @@ cd $GOPATH/src/github.com/venicegeo/pz-workflow
 
 #glide install
 #glide update
+go get github.com/stretchr/testify/assert
 
 #----------------------------------------------------------------------
 
