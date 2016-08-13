@@ -680,6 +680,10 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 		return service.statusBadRequest(err)
 	}
 
+	if IsSystemEvent(mapping) {
+		return service.statusBadRequest(errors.New("Deleting system events is prohibited"))
+	}
+
 	ok, err := service.eventDB.DeleteByID(mapping, piazza.Ident(id))
 	if !ok {
 		return service.statusNotFound(err)
