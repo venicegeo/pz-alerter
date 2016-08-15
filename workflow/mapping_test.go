@@ -344,7 +344,7 @@ func (suite *MappingTester) Test20Mappings() {
 				assert.NoError(err)
 				expectedOutputTree = temp.(map[string]interface{})
 
-				outputTree, err := visitNode(inputTree)
+				outputTree, err := visitNodeTesting(inputTree)
 				assert.NoError(err)
 
 				err = doVerification(expectedOutputTree, outputTree)

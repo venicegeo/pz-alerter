@@ -18,11 +18,11 @@ import "fmt"
 
 //type T map[string]T  // TODO
 
-func BuildMapping(input map[string]interface{}) (map[string]interface{}, error) {
-	return visitNode(input)
+func BuildMappingTesting(input map[string]interface{}) (map[string]interface{}, error) {
+	return visitNodeTesting(input)
 }
 
-func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) {
+func visitNodeTesting(inputObj map[string]interface{}) (map[string]interface{}, error) {
 
 	outputObj := map[string]interface{}{}
 
@@ -31,14 +31,14 @@ func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) 
 		switch t := v.(type) {
 
 		case string:
-			tree, err := handleLeaf(k, v)
+			tree, err := handleLeafTesting(k, v)
 			if err != nil {
 				return nil, err
 			}
 			outputObj[k] = tree
 
 		case map[string]interface{}:
-			tree, err := handleNonleaf(k, v)
+			tree, err := handleNonleafTesting(k, v)
 			if err != nil {
 				return nil, err
 			}
@@ -52,10 +52,10 @@ func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) 
 	return outputObj, nil
 }
 
-func handleNonleaf(k string, v interface{}) (map[string]interface{}, error) {
+func handleNonleafTesting(k string, v interface{}) (map[string]interface{}, error) {
 	//fmt.Printf("Handling nonleaf %s: %#v\n", k, v)
 
-	subtree, err := visitNode(v.(map[string]interface{}))
+	subtree, err := visitNodeTesting(v.(map[string]interface{}))
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +67,7 @@ func handleNonleaf(k string, v interface{}) (map[string]interface{}, error) {
 	return wrapperTree, err
 }
 
-func handleLeaf(k string, v interface{}) (map[string]interface{}, error) {
+func handleLeafTesting(k string, v interface{}) (map[string]interface{}, error) {
 	//fmt.Printf("Handling leaf %s: %s\n", k, v)
 
 	tree := map[string]interface{}{}
