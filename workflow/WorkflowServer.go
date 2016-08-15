@@ -85,7 +85,8 @@ func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
 
 func (server *WorkflowServer) handleGetVersion(c *gin.Context) {
 	version := piazza.Version{Version: Version}
-	resp := &piazza.JsonResponse{StatusCode: http.StatusOk, Data: version}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: version}
+	piazza.GinReturnJson(c, resp)
 }
 
 func (server *WorkflowServer) handleGetStats(c *gin.Context) {

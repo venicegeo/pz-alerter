@@ -127,7 +127,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error) {
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, false, fmt.ErrorF("AlertDB.GetOne failed: %s", err)
+		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
 		return nil, true, fmt.Errorf("AlertDB.GetOne failed: no getResult")

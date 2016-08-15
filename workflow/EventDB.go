@@ -160,20 +160,20 @@ func (db *EventDB) NameExists(name string) (bool, error) {
 func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error) {
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
-		return nil,getResult.Found LoggedError("EventDB.GetOne failed: %s", err)
+		return nil, false, LoggedError("EventDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, LoggedError("EventDB.GetOne failed: no getResult")
+		return nil, true, LoggedError("EventDB.GetOne failed: no getResult")
 	}
 
 	src := getResult.Source
 	var event Event
 	err = json.Unmarshal(*src, &event)
 	if err != nil {
-		return nil,getResult.Found, err
+		return nil, getResult.Found, err
 	}
 
-	return &event,getResult.Found, nil
+	return &event, getResult.Found, nil
 }
 
 func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {

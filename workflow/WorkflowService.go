@@ -106,16 +106,16 @@ func (service *WorkflowService) Init(
 	// allow the database time to settle
 	//time.Sleep(time.Second * 5)
 	pollingFn := elasticsearch.GetData(func() (bool, error) {
-		exists,err := eventtypesIndex.IndexExists()
-		if err!=nil{
-			return false,err
+		exists, err := eventtypesIndex.IndexExists()
+		if err != nil {
+			return false, err
 		}
-		if !exists{
-			return false,nil
+		if !exists {
+			return false, nil
 		}
 		types, err := eventtypesIndex.GetTypes()
 		if err != nil {
-		return false,err	
+			return false, err
 		}
 		//log.Printf("Getting %d types...\n", len(types))
 		if len(types) == 0 {
@@ -127,8 +127,8 @@ func (service *WorkflowService) Init(
 		return exists, nil
 	})
 
-	_,err=elasticsearch.PollFunction(pollingFn)
-	if err!=nil{
+	_, err = elasticsearch.PollFunction(pollingFn)
+	if err != nil {
 		//log.Printf("ERROR: %#v", err)
 		return err
 	}
@@ -146,9 +146,9 @@ func (service *WorkflowService) Init(
 		"minY":     "long",
 		"maxX":     "long",
 		"maxY":     "long",
-		"hosted":   "boolean"
+		"hosted":   "boolean",
 	}
-	ingestEventType.Mapping, _ = ingestEventTypeMapping
+	ingestEventType.Mapping = ingestEventTypeMapping
 	//log.Println("  Creating piazza:ingest eventtype")
 	postedIngestEventType := service.PostEventType(ingestEventType)
 	//log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
@@ -165,9 +165,9 @@ func (service *WorkflowService) Init(
 	executionCompletedTypeMapping := map[string]interface{}{
 		"jobId":  "string",
 		"status": "string",
-		"dataId": "string"
+		"dataId": "string",
 	}
-	executionCompletedType.Mapping, _ = executionCompletedTypeMapping
+	executionCompletedType.Mapping = executionCompletedTypeMapping
 	log.Println("  Creating piazza:executionComplete eventtype")
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
 	log.Printf("  Created piazza:executionComplete eventtype: %d", postedIngestEventType.StatusCode)
@@ -283,8 +283,8 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 // GetEventType TODO
 func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonResponse {
 
-	event,found, err := service.eventTypeDB.GetOne(piazza.Ident(id))
-	if !found{
+	event, found, err := service.eventTypeDB.GetOne(piazza.Ident(id))
+	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
@@ -308,15 +308,15 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 	}
 	if nameParam != nil {
 		nameParamValue := *nameParam
-		eventtypeid,found, err := service.eventTypeDB.GetIDByName(nameParamValue)
-		if !found||eventtypeid==nil{
+		eventtypeid, found, err := service.eventTypeDB.GetIDByName(nameParamValue)
+		if !found || eventtypeid == nil {
 			return service.statusNotFound(err)
 		}
-		if err!=nil{
+		if err != nil {
 			return service.statusBadRequest(err)
 		}
-		eventtype,found,err:=service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
-		if !found{
+		eventtype, found, err := service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
+		if !found {
 			return service.statusNotFound(err)
 		}
 		if err != nil {
@@ -350,15 +350,15 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	// Check if our EventType.Name already exists
 	name := eventType.Name
 	found, err := service.eventDB.NameExists(name)
-	if err != nil{
+	if err != nil {
 		return service.statusInternalError(err)
 	}
 	if found {
 		return service.statusBadRequest(LoggedError("EventType Name already exists"))
 	}
 	id1, found, err := service.eventTypeDB.GetIDByName(name)
-	if err != nil{
-			return service.statusInternalError(err)
+	if err != nil {
+		return service.statusInternalError(err)
 	}
 	if found {
 		return service.statusBadRequest(
@@ -397,7 +397,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if !ok {
-		return service.statusNotFound(id)
+		return service.statusNotFound(err)
 	}
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -449,7 +449,7 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 
 	// Get the eventTypeName corresponding to the eventTypeId
 	if eventTypeID != nil {
-		eventType,found, err := service.eventTypeDB.GetOne(piazza.Ident(*eventTypeID))
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(*eventTypeID))
 		if !found {
 			return service.statusNotFound(err)
 		}
@@ -494,7 +494,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 		return service.statusInternalError(err)
 	}
 	event.EventId = eventID
-	
+
 	event.CreatedOn = time.Now()
 
 	service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
@@ -507,7 +507,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	// Post the event in the database, WITHOUT "triggering"
 	eventTypeID := event.EventTypeId
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
-	if err != nil || !found{
+	if err != nil || !found {
 		service.cron.Remove(eventID.String())
 		return service.statusBadRequest(err)
 	}
@@ -663,7 +663,7 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 
 	ok, err := service.eventDB.DeleteByID(mapping, piazza.Ident(id))
 	if !ok {
-		return service.statusNotFound(id)
+		return service.statusNotFound(err)
 	}
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -677,7 +677,7 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 	if ok {
 		ok, err := service.cronDB.DeleteByID(piazza.Ident(id))
 		if !ok {
-			return service.statusNotFound(id)
+			return service.statusNotFound(err)
 		}
 		if err != nil {
 			return service.statusBadRequest(err)
@@ -749,7 +749,7 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.triggerDB.DeleteTrigger(piazza.Ident(id))
 	if !ok {
-		return service.statusNotFound(id)
+		return service.statusNotFound(err)
 	}
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -763,7 +763,7 @@ func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonRespo
 //---------------------------------------------------------------------
 
 func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
-	alert, found,  err := service.alertDB.GetOne(id)
+	alert, found, err := service.alertDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
@@ -846,7 +846,7 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 	}
 	if err != nil {
 		return service.statusBadRequest(err)
-	}	
+	}
 
 	service.logger.Info("Deleted Alert with AlertId %s", id)
 
@@ -858,7 +858,7 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 // InitCron TODO
 func (service *WorkflowService) InitCron() error {
 	ok, err := service.cronDB.Exists()
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	if ok {

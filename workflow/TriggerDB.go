@@ -131,10 +131,6 @@ func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 		return nil, true, LoggedError("TriggerDB.GetOne failed: no getResult")
 	}
 
-	if !getResult.Found {
-		return nil, nil
-	}
-
 	src := getResult.Source
 	var obj Trigger
 	err = json.Unmarshal(*src, &obj)
