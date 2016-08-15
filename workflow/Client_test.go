@@ -106,7 +106,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	var err error
 
-	mapping := map[string]interface{}{
+	mapping := map[string]elasticsearch.MappingElementTypeName{
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
@@ -157,7 +157,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 
 	var err error
 
-	mapping := map[string]interface{}{
+	mapping := map[string]elasticsearch.MappingElementTypeName{
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
@@ -200,7 +200,7 @@ func (suite *ClientTester) Test15One() {
 
 	var etID piazza.Ident
 	{
-		mapping := map[string]interface{}{
+		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
 			"str": elasticsearch.MappingElementTypeString,
 		}
@@ -310,7 +310,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 
 	var err error
 
-	mapping := map[string]interface{}{
+	mapping := map[string]elasticsearch.MappingElementTypeName{
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
@@ -381,7 +381,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 	var etC, etD, etE piazza.Ident
 	{
-		mapping := map[string]interface{}{
+		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
 			"str": elasticsearch.MappingElementTypeString,
 		}
@@ -543,3 +543,4 @@ func (suite *ClientTester) Test17Triggering() {
 		}()
 	}
 }
+

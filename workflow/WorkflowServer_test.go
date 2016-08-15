@@ -116,7 +116,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	mappingTester := &mappingTester{}
+	mappingTester := &MappingTester{}
 	suite.Run(t, mappingTester)
 
 	serverTester := &ServerTester{client: client, sys: sys}
@@ -155,7 +155,7 @@ func makeTestEventTypeName() string {
 }
 
 func makeTestEventType(eventTypeName string) *EventType {
-	mapping := map[string]interface{}{
+	mapping := map[string]elasticsearch.MappingElementTypeName{
 		"num": elasticsearch.MappingElementTypeInteger,
 	}
 	return &EventType{Name: eventTypeName, Mapping: mapping}
@@ -203,8 +203,7 @@ func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 
 //---------------------------------------------------------------------------
 func (suite *ServerTester) Test00Version() {
-t:
-	suite.T()
+	t := suite.T()
 	assert := assert.New(t)
 
 	client := suite.client
@@ -425,8 +424,6 @@ func (suite *ServerTester) Test04Alert() {
 	assert.NoError(err)
 	//printJSON("Trigger ID", triggerID)
 
-	sleep()
-
 	//log.Printf("Creating new event:")
 	event := makeTestEvent(eventTypeID)
 	//printJSON("event", event)
@@ -492,7 +489,7 @@ func (suite *ServerTester) Test05EventMapping() {
 
 	createEventType := func(typ string) piazza.Ident {
 		//log.Printf("Creating event type: %s\n", typ)
-		mapping := map[string]interface{}{
+		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num": elasticsearch.MappingElementTypeInteger,
 		}
 		//printJSON("mapping", mapping)
@@ -610,7 +607,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 	var et1ID piazza.Ident
 	{
-		mapping := map[string]interface{}{
+		mapping := map[string]elasticsearch.MappingElementTypeName{
 			"num":      elasticsearch.MappingElementTypeInteger,
 			"str":      elasticsearch.MappingElementTypeString,
 			"userName": elasticsearch.MappingElementTypeString,
@@ -731,7 +728,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert := assert.New(t)
 	client := suite.client
 
-	var mapping = map[string]interface{}{
+	var mapping = map[string]elasticsearch.MappingElementTypeName{
 		"num":      elasticsearch.MappingElementTypeInteger,
 		"str":      elasticsearch.MappingElementTypeString,
 		"userName": elasticsearch.MappingElementTypeString,
@@ -824,6 +821,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		err = client.DeleteEvent(eventId2)
 		assert.NoError(err)
 	}()
+
 }
 
 func printJSON(msg string, input interface{}) {
@@ -837,3 +835,4 @@ func printJSON(msg string, input interface{}) {
 		log.Printf("\t%s: null\n", msg)
 	}
 }
+
