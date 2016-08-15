@@ -53,7 +53,10 @@ func (db *CronDB) PostData(obj interface{}, id piazza.Ident) error {
 func (db *CronDB) GetAll() (*[]Event, error) {
 	var events []Event
 
-	exists := db.Esi.TypeExists(db.mapping)
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return &events, err
+	}
 	if !exists {
 		return nil, LoggedError("Type %s does not exist", db.mapping)
 	}
@@ -80,22 +83,28 @@ func (db *CronDB) GetAll() (*[]Event, error) {
 }
 
 // Exists checks to see if the database exists
-func (db *CronDB) Exists() bool {
-	exists := db.Esi.IndexExists()
-	if exists {
-		exists = db.Esi.TypeExists(db.mapping)
+func (db *CronDB) Exists() (bool, error) {
+	exists, err := db.Esi.IndexExists()
+	if err != nil {
+		return false, err
 	}
-	return exists
+	if exists {
+		exists, err = db.Esi.TypeExists(db.mapping)
+		if err != nil {
+			return false, err
+		}
+	}
+	return exists, nil
 }
 
-func (db *CronDB) itemExists(id piazza.Ident) bool {
+func (db *CronDB) itemExists(id piazza.Ident) (bool, error) {
 	return db.Esi.ItemExists(db.mapping, id.String())
 }
 
 func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return false, LoggedError("CronDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("CronDB.DeleteById failed: no deleteResult")

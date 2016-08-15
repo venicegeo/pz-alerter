@@ -27,17 +27,6 @@ type EventDB struct {
 	*ResourceDB
 }
 
-type ObjIdent struct {
-	Index int
-	Type  string
-}
-type ObjPair struct {
-	OpenIndex   int
-	ClosedIndex int
-}
-
-var closed, open = "closed", "open"
-
 func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
 	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
 	if err != nil {
@@ -106,13 +95,17 @@ func (db *EventDB) PostData(typ string, obj interface{}, id piazza.Ident) (piazz
 
 func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, int64, error) {
 	events := []Event{}
+	var err error
 
 	exists := true
 	if mapping != "" {
-		exists = db.Esi.TypeExists(mapping)
+		exists, err = db.Esi.TypeExists(mapping)
+		if err != nil {
+			return events, 0, err
+		}
 	}
 	if !exists {
-		return nil, 0, LoggedError("Type %s does not exist", mapping)
+		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
@@ -145,7 +138,11 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error)
 		return "", err
 	}
 	for _, typ := range types {
-		if db.Esi.ItemExists(typ, id.String()) {
+		ok, err := db.Esi.ItemExists(typ, id.String())
+		if err != nil {
+			return "", err
+		}
+		if ok {
 			mapping = typ
 			break
 		}
@@ -156,37 +153,33 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error)
 
 // NameExists checks if an EventType name exists.
 // This is easier to check in EventDB, as the mappings use the EventType.Name.
-func (db *EventDB) NameExists(name string) bool {
+func (db *EventDB) NameExists(name string) (bool, error) {
 	return db.Esi.TypeExists(name)
 }
 
-func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, error) {
+func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error) {
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
-		return nil, LoggedError("EventDB.GetOne failed: %s", err)
+		return nil,getResult.Found LoggedError("EventDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
 		return nil, LoggedError("EventDB.GetOne failed: no getResult")
-	}
-
-	if !getResult.Found {
-		return nil, nil
 	}
 
 	src := getResult.Source
 	var event Event
 	err = json.Unmarshal(*src, &event)
 	if err != nil {
-		return nil, err
+		return nil,getResult.Found, err
 	}
 
-	return &event, nil
+	return &event,getResult.Found, nil
 }
 
 func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 	deleteResult, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
-		return false, LoggedError("EventDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("EventDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("EventDB.DeleteById failed: no deleteResult")

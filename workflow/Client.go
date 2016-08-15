@@ -162,6 +162,13 @@ func (c *Client) deleteObject(endpoint string) error {
 
 //------------------------------------------------------------------------------
 
+func (c *Client) GetVersion() (*piazza.Version, error) {
+	out := &piazza.Version{}
+	err := c.getObject("/version", out)
+	return out, err
+}
+
+//------------------------------------------------------------------------------
 func (c *Client) GetEventType(id piazza.Ident) (*EventType, error) {
 	out := &EventType{}
 	err := c.getObject("/eventType/"+id.String(), out)

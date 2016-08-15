@@ -165,13 +165,12 @@ const EventIndexSettings = `
 // An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {
-	EventId     piazza.Ident `json:"eventId"`
-	EventTypeId piazza.Ident `json:"eventTypeId" binding:"required"`
-	//Data         interface{}  `json:"data"`
+	EventId      piazza.Ident           `json:"eventId"`
+	EventTypeId  piazza.Ident           `json:"eventTypeId" binding:"required"`
+	Data         map[string]interface{} `json:"data"`
 	CreatedBy    string                 `json:"createdBy"`
 	CreatedOn    time.Time              `json:"createdOn"`
 	CronSchedule string                 `json:"cronSchedule"`
-	Data         map[string]interface{} `json:"data"`
 }
 
 // EventList is a list of events
@@ -285,7 +284,41 @@ type Alert struct {
 
 //-CRON-------------------------------------------------------------------------
 
-const CronIndexSettings = EventIndexSettings
+const CronIndexSettings = `
+{
+	"settings": {
+		"index.mapping.coerce": false
+	},
+	"mappings": {
+		"Cron": {
+			"properties": {
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"eventId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"data": {
+					"properties": {}
+				},
+				"createdBy": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"createdOn": {
+					"type": "date"
+				},
+				"cronSchedule": {
+					"type": "string",
+					"index": "not_analyzed"
+				}
+			}
+		}
+	}
+}
+`
 
 const cronDBMapping = "Cron"
 

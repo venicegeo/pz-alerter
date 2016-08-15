@@ -30,8 +30,6 @@ import (
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
-const MOCKING = true
-
 type ServerTester struct {
 	suite.Suite
 	sys    *piazza.SystemConfig
@@ -42,8 +40,6 @@ func assertNoData(t *testing.T, client *Client) {
 	assert := assert.New(t)
 
 	var err error
-
-	sleep()
 
 	ts, err := client.GetAllEventTypes()
 	assert.NoError(err)
@@ -66,16 +62,7 @@ func assertNoData(t *testing.T, client *Client) {
 func TestRunSuite(t *testing.T) {
 
 	var required []piazza.ServiceName
-	if MOCKING {
-		required = []piazza.ServiceName{}
-	} else {
-		required = []piazza.ServiceName{
-			piazza.PzElasticSearch,
-			piazza.PzKafka,
-			piazza.PzLogger,
-			piazza.PzUuidgen,
-		}
-	}
+	required = []piazza.ServiceName{}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)
 	if err != nil {
@@ -89,53 +76,17 @@ func TestRunSuite(t *testing.T) {
 
 	var uuidgen pzuuidgen.IClient
 
-	if MOCKING {
-		uuidgen, err = pzuuidgen.NewMockClient()
-	} else {
-		uuidgen, err = pzuuidgen.NewClient(sys)
-	}
+	uuidgen, err = pzuuidgen.NewMockClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex elasticsearch.IIndex
-	if MOCKING {
-		eventtypesIndex = elasticsearch.NewMockIndex("eventtypes")
-		eventsIndex = elasticsearch.NewMockIndex("events")
-		triggersIndex = elasticsearch.NewMockIndex("triggers")
-		alertsIndex = elasticsearch.NewMockIndex("alerts")
-		cronIndex = elasticsearch.NewMockIndex("crons")
-	} else {
-		eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes$", "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		//log.Printf("eventtypesIndex: %s\n", eventtypesIndex.IndexName())
-
-		eventsIndex, err = elasticsearch.NewIndex(sys, "events$", "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		//log.Printf("eventsIndex: %s\n", eventsIndex.IndexName())
-
-		triggersIndex, err = elasticsearch.NewIndex(sys, "triggers$", "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		//log.Printf("triggersIndex: %s\n", triggersIndex.IndexName())
-
-		alertsIndex, err = elasticsearch.NewIndex(sys, "alerts$", "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		//log.Printf("alertsIndex: %s\n", alertsIndex.IndexName())
-
-		cronIndex, err = elasticsearch.NewIndex(sys, "crons$", "")
-		if err != nil {
-			log.Fatal(err)
-		}
-		//log.Printf("cronsIndex: %s\n", cronsIndex.IndexName())
-	}
+	eventtypesIndex = elasticsearch.NewMockIndex("eventtypes")
+	eventsIndex = elasticsearch.NewMockIndex("events")
+	triggersIndex = elasticsearch.NewMockIndex("triggers")
+	alertsIndex = elasticsearch.NewMockIndex("alerts")
+	cronIndex = elasticsearch.NewMockIndex("crons")
 
 	workflowService := &WorkflowService{}
 	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex)
@@ -164,6 +115,9 @@ func TestRunSuite(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	mappingTester := &mappingTester{}
+	suite.Run(t, mappingTester)
 
 	serverTester := &ServerTester{client: client, sys: sys}
 	suite.Run(t, serverTester)
@@ -247,13 +201,18 @@ func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	return trigger
 }
 
-func sleep() {
-	if !MOCKING {
-		time.Sleep(1 * time.Second)
-	}
-}
-
 //---------------------------------------------------------------------------
+func (suite *ServerTester) Test00Version() {
+t:
+	suite.T()
+	assert := assert.New(t)
+
+	client := suite.client
+
+	version, err := client.GetVersion()
+	assert.NoError(err)
+	assert.EqualValues("1.0.0", version.Version)
+}
 
 func (suite *ServerTester) Test01EventType() {
 	t := suite.T()
@@ -292,19 +251,11 @@ func (suite *ServerTester) Test01EventType() {
 	assert.NoError(err)
 	assert.EqualValues(string(id), string(respTyp.EventTypeId))
 
-	if MOCKING == false {
-		respTyp2, err := client.GetEventTypeByName(respTyp.Name)
-		assert.NoError(err)
-		assert.EqualValues(string(respTyp.EventTypeId), string(respTyp2.EventTypeId))
-	}
-
 	//printJSON("Got Event type", typ)
 	//log.Printf("Deleting Event type by Id: %s", id)
 
 	err = client.DeleteEventType(id)
 	assert.NoError(err)
-
-	sleep()
 
 	//log.Printf("Getting list of event types:")
 	typs, err = client.GetAllEventTypes()
@@ -339,8 +290,6 @@ func (suite *ServerTester) Test02Event() {
 	assert.NoError(err)
 	//printJSON("event type id", eventTypeID)
 
-	sleep()
-
 	//log.Printf("Creating new event:")
 	event := makeTestEvent(eventTypeID)
 	respEvent, err := client.PostEvent(event)
@@ -348,8 +297,6 @@ func (suite *ServerTester) Test02Event() {
 	id := respEvent.EventId
 	assert.NoError(err)
 	//printJSON("event id", id)
-
-	sleep()
 
 	//log.Printf("Getting list of events (type=%s):", eventTypeID)
 	events, err = client.GetAllEventsByEventType(eventTypeID)
@@ -372,8 +319,6 @@ func (suite *ServerTester) Test02Event() {
 	//log.Printf("Deleting event by id: %s", id)
 	err = client.DeleteEvent(id)
 	assert.NoError(err)
-
-	sleep()
 
 	//log.Printf("Getting list of events (type=%s):", eventTypeName)
 	events, err = client.GetAllEventsByEventType(eventTypeID)
@@ -416,16 +361,12 @@ func (suite *ServerTester) Test03Trigger() {
 	assert.NoError(err)
 	//printJSON("event type id", eventTypeID)
 
-	sleep()
-
 	//log.Printf("Creating new trigger:")
 	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
 	id := respTrigger.TriggerId
 	//printJSON("trigger id", id)
-
-	sleep()
 
 	//log.Printf("Getting list of triggers:")
 	triggers, err = client.GetAllTriggers()
@@ -441,8 +382,6 @@ func (suite *ServerTester) Test03Trigger() {
 	//log.Printf("Delete trigger by id: %s", id)
 	err = client.DeleteTrigger(id)
 	assert.NoError(err)
-
-	sleep()
 
 	//log.Printf("Getting list of triggers:")
 	triggers, err = client.GetAllTriggers()
@@ -478,8 +417,6 @@ func (suite *ServerTester) Test04Alert() {
 	assert.NoError(err)
 	//printJSON("event type id:", eventTypeID)
 
-	sleep()
-
 	//log.Printf("Creating new trigger:")
 	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("Trigger", trigger)
@@ -498,8 +435,6 @@ func (suite *ServerTester) Test04Alert() {
 	assert.NoError(err)
 	//printJSON("eventID", eventID)
 
-	sleep()
-
 	//log.Printf("Creating new alert:")
 	alert := &Alert{
 		TriggerId: triggerID,
@@ -510,8 +445,6 @@ func (suite *ServerTester) Test04Alert() {
 	id := respAlert.AlertId
 	assert.NoError(err)
 	//printJSON("alert id", id)
-
-	sleep()
 
 	//log.Printf("Getting list of alerts:")
 	alerts, err = client.GetAllAlerts()
@@ -528,8 +461,6 @@ func (suite *ServerTester) Test04Alert() {
 	//log.Printf("Delete alert by id: %s", id)
 	err = client.DeleteAlert(id)
 	assert.NoError(err)
-
-	sleep()
 
 	//log.Printf("Getting list of alerts:")
 	alerts, err = client.GetAllAlerts()
@@ -574,8 +505,6 @@ func (suite *ServerTester) Test05EventMapping() {
 		assert.NoError(err)
 		//printJSON("eventTypeID", eventTypeID)
 
-		sleep()
-
 		eventTypeX, err := client.GetEventType(eventTypeID)
 		assert.NoError(err)
 
@@ -599,8 +528,6 @@ func (suite *ServerTester) Test05EventMapping() {
 		respEvent, err := client.PostEvent(event)
 		eventID := respEvent.EventId
 		assert.NoError(err)
-
-		sleep()
 
 		//printJSON("eventID", eventID)
 		eventX, err := client.GetEvent(eventID)
@@ -703,9 +630,7 @@ func (suite *ServerTester) Test06Workflow() {
 			assert.NoError(err)
 		}()
 	}
-	sleep()
 
-	var t1ID piazza.Ident
 	{
 		//log.Printf("Creating trigger:\n")
 		trigger := &Trigger{
@@ -744,9 +669,7 @@ func (suite *ServerTester) Test06Workflow() {
 		}()
 		//printJSON("trigger id", t1ID)
 	}
-	sleep()
 
-	var e1ID piazza.Ident
 	{
 		//log.Printf("Creating event:\n")
 		// will cause trigger TRG1
@@ -772,7 +695,6 @@ func (suite *ServerTester) Test06Workflow() {
 			assert.NoError(err)
 		}()
 	}
-	sleep()
 
 	{
 		//log.Printf("Creating event:\n")
@@ -801,26 +723,6 @@ func (suite *ServerTester) Test06Workflow() {
 			err := client.DeleteEvent(e2ID)
 			assert.NoError(err)
 		}()
-	}
-	sleep()
-
-	{
-		if MOCKING {
-			t.Skip("Skipping test, because mocking")
-		}
-		//log.Printf("Getting list of alerts:\n")
-		alerts, err := client.GetAllAlerts()
-		assert.NoError(err)
-		assert.Len(*alerts, 1)
-		//printJSON("alerts", alerts)
-
-		alert0 := (*alerts)[0]
-		assert.EqualValues(e1ID, alert0.EventId)
-		assert.EqualValues(t1ID, alert0.TriggerId)
-
-		//log.Printf("Delete alert by id: %s", alert0.AlertId)
-		err = client.DeleteAlert(alert0.AlertId)
-		assert.NoError(err)
 	}
 }
 
@@ -854,8 +756,6 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert.NoError(err)
 	//printJSON("\tevent type id", eventTypeId1)
 
-	sleep()
-
 	defer func() {
 		//log.Printf("\tDeleting event type: %s\n", eventTypeId1)
 		err = client.DeleteEventType(eventTypeId1)
@@ -872,8 +772,6 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert.NoError(err)
 	//printJSON("\tevent type id", eventTypeId2)
 
-	sleep()
-
 	defer func() {
 		//log.Printf("\tDeleting event type: %s\n", eventTypeId2)
 		err = client.DeleteEventType(eventTypeId2)
@@ -888,8 +786,6 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	triggerId := respTrigger.TriggerId
 	assert.NoError(err)
 	//printJSON("\ttrigger id", triggerId)
-
-	sleep()
 
 	defer func() {
 		//log.Printf("\tDeleting trigger: %s\n", triggerId)
@@ -907,8 +803,6 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert.NoError(err)
 	//printJSON("\tevent id", eventId1)
 
-	sleep()
-
 	defer func() {
 		//log.Printf("\tDeleting event: %s\n", eventId1)
 		err = client.DeleteEvent(eventId1)
@@ -925,43 +819,11 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert.NoError(err)
 	//printJSON("\tevent id", eventId2)
 
-	sleep()
-
 	defer func() {
 		//log.Printf("\tDeleting event: %s\n", eventId2)
 		err = client.DeleteEvent(eventId2)
 		assert.NoError(err)
 	}()
-
-	{
-		if MOCKING {
-			t.Skip("Skipping test, because mocking")
-		}
-		//log.Printf("Getting list of alerts:\n")
-		alerts, err := client.GetAllAlerts()
-		assert.NoError(err)
-		assert.Len(*alerts, 2)
-		//printJSON("alerts", alerts)
-
-		alert1 := (*alerts)[0]
-		alert2 := (*alerts)[1]
-		assert.EqualValues(triggerId, alert1.TriggerId)
-		assert.EqualValues(triggerId, alert2.TriggerId)
-		ok0 := (eventId1 == alert1.EventId) && (eventId2 == alert2.EventId)
-		ok1 := (eventId1 == alert2.EventId) && (eventId2 == alert1.EventId)
-		assert.True((ok0 && !ok1) || (!ok0 && ok1))
-
-		// Delete Alert 1
-		//log.Printf("Delete alert by id: %s", alert1.AlertId)
-		err = client.DeleteAlert(alert1.AlertId)
-		assert.NoError(err)
-
-		// Delete Alert 2
-		//log.Printf("Delete alert by id: %s", alert2.AlertId)
-		err = client.DeleteAlert(alert2.AlertId)
-		assert.NoError(err)
-
-	}
 }
 
 func printJSON(msg string, input interface{}) {
