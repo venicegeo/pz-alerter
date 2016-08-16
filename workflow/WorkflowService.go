@@ -34,6 +34,9 @@ import (
 
 //------------------------------------------------------------------------------
 
+const ingestTypeName = "piazza:ingest"
+const executeTypeName = "piazza:executionComplete"
+
 // WorkflowService TODO
 type WorkflowService struct {
 	eventTypeDB *EventTypeDB
@@ -136,7 +139,7 @@ func (service *WorkflowService) Init(
 
 	// Ingest event type
 	ingestEventType := &EventType{}
-	ingestEventType.Name = "piazza:ingest"
+	ingestEventType.Name = ingestTypeName
 	ingestEventTypeMapping := map[string]elasticsearch.MappingElementTypeName{
 		"dataId":   "string",
 		"dataType": "string",
@@ -161,7 +164,7 @@ func (service *WorkflowService) Init(
 
 	// Execution Completed event type
 	executionCompletedType := &EventType{}
-	executionCompletedType.Name = "piazza:executionComplete"
+	executionCompletedType.Name = executeTypeName
 	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
 		"jobId":  "string",
 		"status": "string",
@@ -392,8 +395,21 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	return service.statusCreated(eventType)
 }
 
+// TODO: Instead, check if createdBy=system
+func IsSystemEvent(name string) bool {
+	return name == ingestTypeName || name == executeTypeName
+}
+
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
+	eventType, found, err := service.eventTypeDB.GetOne(id)
+	if !found || err != nil{
+		// Let the actual delete handle these cases
+	}
+	if eventType != nil && IsSystemEvent(eventType.Name) {
+		return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
+	}
+
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if !ok {
 		return service.statusNotFound(err)
@@ -658,6 +674,10 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
 	if err != nil {
 		return service.statusBadRequest(err)
+	}
+
+	if IsSystemEvent(mapping) {
+		return service.statusBadRequest(errors.New("Deleting system events is prohibited"))
 	}
 
 	ok, err := service.eventDB.DeleteByID(mapping, piazza.Ident(id))
