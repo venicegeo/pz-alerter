@@ -397,11 +397,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 
 // TODO: Instead, check if createdBy=system
 func IsSystemEvent(name string) bool {
-	systemEvents := map[string]bool {
-		ingestTypeName: true,
-		executeTypeName: true,
-	}
-	return systemEvents[name]
+	return name == ingestTypeName || name == executeTypeName
 }
 
 // DeleteEventType TODO
