@@ -428,7 +428,9 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 // GetEvent TODO
 func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
-
+	if mapping == "" {
+		return service.statusNotFound(err)
+	}
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -674,6 +676,9 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
+	if mapping == "" {
+		return service.statusNotFound(err)
+	}
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
