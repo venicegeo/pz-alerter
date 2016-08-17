@@ -101,6 +101,9 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error)
 			break
 		}
 	}
+	if mapping == "" {
+		return "", LoggedError("EventDB.lookupEventTypeNameByEventID failed: [Item %s in index events does not exist]", id.String())
+	}
 
 	return mapping, nil
 }
@@ -114,7 +117,7 @@ func (db *EventDB) NameExists(name string) (bool, error) {
 func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error) {
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("EventDB.GetOne failed: %s", err)
+		return nil, false, LoggedError("EventDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
 		return nil, true, LoggedError("EventDB.GetOne failed: no getResult")

@@ -403,7 +403,7 @@ func IsSystemEvent(name string) bool {
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id)
-	if !found || err != nil{
+	if !found || err != nil {
 		// Let the actual delete handle these cases
 	}
 	if eventType != nil && IsSystemEvent(eventType.Name) {
@@ -428,11 +428,13 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 // GetEvent TODO
 func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
+
 	if err != nil {
-		return service.statusNotFound(err)
+		return service.statusBadRequest(err)
 	}
 
 	event, found, err := service.eventDB.GetOne(mapping, id)
+
 	if !found {
 		return service.statusNotFound(err)
 	}
