@@ -645,7 +645,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 				service.stats.IncrTriggerJobs()
 
-				alert := Alert{EventId: eventID, TriggerId: triggerID, JobId: jobID}
+				alert := Alert{EventId: eventID, TriggerId: triggerID, JobId: jobID, CreatedBy: trigger.CreatedBy}
 				resp := service.PostAlert(&alert)
 				if resp.IsError() {
 					// resp will be a statusInternalError or statusBadRequest
