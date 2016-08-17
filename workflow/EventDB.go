@@ -180,7 +180,9 @@ func ConstructEventMappingSchema(name string, mapping map[string]elasticsearch.M
 }
 
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
-	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
+	fixed := map[string]interface{}{}
+	fixed["data"] = data
+	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, fixed)
 
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
