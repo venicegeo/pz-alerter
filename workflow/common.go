@@ -134,6 +134,7 @@ const EventIndexSettings = `
 	},
 	"mappings": {
 		"_default_": {
+			"dynamic": "false",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
@@ -144,7 +145,7 @@ const EventIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"data": {
-					"properties": {}
+					"type": "nested"
 				},
 				"createdBy": {
 					"type": "string",
