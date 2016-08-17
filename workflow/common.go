@@ -130,7 +130,8 @@ type TriggerList []Trigger
 const EventIndexSettings = `
 {
 	"settings": {
-		"index.mapping.coerce": false
+		"index.mapping.coerce": false,
+		"index.version.created": 2010299
 	},
 	"mappings": {
 		"_default_": {
@@ -145,7 +146,7 @@ const EventIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"data": {
-					"type": "nested"
+					"properties": {}
 				},
 				"createdBy": {
 					"type": "string",
