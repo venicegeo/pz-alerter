@@ -120,10 +120,6 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
-	fixedTriggerVars, _ := piazza.GetVarsFromStruct(fixedTrigger)
-	for k, v := range fixedTriggerVars {
-		fmt.Printf("[%s, %s]\n", k, v)
-	}
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
