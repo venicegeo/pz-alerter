@@ -36,6 +36,30 @@ func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, e
 }
 
 func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+	event, ok := obj.(*Event)
+	if !ok {
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: was not given an event")
+	}
+	{
+		eventTypeJson := db.service.GetEventType(event.EventTypeId)
+		eventTypeObj := eventTypeJson.Data
+		eventType, ok := eventTypeObj.(*EventType)
+		if !ok {
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: unable to obtain specified eventtype")
+		}
+		eventTypeMappingKeys, eventTypeMappingValues, err := piazza.GetVariablesFromStructInterface(eventType.Mapping)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		}
+		eventDataKeys, eventDataValues, err := piazza.GetVariablesFromStructInterface(event.Data)
+		if err != nil {
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		}
+		fmt.Printf("%s\n%s\n", eventTypeMappingKeys, eventTypeMappingValues)
+		fmt.Println()
+		fmt.Printf("%s\n%s\n", eventDataKeys, eventDataValues)
+	}
+
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
