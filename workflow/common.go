@@ -130,10 +130,12 @@ type TriggerList []Trigger
 const EventIndexSettings = `
 {
 	"settings": {
-		"index.mapping.coerce": false
+		"index.mapping.coerce": false,
+		"index.version.created": 2010299
 	},
 	"mappings": {
 		"_default_": {
+			"dynamic": "false",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",

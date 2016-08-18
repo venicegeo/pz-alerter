@@ -15,20 +15,20 @@
 package workflow
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
 	"strings"
-	"unicode"
+
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-type ObjIdent struct {
+type objIdent struct {
 	Index int
 	Type  string
 	Name  string
 }
-type ObjPair struct {
+type objPair struct {
 	OpenIndex   int
 	ClosedIndex int
 	Range       int
@@ -37,29 +37,38 @@ type ObjPair struct {
 
 var closed, open = "closed", "open"
 
-func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, error) {
-	str, err := structInterfaceToString(obj)
+func pairsContain(pairs []objPair, index int) bool {
+	for _, pair := range pairs {
+		if index >= pair.OpenIndex && index <= pair.ClosedIndex {
+			return true
+		}
+	}
+	return false
+}
+
+func stringBuildMapping(obj map[string]interface{}) (map[string]interface{}, error) {
+	str, err := piazza.StructInterfaceToString(obj)
 	if err != nil {
 		return nil, err
 	}
-	str = removeWhitespace(str)
+	str = piazza.RemoveWhitespace(str)
 	str = str[1 : len(str)-1]
 	//-------------Find all open and closed quotes------------------------------
-	quotes := []ObjPair{}
-	idents := []ObjIdent{}
+	quotes := []objPair{}
+	idents := []objIdent{}
 	qO, qCount := -1, 0
 	oC, cC := 0, 0
 	for i := 0; i < len(str); i++ {
-		char := charAt(str, i)
+		char := piazza.CharAt(str, i)
 		if char == "\"" {
 			if i != 0 {
-				charBefore := charAt(str, i-1)
+				charBefore := piazza.CharAt(str, i-1)
 				if charBefore != "\\" {
 					qCount++
 					if qO == -1 {
 						qO = i
 					} else {
-						quotes = append(quotes, ObjPair{qO, i, 0, ""})
+						quotes = append(quotes, objPair{qO, i, 0, ""})
 						qO = -1
 					}
 				}
@@ -71,10 +80,10 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 			}
 		} else if char == "{" && qO == -1 {
 			oC++
-			idents = append(idents, ObjIdent{i, open, ""})
+			idents = append(idents, objIdent{i, open, ""})
 		} else if char == "}" && qO == -1 {
 			cC++
-			idents = append(idents, ObjIdent{i, closed, ""})
+			idents = append(idents, objIdent{i, closed, ""})
 		}
 	}
 	if len(quotes)*2 != qCount {
@@ -85,18 +94,18 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 	}
 	//-------------Find all open and closed brackets----------------------------
 	for i := 0; i < len(str); i++ {
-		char := charAt(str, i)
+		char := piazza.CharAt(str, i)
 		if char == "{" && !pairsContain(quotes, i) {
 			oC++
-			idents = append(idents, ObjIdent{i, open, ""})
+			idents = append(idents, objIdent{i, open, ""})
 		} else if char == "}" && !pairsContain(quotes, i) {
 			cC++
-			idents = append(idents, ObjIdent{i, closed, ""})
+			idents = append(idents, objIdent{i, closed, ""})
 		}
 	}
 
 	//-------------Match brackets into pairs------------------------------------
-	pairs := []ObjPair{}
+	pairs := []objPair{}
 	pairMap := map[int]int{}
 	for len(idents) > 0 {
 		for i := 0; i < len(idents)-1; i++ {
@@ -118,12 +127,12 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 	sort.Ints(keys)
 	for _, k := range keys {
 		v := pairMap[k]
-		pairs = append(pairs, ObjPair{k, v, 0, ""})
+		pairs = append(pairs, objPair{k, v, 0, ""})
 	}
 	//-------------Add properties after each open index-------------------------
 	propertiesAddition := `"dynamic":"strict","properties":{`
 	for i := 0; i < len(pairs); i++ {
-		str = insertString(str, propertiesAddition, pairs[i].OpenIndex+1)
+		str = piazza.InsertString(str, propertiesAddition, pairs[i].OpenIndex+1)
 		for j := i + 1; j < len(pairs); j++ {
 			pairs[j].OpenIndex += len(propertiesAddition)
 		}
@@ -135,7 +144,7 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 	}
 	//-------------Add a closed bracket at each closed index--------------------
 	for i := 0; i < len(pairs); i++ {
-		str = insertString(str, `}`, pairs[i].ClosedIndex)
+		str = piazza.InsertString(str, `}`, pairs[i].ClosedIndex)
 		for j := i + 1; j < len(pairs); j++ {
 			if pairs[j].OpenIndex >= pairs[i].ClosedIndex {
 				pairs[j].OpenIndex++
@@ -148,19 +157,19 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 		}
 	}
 	//-------------Find all open and closed quotes------------------------------
-	quotes = []ObjPair{}
+	quotes = []objPair{}
 	qO, qCount = -1, 0
 	for i := 0; i < len(str); i++ {
-		char := charAt(str, i)
+		char := piazza.CharAt(str, i)
 		if char == "\"" {
 			if i != 0 {
-				charBefore := charAt(str, i-1)
+				charBefore := piazza.CharAt(str, i-1)
 				if charBefore != "\\" {
 					qCount++
 					if qO == -1 {
 						qO = i
 					} else {
-						quotes = append(quotes, ObjPair{qO, i, 0, ""})
+						quotes = append(quotes, objPair{qO, i, 0, ""})
 						qO = -1
 					}
 				}
@@ -179,17 +188,17 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 	temp := ""
 	squareBracketOpen := false
 	for i := 0; i < len(str); i++ {
-		if charAt(str, i) == "[" && !pairsContain(quotes, i) {
+		if piazza.CharAt(str, i) == "[" && !pairsContain(quotes, i) {
 			squareBracketOpen = true
-		} else if charAt(str, i) == "]" && !pairsContain(quotes, i) {
+		} else if piazza.CharAt(str, i) == "]" && !pairsContain(quotes, i) {
 			squareBracketOpen = false
 		}
-		if ((charAt(str, i) == "}" || charAt(str, i) == ",") && !squareBracketOpen) && !pairsContain(quotes, i) {
-			temp += "\n" + charAt(str, i) + "\n"
-		} else if (charAt(str, i) == "{" && !squareBracketOpen) && !pairsContain(quotes, i) {
-			temp += charAt(str, i) + "\n"
+		if ((piazza.CharAt(str, i) == "}" || piazza.CharAt(str, i) == ",") && !squareBracketOpen) && !pairsContain(quotes, i) {
+			temp += "\n" + piazza.CharAt(str, i) + "\n"
+		} else if (piazza.CharAt(str, i) == "{" && !squareBracketOpen) && !pairsContain(quotes, i) {
+			temp += piazza.CharAt(str, i) + "\n"
 		} else {
-			temp += charAt(str, i)
+			temp += piazza.CharAt(str, i)
 		}
 	}
 	lines := strings.Split(temp, "\n")
@@ -234,18 +243,10 @@ func StringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 		temp += line
 	}
 	temp = "{" + temp + "}"
-	res, err := structStringToInterface(temp)
+	res, err := piazza.StructStringToInterface(temp)
 	return res.(map[string]interface{}), err
 }
 
-func pairsContain(pairs []ObjPair, index int) bool {
-	for _, pair := range pairs {
-		if index >= pair.OpenIndex && index <= pair.ClosedIndex {
-			return true
-		}
-	}
-	return false
-}
 func formatKeyValue(str string, whereToSplit int) (string, error) {
 	parts := []string{str[:whereToSplit], str[whereToSplit+1:]}
 	value := strings.Replace(parts[1], "\"", "", -1)
@@ -259,30 +260,4 @@ func formatKeyValue(str string, whereToSplit int) (string, error) {
 	}
 	res := fmt.Sprintf(`%s:{"type":%s}`, parts[0], parts[1])
 	return res, nil
-}
-
-func structStringToInterface(stru string) (interface{}, error) {
-	data := []byte(stru)
-	source := (*json.RawMessage)(&data)
-	var res interface{}
-	err := json.Unmarshal(*source, &res)
-	return res, err
-}
-func structInterfaceToString(stru interface{}) (string, error) {
-	data, err := json.MarshalIndent(stru, " ", "   ")
-	return string(data), err
-}
-func charAt(str string, index int) string {
-	return str[index : index+1]
-}
-func removeWhitespace(str string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, str)
-}
-func insertString(str, insert string, index int) string {
-	return str[:index] + insert + str[index:]
 }
