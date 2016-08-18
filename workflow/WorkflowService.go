@@ -305,12 +305,12 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 
 	var totalHits int64
 	var eventtypes []EventType
-	nameParam, err := params.GetAsString("name", nil)
+	nameParam, err := params.GetAsString("name", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	if nameParam != nil {
-		nameParamValue := *nameParam
+	if nameParam != "" {
+		nameParamValue := nameParam
 		eventtypeid, found, err := service.eventTypeDB.GetIDByName(nameParamValue)
 		if !found || eventtypeid == nil {
 			return service.statusNotFound(err)
@@ -455,11 +455,11 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	}
 
 	// if both specified, "by id"" wins
-	eventTypeID, err := params.GetAsString("eventTypeId", nil)
+	eventTypeID, err := params.GetAsString("eventTypeId", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventTypeName, err := params.GetAsString("eventTypeName", nil)
+	eventTypeName, err := params.GetAsString("eventTypeName", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -467,8 +467,8 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	var query string
 
 	// Get the eventTypeName corresponding to the eventTypeId
-	if eventTypeID != nil {
-		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(*eventTypeID))
+	if eventTypeID != "" {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
 		if !found {
 			return service.statusNotFound(err)
 		}
@@ -476,8 +476,8 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 			return service.statusBadRequest(err)
 		}
 		query = eventType.Name
-	} else if eventTypeName != nil {
-		query = *eventTypeName
+	} else if eventTypeName != "" {
+		query = eventTypeName
 	} else {
 		// no query param specified, get 'em all
 		query = ""
@@ -804,7 +804,7 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerID, err := params.GetAsString("triggerId", nil)
+	triggerID, err := params.GetAsString("triggerId", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -817,14 +817,14 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 	var alerts []Alert
 	var totalHits int64
 
-	if triggerID != nil && isUUID(*triggerID) {
-		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, *triggerID)
+	if triggerID != "" && isUUID(triggerID) {
+		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID)
 		if err != nil {
 			return service.statusBadRequest(err)
 		} else if alerts == nil {
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
-	} else if triggerID == nil {
+	} else if triggerID == "" {
 		alerts, totalHits, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return service.statusBadRequest(err)
