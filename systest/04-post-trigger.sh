@@ -27,7 +27,7 @@ json='{
         "eventTypeIds": ["'"$eventTypeId"'"],
         "query": {
             "query": {
-                "match": {"beta": 17}
+                "match": {"data.beta": 17}
             }
         }
     },
