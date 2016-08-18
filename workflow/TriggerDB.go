@@ -115,11 +115,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: bad trigger")
 	}
-	fixedTrigger, err := fixTrigger(mapTrigger)
-	if err != nil {
-		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
-	}
+	fixedTrigger := fixTrigger(mapTrigger)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
@@ -134,24 +130,50 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	return id, nil
 }
 
-func fixTrigger(input map[string]interface{}) (map[string]interface{}, error) {
+func fixTrigger(input map[string]interface{}) map[string]interface{} {
 	return fixTriggerNode(input)
 }
-func fixTriggerNode(inputObj map[string]interface{}) (map[string]interface{}, error) {
+func fixTriggerNode(inputObj map[string]interface{}) map[string]interface{} {
 	outputObj := map[string]interface{}{}
 	for k, v := range inputObj {
 		switch v.(type) {
-		case map[string]interface{}:
-			tree, err := fixTriggerNode(v.(map[string]interface{}))
-			if err != nil {
-				return nil, err
+		case []interface{}:
+			arr := v.([]interface{})
+			for _, arrV := range arr {
+				switch arrV.(type) {
+				case []interface{}:
+				case map[string]interface{}:
+					tree := fixTriggerNode(arrV.(map[string]interface{}))
+					outputObj[strings.Replace(k, ".", "~", -1)] = tree
+				default:
+					outputObj[strings.Replace(k, ".", "~", -1)] = v
+				}
 			}
+		case map[string]interface{}:
+			tree := fixTriggerNode(v.(map[string]interface{}))
 			outputObj[strings.Replace(k, ".", "~", -1)] = tree
 		default:
 			outputObj[strings.Replace(k, ".", "~", -1)] = v
 		}
 	}
-	return outputObj, nil
+	return outputObj
+}
+
+func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, fixTriggerNodeArr(v.([]interface{})))
+		case map[string]interface{}:
+			outputObj = append(outputObj, fixTriggerNode(v.(map[string]interface{})))
+		case string:
+			outputObj = append(outputObj, strings.Replace(fmt.Sprintf("%s", v), ".", "~", -1))
+		default:
+			fmt.Println("YOURE A BAD CODER WILL")
+		}
+	}
+	return outputObj
 }
 
 func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {
