@@ -59,7 +59,18 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
 			}
 			if response.StatusCode != 200 {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData: serviceId %s does not exist", strServiceId)
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId %s does not exist", strServiceId)
+			}
+		}
+	}
+	{ //CHECK EVENTTYPE IDS
+		if len(trigger.Condition.EventTypeIds) == 0 {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
+		}
+		for _, id := range trigger.Condition.EventTypeIds {
+			_, found, err := db.service.eventTypeDB.GetOne(id)
+			if !found || err != nil {
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
 			}
 		}
 	}
