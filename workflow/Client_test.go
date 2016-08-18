@@ -314,7 +314,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
-	eventType := &EventType{Name: "typnam", Mapping: mapping}
+	eventType := &EventType{Name: "typnam2", Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
 	etID := respEventType.EventTypeId
 
