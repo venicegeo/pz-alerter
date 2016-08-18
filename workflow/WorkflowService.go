@@ -140,7 +140,7 @@ func (service *WorkflowService) Init(
 	// Ingest event type
 	ingestEventType := &EventType{}
 	ingestEventType.Name = ingestTypeName
-	ingestEventTypeMapping := map[string]elasticsearch.MappingElementTypeName{
+	ingestEventTypeMapping := map[string]interface{}{
 		"dataId":   "string",
 		"dataType": "string",
 		"epsg":     "short",
@@ -165,7 +165,7 @@ func (service *WorkflowService) Init(
 	// Execution Completed event type
 	executionCompletedType := &EventType{}
 	executionCompletedType.Name = executeTypeName
-	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
+	executionCompletedTypeMapping := map[string]interface{}{
 		"jobId":  "string",
 		"status": "string",
 		"dataId": "string",

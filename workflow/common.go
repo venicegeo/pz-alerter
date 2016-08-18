@@ -22,7 +22,6 @@ import (
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -217,11 +216,11 @@ const EventTypeIndexSettings = `
 
 // EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
-	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
-	Name        string                                          `json:"name" binding:"required"`
-	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
-	CreatedBy   string                                          `json:"createdBy"`
-	CreatedOn   time.Time                                       `json:"createdOn"`
+	EventTypeId piazza.Ident           `json:"eventTypeId"`
+	Name        string                 `json:"name" binding:"required"`
+	Mapping     map[string]interface{} `json:"mapping" binding:"required"`
+	CreatedBy   string                 `json:"createdBy"`
+	CreatedOn   time.Time              `json:"createdOn"`
 }
 
 // EventTypeList is a list of EventTypes

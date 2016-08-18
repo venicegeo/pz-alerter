@@ -19,10 +19,10 @@ import "fmt"
 //type T map[string]T  // TODO
 
 func BuildMapping(input map[string]interface{}) (map[string]interface{}, error) {
-	return visitNode(input)
+	return visitNodeTesting(input)
 }
 
-func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) {
+func visitNodeTesting(inputObj map[string]interface{}) (map[string]interface{}, error) {
 
 	outputObj := map[string]interface{}{}
 
@@ -55,7 +55,7 @@ func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) 
 func handleNonleaf(k string, v interface{}) (map[string]interface{}, error) {
 	//fmt.Printf("Handling nonleaf %s: %#v\n", k, v)
 
-	subtree, err := visitNode(v.(map[string]interface{}))
+	subtree, err := visitNodeTesting(v.(map[string]interface{}))
 	if err != nil {
 		return nil, err
 	}
