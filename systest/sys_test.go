@@ -147,7 +147,7 @@ func (suite *WorkflowTester) Test02PostEventType() {
 
 	eventType := &workflow.EventType{
 		Name: suite.eventTypeName,
-		Mapping: map[string]elasticsearch.MappingElementTypeName{
+		Mapping: map[string]interface{}{
 			"alpha": elasticsearch.MappingElementTypeString,
 			"beta":  elasticsearch.MappingElementTypeInteger,
 		},
