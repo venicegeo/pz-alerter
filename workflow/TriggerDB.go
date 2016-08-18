@@ -130,28 +130,24 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	return id, nil
 }
 
-func fixTrigger(input map[string]interface{}) map[string]interface{} {
-	return fixTriggerNode(input)
+func fixTrigger(input interface{}) interface{} {
+	var output interface{}
+	switch input.(type) {
+	case map[string]interface{}:
+		output = fixTriggerNodeMap(input.(map[string]interface{}))
+	case []interface{}:
+		output = fixTriggerNodeArr(input.([]interface{}))
+	}
+	return output
 }
-func fixTriggerNode(inputObj map[string]interface{}) map[string]interface{} {
+func fixTriggerNodeMap(inputObj map[string]interface{}) map[string]interface{} {
 	outputObj := map[string]interface{}{}
 	for k, v := range inputObj {
 		switch v.(type) {
 		case []interface{}:
-			arr := v.([]interface{})
-			for _, arrV := range arr {
-				switch arrV.(type) {
-				case []interface{}:
-				case map[string]interface{}:
-					tree := fixTriggerNode(arrV.(map[string]interface{}))
-					outputObj[strings.Replace(k, ".", "~", -1)] = tree
-				default:
-					outputObj[strings.Replace(k, ".", "~", -1)] = v
-				}
-			}
+			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeArr(v.([]interface{}))
 		case map[string]interface{}:
-			tree := fixTriggerNode(v.(map[string]interface{}))
-			outputObj[strings.Replace(k, ".", "~", -1)] = tree
+			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeMap(v.(map[string]interface{}))
 		default:
 			outputObj[strings.Replace(k, ".", "~", -1)] = v
 		}
@@ -166,11 +162,9 @@ func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
 		case []interface{}:
 			outputObj = append(outputObj, fixTriggerNodeArr(v.([]interface{})))
 		case map[string]interface{}:
-			outputObj = append(outputObj, fixTriggerNode(v.(map[string]interface{})))
-		case string:
-			outputObj = append(outputObj, strings.Replace(fmt.Sprintf("%s", v), ".", "~", -1))
+			outputObj = append(outputObj, fixTriggerNodeMap(v.(map[string]interface{})))
 		default:
-			fmt.Println("YOURE A BAD CODER WILL")
+			outputObj = append(outputObj, v)
 		}
 	}
 	return outputObj
