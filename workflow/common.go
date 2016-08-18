@@ -366,7 +366,7 @@ func (stats *workflowStats) IncrTriggerJobs() {
 
 // LoggedError logs the error's message and creates an error
 func LoggedError(mssg string, args ...interface{}) error {
-	str := fmt.Sprintf(mssg, args)
+	str := fmt.Sprintf(mssg, args...)
 	log.Printf(str)
 	return errors.New(str)
 }
