@@ -464,7 +464,7 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 		return service.statusBadRequest(err)
 	}
 
-	query := ""
+	var query string
 
 	// Get the eventTypeName corresponding to the eventTypeId
 	if eventTypeID != nil {
@@ -478,6 +478,9 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 		query = eventType.Name
 	} else if eventTypeName != nil {
 		query = *eventTypeName
+	} else {
+		// no query param specified, get 'em all
+		query = ""
 	}
 
 	events, totalHits, err := service.eventDB.GetAll(query, format)
