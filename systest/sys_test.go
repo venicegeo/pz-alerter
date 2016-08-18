@@ -203,7 +203,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
-						"beta": 17,
+						"data.beta": 17,
 					},
 				},
 			},
