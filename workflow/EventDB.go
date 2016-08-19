@@ -46,7 +46,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		}
 		event = *temp
 	}
-	{
+	{ //Check array types, elasticsearch doesn't know the difference
 		eventTypeJson := db.service.GetEventType(event.EventTypeId)
 		eventTypeObj := eventTypeJson.Data
 		eventType, ok := eventTypeObj.(*EventType)
@@ -61,9 +61,31 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		if err != nil {
 			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 		}
-		fmt.Printf("%s\n", eventTypeMappingVars)
-		fmt.Println()
-		fmt.Printf("%s\n", eventDataVars)
+		notFound := []string{}
+		for k, v := range eventTypeMappingVars {
+			found := false
+			for k2, v2 := range eventDataVars {
+				if k2 == k {
+					found = true
+					if !elasticsearch.IsValidArrayTypeMapping(v) {
+						if piazza.ValueIsValidArray(v2) {
+							return piazza.NoIdent, LoggedError("EventDB.PostData failed: an array was passed into the non-array field %s", k)
+						}
+					} else {
+						if !piazza.ValueIsValidArray(v2) {
+							return piazza.NoIdent, LoggedError("EventDB.PostData failed: a non-array was pasted into the array field %s", k)
+						}
+					}
+					break
+				}
+			}
+			if !found {
+				notFound = append(notFound, k)
+			}
+		}
+		if len(notFound) > 0 {
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
+		}
 	}
 
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
