@@ -61,7 +61,7 @@ json='{
 #echo POST /trigger
 #echo "$json"
 
-ret=$($curl -S -s -XPOST -d "$json" "$workflowurl"/trigger)
+ret=$($curl -S -s -XPOST -d "$json" "$url"/trigger)
 
 #echo RETURN:
 #echo "$ret"

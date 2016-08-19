@@ -11,7 +11,7 @@ fi
 
 #echo GET /trigger
 
-ret=$($curl -S -s -XGET -d "$json" "$workflowurl"/trigger/$triggerId)
+ret=$($curl -S -s -XGET -d "$json" "$url"/trigger/$triggerId)
 
 #echo RETURN:
 #echo "$ret"
