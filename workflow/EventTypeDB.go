@@ -37,6 +37,25 @@ func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventT
 }
 
 func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+	var eventType EventType
+	ok1 := false
+	eventType, ok1 = obj.(EventType)
+	if !ok1 {
+		temp, ok2 := obj.(*EventType)
+		if !ok2 {
+			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: was not given an EventType to post")
+		}
+		eventType = *temp
+	}
+	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	if err != nil {
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+	}
+	for _, v := range vars {
+		if !elasticsearch.IsValidMappingType(v) {
+			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
+		}
+	}
 
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
