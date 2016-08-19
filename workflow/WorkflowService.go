@@ -775,6 +775,23 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 	return service.statusCreated(trigger)
 }
 
+func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piazza.JsonResponse {
+	trigger, found, err := service.triggerDB.GetOne(id)
+	if !found {
+		return service.statusNotFound(err)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	res, err := service.triggerDB.PutTrigger(id, trigger, update)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	service.logger.Info("Updated Trigger with TriggerId %s", id)
+
+	return service.statusOK(res)
+}
+
 func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.triggerDB.DeleteTrigger(piazza.Ident(id))
 	if !ok {

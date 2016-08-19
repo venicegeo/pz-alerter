@@ -141,44 +141,13 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	return id, nil
 }
 
-func fixTrigger(input interface{}) interface{} {
-	var output interface{}
-	switch input.(type) {
-	case map[string]interface{}:
-		output = fixTriggerNodeMap(input.(map[string]interface{}))
-	case []interface{}:
-		output = fixTriggerNodeArr(input.([]interface{}))
+func (db *TriggerDB) PutTrigger(id piazza.Ident, trigger *Trigger, update *TriggerUpdate) (*Trigger, error) {
+	trigger.Enabled = update.Enabled
+	_, err := db.Esi.PostData(db.mapping, id.String(), trigger)
+	if err != nil {
+		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
 	}
-	return output
-}
-func fixTriggerNodeMap(inputObj map[string]interface{}) map[string]interface{} {
-	outputObj := map[string]interface{}{}
-	for k, v := range inputObj {
-		switch v.(type) {
-		case []interface{}:
-			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeArr(v.([]interface{}))
-		case map[string]interface{}:
-			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeMap(v.(map[string]interface{}))
-		default:
-			outputObj[strings.Replace(k, ".", "~", -1)] = v
-		}
-	}
-	return outputObj
-}
-
-func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
-	outputObj := []interface{}{}
-	for _, v := range inputObj {
-		switch v.(type) {
-		case []interface{}:
-			outputObj = append(outputObj, fixTriggerNodeArr(v.([]interface{})))
-		case map[string]interface{}:
-			outputObj = append(outputObj, fixTriggerNodeMap(v.(map[string]interface{})))
-		default:
-			outputObj = append(outputObj, v)
-		}
-	}
-	return outputObj
+	return trigger, nil
 }
 
 func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {
@@ -264,4 +233,44 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 	}
 
 	return deleteResult2.Found, nil
+}
+
+func fixTrigger(input interface{}) interface{} {
+	var output interface{}
+	switch input.(type) {
+	case map[string]interface{}:
+		output = fixTriggerNodeMap(input.(map[string]interface{}))
+	case []interface{}:
+		output = fixTriggerNodeArr(input.([]interface{}))
+	}
+	return output
+}
+func fixTriggerNodeMap(inputObj map[string]interface{}) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeArr(v.([]interface{}))
+		case map[string]interface{}:
+			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeMap(v.(map[string]interface{}))
+		default:
+			outputObj[strings.Replace(k, ".", "~", -1)] = v
+		}
+	}
+	return outputObj
+}
+
+func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, fixTriggerNodeArr(v.([]interface{})))
+		case map[string]interface{}:
+			outputObj = append(outputObj, fixTriggerNodeMap(v.(map[string]interface{})))
+		default:
+			outputObj = append(outputObj, v)
+		}
+	}
+	return outputObj
 }

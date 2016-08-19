@@ -119,6 +119,9 @@ type Trigger struct {
 	CreatedOn     time.Time    `json:"createdOn"`
 	Enabled       bool         `json:"enabled"`
 }
+type TriggerUpdate struct {
+	Enabled bool `json:"enabled"`
+}
 
 // TriggerList is a list of triggers
 type TriggerList []Trigger
