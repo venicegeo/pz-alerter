@@ -58,7 +58,7 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 		{"GET", "/trigger/:id", server.handleGetTrigger},
 		{"GET", "/trigger", server.handleGetAllTriggers},
 		{"POST", "/trigger", server.handlePostTrigger},
-		// TODO: PUT
+		{"PUT", "/trigger/:id", server.handlePutTrigger},
 		{"DELETE", "/trigger/:id", server.handleDeleteTrigger},
 
 		{"GET", "/alert/:id", server.handleGetAlert},
@@ -200,6 +200,23 @@ func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
 		return
 	}
 	resp := server.service.PostTrigger(trigger)
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *WorkflowServer) handlePutTrigger(c *gin.Context) {
+	id := piazza.Ident(c.Param("id"))
+	update := &TriggerUpdate{}
+	err := c.BindJSON(update)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+	resp := server.service.PutTrigger(id, update)
 	piazza.GinReturnJson(c, resp)
 }
 
