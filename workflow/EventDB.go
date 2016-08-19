@@ -46,46 +46,10 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		}
 		event = *temp
 	}
-	{ //Check array types, elasticsearch doesn't know the difference
-		eventTypeJson := db.service.GetEventType(event.EventTypeId)
-		eventTypeObj := eventTypeJson.Data
-		eventType, ok := eventTypeObj.(*EventType)
-		if !ok {
-			return piazza.NoIdent, LoggedError("EventDB.PostData failed: unable to obtain specified eventtype")
-		}
-		eventTypeMappingVars, err := piazza.GetVarsFromStruct(eventType.Mapping)
-		if err != nil {
-			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
-		}
-		eventDataVars, err := piazza.GetVarsFromStruct(event.Data)
-		if err != nil {
-			return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
-		}
-		notFound := []string{}
-		for k, v := range eventTypeMappingVars {
-			found := false
-			for k2, v2 := range eventDataVars {
-				if k2 == k {
-					found = true
-					if !elasticsearch.IsValidArrayTypeMapping(v) {
-						if piazza.ValueIsValidArray(v2) {
-							return piazza.NoIdent, LoggedError("EventDB.PostData failed: an array was passed into the non-array field %s", k)
-						}
-					} else {
-						if !piazza.ValueIsValidArray(v2) {
-							return piazza.NoIdent, LoggedError("EventDB.PostData failed: a non-array was pasted into the array field %s", k)
-						}
-					}
-					break
-				}
-			}
-			if !found {
-				notFound = append(notFound, k)
-			}
-		}
-		if len(notFound) > 0 {
-			return piazza.NoIdent, LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
-		}
+
+	err := verifyEventReadyToPost(&event, db)
+	if err != nil {
+		return piazza.NoIdent, err
 	}
 
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
@@ -97,6 +61,49 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 	}
 
 	return id, nil
+}
+
+func verifyEventReadyToPost(event *Event, db *EventDB) error {
+	eventTypeJson := db.service.GetEventType(event.EventTypeId)
+	eventTypeObj := eventTypeJson.Data
+	eventType, ok := eventTypeObj.(*EventType)
+	if !ok {
+		return LoggedError("EventDB.PostData failed: unable to obtain specified eventtype")
+	}
+	eventTypeMappingVars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	if err != nil {
+		return LoggedError("EventDB.PostData failed: %s", err)
+	}
+	eventDataVars, err := piazza.GetVarsFromStruct(event.Data)
+	if err != nil {
+		return LoggedError("EventDB.PostData failed: %s", err)
+	}
+	notFound := []string{}
+	for k, v := range eventTypeMappingVars {
+		found := false
+		for k2, v2 := range eventDataVars {
+			if k2 == k {
+				found = true
+				if !elasticsearch.IsValidArrayTypeMapping(v) {
+					if piazza.ValueIsValidArray(v2) {
+						return LoggedError("EventDB.PostData failed: an array was passed into the non-array field %s", k)
+					}
+				} else {
+					if !piazza.ValueIsValidArray(v2) {
+						return LoggedError("EventDB.PostData failed: a non-array was pasted into the array field %s", k)
+					}
+				}
+				break
+			}
+		}
+		if !found {
+			notFound = append(notFound, k)
+		}
+	}
+	if len(notFound) > 0 {
+		return LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
+	}
+	return nil
 }
 
 func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, int64, error) {
