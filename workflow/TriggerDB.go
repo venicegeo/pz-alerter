@@ -143,7 +143,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 
 func (db *TriggerDB) PutTrigger(id piazza.Ident, trigger *Trigger, update *TriggerUpdate) (*Trigger, error) {
 	trigger.Enabled = update.Enabled
-	_, err := db.Esi.PostData(db.mapping, id.String(), trigger)
+	_, err := db.Esi.PutData(db.mapping, id.String(), trigger)
 	if err != nil {
 		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
 	}
