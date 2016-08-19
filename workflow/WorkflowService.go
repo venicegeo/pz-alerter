@@ -140,7 +140,7 @@ func (service *WorkflowService) Init(
 	// Ingest event type
 	ingestEventType := &EventType{}
 	ingestEventType.Name = ingestTypeName
-	ingestEventTypeMapping := map[string]elasticsearch.MappingElementTypeName{
+	ingestEventTypeMapping := map[string]interface{}{
 		"dataId":   "string",
 		"dataType": "string",
 		"epsg":     "short",
@@ -165,7 +165,7 @@ func (service *WorkflowService) Init(
 	// Execution Completed event type
 	executionCompletedType := &EventType{}
 	executionCompletedType.Name = executeTypeName
-	executionCompletedTypeMapping := map[string]elasticsearch.MappingElementTypeName{
+	executionCompletedTypeMapping := map[string]interface{}{
 		"jobId":  "string",
 		"status": "string",
 		"dataId": "string",
@@ -305,12 +305,12 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 
 	var totalHits int64
 	var eventtypes []EventType
-	nameParam, err := params.GetAsString("name", nil)
+	nameParam, err := params.GetAsString("name", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	if nameParam != nil {
-		nameParamValue := *nameParam
+	if nameParam != "" {
+		nameParamValue := nameParam
 		eventtypeid, found, err := service.eventTypeDB.GetIDByName(nameParamValue)
 		if !found || eventtypeid == nil {
 			return service.statusNotFound(err)
@@ -403,7 +403,7 @@ func IsSystemEvent(name string) bool {
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id)
-	if !found || err != nil{
+	if !found || err != nil {
 		// Let the actual delete handle these cases
 	}
 	if eventType != nil && IsSystemEvent(eventType.Name) {
@@ -428,11 +428,15 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 // GetEvent TODO
 func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
-	if err != nil {
+	if mapping == "" {
 		return service.statusNotFound(err)
+	}
+	if err != nil {
+		return service.statusBadRequest(err)
 	}
 
 	event, found, err := service.eventDB.GetOne(mapping, id)
+
 	if !found {
 		return service.statusNotFound(err)
 	}
@@ -451,20 +455,20 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	}
 
 	// if both specified, "by id"" wins
-	eventTypeID, err := params.GetAsString("eventTypeId", nil)
+	eventTypeID, err := params.GetAsString("eventTypeId", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventTypeName, err := params.GetAsString("eventTypeName", nil)
+	eventTypeName, err := params.GetAsString("eventTypeName", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
 
-	query := ""
+	var query string
 
 	// Get the eventTypeName corresponding to the eventTypeId
-	if eventTypeID != nil {
-		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(*eventTypeID))
+	if eventTypeID != "" {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
 		if !found {
 			return service.statusNotFound(err)
 		}
@@ -472,8 +476,11 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 			return service.statusBadRequest(err)
 		}
 		query = eventType.Name
-	} else if eventTypeName != nil {
-		query = *eventTypeName
+	} else if eventTypeName != "" {
+		query = eventTypeName
+	} else {
+		// no query param specified, get 'em all
+		query = ""
 	}
 
 	events, totalHits, err := service.eventDB.GetAll(query, format)
@@ -672,6 +679,9 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
+	if mapping == "" {
+		return service.statusNotFound(err)
+	}
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -794,7 +804,7 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerID, err := params.GetAsString("triggerId", nil)
+	triggerID, err := params.GetAsString("triggerId", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -807,14 +817,14 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 	var alerts []Alert
 	var totalHits int64
 
-	if triggerID != nil && isUUID(*triggerID) {
-		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, *triggerID)
+	if triggerID != "" && isUUID(triggerID) {
+		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID)
 		if err != nil {
 			return service.statusBadRequest(err)
 		} else if alerts == nil {
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
-	} else if triggerID == nil {
+	} else if triggerID == "" {
 		alerts, totalHits, err = service.alertDB.GetAll(format)
 		if err != nil {
 			return service.statusBadRequest(err)

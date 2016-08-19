@@ -22,7 +22,6 @@ import (
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -130,10 +129,12 @@ type TriggerList []Trigger
 const EventIndexSettings = `
 {
 	"settings": {
-		"index.mapping.coerce": false
+		"index.mapping.coerce": false,
+		"index.version.created": 2010299
 	},
 	"mappings": {
 		"_default_": {
+			"dynamic": "false",
 			"properties": {
 				"eventTypeId": {
 					"type": "string",
@@ -215,11 +216,11 @@ const EventTypeIndexSettings = `
 
 // EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
-	EventTypeId piazza.Ident                                    `json:"eventTypeId"`
-	Name        string                                          `json:"name" binding:"required"`
-	Mapping     map[string]elasticsearch.MappingElementTypeName `json:"mapping" binding:"required"`
-	CreatedBy   string                                          `json:"createdBy"`
-	CreatedOn   time.Time                                       `json:"createdOn"`
+	EventTypeId piazza.Ident           `json:"eventTypeId"`
+	Name        string                 `json:"name" binding:"required"`
+	Mapping     map[string]interface{} `json:"mapping" binding:"required"`
+	CreatedBy   string                 `json:"createdBy"`
+	CreatedOn   time.Time              `json:"createdOn"`
 }
 
 // EventTypeList is a list of EventTypes
@@ -365,7 +366,7 @@ func (stats *workflowStats) IncrTriggerJobs() {
 
 // LoggedError logs the error's message and creates an error
 func LoggedError(mssg string, args ...interface{}) error {
-	str := fmt.Sprintf(mssg, args)
+	str := fmt.Sprintf(mssg, args...)
 	log.Printf(str)
 	return errors.New(str)
 }

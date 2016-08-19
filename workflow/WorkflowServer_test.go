@@ -155,7 +155,7 @@ func makeTestEventTypeName() string {
 }
 
 func makeTestEventType(eventTypeName string) *EventType {
-	mapping := map[string]elasticsearch.MappingElementTypeName{
+	mapping := map[string]interface{}{
 		"num": elasticsearch.MappingElementTypeInteger,
 	}
 	return &EventType{Name: eventTypeName, Mapping: mapping}
@@ -292,18 +292,18 @@ func (suite *ServerTester) Test02Event() {
 	//log.Printf("Creating new event:")
 	event := makeTestEvent(eventTypeID)
 	respEvent, err := client.PostEvent(event)
-	//log.Printf("CCC %#v", event)
+	//log.Printf("CCC %#v", respEvent)
 	id := respEvent.EventId
 	assert.NoError(err)
 	//printJSON("event id", id)
 
-	//log.Printf("Getting list of events (type=%s):", eventTypeID)
+	//log.Printf("Getting list of events (typeId=%s):", eventTypeID)
 	events, err = client.GetAllEventsByEventType(eventTypeID)
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	//printJSON("Events", events)
 
-	//log.Printf("Getting list of events (type=\"\"):")
+	//log.Printf("Getting ALL events (type=\"\"):")
 	events, err = client.GetAllEvents()
 	assert.NoError(err)
 	assert.Len(*events, 1)
@@ -489,7 +489,7 @@ func (suite *ServerTester) Test05EventMapping() {
 
 	createEventType := func(typ string) piazza.Ident {
 		//log.Printf("Creating event type: %s\n", typ)
-		mapping := map[string]elasticsearch.MappingElementTypeName{
+		mapping := map[string]interface{}{
 			"num": elasticsearch.MappingElementTypeInteger,
 		}
 		//printJSON("mapping", mapping)
@@ -557,13 +557,13 @@ func (suite *ServerTester) Test05EventMapping() {
 		assert.NoError(err)
 		assert.Len(*x, 0)
 
-		// We expect errors here because searching for an EventType that doesn't exist
-		// results in an error
+		// OBSOLETE comment:
+		//	We expect errors here because searching for an EventType that doesn't exist results in an error
 		x, err = client.GetAllEventsByEventType(et1Id)
-		assert.Error(err)
+		assert.NoError(err)
 		assert.Len(*x, 0)
 		x, err = client.GetAllEventsByEventType(et2Id)
-		assert.Error(err)
+		assert.NoError(err)
 		assert.Len(*x, 0)
 	}
 
@@ -607,7 +607,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 	var et1ID piazza.Ident
 	{
-		mapping := map[string]elasticsearch.MappingElementTypeName{
+		mapping := map[string]interface{}{
 			"num":      elasticsearch.MappingElementTypeInteger,
 			"str":      elasticsearch.MappingElementTypeString,
 			"userName": elasticsearch.MappingElementTypeString,
@@ -728,7 +728,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	assert := assert.New(t)
 	client := suite.client
 
-	var mapping = map[string]elasticsearch.MappingElementTypeName{
+	var mapping = map[string]interface{}{
 		"num":      elasticsearch.MappingElementTypeInteger,
 		"str":      elasticsearch.MappingElementTypeString,
 		"userName": elasticsearch.MappingElementTypeString,

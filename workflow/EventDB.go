@@ -125,6 +125,9 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error)
 			break
 		}
 	}
+	if mapping == "" {
+		return "", LoggedError("EventDB.lookupEventTypeNameByEventID failed: [Item %s in index events does not exist]", id.String())
+	}
 
 	return mapping, nil
 }
@@ -138,7 +141,7 @@ func (db *EventDB) NameExists(name string) (bool, error) {
 func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error) {
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("EventDB.GetOne failed: %s", err)
+		return nil, false, LoggedError("EventDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
 		return nil, true, LoggedError("EventDB.GetOne failed: no getResult")
@@ -166,12 +169,11 @@ func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
 	return deleteResult.Found, nil
 }
 
-func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.MappingElementTypeName) error {
-	jsn, err := elasticsearch.ConstructMappingSchema(name, mapping)
+func (db *EventDB) AddMapping(name string, mapping map[string]interface{}) error {
+	jsn, err := ConstructEventMappingSchema(name, mapping)
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
-
 	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
 		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err)
@@ -180,8 +182,80 @@ func (db *EventDB) AddMapping(name string, mapping map[string]elasticsearch.Mapp
 	return nil
 }
 
+func ConstructEventMappingSchema(name string, mapping map[string]interface{}) (piazza.JsonString, error) {
+	const template string = `{
+		"%s":{
+			"properties":{
+				"data":{
+					"dynamic": "strict",
+					"properties": %s
+				}
+			}
+		}
+	}`
+	esdsl, err := buildMapping(mapping)
+	if err != nil {
+		return piazza.JsonString(""), err
+	}
+	strDsl, err := piazza.StructInterfaceToString(esdsl)
+	if err != nil {
+		return piazza.JsonString(""), err
+	}
+	jsn := fmt.Sprintf(template, name, strDsl)
+	return piazza.JsonString(jsn), nil
+}
+
+func buildMapping(input map[string]interface{}) (map[string]interface{}, error) {
+	return visitNode(input)
+}
+func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch t := v.(type) {
+		case string:
+			tree, err := visitLeaf(k, v)
+			if err != nil {
+				return nil, err
+			}
+			outputObj[k] = tree
+		case map[string]interface{}:
+			tree, err := visitTree(k, v.(map[string]interface{}))
+			if err != nil {
+				return nil, err
+			}
+			outputObj[k] = tree
+		default:
+			return nil, LoggedError("EventDB.ConstructEventMappingSchema failed: unexpected type %T", t)
+		}
+	}
+	return outputObj, nil
+}
+func visitTree(k string, v map[string]interface{}) (map[string]interface{}, error) {
+	subtree, err := visitNode(v)
+	if err != nil {
+		return nil, err
+	}
+	wrapperTree := map[string]interface{}{}
+	wrapperTree["dynamic"] = "strict"
+	wrapperTree["properties"] = subtree
+	return wrapperTree, nil
+}
+func visitLeaf(k string, v interface{}) (map[string]interface{}, error) {
+	if !elasticsearch.IsValidMappingType(v) {
+		return nil, LoggedError("EventDB.ConstructEventMappingSchema failed: %s was not recognized as a valid mapping type")
+	}
+	if elasticsearch.IsValidArrayTypeMapping(v) {
+		v = v.(string)[1 : len(v.(string))-1]
+	}
+	tree := map[string]interface{}{}
+	tree["type"] = v
+	return tree, nil
+}
+
 func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident) (*[]piazza.Ident, error) {
-	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
+	fixed := map[string]interface{}{}
+	fixed["data"] = data
+	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, fixed)
 
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)

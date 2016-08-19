@@ -106,7 +106,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	var err error
 
-	mapping := map[string]elasticsearch.MappingElementTypeName{
+	mapping := map[string]interface{}{
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
@@ -157,7 +157,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 
 	var err error
 
-	mapping := map[string]elasticsearch.MappingElementTypeName{
+	mapping := map[string]interface{}{
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
@@ -200,7 +200,7 @@ func (suite *ClientTester) Test15One() {
 
 	var etID piazza.Ident
 	{
-		mapping := map[string]elasticsearch.MappingElementTypeName{
+		mapping := map[string]interface{}{
 			"num": elasticsearch.MappingElementTypeInteger,
 			"str": elasticsearch.MappingElementTypeString,
 		}
@@ -310,11 +310,11 @@ func (suite *ClientTester) Test16TriggerResource() {
 
 	var err error
 
-	mapping := map[string]elasticsearch.MappingElementTypeName{
+	mapping := map[string]interface{}{
 		"myint": elasticsearch.MappingElementTypeString,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
-	eventType := &EventType{Name: "typnam", Mapping: mapping}
+	eventType := &EventType{Name: "typnam2", Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
 	etID := respEventType.EventTypeId
 
@@ -381,7 +381,7 @@ func (suite *ClientTester) Test17Triggering() {
 
 	var etC, etD, etE piazza.Ident
 	{
-		mapping := map[string]elasticsearch.MappingElementTypeName{
+		mapping := map[string]interface{}{
 			"num": elasticsearch.MappingElementTypeInteger,
 			"str": elasticsearch.MappingElementTypeString,
 		}

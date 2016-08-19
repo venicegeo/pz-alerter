@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -45,7 +46,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		serviceId := jobData["serviceId"]
 		strServiceId, ok := serviceId.(string)
 		if !ok {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData faile: serviceId field not of type string")
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
 		}
 		serviceControllerURL, err := db.service.sys.GetURL("pz-servicecontroller")
 		if err == nil {
@@ -58,7 +59,18 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
 			}
 			if response.StatusCode != 200 {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData: serviceId %s does not exist", strServiceId)
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId %s does not exist", strServiceId)
+			}
+		}
+	}
+	{ //CHECK EVENTTYPE IDS
+		if len(trigger.Condition.EventTypeIds) == 0 {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
+		}
+		for _, id := range trigger.Condition.EventTypeIds {
+			_, found, err := db.service.eventTypeDB.GetOne(id)
+			if !found || err != nil {
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
 			}
 		}
 	}
@@ -70,18 +82,18 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		return piazza.NoIdent, err
 	}
 
-	json := string(body)
-	//log.Printf("Current json: %s", json)
+	jsn := string(body)
+	//log.Printf("Current json: %s", jsn)
 	// Remove trailing }
-	json = json[:len(json)-1]
-	json += ",\"type\":["
+	jsn = jsn[:len(jsn)-1]
+	jsn += ",\"type\":["
 	// Add the types that the percolation query can match
 	for _, id := range trigger.Condition.EventTypeIds {
-		json += fmt.Sprintf("\"%s\",", id)
+		jsn += fmt.Sprintf("\"%s\",", id)
 	}
-	json = json[:len(json)-1]
+	jsn = jsn[:len(jsn)-1]
 	// Add back trailing } and ] to close array
-	json += "]}"
+	jsn += "]}"
 
 	//log.Printf("Posting percolation query: %s", body)
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
@@ -99,7 +111,24 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	//log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationId = piazza.Ident(indexResult.Id)
 
-	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), trigger)
+	strTrigger, err := piazza.StructInterfaceToString(trigger)
+	if err != nil {
+		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+	}
+	intTrigger, err := piazza.StructStringToInterface(strTrigger)
+	if err != nil {
+		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+	}
+	mapTrigger, ok := intTrigger.(map[string]interface{})
+	if !ok {
+		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: bad trigger")
+	}
+	fixedTrigger := fixTrigger(mapTrigger)
+
+	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
 		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
@@ -110,6 +139,46 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	}
 
 	return id, nil
+}
+
+func fixTrigger(input interface{}) interface{} {
+	var output interface{}
+	switch input.(type) {
+	case map[string]interface{}:
+		output = fixTriggerNodeMap(input.(map[string]interface{}))
+	case []interface{}:
+		output = fixTriggerNodeArr(input.([]interface{}))
+	}
+	return output
+}
+func fixTriggerNodeMap(inputObj map[string]interface{}) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeArr(v.([]interface{}))
+		case map[string]interface{}:
+			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeMap(v.(map[string]interface{}))
+		default:
+			outputObj[strings.Replace(k, ".", "~", -1)] = v
+		}
+	}
+	return outputObj
+}
+
+func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, fixTriggerNodeArr(v.([]interface{})))
+		case map[string]interface{}:
+			outputObj = append(outputObj, fixTriggerNodeMap(v.(map[string]interface{})))
+		default:
+			outputObj = append(outputObj, v)
+		}
+	}
+	return outputObj
 }
 
 func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {

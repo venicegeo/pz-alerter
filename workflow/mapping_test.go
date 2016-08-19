@@ -22,9 +22,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const loopAmount = 5000
+const loopAmount = 2
 
 type MappingTester struct {
 	suite.Suite
@@ -336,11 +337,11 @@ func (suite *MappingTester) Test20Mappings() {
 				inputTree := map[string]interface{}{}
 				expectedOutputTree := map[string]interface{}{}
 
-				temp, err := structStringToInterface(input)
+				temp, err := piazza.StructStringToInterface(input)
 				assert.NoError(err)
 				inputTree = temp.(map[string]interface{})
 
-				temp, err = structStringToInterface(expectedOutput)
+				temp, err = piazza.StructStringToInterface(expectedOutput)
 				assert.NoError(err)
 				expectedOutputTree = temp.(map[string]interface{})
 
@@ -367,15 +368,15 @@ func (suite *MappingTester) Test21Mappings() {
 				inputTree := map[string]interface{}{}
 				expectedOutputTree := map[string]interface{}{}
 
-				temp, err := structStringToInterface(input)
+				temp, err := piazza.StructStringToInterface(input)
 				assert.NoError(err)
 				inputTree = temp.(map[string]interface{})
 
-				temp, err = structStringToInterface(expectedOutput)
+				temp, err = piazza.StructStringToInterface(expectedOutput)
 				assert.NoError(err)
 				expectedOutputTree = temp.(map[string]interface{})
 
-				outputTree, err := StringBuildMapping(inputTree)
+				outputTree, err := stringBuildMapping(inputTree)
 				assert.NoError(err)
 
 				err = doVerification(expectedOutputTree, outputTree)
@@ -387,16 +388,16 @@ func (suite *MappingTester) Test21Mappings() {
 
 func doVerification(expecte map[string]interface{}, actua map[string]interface{}) error {
 
-	expected, err := structInterfaceToString(expecte)
+	expected, err := piazza.StructInterfaceToString(expecte)
 	if err != nil {
 		return err
 	}
-	expected = removeWhitespace(expected)
-	actual, err := structInterfaceToString(actua)
+	expected = piazza.RemoveWhitespace(expected)
+	actual, err := piazza.StructInterfaceToString(actua)
 	if err != nil {
 		return err
 	}
-	actual = removeWhitespace(actual)
+	actual = piazza.RemoveWhitespace(actual)
 	if strings.Compare(expected, actual) != 0 {
 		println(expected)
 		println()

@@ -55,7 +55,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	eventsIndex, err := elasticsearch.NewIndex(sys, "events", pzworkflow.EventIndexSettings)
+	eventsIndex, err := elasticsearch.NewIndex(sys, "events001", pzworkflow.EventIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
