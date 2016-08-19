@@ -277,7 +277,7 @@ func visitTree(k string, v map[string]interface{}) (map[string]interface{}, erro
 }
 func visitLeaf(k string, v interface{}) (map[string]interface{}, error) {
 	if !elasticsearch.IsValidMappingType(v) {
-		return nil, LoggedError("EventDB.ConstructEventMappingSchema failed: %s was not recognized as a valid mapping type")
+		return nil, LoggedError("EventDB.ConstructEventMappingSchema failed: \"%#v\" was not recognized as a valid mapping type", v)
 	}
 	if elasticsearch.IsValidArrayTypeMapping(v) {
 		v = v.(string)[1 : len(v.(string))-1]
