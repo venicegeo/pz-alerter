@@ -824,6 +824,72 @@ func (suite *ServerTester) Test07MultiTrigger() {
 
 }
 
+/*func (suite *ServerTester) Test08BadEvents() {
+	t := suite.T()
+	assert := assert.New(t)
+	client := suite.client
+
+	assertNoData(suite.T(), suite.client)
+	defer assertNoData(suite.T(), suite.client)
+
+	eventTypeName := makeTestEventTypeName()
+
+	var eterrID piazza.Ident
+	{
+		mapping := map[string]interface{}{
+			"num":      elasticsearch.MappingElementTypeInteger,
+			"str":      elasticsearch.MappingElementTypeString,
+			"userName": elasticsearch.MappingElementTypeString,
+		}
+
+		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
+		respEventType, err := client.PostEventType(eventType)
+		eterrID = respEventType.EventTypeId
+		assert.NoError(err)
+		defer func() {
+			err := client.DeleteEventType(eterrID)
+			assert.NoError(err)
+		}()
+	}
+	{
+		event := &Event{
+			EventTypeId: eterrID,
+			CreatedOn:   time.Now(),
+			Data: map[string]interface{}{
+				"num": 17,
+				"str": "quick",
+			},
+		}
+
+		respEvent, err := client.PostEvent(event)
+		assert.NotNil(err)
+		e1ID := respEvent.EventId
+		defer func() {
+			err := client.DeleteEvent(e1ID)
+			assert.NoError(err)
+		}()
+	}
+	{
+		event := &Event{
+			EventTypeId: eterrID,
+			CreatedOn:   time.Now(),
+			Data: map[string]interface{}{
+				"num":      17,
+				"str":      []string{"quick"},
+				"userName": "quick",
+			},
+		}
+
+		respEvent, err := client.PostEvent(event)
+		assert.NotNil(err)
+		e1ID := respEvent.EventId
+		defer func() {
+			err := client.DeleteEvent(e1ID)
+			assert.NoError(err)
+		}()
+	}
+}*/
+
 func printJSON(msg string, input interface{}) {
 	if input != nil {
 		results, err := json.Marshal(input)
