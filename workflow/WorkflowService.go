@@ -410,6 +410,11 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 		return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
 	}
 
+	triggers, hits, err := service.triggerDB.GetTriggersByEventTypeId(id)
+	if hits > 0 || len(triggers) > 0 {
+		return service.statusBadRequest(errors.New("Deleting eventTypes that are in use is prohibited"))
+	}
+
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if !ok {
 		return service.statusNotFound(err)

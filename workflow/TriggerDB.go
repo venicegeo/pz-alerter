@@ -203,6 +203,39 @@ func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 	return &obj, getResult.Found, nil
 }
 
+func (db *TriggerDB) GetTriggersByEventTypeId(id piazza.Ident, format *piazza.JsonPagination) ([]Trigger, int64, error) {
+	triggers := []Trigger{}
+
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return triggers, 0, err
+	}
+	if !exists {
+		return triggers, 0, nil
+	}
+
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "condition.eventTypeIds", id)
+	if err != nil {
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+
+		for _, hit := range *searchResult.GetHits() {
+			var trigger Trigger
+			err := json.Unmarshal(*hit.Source, &trigger)
+			if err != nil {
+				return nil, 0, err
+			}
+			triggers = append(triggers, trigger)
+		}
+	}
+	return triggers, searchResult.TotalHits(), nil
+}
+
 func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 
 	trigger, found, err := db.GetOne(id)
