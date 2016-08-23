@@ -63,24 +63,6 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			}
 		}
 	}
-	eventTypes := []*EventType{}
-	{ //CHECK EVENTTYPE IDS
-		if len(trigger.Condition.EventTypeIds) == 0 {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
-		}
-		for _, id := range trigger.Condition.EventTypeIds {
-			eventType, found, err := db.service.eventTypeDB.GetOne(id)
-			if !found || err != nil {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
-			}
-			eventTypes = append(eventTypes, eventType)
-		}
-	}
-	fixedQuery, ok := db.addUniqueParamsToQuery(trigger.Condition.Query, eventTypes).(map[string]interface{})
-	if !ok {
-		return piazza.NoIdent, LoggedError("TriggerEB.PostData failed: failed to parse query")
-	}
-	trigger.Condition.Query = fixedQuery
 
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)

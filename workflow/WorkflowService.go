@@ -777,6 +777,25 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 	trigger.TriggerId = triggerID
 	trigger.CreatedOn = time.Now()
 
+	eventTypes := []*EventType{}
+	{ //check eventtype ids
+		if len(trigger.Condition.EventTypeIds) == 0 {
+			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: no eventTypeIds were specified"))
+		}
+		for _, id := range trigger.Condition.EventTypeIds {
+			eventType, found, err := service.eventTypeDB.GetOne(id)
+			if !found || err != nil {
+				return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: eventType %s could not be found", id.String()))
+			}
+			eventTypes = append(eventTypes, eventType)
+		}
+	}
+	fixedQuery, ok := service.triggerDB.addUniqueParamsToQuery(trigger.Condition.Query, eventTypes).(map[string]interface{})
+	if !ok {
+		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
+	}
+	trigger.Condition.Query = fixedQuery
+
 	_, err = service.triggerDB.PostTrigger(trigger, triggerID)
 	if err != nil {
 		return service.statusBadRequest(err)
