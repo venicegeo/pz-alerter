@@ -203,7 +203,7 @@ func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 	return &obj, getResult.Found, nil
 }
 
-func (db *TriggerDB) GetTriggersByEventTypeId(id piazza.Ident, format *piazza.JsonPagination) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByEventTypeId(id piazza.Ident) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
