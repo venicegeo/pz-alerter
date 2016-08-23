@@ -82,9 +82,6 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	}
 	trigger.Condition.Query = fixedQuery
 
-	str, _ := piazza.StructInterfaceToString(trigger)
-	println(str)
-
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)
 	body, err := json.Marshal(ifaceObj)
@@ -332,31 +329,25 @@ func (db *TriggerDB) addUniqueParamsToQueryArr(inputObj []interface{}, eventType
 }
 
 func (db *TriggerDB) getNewKeyName(eventTypes []*EventType, key string) string {
-	//println("found:", key)
 	matches := []*EventType{}
 	for _, et := range eventTypes {
-		//println("  testing et:", et.Name)
 		mapping := db.service.removeUniqueParams(et.Name, et.Mapping)
 		vars, _ := piazza.GetVarsFromStruct(mapping)
 		for varName, _ := range vars {
-			//println("    testing var:", "data."+varName)
 			if "data."+varName == key {
-				//println("    found")
 				matches = append(matches, et)
 				break
 			}
 		}
 	}
 	if len(matches) == 0 || len(matches) > 1 {
-		//println("  either 0 or more than one match")
 		return key
 	} else {
-		//println(" Exactly one match")
 		parts := strings.Split(key, ".")
 		prefix := ""
 		for i := 0; i < len(parts)-1; i++ {
 			prefix += parts[i] + "."
 		}
-		return prefix + matches[0].Name + "$." + parts[len(parts)-1]
+		return prefix + matches[0].Name + "$" + parts[len(parts)-1]
 	}
 }
