@@ -376,6 +376,18 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 
 	eventType.CreatedOn = time.Now()
 
+	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	if err != nil {
+		return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: %s", err))
+	}
+	for k, _ := range vars {
+		if strings.ContainsAny(k, "$") && !strings.HasPrefix(k, eventType.Name+"$") {
+			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '$': [%s]", k))
+		}
+	}
+
+	eventType.Mapping = service.addUniqueParams(eventType.Name, eventType.Mapping)
+
 	id, err := service.eventTypeDB.PostData(eventType, eventTypeID)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -566,6 +578,8 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	event.EventId = eventID
 
 	event.CreatedOn = time.Now()
+
+	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
 	_, err = service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
@@ -897,6 +911,39 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 	service.logger.Info("Deleted Alert with AlertId %s", id)
 
 	return service.statusOK(nil)
+}
+
+func (service *WorkflowService) addUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case map[string]interface{}:
+			outputObj[k] = service.addUniqueParams(uniqueKey, v.(map[string]interface{}))
+		default:
+			if strings.HasPrefix(k, uniqueKey+"$") {
+				outputObj[k] = v
+			} else {
+				outputObj[uniqueKey+"$"+k] = v
+			}
+		}
+	}
+	return outputObj
+}
+func (service *WorkflowService) removeUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case map[string]interface{}:
+			outputObj[k] = service.removeUniqueParams(uniqueKey, v.(map[string]interface{}))
+		default:
+			if strings.HasPrefix(k, uniqueKey+"$") {
+				outputObj[strings.Replace(k, uniqueKey+"$", "", 1)] = v
+			} else {
+				outputObj[k] = v
+			}
+		}
+	}
+	return outputObj
 }
 
 //---------------------------------------------------------------------

@@ -63,17 +63,27 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			}
 		}
 	}
+	eventTypes := []*EventType{}
 	{ //CHECK EVENTTYPE IDS
 		if len(trigger.Condition.EventTypeIds) == 0 {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
 		}
 		for _, id := range trigger.Condition.EventTypeIds {
-			_, found, err := db.service.eventTypeDB.GetOne(id)
+			eventType, found, err := db.service.eventTypeDB.GetOne(id)
 			if !found || err != nil {
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
 			}
+			eventTypes = append(eventTypes, eventType)
 		}
 	}
+	fixedQuery, ok := db.addUniqueParamsToQuery(trigger.Condition.Query, eventTypes).(map[string]interface{})
+	if !ok {
+		return piazza.NoIdent, LoggedError("TriggerEB.PostData failed: failed to parse query")
+	}
+	trigger.Condition.Query = fixedQuery
+
+	str, _ := piazza.StructInterfaceToString(trigger)
+	println(str)
 
 	ifaceObj := trigger.Condition.Query
 	//log.Printf("Query: %v", ifaceObj)
@@ -279,4 +289,74 @@ func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
 		}
 	}
 	return outputObj
+}
+
+func (db *TriggerDB) addUniqueParamsToQuery(input interface{}, eventTypes []*EventType) interface{} {
+	var output interface{}
+	switch input.(type) {
+	case map[string]interface{}:
+		output = db.addUniqueParamsToQueryMap(input.(map[string]interface{}), eventTypes)
+	case []interface{}:
+		output = db.addUniqueParamsToQueryArr(input.([]interface{}), eventTypes)
+	}
+	return output
+}
+func (db *TriggerDB) addUniqueParamsToQueryMap(inputObj map[string]interface{}, eventTypes []*EventType) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj[db.getNewKeyName(eventTypes, k)] = db.addUniqueParamsToQueryArr(v.([]interface{}), eventTypes)
+		case map[string]interface{}:
+			outputObj[db.getNewKeyName(eventTypes, k)] = db.addUniqueParamsToQueryMap(v.(map[string]interface{}), eventTypes)
+		default:
+			outputObj[db.getNewKeyName(eventTypes, k)] = v
+		}
+	}
+	return outputObj
+}
+
+func (db *TriggerDB) addUniqueParamsToQueryArr(inputObj []interface{}, eventTypes []*EventType) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, db.addUniqueParamsToQueryArr(v.([]interface{}), eventTypes))
+		case map[string]interface{}:
+			outputObj = append(outputObj, db.addUniqueParamsToQueryMap(v.(map[string]interface{}), eventTypes))
+		default:
+			outputObj = append(outputObj, v)
+		}
+	}
+	return outputObj
+}
+
+func (db *TriggerDB) getNewKeyName(eventTypes []*EventType, key string) string {
+	//println("found:", key)
+	matches := []*EventType{}
+	for _, et := range eventTypes {
+		//println("  testing et:", et.Name)
+		mapping := db.service.removeUniqueParams(et.Name, et.Mapping)
+		vars, _ := piazza.GetVarsFromStruct(mapping)
+		for varName, _ := range vars {
+			//println("    testing var:", "data."+varName)
+			if "data."+varName == key {
+				//println("    found")
+				matches = append(matches, et)
+				break
+			}
+		}
+	}
+	if len(matches) == 0 || len(matches) > 1 {
+		//println("  either 0 or more than one match")
+		return key
+	} else {
+		//println(" Exactly one match")
+		parts := strings.Split(key, ".")
+		prefix := ""
+		for i := 0; i < len(parts)-1; i++ {
+			prefix += parts[i] + "."
+		}
+		return prefix + matches[0].Name + "$." + parts[len(parts)-1]
+	}
 }

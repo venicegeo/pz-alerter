@@ -16,7 +16,6 @@ package workflow
 
 import (
 	"encoding/json"
-	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -52,15 +51,11 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
-	for k, v := range vars {
+	for _, v := range vars {
 		if !elasticsearch.IsValidMappingType(v) {
 			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
-		} else if strings.ContainsAny(k, "$") {
-			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '$': [%s]", k)
 		}
 	}
-	uniqueMapping := uniqueParams(eventType.Name, eventType.Mapping)
-	eventType.Mapping = uniqueMapping
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), eventType)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
@@ -164,21 +159,4 @@ func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
 	}
 
 	return deleteResult.Found, nil
-}
-
-func uniqueParams(uniqueKey string, input map[string]interface{}) map[string]interface{} {
-	return visitNodeET(uniqueKey, input)
-}
-func visitNodeET(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
-	outputObj := map[string]interface{}{}
-	for k, v := range inputObj {
-		switch v.(type) {
-		case map[string]interface{}:
-			tree := visitNodeET(uniqueKey, v.(map[string]interface{}))
-			outputObj[k] = tree
-		default:
-			outputObj[uniqueKey+"$"+k] = v
-		}
-	}
-	return outputObj
 }

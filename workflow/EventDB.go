@@ -36,7 +36,6 @@ func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, e
 }
 
 func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
-
 	var event Event
 	ok1 := false
 	event, ok1 = obj.(Event)
@@ -48,15 +47,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		event = *temp
 	}
 
-	eventType, _, err := db.service.eventTypeDB.GetOne(event.EventTypeId)
-	if err != nil {
-		return piazza.NoIdent, err
-	}
-
-	uniqueData := uniqueParams(eventType.Name, event.Data)
-	event.Data = uniqueData
-
-	err = verifyEventReadyToPost(&event, db)
+	err := verifyEventReadyToPost(&event, db)
 	if err != nil {
 		return piazza.NoIdent, err
 	}
