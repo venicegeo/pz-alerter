@@ -143,6 +143,43 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 	return events, searchResult.TotalHits(), nil
 }
 
+func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ident) ([]Event, int64, error) {
+	events := []Event{}
+	var err error
+
+	exists := true
+	if mapping != "" {
+		exists, err = db.Esi.TypeExists(mapping)
+		if err != nil {
+			return events, 0, err
+		}
+	}
+	if !exists {
+		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
+	}
+
+	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeId)
+	if err != nil {
+		return nil, 0, LoggedError("EventDB.GetEventsByEventTypeId failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, 0, LoggedError("EventDB.GetEventsByEventTypeId failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
+			var event Event
+			err := json.Unmarshal(*hit.Source, &event)
+			if err != nil {
+				return nil, 0, err
+			}
+			events = append(events, event)
+		}
+	}
+
+	return events, searchResult.TotalHits(), nil
+}
+
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error) {
 	var mapping string = ""
 
