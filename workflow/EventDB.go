@@ -36,6 +36,7 @@ func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, e
 }
 
 func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+
 	var event Event
 	ok1 := false
 	event, ok1 = obj.(Event)
@@ -47,7 +48,15 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		event = *temp
 	}
 
-	err := verifyEventReadyToPost(&event, db)
+	eventType, _, err := db.service.eventTypeDB.GetOne(event.EventTypeId)
+	if err != nil {
+		return piazza.NoIdent, err
+	}
+
+	uniqueData := uniqueParams(eventType.Name, event.Data)
+	event.Data = uniqueData
+
+	err = verifyEventReadyToPost(&event, db)
 	if err != nil {
 		return piazza.NoIdent, err
 	}
@@ -241,20 +250,20 @@ func ConstructEventMappingSchema(name string, mapping map[string]interface{}) (p
 }
 
 func buildMapping(input map[string]interface{}) (map[string]interface{}, error) {
-	return visitNode(input)
+	return visitNodeE(input)
 }
-func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) {
+func visitNodeE(inputObj map[string]interface{}) (map[string]interface{}, error) {
 	outputObj := map[string]interface{}{}
 	for k, v := range inputObj {
 		switch t := v.(type) {
 		case string:
-			tree, err := visitLeaf(k, v)
+			tree, err := visitLeafE(k, v)
 			if err != nil {
 				return nil, err
 			}
 			outputObj[k] = tree
 		case map[string]interface{}:
-			tree, err := visitTree(k, v.(map[string]interface{}))
+			tree, err := visitTreeE(k, v.(map[string]interface{}))
 			if err != nil {
 				return nil, err
 			}
@@ -265,8 +274,8 @@ func visitNode(inputObj map[string]interface{}) (map[string]interface{}, error) 
 	}
 	return outputObj, nil
 }
-func visitTree(k string, v map[string]interface{}) (map[string]interface{}, error) {
-	subtree, err := visitNode(v)
+func visitTreeE(k string, v map[string]interface{}) (map[string]interface{}, error) {
+	subtree, err := visitNodeE(v)
 	if err != nil {
 		return nil, err
 	}
@@ -275,7 +284,7 @@ func visitTree(k string, v map[string]interface{}) (map[string]interface{}, erro
 	wrapperTree["properties"] = subtree
 	return wrapperTree, nil
 }
-func visitLeaf(k string, v interface{}) (map[string]interface{}, error) {
+func visitLeafE(k string, v interface{}) (map[string]interface{}, error) {
 	if !elasticsearch.IsValidMappingType(v) {
 		return nil, LoggedError("EventDB.ConstructEventMappingSchema failed: \"%#v\" was not recognized as a valid mapping type", v)
 	}
