@@ -98,7 +98,13 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	//log.Printf("Posting percolation query: %s", body)
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
 	if err != nil {
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: %s", err)
+		var errMessage string
+		if strings.Contains(err.Error(), "elastic: Error 500 (Internal Server Error): failed to parse query") {
+			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: elastic failed to parse query. Common causes: [Variables do not start with 'data.' or are not found at your specified path, invalid perc query structure].")
+		} else {
+			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: %s [unknown cause]", err)
+		}
+		return piazza.NoIdent, LoggedError(errMessage)
 	}
 	if indexResult == nil {
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: no indexResult")
