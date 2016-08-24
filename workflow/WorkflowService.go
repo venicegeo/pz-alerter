@@ -411,22 +411,28 @@ func IsSystemEvent(name string) bool {
 // DeleteEventType TODO
 func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id)
-	if !found || err != nil {
-		// Let the actual delete handle these cases
-	}
-	if eventType != nil && IsSystemEvent(eventType.Name) {
-		return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
-	}
+	// Only check for system events or "in use" if found
+	if found && err == nil {
+		if eventType != nil && IsSystemEvent(eventType.Name) {
+			return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
+		}
 
-	triggers, hits, err := service.triggerDB.GetTriggersByEventTypeId(id)
-	if hits > 0 || len(triggers) > 0 {
-		return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
-	}
-	events, hits, err := service.eventDB.GetEventsByEventTypeId(eventType.Name, id)
-	if hits > 0 || len(events) > 0 {
-		return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
-	}
+		triggers, hits, err := service.triggerDB.GetTriggersByEventTypeId(id)
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		if hits > 0 || len(triggers) > 0 {
+			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
+		}
 
+		events, hits, err := service.eventDB.GetEventsByEventTypeId(eventType.Name, id)
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		if hits > 0 || len(events) > 0 {
+			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
+		}
+	}
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
 	if !ok {
 		return service.statusNotFound(err)
