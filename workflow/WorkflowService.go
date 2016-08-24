@@ -255,6 +255,14 @@ func (service *WorkflowService) statusBadRequest(err error) *piazza.JsonResponse
 	}
 }
 
+func (service *WorkflowService) statusForbidden(err error) *piazza.JsonResponse {
+	return &piazza.JsonResponse{
+		StatusCode: http.StatusForbidden,
+		Message:    err.Error(),
+		Origin:     service.origin,
+	}
+}
+
 func (service *WorkflowService) statusInternalError(err error) *piazza.JsonResponse {
 	return &piazza.JsonResponse{
 		StatusCode: http.StatusInternalServerError,
@@ -408,6 +416,15 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 	}
 	if eventType != nil && IsSystemEvent(eventType.Name) {
 		return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
+	}
+
+	triggers, hits, err := service.triggerDB.GetTriggersByEventTypeId(id)
+	if hits > 0 || len(triggers) > 0 {
+		return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
+	}
+	events, hits, err := service.eventDB.GetEventsByEventTypeId(eventType.Name, id)
+	if hits > 0 || len(events) > 0 {
+		return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
 	}
 
 	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
