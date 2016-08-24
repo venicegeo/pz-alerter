@@ -465,11 +465,11 @@ func (suite *ServerTester) Test04Alert() {
 	assert.Len(*alerts, 0)
 	//printJSON("alerts", alerts)
 
-	err = client.DeleteEventType(eventTypeID)
-	assert.NoError(err)
 	err = client.DeleteEvent(eventID)
 	assert.NoError(err)
 	err = client.DeleteTrigger(triggerID)
+	assert.NoError(err)
+	err = client.DeleteEventType(eventTypeID)
 	assert.NoError(err)
 }
 
