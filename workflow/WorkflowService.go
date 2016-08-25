@@ -376,15 +376,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 
 	eventType.CreatedOn = time.Now()
 
-	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
-	if err != nil {
-		return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: %s", err))
-	}
-	for k, _ := range vars {
-		if strings.ContainsAny(k, "$") && !strings.HasPrefix(k, eventType.Name+"$") {
-			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '$': [%s]", k))
-		}
-	}
+	response := *eventType
 
 	eventType.Mapping = service.addUniqueParams(eventType.Name, eventType.Mapping)
 
@@ -392,9 +384,8 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	mapping := eventType.Mapping
 
-	err = service.eventDB.AddMapping(name, mapping)
+	err = service.eventDB.AddMapping(name, eventType.Mapping)
 	if err != nil {
 		service.eventTypeDB.DeleteByID(id)
 		return service.statusBadRequest(err)
@@ -404,7 +395,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 
 	service.stats.IncrEventTypes()
 
-	return service.statusCreated(eventType)
+	return service.statusCreated(&response)
 }
 
 // TODO: Instead, check if createdBy=system
@@ -517,8 +508,16 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 // this initial event, so that searching for events created by the initial event
 // is easier.
 func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
+	// Post the event in the database, WITHOUT "triggering"
+	eventTypeID := event.EventTypeId
+	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
+	if err != nil || !found {
+		return service.statusBadRequest(err)
+	}
+	eventTypeName := eventType.Name
+
 	log.Println("Posted Repeating Event")
-	_, err := cron.Parse(event.CronSchedule)
+	_, err = cron.Parse(event.CronSchedule)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -531,21 +530,16 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 
 	event.CreatedOn = time.Now()
 
+	response := *event
+
+	event.Data = service.addUniqueParams(eventTypeName, event.Data)
+
 	service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
 
 	err = service.cronDB.PostData(event, eventID)
 	if err != nil {
 		return service.statusInternalError(err)
 	}
-
-	// Post the event in the database, WITHOUT "triggering"
-	eventTypeID := event.EventTypeId
-	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
-	if err != nil || !found {
-		service.cron.Remove(eventID.String())
-		return service.statusBadRequest(err)
-	}
-	eventTypeName := eventType.Name
 
 	_, err = service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
@@ -559,7 +553,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 
 	service.stats.IncrEvents()
 
-	return service.statusCreated(event)
+	return service.statusCreated(&response)
 }
 
 // PostEvent TODO
@@ -578,6 +572,8 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	event.EventId = eventID
 
 	event.CreatedOn = time.Now()
+
+	response := *event
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
@@ -688,7 +684,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 	service.stats.IncrEvents()
 
-	return service.statusCreated(event)
+	return service.statusCreated(&response)
 }
 
 func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
@@ -794,6 +790,7 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 	if !ok {
 		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
 	}
+	response := *trigger
 	trigger.Condition.Query = fixedQuery
 
 	_, err = service.triggerDB.PostTrigger(trigger, triggerID)
@@ -805,7 +802,7 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 
 	service.stats.IncrTriggers()
 
-	return service.statusCreated(trigger)
+	return service.statusCreated(&response)
 }
 
 func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piazza.JsonResponse {
