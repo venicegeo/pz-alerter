@@ -285,15 +285,15 @@ func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
 
 // GetEventType TODO
 func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonResponse {
-
-	event, found, err := service.eventTypeDB.GetOne(piazza.Ident(id))
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(id))
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	return service.statusOK(event)
+	eventType.Mapping = service.removeUniqueParams(eventType.Name, eventType.Mapping)
+	return service.statusOK(eventType)
 }
 
 // GetAllEventTypes TODO
@@ -337,7 +337,9 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 	if eventtypes == nil {
 		return service.statusInternalError(errors.New("getalleventtypes returned nil"))
 	}
-
+	for i := 0; i < len(eventtypes); i++ {
+		eventtypes[i].Mapping = service.removeUniqueParams(eventtypes[i].Name, eventtypes[i].Mapping)
+	}
 	resp := service.statusOK(eventtypes)
 
 	if totalHits > 0 {
@@ -375,6 +377,16 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	eventType.EventTypeId = eventTypeID
 
 	eventType.CreatedOn = time.Now()
+
+	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	if err != nil {
+		return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: %s", err))
+	}
+	for k, _ := range vars {
+		if strings.Contains(k, eventType.Name+"$") {
+			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '%s$': [%s]", eventType.Name, k))
+		}
+	}
 
 	response := *eventType
 
@@ -447,7 +459,8 @@ func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	return service.statusOK(event)
+	event.Data = service.removeUniqueParams(mapping, event.Data)
+	return service.statusOK(&event)
 }
 
 // GetAllEvents TODO
@@ -490,7 +503,16 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-
+	for i := 0; i < len(events); i++ {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(events[i].EventTypeId))
+		if !found {
+			return service.statusNotFound(err)
+		}
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		events[i].Data = service.removeUniqueParams(eventType.Name, events[i].Data)
+	}
 	resp := service.statusOK(events)
 
 	if totalHits > 0 {
@@ -739,6 +761,12 @@ func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(trigger.Condition.EventTypeIds[0]))
+	if err != nil || !found {
+		return service.statusBadRequest(err)
+	}
+
+	trigger.Condition.Query = service.removeUniqueParams(eventType.Name, trigger.Condition.Query)
 	return service.statusOK(trigger)
 }
 
@@ -753,6 +781,13 @@ func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *
 		return service.statusBadRequest(err)
 	} else if triggers == nil {
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
+	}
+	for i := 0; i < len(triggers); i++ {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].Condition.EventTypeIds[0]))
+		if err != nil || !found {
+			return service.statusBadRequest(err)
+		}
+		triggers[i].Condition.Query = service.removeUniqueParams(eventType.Name, triggers[i].Condition.Query)
 	}
 
 	resp := service.statusOK(triggers)
@@ -818,6 +853,12 @@ func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdat
 		return service.statusBadRequest(err)
 	}
 	service.logger.Info("Updated Trigger with TriggerId %s", id)
+
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.Condition.EventTypeIds[0]))
+	if err != nil || !found {
+		return service.statusBadRequest(err)
+	}
+	res.Condition.Query = service.removeUniqueParams(eventType.Name, res.Condition.Query)
 
 	return service.statusOK(res)
 }
@@ -949,14 +990,26 @@ func (service *WorkflowService) removeUniqueParams(uniqueKey string, inputObj ma
 	outputObj := map[string]interface{}{}
 	for k, v := range inputObj {
 		switch v.(type) {
+		case []interface{}:
+			outputObj[strings.Replace(k, uniqueKey+"$", "", -1)] = service.removeUniqueParamsHelper(uniqueKey, v.([]interface{}))
 		case map[string]interface{}:
-			outputObj[k] = service.removeUniqueParams(uniqueKey, v.(map[string]interface{}))
+			outputObj[strings.Replace(k, uniqueKey+"$", "", -1)] = service.removeUniqueParams(uniqueKey, v.(map[string]interface{}))
 		default:
-			if strings.HasPrefix(k, uniqueKey+"$") {
-				outputObj[strings.Replace(k, uniqueKey+"$", "", 1)] = v
-			} else {
-				outputObj[k] = v
-			}
+			outputObj[strings.Replace(k, uniqueKey+"$", "", -1)] = v
+		}
+	}
+	return outputObj
+}
+func (service *WorkflowService) removeUniqueParamsHelper(uniqueKey string, inputObj []interface{}) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, service.removeUniqueParamsHelper(uniqueKey, v.([]interface{})))
+		case map[string]interface{}:
+			outputObj = append(outputObj, service.removeUniqueParams(uniqueKey, v.(map[string]interface{})))
+		default:
+			outputObj = append(outputObj, v)
 		}
 	}
 	return outputObj
