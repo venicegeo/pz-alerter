@@ -64,15 +64,16 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		}
 	}
 	{ //CHECK EVENTTYPE IDS
-		if len(trigger.Condition.EventTypeIds) == 0 {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
+		id := trigger.Condition.EventTypeId
+		if strings.Trim(id.String(), " ") == "" {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeId was specified")
 		}
-		for _, id := range trigger.Condition.EventTypeIds {
-			_, found, err := db.service.eventTypeDB.GetOne(id)
-			if !found || err != nil {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
-			}
+
+		_, found, err := db.service.eventTypeDB.GetOne(id)
+		if !found || err != nil {
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
 		}
+
 	}
 
 	ifaceObj := trigger.Condition.Query
@@ -88,9 +89,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	jsn = jsn[:len(jsn)-1]
 	jsn += ",\"type\":["
 	// Add the types that the percolation query can match
-	for _, id := range trigger.Condition.EventTypeIds {
-		jsn += fmt.Sprintf("\"%s\",", id)
-	}
+	jsn += fmt.Sprintf("\"%s\",", trigger.Condition.EventTypeId)
 	jsn = jsn[:len(jsn)-1]
 	// Add back trailing } and ] to close array
 	jsn += "]}"

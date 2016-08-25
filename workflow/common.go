@@ -92,8 +92,8 @@ const TriggerIndexSettings = `
 // Condition expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventTypeIds []piazza.Ident         `json:"eventTypeIds" binding:"required"`
-	Query        map[string]interface{} `json:"query" binding:"required"`
+	EventTypeId piazza.Ident           `json:"eventTypeIds" binding:"required"`
+	Query       map[string]interface{} `json:"query" binding:"required"`
 }
 
 type JobRequest struct {
