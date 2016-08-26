@@ -664,11 +664,8 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 				// don't have the same Eventtype as the Event
 				// Would rather have this done via the percolation itself ...
 				matches := false
-				for _, eventTypeID := range trigger.Condition.EventTypeIds {
-					if eventTypeID == eventType.EventTypeId {
-						matches = true
-						break
-					}
+				if eventTypeID == eventType.EventTypeId {
+					matches = true
 				}
 				if matches == false {
 					return
