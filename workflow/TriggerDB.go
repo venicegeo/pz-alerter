@@ -325,11 +325,6 @@ func (db *TriggerDB) getNewKeyName(eventTypes []*EventType, key string) string {
 	if len(matches) == 0 || len(matches) > 1 {
 		return key
 	} else {
-		parts := strings.Split(key, ".")
-		prefix := ""
-		for i := 0; i < len(parts)-1; i++ {
-			prefix += parts[i] + "."
-		}
-		return prefix + matches[0].Name + "$" + parts[len(parts)-1]
+		return strings.Replace(key, "data.", "data."+matches[0].Name+".", 1)
 	}
 }

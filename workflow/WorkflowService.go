@@ -972,47 +972,15 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 
 func (service *WorkflowService) addUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
 	outputObj := map[string]interface{}{}
-	for k, v := range inputObj {
-		switch v.(type) {
-		case map[string]interface{}:
-			outputObj[k] = service.addUniqueParams(uniqueKey, v.(map[string]interface{}))
-		default:
-			if strings.HasPrefix(k, uniqueKey+"$") {
-				outputObj[k] = v
-			} else {
-				outputObj[uniqueKey+"$"+k] = v
-			}
-		}
-	}
+	outputObj[uniqueKey] = inputObj
 	return outputObj
 }
 func (service *WorkflowService) removeUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
-	outputObj := map[string]interface{}{}
-	for k, v := range inputObj {
-		switch v.(type) {
-		case []interface{}:
-			outputObj[strings.Replace(k, uniqueKey+"$", "", -1)] = service.removeUniqueParamsHelper(uniqueKey, v.([]interface{}))
-		case map[string]interface{}:
-			outputObj[strings.Replace(k, uniqueKey+"$", "", -1)] = service.removeUniqueParams(uniqueKey, v.(map[string]interface{}))
-		default:
-			outputObj[strings.Replace(k, uniqueKey+"$", "", -1)] = v
-		}
+	_, ok := inputObj[uniqueKey]
+	if !ok {
+		return inputObj
 	}
-	return outputObj
-}
-func (service *WorkflowService) removeUniqueParamsHelper(uniqueKey string, inputObj []interface{}) []interface{} {
-	outputObj := []interface{}{}
-	for _, v := range inputObj {
-		switch v.(type) {
-		case []interface{}:
-			outputObj = append(outputObj, service.removeUniqueParamsHelper(uniqueKey, v.([]interface{})))
-		case map[string]interface{}:
-			outputObj = append(outputObj, service.removeUniqueParams(uniqueKey, v.(map[string]interface{})))
-		default:
-			outputObj = append(outputObj, v)
-		}
-	}
-	return outputObj
+	return inputObj[uniqueKey].(map[string]interface{})
 }
 
 //---------------------------------------------------------------------

@@ -47,7 +47,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		event = *temp
 	}
 
-	err := verifyEventReadyToPost(&event, db)
+	err := db.verifyEventReadyToPost(&event)
 	if err != nil {
 		return piazza.NoIdent, err
 	}
@@ -63,7 +63,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 	return id, nil
 }
 
-func verifyEventReadyToPost(event *Event, db *EventDB) error {
+func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	eventTypeJson := db.service.GetEventType(event.EventTypeId)
 	eventTypeObj := eventTypeJson.Data
 	eventType, ok := eventTypeObj.(*EventType)
@@ -74,7 +74,7 @@ func verifyEventReadyToPost(event *Event, db *EventDB) error {
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
-	eventDataVars, err := piazza.GetVarsFromStruct(event.Data)
+	eventDataVars, err := piazza.GetVarsFromStruct(db.service.removeUniqueParams(eventType.Name, event.Data))
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
