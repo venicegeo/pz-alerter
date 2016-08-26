@@ -391,8 +391,11 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: %s", err))
 	}
 	for k, _ := range vars {
-		if strings.Contains(k, eventType.Name+"$") {
+		if strings.Contains(k, "$") {
 			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '%s$': [%s]", eventType.Name, k))
+		}
+		if strings.Contains(k, "~") {
+			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '%s~': [%s]", eventType.Name, k))
 		}
 	}
 
@@ -781,12 +784,12 @@ func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(trigger.Condition.EventTypeIds[0]))
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(trigger.EventTypeId))
 	if err != nil || !found {
 		return service.statusBadRequest(err)
 	}
 
-	trigger.Condition.Query = service.removeUniqueParams(eventType.Name, trigger.Condition.Query)
+	trigger.Condition = service.removeUniqueParams(eventType.Name, trigger.Condition)
 	return service.statusOK(trigger)
 }
 
@@ -803,11 +806,11 @@ func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
 	}
 	for i := 0; i < len(triggers); i++ {
-		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].Condition.EventTypeIds[0]))
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].EventTypeId))
 		if err != nil || !found {
 			return service.statusBadRequest(err)
 		}
-		triggers[i].Condition.Query = service.removeUniqueParams(eventType.Name, triggers[i].Condition.Query)
+		triggers[i].Condition = service.removeUniqueParams(eventType.Name, triggers[i].Condition)
 	}
 
 	resp := service.statusOK(triggers)
@@ -828,25 +831,23 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 	trigger.TriggerId = triggerID
 	trigger.CreatedOn = time.Now()
 
-	eventTypes := []*EventType{}
-	{ //check eventtype ids
-		if len(trigger.Condition.EventTypeIds) == 0 {
-			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: no eventTypeIds were specified"))
+	eventType := &EventType{}
+	{ //check eventtype id
+		if trigger.EventTypeId == "" {
+			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: no eventTypeId was specified"))
 		}
-		for _, id := range trigger.Condition.EventTypeIds {
-			eventType, found, err := service.eventTypeDB.GetOne(id)
-			if !found || err != nil {
-				return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: eventType %s could not be found", id.String()))
-			}
-			eventTypes = append(eventTypes, eventType)
+		et, found, err := service.eventTypeDB.GetOne(trigger.EventTypeId)
+		if !found || err != nil {
+			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: eventType %s could not be found", trigger.EventTypeId.String()))
 		}
+		eventType = et
 	}
-	fixedQuery, ok := service.triggerDB.addUniqueParamsToQuery(trigger.Condition.Query, eventTypes).(map[string]interface{})
+	fixedQuery, ok := service.triggerDB.addUniqueParamsToQuery(trigger.Condition, eventType).(map[string]interface{})
 	if !ok {
 		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
 	}
 	response := *trigger
-	trigger.Condition.Query = fixedQuery
+	trigger.Condition = fixedQuery
 
 	_, err = service.triggerDB.PostTrigger(trigger, triggerID)
 	if err != nil {
@@ -874,11 +875,11 @@ func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdat
 	}
 	service.logger.Info("Updated Trigger with TriggerId %s", id)
 
-	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.Condition.EventTypeIds[0]))
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.EventTypeId))
 	if err != nil || !found {
 		return service.statusBadRequest(err)
 	}
-	res.Condition.Query = service.removeUniqueParams(eventType.Name, res.Condition.Query)
+	res.Condition = service.removeUniqueParams(eventType.Name, res.Condition)
 
 	return service.statusOK(res)
 }

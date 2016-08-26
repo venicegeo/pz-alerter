@@ -105,7 +105,7 @@ type JobType struct {
 type Trigger struct {
 	TriggerId     piazza.Ident           `json:"triggerId"`
 	Name          string                 `json:"name" binding:"required"`
-	EventTypeId   piazza.Ident           `json:"eventTypeIds" binding:"required"`
+	EventTypeId   piazza.Ident           `json:"eventTypeId" binding:"required"`
 	Condition     map[string]interface{} `json:"condition" binding:"required"`
 	Job           JobRequest             `json:"job" binding:"required"`
 	PercolationId piazza.Ident           `json:"percolationId"`
