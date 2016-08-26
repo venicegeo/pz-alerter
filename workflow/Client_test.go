@@ -220,15 +220,11 @@ func (suite *ClientTester) Test15One() {
 	var tID piazza.Ident
 	{
 		x1 := &Trigger{
-			Name: "the x1 trigger",
-			Condition: Condition{
-				EventTypeIds: []piazza.Ident{etID},
-				Query: map[string]interface{}{
-					"query": map[string]interface{}{
-						"match": map[string]interface{}{
-							"num": 17,
-						},
-					},
+			Name:        "the x1 trigger",
+			EventTypeId: etID,
+			Condition: map[string]interface{}{
+				"match": map[string]interface{}{
+					"num": 17,
 				},
 			},
 			Job: JobRequest{
@@ -324,15 +320,11 @@ func (suite *ClientTester) Test16TriggerResource() {
 	}()
 
 	t1 := Trigger{
-		Name: "the x1 trigger",
-		Condition: Condition{
-			EventTypeIds: []piazza.Ident{etID},
-			Query: map[string]interface{}{
-				"query": map[string]interface{}{
-					"match": map[string]interface{}{
-						"myint": 17,
-					},
-				},
+		Name:        "the x1 trigger",
+		EventTypeId: etID,
+		Condition: map[string]interface{}{
+			"match": map[string]interface{}{
+				"myint": 17,
 			},
 		},
 		Job: JobRequest{
@@ -417,15 +409,11 @@ func (suite *ClientTester) Test17Triggering() {
 	var tB piazza.Ident
 	{
 		t1 := &Trigger{
-			Name: "Trigger A",
-			Condition: Condition{
-				EventTypeIds: []piazza.Ident{etC},
-				Query: map[string]interface{}{
-					"query": map[string]interface{}{
-						"match": map[string]interface{}{
-							"str": "quick",
-						},
-					},
+			Name:        "Trigger A",
+			EventTypeId: etC,
+			Condition: map[string]interface{}{
+				"match": map[string]interface{}{
+					"str": "quick",
 				},
 			},
 			Job: JobRequest{
@@ -449,15 +437,11 @@ func (suite *ClientTester) Test17Triggering() {
 		}()
 
 		t2 := &Trigger{
-			Name: "Trigger B",
-			Condition: Condition{
-				EventTypeIds: []piazza.Ident{etD},
-				Query: map[string]interface{}{
-					"query": map[string]interface{}{
-						"match": map[string]interface{}{
-							"num": 18,
-						},
-					},
+			Name:        "Trigger B",
+			EventTypeId: etD,
+			Condition: map[string]interface{}{
+				"match": map[string]interface{}{
+					"num": 18,
 				},
 			},
 			Job: JobRequest{

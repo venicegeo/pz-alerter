@@ -196,16 +196,12 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	client := suite.client
 
 	trigger := &workflow.Trigger{
-		Name:    suite.triggerName,
-		Enabled: true,
-		Condition: workflow.Condition{
-			EventTypeIds: []piazza.Ident{suite.eventTypeId},
-			Query: map[string]interface{}{
-				"query": map[string]interface{}{
-					"match": map[string]interface{}{
-						"data.beta": 17,
-					},
-				},
+		Name:        suite.triggerName,
+		Enabled:     true,
+		EventTypeId: suite.eventTypeId,
+		Condition: map[string]interface{}{
+			"match": map[string]interface{}{
+				"data.beta": 17,
 			},
 		},
 		Job: workflow.JobRequest{
@@ -231,6 +227,8 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 			},
 		},
 	}
+	str, _ := piazza.StructInterfaceToString(trigger)
+	println(str)
 
 	ack, err := client.PostTrigger(trigger)
 	assert.NoError(err)

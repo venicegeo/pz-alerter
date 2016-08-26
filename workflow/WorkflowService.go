@@ -486,7 +486,7 @@ func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	}
 
 	event.Data = service.removeUniqueParams(mapping, event.Data)
-	return service.statusOK(&event)
+	return service.statusOK(event)
 }
 
 // GetAllEvents TODO
