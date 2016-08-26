@@ -64,7 +64,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		}
 	}
 	{ //CHECK EVENTTYPE IDS
-		id := trigger.Condition.EventTypeId
+		id := trigger.EventTypeId
 		if strings.Trim(id.String(), " ") == "" {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeId was specified")
 		}
@@ -74,7 +74,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		}
 	}
 
-	ifaceObj := trigger.Condition.Query
+	ifaceObj := trigger.Condition
 	//log.Printf("Query: %v", ifaceObj)
 	body, err := json.Marshal(ifaceObj)
 	if err != nil {
