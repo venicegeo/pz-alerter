@@ -68,12 +68,10 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		if strings.Trim(id.String(), " ") == "" {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeId was specified")
 		}
-
 		_, found, err := db.service.eventTypeDB.GetOne(id)
 		if !found || err != nil {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
 		}
-
 	}
 
 	ifaceObj := trigger.Condition.Query
@@ -83,17 +81,6 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		return piazza.NoIdent, err
 	}
 
-	jsn := string(body)
-	//log.Printf("Current json: %s", jsn)
-	// Remove trailing }
-	jsn = jsn[:len(jsn)-1]
-	jsn += ",\"type\":["
-	// Add the types that the percolation query can match
-	jsn += fmt.Sprintf("\"%s\",", trigger.Condition.EventTypeId)
-	jsn = jsn[:len(jsn)-1]
-	// Add back trailing } and ] to close array
-	jsn += "]}"
-
 	//log.Printf("Posting percolation query: %s", body)
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
 	if err != nil {
@@ -101,7 +88,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		if strings.Contains(err.Error(), "elastic: Error 500 (Internal Server Error): failed to parse query") {
 			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: elastic failed to parse query. Common causes: [Variables do not start with 'data.' or are not found at your specified path, invalid perc query structure].")
 		} else {
-			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: %s [unknown cause]", err)
+			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed [unknown cause]: %s ", err)
 		}
 		return piazza.NoIdent, LoggedError(errMessage)
 	}
