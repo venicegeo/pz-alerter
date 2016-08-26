@@ -51,21 +51,17 @@ const TriggerIndexSettings = `
 					"type": "string",
 					"index": "not_analyzed"
 				},
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
 				"enabled": {
 					"type": "boolean",
 					"index": "not_analyzed"
 				},
 				"condition": {
-					"properties": {
-						"eventTypeIds": {
-							"type": "string",
-							"index": "not_analyzed"
-						},
-						"query": {
-							"dynamic": true,
-							"properties": {}
-						}
-					}
+					"dynamic": true,
+					"properties": {}
 				},
 				"job": {
 					"properties": {
