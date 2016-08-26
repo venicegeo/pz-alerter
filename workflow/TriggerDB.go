@@ -65,8 +65,10 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	}
 
 	ifaceObj := trigger.Condition.Query
-	//log.Printf("Query: %v", ifaceObj)
-	body, err := json.Marshal(ifaceObj)
+	wrapper := map[string]interface{}{}
+	wrapper["query"] = ifaceObj
+	//log.Printf("Query: %v", wrapper)
+	body, err := json.Marshal(wrapper)
 	if err != nil {
 		return piazza.NoIdent, err
 	}
