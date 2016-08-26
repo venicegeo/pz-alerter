@@ -56,8 +56,7 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
 		}
 	}
-
-	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
+	indexResult, err := db.Esi.PostData(db.mapping, id.String(), eventType)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
 	}

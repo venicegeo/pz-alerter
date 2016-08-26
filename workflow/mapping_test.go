@@ -345,38 +345,7 @@ func (suite *MappingTester) Test20Mappings() {
 				assert.NoError(err)
 				expectedOutputTree = temp.(map[string]interface{})
 
-				outputTree, err := visitNode(inputTree)
-				assert.NoError(err)
-
-				err = doVerification(expectedOutputTree, outputTree)
-				assert.NoError(err, fmt.Sprintf("failed %d\n", idx))
-			}
-		}
-	}
-}
-
-func (suite *MappingTester) Test21Mappings() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	for i := 0; i < loopAmount; i++ {
-		for idx, pair := range mappingTestData {
-			input := pair[0]
-			expectedOutput := pair[1]
-
-			{
-				inputTree := map[string]interface{}{}
-				expectedOutputTree := map[string]interface{}{}
-
-				temp, err := piazza.StructStringToInterface(input)
-				assert.NoError(err)
-				inputTree = temp.(map[string]interface{})
-
-				temp, err = piazza.StructStringToInterface(expectedOutput)
-				assert.NoError(err)
-				expectedOutputTree = temp.(map[string]interface{})
-
-				outputTree, err := stringBuildMapping(inputTree)
+				outputTree, err := visitNodeTesting(inputTree)
 				assert.NoError(err)
 
 				err = doVerification(expectedOutputTree, outputTree)
@@ -422,4 +391,61 @@ func printBytes(data []byte) error {
 	log.Printf("%s", string(byts))
 
 	return nil
+}
+
+func BuildMappingTesting(input map[string]interface{}) (map[string]interface{}, error) {
+	return visitNodeTesting(input)
+}
+
+func visitNodeTesting(inputObj map[string]interface{}) (map[string]interface{}, error) {
+
+	outputObj := map[string]interface{}{}
+
+	for k, v := range inputObj {
+		//fmt.Printf("%s: %#v\n", k, v)
+		switch t := v.(type) {
+
+		case string:
+			tree, err := handleLeafTesting(k, v)
+			if err != nil {
+				return nil, err
+			}
+			outputObj[k] = tree
+
+		case map[string]interface{}:
+			tree, err := handleNonleafTesting(k, v)
+			if err != nil {
+				return nil, err
+			}
+			outputObj[k] = tree
+
+		default:
+			return nil, fmt.Errorf("unexpected type %T\n", t)
+		}
+	}
+
+	return outputObj, nil
+}
+
+func handleNonleafTesting(k string, v interface{}) (map[string]interface{}, error) {
+	//fmt.Printf("Handling nonleaf %s: %#v\n", k, v)
+
+	subtree, err := visitNodeTesting(v.(map[string]interface{}))
+	if err != nil {
+		return nil, err
+	}
+
+	wrapperTree := map[string]interface{}{}
+	wrapperTree["dynamic"] = "strict"
+	wrapperTree["properties"] = subtree
+
+	return wrapperTree, err
+}
+
+func handleLeafTesting(k string, v interface{}) (map[string]interface{}, error) {
+	//fmt.Printf("Handling leaf %s: %s\n", k, v)
+
+	tree := map[string]interface{}{}
+	tree["type"] = v
+	return tree, nil
 }
