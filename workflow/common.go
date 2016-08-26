@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"sync"
 	"time"
 
 	uuidpkg "github.com/pborman/uuid"
@@ -92,7 +91,7 @@ const TriggerIndexSettings = `
 // Condition expresses the idea of "this ES query returns an event"
 // Query is specific to the event type
 type Condition struct {
-	EventTypeIds []piazza.Ident         `json:"eventTypeIds" binding:"required"`
+	EventTypeIDs []piazza.Ident         `json:"eventTypeIds" binding:"required"`
 	Query        map[string]interface{} `json:"query" binding:"required"`
 }
 
@@ -110,11 +109,11 @@ type JobType struct {
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
 type Trigger struct {
-	TriggerId     piazza.Ident `json:"triggerId"`
+	TriggerID     piazza.Ident `json:"triggerId"`
 	Name          string       `json:"name" binding:"required"`
 	Condition     Condition    `json:"condition" binding:"required"`
 	Job           JobRequest   `json:"job" binding:"required"`
-	PercolationId piazza.Ident `json:"percolationId"`
+	PercolationID piazza.Ident `json:"percolationId"`
 	CreatedBy     string       `json:"createdBy"`
 	CreatedOn     time.Time    `json:"createdOn"`
 	Enabled       bool         `json:"enabled"`
@@ -170,8 +169,8 @@ const EventIndexSettings = `
 // An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {
-	EventId      piazza.Ident           `json:"eventId"`
-	EventTypeId  piazza.Ident           `json:"eventTypeId" binding:"required"`
+	EventID      piazza.Ident           `json:"eventId"`
+	EventTypeID  piazza.Ident           `json:"eventTypeId" binding:"required"`
 	Data         map[string]interface{} `json:"data"`
 	CreatedBy    string                 `json:"createdBy"`
 	CreatedOn    time.Time              `json:"createdOn"`
@@ -219,7 +218,7 @@ const EventTypeIndexSettings = `
 
 // EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
-	EventTypeId piazza.Ident           `json:"eventTypeId"`
+	EventTypeID piazza.Ident           `json:"eventTypeId"`
 	Name        string                 `json:"name" binding:"required"`
 	Mapping     map[string]interface{} `json:"mapping" binding:"required"`
 	CreatedBy   string                 `json:"createdBy"`
@@ -279,10 +278,10 @@ const AlertIndexSettings = `
 
 // Alert is a notification, automatically created when a Trigger happens
 type Alert struct {
-	AlertId   piazza.Ident `json:"alertId"`
-	TriggerId piazza.Ident `json:"triggerId"`
-	EventId   piazza.Ident `json:"eventId"`
-	JobId     piazza.Ident `json:"jobId"`
+	AlertID   piazza.Ident `json:"alertId"`
+	TriggerID piazza.Ident `json:"triggerId"`
+	EventID   piazza.Ident `json:"eventId"`
+	JobID     piazza.Ident `json:"jobId"`
 	CreatedBy string       `json:"createdBy"`
 	CreatedOn time.Time    `json:"createdOn"`
 }
@@ -329,8 +328,7 @@ const cronDBMapping = "Cron"
 
 //-- Stats ------------------------------------------------------------
 
-type workflowStats struct {
-	sync.Mutex
+type Stats struct {
 	CreatedOn        time.Time `json:"createdOn"`
 	NumEventTypes    int       `json:"numEventTypes"`
 	NumEvents        int       `json:"numEvents"`
@@ -339,29 +337,27 @@ type workflowStats struct {
 	NumTriggeredJobs int       `json:"numTriggeredJobs"`
 }
 
-func (stats *workflowStats) incrCounter(counter *int) {
-	stats.Lock()
+func (stats *Stats) incrCounter(counter *int) {
 	*counter++
-	stats.Unlock()
 }
 
-func (stats *workflowStats) IncrEventTypes() {
+func (stats *Stats) IncrEventTypes() {
 	stats.incrCounter(&stats.NumEventTypes)
 }
 
-func (stats *workflowStats) IncrEvents() {
+func (stats *Stats) IncrEvents() {
 	stats.incrCounter(&stats.NumEvents)
 }
 
-func (stats *workflowStats) IncrTriggers() {
+func (stats *Stats) IncrTriggers() {
 	stats.incrCounter(&stats.NumTriggers)
 }
 
-func (stats *workflowStats) IncrAlerts() {
+func (stats *Stats) IncrAlerts() {
 	stats.incrCounter(&stats.NumAlerts)
 }
 
-func (stats *workflowStats) IncrTriggerJobs() {
+func (stats *Stats) IncrTriggerJobs() {
 	stats.incrCounter(&stats.NumTriggeredJobs)
 }
 
@@ -370,13 +366,13 @@ func (stats *workflowStats) IncrTriggerJobs() {
 // LoggedError logs the error's message and creates an error
 func LoggedError(mssg string, args ...interface{}) error {
 	str := fmt.Sprintf(mssg, args...)
-	log.Printf(str)
+	log.Print(str)
 	return errors.New(str)
 }
 
 // isUUID checks to see if the UUID is valid
-func isUUID(uuid string) bool {
-	return uuidpkg.Parse(uuid) != nil
+func isUUID(uuid piazza.Ident) bool {
+	return uuidpkg.Parse(uuid.String()) != nil
 }
 
 //-INIT-------------------------------------------------------------------------
@@ -390,5 +386,5 @@ func init() {
 	piazza.JsonResponseDataTypes["[]workflow.Trigger"] = "trigger-list"
 	piazza.JsonResponseDataTypes["*workflow.Alert"] = "alert"
 	piazza.JsonResponseDataTypes["[]workflow.Alert"] = "alert-list"
-	piazza.JsonResponseDataTypes["workflow.workflowStats"] = "workflowstats"
+	piazza.JsonResponseDataTypes["workflow.Stats"] = "workflowstats"
 }

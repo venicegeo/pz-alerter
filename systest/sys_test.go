@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workflow_systest
+package workflowsystest
 
 import (
 	"errors"
@@ -35,16 +35,16 @@ type WorkflowTester struct {
 	url           string
 	apiKey        string
 	uniq          string
-	eventTypeId   piazza.Ident
+	eventTypeID   piazza.Ident
 	eventTypeName string
 	triggerName   string
-	triggerId     piazza.Ident
-	serviceId     piazza.Ident
-	eventIdY      piazza.Ident
-	eventIdN      piazza.Ident
-	alertId       piazza.Ident
-	jobId         piazza.Ident
-	dataId        piazza.Ident
+	triggerID     piazza.Ident
+	serviceID     piazza.Ident
+	eventIDYes    piazza.Ident
+	eventIDNo     piazza.Ident
+	alertID       piazza.Ident
+	jobID         piazza.Ident
+	dataID        piazza.Ident
 }
 
 var mapType = map[string]interface{}{}
@@ -127,11 +127,11 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	assert.IsType(mapType, obj["data"])
 	data := obj["data"].(map[string]interface{})
 	assert.IsType(stringType, data["serviceId"])
-	serviceId := data["serviceId"].(string)
-	assert.NotEmpty(serviceId)
+	serviceID := data["serviceId"].(string)
+	assert.NotEmpty(serviceID)
 
-	suite.serviceId = piazza.Ident(serviceId)
-	log.Printf("ServiceId: %s", suite.serviceId)
+	suite.serviceID = piazza.Ident(serviceID)
+	log.Printf("ServiceId: %s", suite.serviceID)
 }
 
 //---------------------------------------------------------------------
@@ -157,9 +157,8 @@ func (suite *WorkflowTester) Test02PostEventType() {
 	assert.NoError(err)
 	assert.NotNil(ack)
 
-	suite.eventTypeId = ack.EventTypeId
-	log.Printf("EventTypeId: %s", suite.eventTypeId)
-
+	suite.eventTypeID = ack.EventTypeID
+	log.Printf("EventTypeId: %s", suite.eventTypeID)
 }
 
 func (suite *WorkflowTester) Test03GetEventType() {
@@ -175,10 +174,10 @@ func (suite *WorkflowTester) Test03GetEventType() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
-	item, err := client.GetEventType(suite.eventTypeId)
+	item, err := client.GetEventType(suite.eventTypeID)
 	assert.NoError(err)
 	assert.NotNil(item)
-	assert.EqualValues(suite.eventTypeId, item.EventTypeId)
+	assert.EqualValues(suite.eventTypeID, item.EventTypeID)
 }
 
 //---------------------------------------------------------------------
@@ -199,7 +198,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 		Name:    suite.triggerName,
 		Enabled: true,
 		Condition: workflow.Condition{
-			EventTypeIds: []piazza.Ident{suite.eventTypeId},
+			EventTypeIDs: []piazza.Ident{suite.eventTypeID},
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -226,7 +225,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 							"type":     "text",
 						},
 					},
-					"serviceId": suite.serviceId,
+					"serviceId": suite.serviceID,
 				},
 			},
 		},
@@ -236,8 +235,8 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	assert.NoError(err)
 	assert.NotNil(ack)
 
-	suite.triggerId = ack.TriggerId
-	log.Printf("TriggerId: %s", suite.triggerId)
+	suite.triggerID = ack.TriggerID
+	log.Printf("TriggerId: %s", suite.triggerID)
 }
 
 func (suite *WorkflowTester) Test05GetTrigger() {
@@ -253,10 +252,10 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
-	item, err := client.GetTrigger(suite.triggerId)
+	item, err := client.GetTrigger(suite.triggerID)
 	assert.NoError(err)
 	assert.NotNil(item)
-	assert.EqualValues(suite.triggerId, item.TriggerId)
+	assert.EqualValues(suite.triggerID, item.TriggerID)
 }
 
 //---------------------------------------------------------------------
@@ -271,7 +270,7 @@ func (suite *WorkflowTester) Test06PostEvent() {
 	client := suite.client
 
 	eventY := &workflow.Event{
-		EventTypeId: suite.eventTypeId,
+		EventTypeID: suite.eventTypeID,
 		Data: map[string]interface{}{
 			"beta":  17,
 			"alpha": "quick brown fox",
@@ -279,7 +278,7 @@ func (suite *WorkflowTester) Test06PostEvent() {
 	}
 
 	eventN := &workflow.Event{
-		EventTypeId: suite.eventTypeId,
+		EventTypeID: suite.eventTypeID,
 		Data: map[string]interface{}{
 			"beta":  71,
 			"alpha": "lazy dog",
@@ -289,14 +288,14 @@ func (suite *WorkflowTester) Test06PostEvent() {
 	ack, err := client.PostEvent(eventY)
 	assert.NoError(err)
 	assert.NotNil(ack)
-	suite.eventIdY = ack.EventId
-	log.Printf("EventIdY: %s", suite.eventIdY)
+	suite.eventIDYes = ack.EventID
+	log.Printf("EventIdY: %s", suite.eventIDYes)
 
 	ack, err = client.PostEvent(eventN)
 	assert.NoError(err)
 	assert.NotNil(ack)
-	suite.eventIdN = ack.EventId
-	log.Printf("EventIdN: %s", suite.eventIdN)
+	suite.eventIDNo = ack.EventID
+	log.Printf("EventIdN: %s", suite.eventIDNo)
 }
 
 func (suite *WorkflowTester) Test07GetEvent() {
@@ -312,10 +311,10 @@ func (suite *WorkflowTester) Test07GetEvent() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
-	item, err := client.GetEvent(suite.eventIdY)
+	item, err := client.GetEvent(suite.eventIDYes)
 	assert.NoError(err)
 	assert.NotNil(item)
-	assert.EqualValues(suite.eventIdY, item.EventId)
+	assert.EqualValues(suite.eventIDYes, item.EventID)
 }
 
 //---------------------------------------------------------------------
@@ -330,9 +329,9 @@ func (suite *WorkflowTester) Test08PostAlert() {
 	client := suite.client
 
 	alert := &workflow.Alert{
-		TriggerId: "x",
-		EventId:   "y",
-		JobId:     "z",
+		TriggerID: "x",
+		EventID:   "y",
+		JobID:     "z",
 	}
 
 	ack, err := client.PostAlert(alert)
@@ -353,17 +352,17 @@ func (suite *WorkflowTester) Test09GetAlert() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
-	items, err = client.GetAlertByTrigger(suite.triggerId)
+	items, err = client.GetAlertByTrigger(suite.triggerID)
 	assert.NoError(err)
 	assert.NotNil(items)
 	assert.Len(*items, 1)
-	assert.EqualValues(suite.eventIdY, (*items)[0].EventId)
+	assert.EqualValues(suite.eventIDYes, (*items)[0].EventID)
 
-	suite.alertId = (*items)[0].AlertId
-	log.Printf("AlertId: %s", suite.alertId)
+	suite.alertID = (*items)[0].AlertID
+	log.Printf("AlertId: %s", suite.alertID)
 
-	suite.jobId = (*items)[0].JobId
-	log.Printf("JobId: %s", suite.jobId)
+	suite.jobID = (*items)[0].JobID
+	log.Printf("JobId: %s", suite.jobID)
 }
 
 //---------------------------------------------------------------------
@@ -389,7 +388,7 @@ func (suite *WorkflowTester) Test10GetJob() {
 
 	poll := func() (bool, error) {
 		obj := map[string]interface{}{}
-		code, err := h.Get("/job/"+string(suite.jobId), &obj)
+		code, err := h.Get("/job/"+string(suite.jobID), &obj)
 		if err != nil {
 			return false, err
 		}
@@ -428,8 +427,8 @@ func (suite *WorkflowTester) Test10GetJob() {
 	id, ok := result["dataId"].(string)
 	assert.True(ok)
 
-	suite.dataId = piazza.Ident(id)
-	log.Printf("DataId: %s", suite.dataId)
+	suite.dataID = piazza.Ident(id)
+	log.Printf("DataId: %s", suite.dataID)
 }
 
 func (suite *WorkflowTester) Test11GetData() {
@@ -450,7 +449,7 @@ func (suite *WorkflowTester) Test11GetData() {
 	}
 
 	obj := map[string]interface{}{}
-	code, err := h.Get("/data/"+string(suite.dataId), &obj)
+	code, err := h.Get("/data/"+string(suite.dataID), &obj)
 	assert.NoError(err)
 	assert.Equal(200, code)
 	assert.NotNil(obj)

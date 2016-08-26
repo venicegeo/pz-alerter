@@ -121,7 +121,7 @@ func stringBuildMapping(obj map[string]interface{}) (map[string]interface{}, err
 	}
 	//-------------Sort pairs based off open bracket index----------------------
 	keys := []int{}
-	for k, _ := range pairMap {
+	for k := range pairMap {
 		keys = append(keys, k)
 	}
 	sort.Ints(keys)

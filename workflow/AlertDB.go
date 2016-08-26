@@ -27,7 +27,7 @@ type AlertDB struct {
 	mapping string
 }
 
-func NewAlertDB(service *WorkflowService, esi elasticsearch.IIndex) (*AlertDB, error) {
+func NewAlertDB(service *Service, esi elasticsearch.IIndex) (*AlertDB, error) {
 	rdb, err := NewResourceDB(service, esi, AlertIndexSettings)
 	if err != nil {
 		return nil, err
@@ -82,7 +82,7 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error)
 	return alerts, searchResult.TotalHits(), nil
 }
 
-func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId string) ([]Alert, int64, error) {
+func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piazza.Ident) ([]Alert, int64, error) {
 	alerts := []Alert{}
 	var count = int64(-1)
 
@@ -97,7 +97,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerId stri
 	// This will be an Elasticsearch term query of roughly the following structure:
 	// { "term": { "_id": triggerId } }
 	// This matches the '_id' field of the Elasticsearch document exactly
-	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerId)
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerID)
 	if err != nil {
 		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
 	}

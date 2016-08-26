@@ -63,21 +63,21 @@ func (suite *ClientTester) Test12AlertResource() {
 
 	var err error
 
-	a1 := Alert{TriggerId: "dummyT1", EventId: "dummyE1"}
+	a1 := Alert{TriggerID: "dummyT1", EventID: "dummyE1"}
 	respAlert, err := client.PostAlert(&a1)
-	id := respAlert.AlertId
+	id := respAlert.AlertID
 	assert.NoError(err)
 
 	alerts, err := client.GetAllAlerts()
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
-	assert.EqualValues(id, (*alerts)[0].AlertId)
-	assert.EqualValues("dummyT1", (*alerts)[0].TriggerId)
-	assert.EqualValues("dummyE1", (*alerts)[0].EventId)
+	assert.EqualValues(id, (*alerts)[0].AlertID)
+	assert.EqualValues("dummyT1", (*alerts)[0].TriggerID)
+	assert.EqualValues("dummyE1", (*alerts)[0].EventID)
 
 	alert, err := client.GetAlert(id)
 	assert.NoError(err)
-	assert.EqualValues(id, alert.AlertId)
+	assert.EqualValues(id, alert.AlertID)
 
 	alert, err = client.GetAlert("nosuchalert1")
 	assert.Error(err)
@@ -113,7 +113,7 @@ func (suite *ClientTester) Test13EventResource() {
 	eventTypeName := "mytype"
 	eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
-	etID := respEventType.EventTypeId
+	etID := respEventType.EventTypeID
 	assert.NoError(err)
 	defer func() {
 		err = client.DeleteEventType(etID)
@@ -121,7 +121,7 @@ func (suite *ClientTester) Test13EventResource() {
 	}()
 
 	event := &Event{
-		EventTypeId: etID,
+		EventTypeID: etID,
 		CreatedOn:   time.Now(),
 		Data: map[string]interface{}{
 			"myint": 17,
@@ -129,7 +129,7 @@ func (suite *ClientTester) Test13EventResource() {
 		},
 	}
 	respEvent, err := client.PostEvent(event)
-	eID := respEvent.EventId
+	eID := respEvent.EventID
 	assert.NoError(err)
 
 	defer func() {
@@ -144,7 +144,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	tmp, err := client.GetEvent(eID)
 	assert.NoError(err)
-	assert.EqualValues(eID, tmp.EventId)
+	assert.EqualValues(eID, tmp.EventID)
 }
 
 func (suite *ClientTester) Test14EventTypeResource() {
@@ -163,7 +163,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	}
 	eventType := &EventType{Name: "typnam", Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
-	id := respEventType.EventTypeId
+	id := respEventType.EventTypeID
 	defer func() {
 		err = client.DeleteEventType(id)
 		assert.NoError(err)
@@ -176,15 +176,15 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	// Find the right event type and assert
 	var theType EventType
 	for _, eventtyp := range *eventTypes {
-		if eventtyp.EventTypeId == id {
+		if eventtyp.EventTypeID == id {
 			theType = eventtyp
 		}
 	}
-	assert.EqualValues(id, theType.EventTypeId)
+	assert.EqualValues(id, theType.EventTypeID)
 
 	tmp, err := client.GetEventType(id)
 	assert.NoError(err)
-	assert.EqualValues(id, tmp.EventTypeId)
+	assert.EqualValues(id, tmp.EventTypeID)
 }
 
 func (suite *ClientTester) Test15One() {
@@ -208,7 +208,7 @@ func (suite *ClientTester) Test15One() {
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 
 		respEventType, err := client.PostEventType(eventType)
-		etID = respEventType.EventTypeId
+		etID = respEventType.EventTypeID
 		assert.NoError(err)
 
 		defer func() {
@@ -222,7 +222,7 @@ func (suite *ClientTester) Test15One() {
 		x1 := &Trigger{
 			Name: "the x1 trigger",
 			Condition: Condition{
-				EventTypeIds: []piazza.Ident{etID},
+				EventTypeIDs: []piazza.Ident{etID},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -245,7 +245,7 @@ func (suite *ClientTester) Test15One() {
 		}
 
 		respTrigger, err := client.PostTrigger(x1)
-		tID = respTrigger.TriggerId
+		tID = respTrigger.TriggerID
 		assert.NoError(err)
 
 		defer func() {
@@ -258,7 +258,7 @@ func (suite *ClientTester) Test15One() {
 	{
 		// will cause trigger t1ID
 		e1 := &Event{
-			EventTypeId: etID,
+			EventTypeID: etID,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
@@ -268,7 +268,7 @@ func (suite *ClientTester) Test15One() {
 		}
 
 		respEvent1, err := client.PostEvent(e1)
-		e1ID = respEvent1.EventId
+		e1ID = respEvent1.EventID
 		assert.NoError(err)
 
 		defer func() {
@@ -281,7 +281,7 @@ func (suite *ClientTester) Test15One() {
 	{
 		// will cause no triggers
 		e2 := &Event{
-			EventTypeId: etID,
+			EventTypeID: etID,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
@@ -290,7 +290,7 @@ func (suite *ClientTester) Test15One() {
 		}
 
 		respEvent2, err := client.PostEvent(e2)
-		e2ID = respEvent2.EventId
+		e2ID = respEvent2.EventID
 		assert.NoError(err)
 
 		defer func() {
@@ -316,7 +316,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	}
 	eventType := &EventType{Name: "typnam2", Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
-	etID := respEventType.EventTypeId
+	etID := respEventType.EventTypeID
 
 	defer func() {
 		err = client.DeleteEventType(etID)
@@ -326,7 +326,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	t1 := Trigger{
 		Name: "the x1 trigger",
 		Condition: Condition{
-			EventTypeIds: []piazza.Ident{etID},
+			EventTypeIDs: []piazza.Ident{etID},
 			Query: map[string]interface{}{
 				"query": map[string]interface{}{
 					"match": map[string]interface{}{
@@ -348,7 +348,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 		},
 	}
 	respTrigger, err := client.PostTrigger(&t1)
-	t1ID := respTrigger.TriggerId
+	t1ID := respTrigger.TriggerID
 	assert.NoError(err)
 
 	defer func() {
@@ -358,12 +358,12 @@ func (suite *ClientTester) Test16TriggerResource() {
 
 	tmp, err := client.GetTrigger(t1ID)
 	assert.NoError(err)
-	assert.EqualValues(t1ID, tmp.TriggerId)
+	assert.EqualValues(t1ID, tmp.TriggerID)
 
 	triggers, err := client.GetAllTriggers()
 	assert.NoError(err)
 	assert.Len(*triggers, 1)
-	assert.EqualValues(t1ID, (*triggers)[0].TriggerId)
+	assert.EqualValues(t1ID, (*triggers)[0].TriggerID)
 }
 
 func (suite *ClientTester) Test17Triggering() {
@@ -389,13 +389,13 @@ func (suite *ClientTester) Test17Triggering() {
 		eventTypeD := &EventType{Name: "EventType D", Mapping: mapping}
 		eventTypeE := &EventType{Name: "EventType E", Mapping: mapping}
 		respEventTypeC, err := client.PostEventType(eventTypeC)
-		etC = respEventTypeC.EventTypeId
+		etC = respEventTypeC.EventTypeID
 		assert.NoError(err)
 		respEventTypeD, err := client.PostEventType(eventTypeD)
-		etD = respEventTypeD.EventTypeId
+		etD = respEventTypeD.EventTypeID
 		assert.NoError(err)
 		respEventTypeE, err := client.PostEventType(eventTypeE)
-		etE = respEventTypeE.EventTypeId
+		etE = respEventTypeE.EventTypeID
 		assert.NoError(err)
 
 		eventTypes, err := client.GetAllEventTypes()
@@ -404,11 +404,11 @@ func (suite *ClientTester) Test17Triggering() {
 	}
 
 	defer func() {
-		client.DeleteEventType(etC)
+		err = client.DeleteEventType(etC)
 		assert.NoError(err)
-		client.DeleteEventType(etD)
+		err = client.DeleteEventType(etD)
 		assert.NoError(err)
-		client.DeleteEventType(etE)
+		err = client.DeleteEventType(etE)
 		assert.NoError(err)
 	}()
 
@@ -419,7 +419,7 @@ func (suite *ClientTester) Test17Triggering() {
 		t1 := &Trigger{
 			Name: "Trigger A",
 			Condition: Condition{
-				EventTypeIds: []piazza.Ident{etC},
+				EventTypeIDs: []piazza.Ident{etC},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -441,17 +441,17 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 		}
 		respTriggerA, err := client.PostTrigger(t1)
-		tA := respTriggerA.TriggerId
+		tA := respTriggerA.TriggerID
 		assert.NoError(err)
 		defer func() {
-			client.DeleteTrigger(tA)
+			err = client.DeleteTrigger(tA)
 			assert.NoError(err)
 		}()
 
 		t2 := &Trigger{
 			Name: "Trigger B",
 			Condition: Condition{
-				EventTypeIds: []piazza.Ident{etD},
+				EventTypeIDs: []piazza.Ident{etD},
 				Query: map[string]interface{}{
 					"query": map[string]interface{}{
 						"match": map[string]interface{}{
@@ -473,10 +473,10 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 		}
 		respTriggerB, err := client.PostTrigger(t2)
-		tB = respTriggerB.TriggerId
+		tB = respTriggerB.TriggerID
 		assert.NoError(err)
 		defer func() {
-			client.DeleteTrigger(tB)
+			err = client.DeleteTrigger(tB)
 			assert.NoError(err)
 		}()
 
@@ -489,7 +489,7 @@ func (suite *ClientTester) Test17Triggering() {
 	{
 		// will cause trigger TA
 		e1 := Event{
-			EventTypeId: etC,
+			EventTypeID: etC,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
@@ -499,16 +499,16 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 		}
 		respEventF, err := client.PostEvent(&e1)
-		eF = respEventF.EventId
+		eF = respEventF.EventID
 		assert.NoError(err)
 		defer func() {
-			client.DeleteEvent(eF)
+			err = client.DeleteEvent(eF)
 			assert.NoError(err)
 		}()
 
 		// will cause trigger TB
 		e2 := Event{
-			EventTypeId: etD,
+			EventTypeID: etD,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      18,
@@ -518,16 +518,16 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 		}
 		respEventG, err := client.PostEvent(&e2)
-		eG = respEventG.EventId
+		eG = respEventG.EventID
 		assert.NoError(err)
 		defer func() {
-			client.DeleteEvent(eG)
+			err = client.DeleteEvent(eG)
 			assert.NoError(err)
 		}()
 
 		// will cause no triggers
 		e3 := Event{
-			EventTypeId: etE,
+			EventTypeID: etE,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 19,
@@ -535,10 +535,10 @@ func (suite *ClientTester) Test17Triggering() {
 			},
 		}
 		respEventH, err := client.PostEvent(&e3)
-		eH = respEventH.EventId
+		eH = respEventH.EventID
 		assert.NoError(err)
 		defer func() {
-			client.DeleteEvent(eH)
+			err = client.DeleteEvent(eH)
 			assert.NoError(err)
 		}()
 	}

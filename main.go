@@ -74,7 +74,7 @@ func main() {
 
 	logger.Info("pz-workflow starting...")
 
-	workflowService := &pzworkflow.WorkflowService{}
+	workflowService := &pzworkflow.Service{}
 	err = workflowService.Init(
 		sys,
 		logger,
@@ -93,7 +93,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	workflowServer := &pzworkflow.WorkflowServer{}
+	workflowServer := &pzworkflow.Server{}
 	err = workflowServer.Init(workflowService)
 	if err != nil {
 		log.Fatal(err)

@@ -28,7 +28,7 @@ type CronDB struct {
 }
 
 // NewCronDB TODO
-func NewCronDB(service *WorkflowService, esi elasticsearch.IIndex) (*CronDB, error) {
+func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 	rdb, err := NewResourceDB(service, esi, CronIndexSettings)
 	if err != nil {
 		return nil, err

@@ -23,11 +23,11 @@ import (
 
 //---------------------------------------------------------------------------
 
-type WorkflowServer struct {
-	sysConfig *piazza.SystemConfig
+type Server struct {
+	//sysConfig *piazza.SystemConfig
 
 	Routes  []piazza.RouteData
-	service *WorkflowService
+	service *Service
 	origin  string
 }
 
@@ -35,39 +35,36 @@ const Version = "1.0.0"
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) Init(service *WorkflowService) error {
+func (server *Server) Init(service *Service) error {
 
 	server.service = service
 
 	server.Routes = []piazza.RouteData{
-		{"GET", "/", server.handleGetRoot},
-		{"GET", "/version", server.handleGetVersion},
+		{Verb: "GET", Path: "/", Handler: server.handleGetRoot},
+		{Verb: "GET", Path: "/version", Handler: server.handleGetVersion},
 
-		{"GET", "/eventType", server.handleGetAllEventTypes},
-		{"GET", "/eventType/:id", server.handleGetEventType},
-		{"POST", "/eventType", server.handlePostEventType},
-		// TODO: PUT
-		{"DELETE", "/eventType/:id", server.handleDeleteEventType},
+		{Verb: "GET", Path: "/eventType", Handler: server.handleGetAllEventTypes},
+		{Verb: "GET", Path: "/eventType/:id", Handler: server.handleGetEventType},
+		{Verb: "POST", Path: "/eventType", Handler: server.handlePostEventType},
+		{Verb: "DELETE", Path: "/eventType/:id", Handler: server.handleDeleteEventType},
 
-		{"GET", "/event/:id", server.handleGetEvent},
-		{"GET", "/event", server.handleGetAllEvents},
-		{"POST", "/event", server.handlePostEvent},
-		// TODO: PUT
-		{"DELETE", "/event/:id", server.handleDeleteEvent},
+		{Verb: "GET", Path: "/event/:id", Handler: server.handleGetEvent},
+		{Verb: "GET", Path: "/event", Handler: server.handleGetAllEvents},
+		{Verb: "POST", Path: "/event", Handler: server.handlePostEvent},
+		{Verb: "DELETE", Path: "/event/:id", Handler: server.handleDeleteEvent},
 
-		{"GET", "/trigger/:id", server.handleGetTrigger},
-		{"GET", "/trigger", server.handleGetAllTriggers},
-		{"POST", "/trigger", server.handlePostTrigger},
-		{"PUT", "/trigger/:id", server.handlePutTrigger},
-		{"DELETE", "/trigger/:id", server.handleDeleteTrigger},
+		{Verb: "GET", Path: "/trigger/:id", Handler: server.handleGetTrigger},
+		{Verb: "GET", Path: "/trigger", Handler: server.handleGetAllTriggers},
+		{Verb: "POST", Path: "/trigger", Handler: server.handlePostTrigger},
+		{Verb: "PUT", Path: "/trigger/:id", Handler: server.handlePutTrigger},
+		{Verb: "DELETE", Path: "/trigger/:id", Handler: server.handleDeleteTrigger},
 
-		{"GET", "/alert/:id", server.handleGetAlert},
-		{"GET", "/alert", server.handleGetAllAlerts},
-		{"POST", "/alert", server.handlePostAlert},
-		// TODO: PUT
-		{"DELETE", "/alert/:id", server.handleDeleteAlert},
+		{Verb: "GET", Path: "/alert/:id", Handler: server.handleGetAlert},
+		{Verb: "GET", Path: "/alert", Handler: server.handleGetAllAlerts},
+		{Verb: "POST", Path: "/alert", Handler: server.handlePostAlert},
+		{Verb: "DELETE", Path: "/alert/:id", Handler: server.handleDeleteAlert},
 
-		{"GET", "/admin/stats", server.handleGetStats},
+		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
 	}
 
 	server.origin = service.origin
@@ -77,38 +74,38 @@ func (server *WorkflowServer) Init(service *WorkflowService) error {
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) handleGetRoot(c *gin.Context) {
+func (server *Server) handleGetRoot(c *gin.Context) {
 	message := "Hi! I'm pz-workflow."
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: message}
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleGetVersion(c *gin.Context) {
+func (server *Server) handleGetVersion(c *gin.Context) {
 	version := piazza.Version{Version: Version}
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: version}
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleGetStats(c *gin.Context) {
-	resp := server.service.GetAdminStats()
+func (server *Server) handleGetStats(c *gin.Context) {
+	resp := server.service.GetStats()
 	piazza.GinReturnJson(c, resp)
 }
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) handleGetEventType(c *gin.Context) {
+func (server *Server) handleGetEventType(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetEventType(id)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleGetAllEventTypes(c *gin.Context) {
+func (server *Server) handleGetAllEventTypes(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllEventTypes(params)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
+func (server *Server) handlePostEventType(c *gin.Context) {
 	eventType := &EventType{}
 	err := c.BindJSON(eventType)
 	if err != nil {
@@ -124,7 +121,7 @@ func (server *WorkflowServer) handlePostEventType(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
+func (server *Server) handleDeleteEventType(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteEventType(id)
 	piazza.GinReturnJson(c, resp)
@@ -132,19 +129,19 @@ func (server *WorkflowServer) handleDeleteEventType(c *gin.Context) {
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) handleGetEvent(c *gin.Context) {
+func (server *Server) handleGetEvent(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetEvent(id)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleGetAllEvents(c *gin.Context) {
+func (server *Server) handleGetAllEvents(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllEvents(params)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
+func (server *Server) handlePostEvent(c *gin.Context) {
 	event := &Event{}
 	err := c.BindJSON(event)
 	if err != nil {
@@ -167,7 +164,7 @@ func (server *WorkflowServer) handlePostEvent(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
+func (server *Server) handleDeleteEvent(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteEvent(id)
 	piazza.GinReturnJson(c, resp)
@@ -175,19 +172,19 @@ func (server *WorkflowServer) handleDeleteEvent(c *gin.Context) {
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) handleGetTrigger(c *gin.Context) {
+func (server *Server) handleGetTrigger(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetTrigger(id)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleGetAllTriggers(c *gin.Context) {
+func (server *Server) handleGetAllTriggers(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllTriggers(params)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
+func (server *Server) handlePostTrigger(c *gin.Context) {
 	trigger := &Trigger{Enabled: true}
 	err := c.BindJSON(trigger)
 	if err != nil {
@@ -203,7 +200,7 @@ func (server *WorkflowServer) handlePostTrigger(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handlePutTrigger(c *gin.Context) {
+func (server *Server) handlePutTrigger(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	update := &TriggerUpdate{}
 	err := c.BindJSON(update)
@@ -220,7 +217,7 @@ func (server *WorkflowServer) handlePutTrigger(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
+func (server *Server) handleDeleteTrigger(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteTrigger(id)
 	piazza.GinReturnJson(c, resp)
@@ -228,19 +225,19 @@ func (server *WorkflowServer) handleDeleteTrigger(c *gin.Context) {
 
 //---------------------------------------------------------------------------
 
-func (server *WorkflowServer) handleGetAlert(c *gin.Context) {
+func (server *Server) handleGetAlert(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.GetAlert(id)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleGetAllAlerts(c *gin.Context) {
+func (server *Server) handleGetAllAlerts(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllAlerts(params)
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
+func (server *Server) handlePostAlert(c *gin.Context) {
 	alert := &Alert{}
 	err := c.BindJSON(alert)
 	if err != nil {
@@ -256,7 +253,7 @@ func (server *WorkflowServer) handlePostAlert(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *WorkflowServer) handleDeleteAlert(c *gin.Context) {
+func (server *Server) handleDeleteAlert(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteAlert(id)
 	piazza.GinReturnJson(c, resp)

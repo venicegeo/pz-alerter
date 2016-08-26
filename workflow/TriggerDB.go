@@ -29,7 +29,7 @@ type TriggerDB struct {
 	mapping string
 }
 
-func NewTriggerDB(service *WorkflowService, esi elasticsearch.IIndex) (*TriggerDB, error) {
+func NewTriggerDB(service *Service, esi elasticsearch.IIndex) (*TriggerDB, error) {
 
 	rdb, err := NewResourceDB(service, esi, TriggerIndexSettings)
 	if err != nil {
@@ -43,8 +43,8 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 
 	{ //CHECK SERVICE EXISTS
 		jobData := trigger.Job.JobType.Data
-		serviceId := jobData["serviceId"]
-		strServiceId, ok := serviceId.(string)
+		serviceID := jobData["serviceId"]
+		strServiceID, ok := serviceID.(string)
 		if !ok {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
 		}
@@ -59,15 +59,15 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
 			}
 			if response.StatusCode != 200 {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId %s does not exist", strServiceId)
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceID %s does not exist", strServiceID)
 			}
 		}
 	}
 	{ //CHECK EVENTTYPE IDS
-		if len(trigger.Condition.EventTypeIds) == 0 {
+		if len(trigger.Condition.EventTypeIDs) == 0 {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
 		}
-		for _, id := range trigger.Condition.EventTypeIds {
+		for _, id := range trigger.Condition.EventTypeIDs {
 			_, found, err := db.service.eventTypeDB.GetOne(id)
 			if !found || err != nil {
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
@@ -88,7 +88,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	jsn = jsn[:len(jsn)-1]
 	jsn += ",\"type\":["
 	// Add the types that the percolation query can match
-	for _, id := range trigger.Condition.EventTypeIds {
+	for _, id := range trigger.Condition.EventTypeIDs {
 		jsn += fmt.Sprintf("\"%s\",", id)
 	}
 	jsn = jsn[:len(jsn)-1]
@@ -96,7 +96,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	jsn += "]}"
 
 	//log.Printf("Posting percolation query: %s", body)
-	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerId), piazza.JsonString(body))
+	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerID), piazza.JsonString(body))
 	if err != nil {
 		var errMessage string
 		if strings.Contains(err.Error(), "elastic: Error 500 (Internal Server Error): failed to parse query") {
@@ -115,32 +115,32 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 
 	//log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
 	//log.Printf("percolation id: %s", indexResult.Id)
-	trigger.PercolationId = piazza.Ident(indexResult.Id)
+	trigger.PercolationID = piazza.Ident(indexResult.ID)
 
 	strTrigger, err := piazza.StructInterfaceToString(trigger)
 	if err != nil {
-		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	intTrigger, err := piazza.StructStringToInterface(strTrigger)
 	if err != nil {
-		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	mapTrigger, ok := intTrigger.(map[string]interface{})
 	if !ok {
-		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: bad trigger")
 	}
 	fixedTrigger := fixTrigger(mapTrigger)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
-		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerID))
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
-		db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerId))
+		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerID))
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: not created")
 	}
 
@@ -209,7 +209,7 @@ func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 	return &obj, getResult.Found, nil
 }
 
-func (db *TriggerDB) GetTriggersByEventTypeId(id piazza.Ident) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
@@ -263,7 +263,7 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 		return false, nil
 	}
 
-	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationId))
+	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
 	if err != nil {
 		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}

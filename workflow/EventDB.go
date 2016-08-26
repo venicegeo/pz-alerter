@@ -26,7 +26,7 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
+func NewEventDB(service *Service, esi elasticsearch.IIndex) (*EventDB, error) {
 	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
 	if err != nil {
 		return nil, err
@@ -64,8 +64,8 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 }
 
 func verifyEventReadyToPost(event *Event, db *EventDB) error {
-	eventTypeJson := db.service.GetEventType(event.EventTypeId)
-	eventTypeObj := eventTypeJson.Data
+	eventTypeJSON := db.service.GetEventType(event.EventTypeID)
+	eventTypeObj := eventTypeJSON.Data
 	eventType, ok := eventTypeObj.(*EventType)
 	if !ok {
 		return LoggedError("EventDB.PostData failed: unable to obtain specified eventtype")
@@ -143,7 +143,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 	return events, searchResult.TotalHits(), nil
 }
 
-func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ident) ([]Event, int64, error) {
+func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ident) ([]Event, int64, error) {
 	events := []Event{}
 	var err error
 
@@ -158,7 +158,7 @@ func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ide
 		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
 	}
 
-	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeId)
+	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID)
 	if err != nil {
 		return nil, 0, LoggedError("EventDB.GetEventsByEventTypeId failed: %s", err)
 	}
@@ -181,7 +181,7 @@ func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ide
 }
 
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error) {
-	var mapping string = ""
+	var mapping string
 
 	types, err := db.Esi.GetTypes()
 	if err != nil {

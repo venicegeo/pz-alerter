@@ -17,11 +17,11 @@ package workflow
 import "github.com/venicegeo/pz-gocommon/elasticsearch"
 
 type ResourceDB struct {
-	service *WorkflowService
+	service *Service
 	Esi     elasticsearch.IIndex
 }
 
-func NewResourceDB(service *WorkflowService, esi elasticsearch.IIndex, settings string) (*ResourceDB, error) {
+func NewResourceDB(service *Service, esi elasticsearch.IIndex, settings string) (*ResourceDB, error) {
 	db := &ResourceDB{
 		service: service,
 		Esi:     esi,

@@ -37,6 +37,9 @@ func NewClient(sys *piazza.SystemConfig, logger loggerpkg.IClient) (*Client, err
 	}
 
 	url, err := sys.GetURL(piazza.PzWorkflow)
+	if err != nil {
+		return nil, err
+	}
 
 	service := &Client{
 		url:    url,
@@ -52,8 +55,8 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 
 	var err error
 
-	loggerUrl := strings.Replace(url, "workflow", "logger", 1)
-	logger, err := loggerpkg.NewClient2(loggerUrl, apiKey)
+	loggerURL := strings.Replace(url, "workflow", "logger", 1)
+	logger, err := loggerpkg.NewClient2(loggerURL, apiKey)
 	if err != nil {
 		return nil, err
 	}
@@ -68,83 +71,53 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 
 //------------------------------------------------------------------------------
 
-func asEventType(resp *piazza.JsonResponse) (*EventType, error) {
-	var et EventType
-
-	err := resp.ExtractData(&et)
-	if err != nil {
-		return nil, err
-	}
-
-	return &et, nil
-}
-
-func asEventTypeArray(resp *piazza.JsonResponse) (*[]EventType, error) {
-	var ets []EventType
-
-	err := resp.ExtractData(&ets)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ets, nil
-}
-
-//------------------------------------------------------------------------------
-
 func (c *Client) getObject(endpoint string, out interface{}) error {
-	//log.Printf("** ** ** %s", reflect.TypeOf(out).String())
 
 	h := piazza.Http{BaseUrl: c.url}
+
 	resp := h.PzGet(endpoint)
-	//log.Printf("** ** ** %s", reflect.TypeOf(resp.Data).String())
 	if resp.IsError() {
 		return resp.ToError()
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return resp.ToError()
 	}
-	//log.Printf("getObject/1 %#v", out)
+
 	err := resp.ExtractData(out)
-	//log.Printf("getObject/2 %#v", out)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) error {
 	h := piazza.Http{BaseUrl: c.url}
+
 	resp := h.PzPost(endpoint, obj)
 	if resp.IsError() {
 		return resp.ToError()
 	}
+
 	if resp.StatusCode != http.StatusCreated {
 		return resp.ToError()
 	}
+
 	err := resp.ExtractData(out)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) error {
 	h := piazza.Http{BaseUrl: c.url}
+
 	resp := h.PzPut(endpoint, obj)
 	if resp.IsError() {
 		return resp.ToError()
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		return resp.ToError()
 	}
 
 	err := resp.ExtractData(out)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
 
 func (c *Client) deleteObject(endpoint string) error {
@@ -219,9 +192,9 @@ func (c *Client) GetAllEvents() (*[]Event, error) {
 	return out, err
 }
 
-func (c *Client) GetAllEventsByEventType(eventTypeId piazza.Ident) (*[]Event, error) {
+func (c *Client) GetAllEventsByEventType(eventTypeID piazza.Ident) (*[]Event, error) {
 	out := &[]Event{}
-	err := c.getObject("/event?eventTypeId="+eventTypeId.String(), out)
+	err := c.getObject("/event?eventTypeId="+eventTypeID.String(), out)
 	return out, err
 }
 
@@ -312,8 +285,8 @@ func (c *Client) DeleteAlert(id piazza.Ident) error {
 
 //------------------------------------------------------------------------------
 
-func (c *Client) GetStats() (*workflowStats, error) {
-	out := &workflowStats{}
+func (c *Client) GetStats() (*Stats, error) {
+	out := &Stats{}
 	err := c.getObject("/admin/stats", out)
 	return out, err
 
