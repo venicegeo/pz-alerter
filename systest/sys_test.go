@@ -231,6 +231,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	println(str)
 
 	ack, err := client.PostTrigger(trigger)
+	println(err.Error())
 	assert.NoError(err)
 	assert.NotNil(ack)
 
