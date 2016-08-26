@@ -17,7 +17,10 @@ triggerId=`sh 04-post-trigger.sh $eventTypeId $serviceId`
 echo 04 TriggerId: $triggerId
 
 t=`sh 05-get-trigger.sh $triggerId`
-echo . 05 check: $t
+echo . 05 check get: $t
+
+t=`sh 05-put-trigger.sh $triggerId`
+echo . 05 check put: $t
 
 eventIdY=`sh 06-post-event-yes.sh $eventTypeId`
 echo 06 EventIdY: $eventIdY
@@ -48,3 +51,12 @@ echo 10 DataId: $dataId
 
 info=`sh 11-get-data.sh $dataId`
 echo 11 results: $info
+
+trigger=`sh 12-delete-trigger.sh $triggerId`
+echo 12 trigger deleted: $trigger
+
+event=`sh 13-delete-event.sh $eventId`
+echo 13 event deleted: $event
+
+eventType=`sh 14-delete-eventtype.sh $eventTypeId`
+echo 14 eventType deleted: $eventType
