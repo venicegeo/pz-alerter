@@ -51,7 +51,7 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/event/:id", Handler: server.handleGetEvent},
 		{Verb: "GET", Path: "/event", Handler: server.handleGetAllEvents},
 		{Verb: "POST", Path: "/event", Handler: server.handlePostEvent},
-		{Verb: "POST", Path: "/event/query", Handler: server.handleQueryEvent},
+		{Verb: "POST", Path: "/event/query", Handler: server.handleEventQuery},
 		{Verb: "DELETE", Path: "/event/:id", Handler: server.handleDeleteEvent},
 
 		{Verb: "GET", Path: "/trigger/:id", Handler: server.handleGetTrigger},

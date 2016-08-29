@@ -717,7 +717,7 @@ func (service *Service) QueryEvents(dsl map[string]interface{}, params *piazza.H
 	// TODO: need to properly convert map to json string
 	strDsl, err := piazza.StructInterfaceToString(dsl)
 	if err != nil {
-		return piazza.JsonString(""), err
+		return service.statusBadRequest(err)
 	}
 
 	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, strDsl, format)
