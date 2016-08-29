@@ -705,6 +705,36 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 	return service.statusCreated(event)
 }
 
+func (service *Service) QueryEvents(dsl map[string]interface{}, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	// Mapping... typically eventTypeName (might not need this
+	var query string = ""
+
+	// TODO: need to properly convert map to json string
+	strDsl, err := piazza.StructInterfaceToString(dsl)
+	if err != nil {
+		return piazza.JsonString(""), err
+	}
+
+	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, strDsl, format)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	resp := service.statusOK(events)
+
+	if totalHits > 0 {
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
 func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
 	if mapping == "" {

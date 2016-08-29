@@ -51,6 +51,7 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/event/:id", Handler: server.handleGetEvent},
 		{Verb: "GET", Path: "/event", Handler: server.handleGetAllEvents},
 		{Verb: "POST", Path: "/event", Handler: server.handlePostEvent},
+		{Verb: "POST", Path: "/event/query", Handler: server.handleQueryEvent},
 		{Verb: "DELETE", Path: "/event/:id", Handler: server.handleDeleteEvent},
 
 		{Verb: "GET", Path: "/trigger/:id", Handler: server.handleGetTrigger},
@@ -161,6 +162,27 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 	} else {
 		resp = server.service.PostEvent(event)
 	}
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handleEventQuery(c *gin.Context) {
+	params := piazza.NewQueryParams(c.Request)
+	dsl := make(map[string]interface{})
+
+	err := c.BindJSON(dsl)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	var resp *piazza.JsonResponse
+
+	resp = server.service.QueryEvents(dsl, params)
 	piazza.GinReturnJson(c, resp)
 }
 
