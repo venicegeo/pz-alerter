@@ -711,8 +711,34 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 		return service.statusBadRequest(err)
 	}
 
-	// Mapping... typically eventTypeName (might not need this
-	var query string = ""
+	// if both specified, "by id"" wins
+	eventTypeID, err := params.GetAsString("eventTypeId", "")
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	eventTypeName, err := params.GetAsString("eventTypeName", "")
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	var query string
+
+	// Get the eventTypeName corresponding to the eventTypeId
+	if eventTypeID != "" {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
+		if !found {
+			return service.statusNotFound(err)
+		}
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		query = eventType.Name
+	} else if eventTypeName != "" {
+		query = eventTypeName
+	} else {
+		// no query param specified, get 'em all
+		query = ""
+	}
 
 	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, jsonString, format)
 	if err != nil {
