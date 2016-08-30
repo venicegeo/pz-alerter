@@ -19,6 +19,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	"fmt"
+	"bytes"
 )
 
 //---------------------------------------------------------------------------
@@ -166,10 +168,8 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 }
 
 func (server *Server) handleEventQuery(c *gin.Context) {
-	params := piazza.NewQueryParams(c.Request)
-	dsl := make(map[string]interface{})
-
-	err := c.BindJSON(dsl)
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(c.Request.Body)
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
@@ -180,9 +180,14 @@ func (server *Server) handleEventQuery(c *gin.Context) {
 		return
 	}
 
+	jsonString := buf.String()
+	fmt.Printf("c.Request=%s\n\n", jsonString)
+	params := piazza.NewQueryParams(c.Request)
+	fmt.Printf("params=%s\n\n", params)
+
 	var resp *piazza.JsonResponse
 
-	resp = server.service.QueryEvents(dsl, params)
+	resp = server.service.QueryEvents(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
