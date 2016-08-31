@@ -19,7 +19,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	"fmt"
 	"bytes"
 )
 
@@ -181,9 +180,7 @@ func (server *Server) handleEventQuery(c *gin.Context) {
 	}
 
 	jsonString := buf.String()
-	fmt.Printf("c.Request=%s\n\n", jsonString)
 	params := piazza.NewQueryParams(c.Request)
-	fmt.Printf("params=%s\n\n", params)
 
 	var resp *piazza.JsonResponse
 
