@@ -34,6 +34,7 @@ type WorkflowTester struct {
 	client        *workflow.Client
 	url           string
 	apiKey        string
+	apiServer     string
 	uniq          string
 	eventTypeID   piazza.Ident
 	eventTypeName string
@@ -56,9 +57,15 @@ func (suite *WorkflowTester) setupFixture() {
 
 	var err error
 
-	suite.url = "https://pz-workflow.int.geointservices.io"
+	suite.apiServer, err = piazza.GetApiServer()
+	assert.NoError(err)
 
-	suite.apiKey, err = piazza.GetApiKey("int")
+	i := strings.Index(suite.apiServer, ".")
+	assert.NotEqual(1, i)
+	host := "pz-workflow" + suite.apiServer[i:]
+	suite.url = "https://" + host
+
+	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
 
 	client, err := workflow.NewClient2(suite.url, suite.apiKey)
