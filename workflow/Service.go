@@ -748,21 +748,38 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 	resp := service.statusOK(events)
 
 	if totalHits > 0 {
+		// Unmarshal this json and extract out the pagination
 		b := []byte(jsonString)
 		var f interface{}
 		err := json.Unmarshal(b, &f)
-		if err == nil {
+		if err != nil {
 			return service.statusBadRequest(err)
 		}
 		dsl := f.(map[string]interface{})
-		fmt.Printf("dsl=%s", dsl)
-		if dsl["size"] != nil {
-			format.PerPage = dsl["size"]
-		} else {
-			dsl["size"] = format.PerPage
+		var size *float64
+		var from *float64
+		for k, v := range dsl {
+			if k == "size" {
+				sizeVal, ok := v.(float64)
+				if ok {
+					size = &sizeVal
+				}
+			}
+			if k == "from" {
+				fromVal, ok := v.(float64)
+				if ok {
+					from = &fromVal
+				}
+			}
 		}
-		if dsl["from"] != nil {
-			format.Page = dsl["from"] / dsl["size"]
+		if size != nil {
+			format.PerPage = int(*size)
+		} else {
+			floatVal := float64(format.PerPage)
+			size = &floatVal
+		}
+		if from != nil {
+			format.Page = int(*from / *size)
 		}
 		format.Count = int(totalHits)
 		resp.Pagination = format
