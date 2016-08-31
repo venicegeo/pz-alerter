@@ -748,6 +748,22 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 	resp := service.statusOK(events)
 
 	if totalHits > 0 {
+		b := []byte(jsonString)
+		var f interface{}
+		err := json.Unmarshal(b, &f)
+		if err == nil {
+			return service.statusBadRequest(err)
+		}
+		dsl := f.(map[string]interface{})
+		fmt.Printf("dsl=%s", dsl)
+		if dsl["size"] != nil {
+			format.PerPage = dsl["size"]
+		} else {
+			dsl["size"] = format.PerPage
+		}
+		if dsl["from"] != nil {
+			format.Page = dsl["from"] / dsl["size"]
+		}
 		format.Count = int(totalHits)
 		resp.Pagination = format
 	}
