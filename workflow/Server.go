@@ -19,6 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	"bytes"
 )
 
 //---------------------------------------------------------------------------
@@ -51,6 +52,7 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/event/:id", Handler: server.handleGetEvent},
 		{Verb: "GET", Path: "/event", Handler: server.handleGetAllEvents},
 		{Verb: "POST", Path: "/event", Handler: server.handlePostEvent},
+		{Verb: "POST", Path: "/event/query", Handler: server.handleEventQuery},
 		{Verb: "DELETE", Path: "/event/:id", Handler: server.handleDeleteEvent},
 
 		{Verb: "GET", Path: "/trigger/:id", Handler: server.handleGetTrigger},
@@ -161,6 +163,28 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 	} else {
 		resp = server.service.PostEvent(event)
 	}
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handleEventQuery(c *gin.Context) {
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(c.Request.Body)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	jsonString := buf.String()
+	params := piazza.NewQueryParams(c.Request)
+
+	var resp *piazza.JsonResponse
+
+	resp = server.service.QueryEvents(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 

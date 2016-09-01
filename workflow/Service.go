@@ -705,6 +705,89 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 	return service.statusCreated(event)
 }
 
+func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	// if both specified, "by id"" wins
+	eventTypeID, err := params.GetAsString("eventTypeId", "")
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	eventTypeName, err := params.GetAsString("eventTypeName", "")
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	var query string
+
+	// Get the eventTypeName corresponding to the eventTypeId
+	if eventTypeID != "" {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
+		if !found {
+			return service.statusNotFound(err)
+		}
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		query = eventType.Name
+	} else if eventTypeName != "" {
+		query = eventTypeName
+	} else {
+		// no query param specified, get 'em all
+		query = ""
+	}
+
+	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, jsonString, format)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	resp := service.statusOK(events)
+
+	if totalHits > 0 {
+		// Unmarshal this json and extract out the pagination
+		b := []byte(jsonString)
+		var f interface{}
+		err := json.Unmarshal(b, &f)
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		dsl := f.(map[string]interface{})
+		var size *float64
+		var from *float64
+		for k, v := range dsl {
+			if k == "size" {
+				sizeVal, ok := v.(float64)
+				if ok {
+					size = &sizeVal
+				}
+			}
+			if k == "from" {
+				fromVal, ok := v.(float64)
+				if ok {
+					from = &fromVal
+				}
+			}
+		}
+		if size != nil {
+			format.PerPage = int(*size)
+		} else {
+			floatVal := float64(format.PerPage)
+			size = &floatVal
+		}
+		if from != nil {
+			format.Page = int(*from / *size)
+		}
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
 func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
 	if mapping == "" {
