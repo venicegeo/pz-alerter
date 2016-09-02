@@ -196,7 +196,7 @@ func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64
 		return triggers, 0, nil
 	}
 
-	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "condition.eventTypeIds", id)
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "eventTypeId", id)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err)
 	}
