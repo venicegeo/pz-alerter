@@ -64,11 +64,8 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		}
 	}
 
-	ifaceObj := trigger.Condition
-	wrapper := map[string]interface{}{}
-	wrapper["query"] = ifaceObj
 	//log.Printf("Query: %v", wrapper)
-	body, err := json.Marshal(wrapper)
+	body, err := json.Marshal(trigger.Condition)
 	if err != nil {
 		return piazza.NoIdent, err
 	}
@@ -93,7 +90,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 
 	//log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
 	//log.Printf("percolation id: %s", indexResult.Id)
-	trigger.PercolationId = piazza.Ident(indexResult.Id)
+	trigger.PercolationId = piazza.Ident(indexResult.ID)
 
 	strTrigger, err := piazza.StructInterfaceToString(trigger)
 	if err != nil {

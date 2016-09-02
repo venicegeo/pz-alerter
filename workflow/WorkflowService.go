@@ -186,7 +186,7 @@ func (service *WorkflowService) Init(
 }
 
 func (service *WorkflowService) newIdent() (piazza.Ident, error) {
-	uuid, err := service.uuidgen.GetUuid()
+	uuid, err := service.uuidgen.GetUUID()
 	if err != nil {
 		return piazza.NoIdent, err
 	}
