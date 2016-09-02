@@ -88,12 +88,12 @@ func TestRunSuite(t *testing.T) {
 	alertsIndex = elasticsearch.NewMockIndex("alerts")
 	cronIndex = elasticsearch.NewMockIndex("crons")
 
-	workflowService := &WorkflowService{}
+	workflowService := &Service{}
 	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
-	workflowServer := &WorkflowServer{}
+	workflowServer := &Server{}
 	err = workflowServer.Init(workflowService)
 	if err != nil {
 		log.Fatal(err)
@@ -163,7 +163,7 @@ func makeTestEventType(eventTypeName string) *EventType {
 
 func makeTestEvent(eventTypeID piazza.Ident) *Event {
 	event := &Event{
-		EventTypeId: eventTypeID,
+		EventTypeID: eventTypeID,
 		CreatedOn:   time.Now(),
 		Data: map[string]interface{}{
 			"num": 17,
@@ -176,7 +176,7 @@ func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	trigger := &Trigger{
 		Name:        "MY TRIGGER TITLE",
 		Enabled:     true,
-		EventTypeId: eventTypeIDs[0],
+		EventTypeID: eventTypeIDs[0],
 		Condition: map[string]interface{}{
 			"match": map[string]interface{}{
 				"num": 31,
@@ -230,7 +230,7 @@ func (suite *ServerTester) Test01EventType() {
 	//printJSON("event type", eventType)
 
 	respEventType, err := client.PostEventType(eventType)
-	id := respEventType.EventTypeId
+	id := respEventType.EventTypeID
 	assert.NoError(err)
 	//log.Printf("New event: %#v", respEventType)
 
@@ -244,7 +244,7 @@ func (suite *ServerTester) Test01EventType() {
 	//log.Printf("Getting event type by Id: %s", id)
 	respTyp, err := client.GetEventType(id)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(respTyp.EventTypeId))
+	assert.EqualValues(string(id), string(respTyp.EventTypeID))
 
 	//printJSON("Got Event type", typ)
 	//log.Printf("Deleting Event type by Id: %s", id)
@@ -281,7 +281,7 @@ func (suite *ServerTester) Test02Event() {
 	//log.Printf("CCC %#v", eventType)
 	respEventType, err := client.PostEventType(eventType)
 	//log.Printf("BBB %#v", respEventType)
-	eventTypeID := respEventType.EventTypeId
+	eventTypeID := respEventType.EventTypeID
 	assert.NoError(err)
 	//printJSON("event type id", eventTypeID)
 
@@ -289,7 +289,7 @@ func (suite *ServerTester) Test02Event() {
 	event := makeTestEvent(eventTypeID)
 	respEvent, err := client.PostEvent(event)
 	//log.Printf("CCC %#v", respEvent)
-	id := respEvent.EventId
+	id := respEvent.EventID
 	assert.NoError(err)
 	//printJSON("event id", id)
 
@@ -309,7 +309,7 @@ func (suite *ServerTester) Test02Event() {
 	event, err = client.GetEvent(id)
 	//printJSON("Got event", event)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(event.EventId))
+	assert.EqualValues(string(id), string(event.EventID))
 
 	//log.Printf("Deleting event by id: %s", id)
 	err = client.DeleteEvent(id)
@@ -352,7 +352,7 @@ func (suite *ServerTester) Test03Trigger() {
 	eventType := makeTestEventType(eventTypeName)
 	//printJSON("event type", eventType)
 	respEventType, err := client.PostEventType(eventType)
-	eventTypeID := respEventType.EventTypeId
+	eventTypeID := respEventType.EventTypeID
 	assert.NoError(err)
 	//printJSON("event type id", eventTypeID)
 
@@ -360,7 +360,7 @@ func (suite *ServerTester) Test03Trigger() {
 	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
-	id := respTrigger.TriggerId
+	id := respTrigger.TriggerID
 	//printJSON("trigger id", id)
 
 	//log.Printf("Getting list of triggers:")
@@ -371,7 +371,7 @@ func (suite *ServerTester) Test03Trigger() {
 	//log.Printf("Getting trigger by id: %s", id)
 	trigger, err = client.GetTrigger(id)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(trigger.TriggerId))
+	assert.EqualValues(string(id), string(trigger.TriggerID))
 	//printJSON("Trigger", trigger)
 
 	//log.Printf("Delete trigger by id: %s", id)
@@ -408,7 +408,7 @@ func (suite *ServerTester) Test04Alert() {
 	eventType := makeTestEventType(eventTypeName)
 	//printJSON("event type", eventType)
 	respEventType, err := client.PostEventType(eventType)
-	eventTypeID := respEventType.EventTypeId
+	eventTypeID := respEventType.EventTypeID
 	assert.NoError(err)
 	//printJSON("event type id:", eventTypeID)
 
@@ -416,7 +416,7 @@ func (suite *ServerTester) Test04Alert() {
 	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("Trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
-	triggerID := respTrigger.TriggerId
+	triggerID := respTrigger.TriggerID
 	assert.NoError(err)
 	//printJSON("Trigger ID", triggerID)
 
@@ -424,18 +424,18 @@ func (suite *ServerTester) Test04Alert() {
 	event := makeTestEvent(eventTypeID)
 	//printJSON("event", event)
 	respPostEvent, err := client.PostEvent(event)
-	eventID := respPostEvent.EventId
+	eventID := respPostEvent.EventID
 	assert.NoError(err)
 	//printJSON("eventID", eventID)
 
 	//log.Printf("Creating new alert:")
 	alert := &Alert{
-		TriggerId: triggerID,
-		EventId:   eventID,
+		TriggerID: triggerID,
+		EventID:   eventID,
 	}
 	//printJSON("alert", alert)
 	respAlert, err := client.PostAlert(alert)
-	id := respAlert.AlertId
+	id := respAlert.AlertID
 	assert.NoError(err)
 	//printJSON("alert id", id)
 
@@ -448,7 +448,7 @@ func (suite *ServerTester) Test04Alert() {
 	//log.Printf("Get alert by id: %s", id)
 	alert, err = client.GetAlert(id)
 	assert.NoError(err)
-	assert.EqualValues(string(id), string(alert.AlertId))
+	assert.EqualValues(string(id), string(alert.AlertID))
 	//printJSON("alert", alert)
 
 	//log.Printf("Delete alert by id: %s", id)
@@ -494,14 +494,14 @@ func (suite *ServerTester) Test05EventMapping() {
 		//printJSON("eventType", eventType)
 
 		respEventType, err := client.PostEventType(eventType)
-		eventTypeID := respEventType.EventTypeId
+		eventTypeID := respEventType.EventTypeID
 		assert.NoError(err)
 		//printJSON("eventTypeID", eventTypeID)
 
 		eventTypeX, err := client.GetEventType(eventTypeID)
 		assert.NoError(err)
 
-		assert.EqualValues(eventTypeID, eventTypeX.EventTypeId)
+		assert.EqualValues(eventTypeID, eventTypeX.EventTypeID)
 		// printJSON("eventTypeX", eventTypeX)
 
 		return eventTypeID
@@ -510,7 +510,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	createEvent := func(eventTypeID piazza.Ident, eventTypeName string, value int) piazza.Ident {
 		//log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
-			EventTypeId: eventTypeID,
+			EventTypeID: eventTypeID,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": value,
@@ -519,14 +519,14 @@ func (suite *ServerTester) Test05EventMapping() {
 
 		//printJSON("event", event)
 		respEvent, err := client.PostEvent(event)
-		eventID := respEvent.EventId
+		eventID := respEvent.EventID
 		assert.NoError(err)
 
 		//printJSON("eventID", eventID)
 		eventX, err := client.GetEvent(eventID)
 		assert.NoError(err)
 
-		assert.EqualValues(eventID, eventX.EventId)
+		assert.EqualValues(eventID, eventX.EventID)
 
 		// printJSON("eventX", eventX)
 		return eventID
@@ -566,7 +566,7 @@ func (suite *ServerTester) Test05EventMapping() {
 	{
 		x, err := client.GetEventType(et1Id)
 		assert.NoError(err)
-		assert.EqualValues(string(et1Id), string((*x).EventTypeId))
+		assert.EqualValues(string(et1Id), string((*x).EventTypeID))
 	}
 
 	e1Id := createEvent(et1Id, eventTypeName1, 17)
@@ -614,7 +614,7 @@ func (suite *ServerTester) Test06Workflow() {
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
 		//printJSON("event type", eventType)
 		respEventType, err := client.PostEventType(eventType)
-		et1ID = respEventType.EventTypeId
+		et1ID = respEventType.EventTypeID
 		//printJSON("event type id", et1ID)
 		assert.NoError(err)
 		defer func() {
@@ -628,10 +628,12 @@ func (suite *ServerTester) Test06Workflow() {
 		//log.Printf("Creating trigger:\n")
 		trigger := &Trigger{
 			Name:        "the x1 trigger",
-			EventTypeId: et1ID,
+			EventTypeID: et1ID,
 			Condition: map[string]interface{}{
-				"match": map[string]interface{}{
-					"num": 17,
+				"query": map[string]interface{}{
+					"match": map[string]interface{}{
+						"num": 17,
+					},
 				},
 			},
 			Job: JobRequest{
@@ -649,7 +651,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 		//printJSON("trigger", trigger)
 		respTrigger, err := client.PostTrigger(trigger)
-		t1ID := respTrigger.TriggerId
+		t1ID := respTrigger.TriggerID
 		assert.NoError(err)
 		defer func() {
 			//log.Printf("Deleting trigger by id: %s\n", t1ID)
@@ -663,7 +665,7 @@ func (suite *ServerTester) Test06Workflow() {
 		//log.Printf("Creating event:\n")
 		// will cause trigger TRG1
 		event := &Event{
-			EventTypeId: et1ID,
+			EventTypeID: et1ID,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num":      17,
@@ -675,7 +677,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 		//printJSON("event", event)
 		respEvent, err := client.PostEvent(event)
-		e1ID := respEvent.EventId
+		e1ID := respEvent.EventID
 		assert.NoError(err)
 		//printJSON("event id", e1ID)
 		defer func() {
@@ -690,7 +692,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 		// will cause no triggers
 		event := &Event{
-			EventTypeId: et1ID,
+			EventTypeID: et1ID,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
 				"num": 18,
@@ -703,7 +705,7 @@ func (suite *ServerTester) Test06Workflow() {
 
 		//printJSON("event", event)
 		respEvent2, err := client.PostEvent(event)
-		e2ID := respEvent2.EventId
+		e2ID := respEvent2.EventID
 		assert.NoError(err)
 		//printJSON("event id", e2ID)
 
@@ -741,13 +743,13 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	eventType1.Mapping = mapping
 	//printJSON("\tevent type", eventType1)
 	respEventType1, err := client.PostEventType(eventType1)
-	eventTypeId1 := respEventType1.EventTypeId
+	eventTypeID1 := respEventType1.EventTypeID
 	assert.NoError(err)
 	//printJSON("\tevent type id", eventTypeId1)
 
 	defer func() {
 		//log.Printf("\tDeleting event type: %s\n", eventTypeId1)
-		err = client.DeleteEventType(eventTypeId1)
+		err = client.DeleteEventType(eventTypeID1)
 		assert.NoError(err)
 	}()
 
@@ -757,63 +759,62 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	eventType2.Mapping = mapping
 	//printJSON("\tevent type", eventType2)
 	respEventType2, err := client.PostEventType(eventType2)
-	eventTypeId2 := respEventType2.EventTypeId
+	eventTypeID2 := respEventType2.EventTypeID
 	assert.NoError(err)
 	//printJSON("\tevent type id", eventTypeId2)
 
 	defer func() {
 		//log.Printf("\tDeleting event type: %s\n", eventTypeId2)
-		err = client.DeleteEventType(eventTypeId2)
+		err = client.DeleteEventType(eventTypeID2)
 		assert.NoError(err)
 	}()
 
 	// Create MultiTrigger
 	//log.Printf("\tCreating trigger:")
-	trigger := makeTestTrigger([]piazza.Ident{eventTypeId1, eventTypeId2})
+	trigger := makeTestTrigger([]piazza.Ident{eventTypeID1, eventTypeID2})
 	//printJSON("\ttrigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
-	triggerId := respTrigger.TriggerId
+	triggerID := respTrigger.TriggerID
 	assert.NoError(err)
 	//printJSON("\ttrigger id", triggerId)
 
 	defer func() {
 		//log.Printf("\tDeleting trigger: %s\n", triggerId)
-		err = client.DeleteTrigger(triggerId)
+		err = client.DeleteTrigger(triggerID)
 		assert.NoError(err)
 	}()
 
 	// Create Event of Type 1
 	//log.Printf("\tCreating new event:")
-	event1 := makeTestEvent(eventTypeId1)
+	event1 := makeTestEvent(eventTypeID1)
 	event1.Data = data
 	//printJSON("\tevent", event1)
 	respEvent1, err := client.PostEvent(event1)
-	eventId1 := respEvent1.EventId
+	eventID1 := respEvent1.EventID
 	assert.NoError(err)
 	//printJSON("\tevent id", eventId1)
 
 	defer func() {
 		//log.Printf("\tDeleting event: %s\n", eventId1)
-		err = client.DeleteEvent(eventId1)
+		err = client.DeleteEvent(eventID1)
 		assert.NoError(err)
 	}()
 
 	// Create Event of Type 2
 	//log.Printf("\tCreating new event:")
-	event2 := makeTestEvent(eventTypeId2)
+	event2 := makeTestEvent(eventTypeID2)
 	event2.Data = data
 	//printJSON("\tevent", event2)
 	respEvent2, err := client.PostEvent(event2)
-	eventId2 := respEvent2.EventId
+	eventID2 := respEvent2.EventID
 	assert.NoError(err)
 	//printJSON("\tevent id", eventId2)
 
 	defer func() {
 		//log.Printf("\tDeleting event: %s\n", eventId2)
-		err = client.DeleteEvent(eventId2)
+		err = client.DeleteEvent(eventID2)
 		assert.NoError(err)
 	}()
-
 }
 
 /*func (suite *ServerTester) Test08BadEvents() {

@@ -37,15 +37,15 @@ import (
 const ingestTypeName = "piazza:ingest"
 const executeTypeName = "piazza:executionComplete"
 
-// WorkflowService TODO
-type WorkflowService struct {
+type Service struct {
 	eventTypeDB *EventTypeDB
 	eventDB     *EventDB
 	triggerDB   *TriggerDB
 	alertDB     *AlertDB
 	cronDB      *CronDB
 
-	stats workflowStats
+	stats Stats
+	sync.Mutex
 
 	logger  pzlogger.IClient
 	uuidgen pzuuidgen.IClient
@@ -60,7 +60,7 @@ type WorkflowService struct {
 //------------------------------------------------------------------------------
 
 // Init TODO
-func (service *WorkflowService) Init(
+func (service *Service) Init(
 	sys *piazza.SystemConfig,
 	logger pzlogger.IClient,
 	uuidgen pzuuidgen.IClient,
@@ -185,7 +185,7 @@ func (service *WorkflowService) Init(
 	return nil
 }
 
-func (service *WorkflowService) newIdent() (piazza.Ident, error) {
+func (service *Service) newIdent() (piazza.Ident, error) {
 	uuid, err := service.uuidgen.GetUUID()
 	if err != nil {
 		return piazza.NoIdent, err
@@ -194,7 +194,7 @@ func (service *WorkflowService) newIdent() (piazza.Ident, error) {
 	return piazza.Ident(uuid), nil
 }
 
-func (service *WorkflowService) sendToKafka(jobInstance string, jobID piazza.Ident) error {
+func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident) error {
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
 	if err != nil {
 		return LoggedError("Kafka-related failure (1): %s", err.Error())
@@ -229,7 +229,7 @@ func (service *WorkflowService) sendToKafka(jobInstance string, jobID piazza.Ide
 
 //---------------------------------------------------------------------
 
-func (service *WorkflowService) statusOK(obj interface{}) *piazza.JsonResponse {
+func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
 	err := resp.SetType()
 	if err != nil {
@@ -238,7 +238,7 @@ func (service *WorkflowService) statusOK(obj interface{}) *piazza.JsonResponse {
 	return resp
 }
 
-func (service *WorkflowService) statusCreated(obj interface{}) *piazza.JsonResponse {
+func (service *Service) statusCreated(obj interface{}) *piazza.JsonResponse {
 	resp := &piazza.JsonResponse{StatusCode: http.StatusCreated, Data: obj}
 	err := resp.SetType()
 	if err != nil {
@@ -247,7 +247,7 @@ func (service *WorkflowService) statusCreated(obj interface{}) *piazza.JsonRespo
 	return resp
 }
 
-func (service *WorkflowService) statusBadRequest(err error) *piazza.JsonResponse {
+func (service *Service) statusBadRequest(err error) *piazza.JsonResponse {
 	return &piazza.JsonResponse{
 		StatusCode: http.StatusBadRequest,
 		Message:    err.Error(),
@@ -255,7 +255,7 @@ func (service *WorkflowService) statusBadRequest(err error) *piazza.JsonResponse
 	}
 }
 
-func (service *WorkflowService) statusForbidden(err error) *piazza.JsonResponse {
+func (service *Service) statusForbidden(err error) *piazza.JsonResponse {
 	return &piazza.JsonResponse{
 		StatusCode: http.StatusForbidden,
 		Message:    err.Error(),
@@ -263,7 +263,7 @@ func (service *WorkflowService) statusForbidden(err error) *piazza.JsonResponse 
 	}
 }
 
-func (service *WorkflowService) statusInternalError(err error) *piazza.JsonResponse {
+func (service *Service) statusInternalError(err error) *piazza.JsonResponse {
 	return &piazza.JsonResponse{
 		StatusCode: http.StatusInternalServerError,
 		Message:    err.Error(),
@@ -271,7 +271,7 @@ func (service *WorkflowService) statusInternalError(err error) *piazza.JsonRespo
 	}
 }
 
-func (service *WorkflowService) statusNotFound(err error) *piazza.JsonResponse {
+func (service *Service) statusNotFound(err error) *piazza.JsonResponse {
 	return &piazza.JsonResponse{
 		StatusCode: http.StatusNotFound,
 		Message:    err.Error(),
@@ -281,19 +281,19 @@ func (service *WorkflowService) statusNotFound(err error) *piazza.JsonResponse {
 
 //------------------------------------------------------------------------------
 
-// GetAdminStats TODO
-func (service *WorkflowService) GetAdminStats() *piazza.JsonResponse {
-	service.stats.Lock()
+// GetStats TODO
+func (service *Service) GetStats() *piazza.JsonResponse {
+	service.Lock()
 	t := service.stats
-	service.stats.Unlock()
+	service.Unlock()
 	return service.statusOK(t)
 }
 
 //------------------------------------------------------------------------------
 
 // GetEventType TODO
-func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonResponse {
-	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(id))
+func (service *Service) GetEventType(id piazza.Ident) *piazza.JsonResponse {
+	eventType, found, err := service.eventTypeDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
@@ -305,7 +305,7 @@ func (service *WorkflowService) GetEventType(id piazza.Ident) *piazza.JsonRespon
 }
 
 // GetAllEventTypes TODO
-func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -320,7 +320,7 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 	if nameParam != "" {
 		nameParamValue := nameParam
 		eventtypeid, foundName, err := service.eventTypeDB.GetIDByName(nameParamValue)
-		var foundType bool = false
+		var foundType = false
 		var eventtype *EventType
 		if foundName && eventtypeid != nil {
 			if err != nil {
@@ -359,7 +359,7 @@ func (service *WorkflowService) GetAllEventTypes(params *piazza.HttpQueryParams)
 }
 
 // PostEventType TODO
-func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.JsonResponse {
+func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	// Check if our EventType.Name already exists
 	name := eventType.Name
 	found, err := service.eventDB.NameExists(name)
@@ -382,7 +382,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventType.EventTypeId = eventTypeID
+	eventType.EventTypeID = eventTypeID
 
 	eventType.CreatedOn = time.Now()
 
@@ -407,7 +407,7 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 
 	err = service.eventDB.AddMapping(name, eventType.Mapping)
 	if err != nil {
-		service.eventTypeDB.DeleteByID(id)
+		_, _ = service.eventTypeDB.DeleteByID(id)
 		return service.statusBadRequest(err)
 	}
 
@@ -418,13 +418,15 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 	return service.statusCreated(&response)
 }
 
+// IsSystemEvent returns true if the event was generated within Piazza.
+//
 // TODO: Instead, check if createdBy=system
 func IsSystemEvent(name string) bool {
 	return name == ingestTypeName || name == executeTypeName
 }
 
 // DeleteEventType TODO
-func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
+func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id)
 	// Only check for system events or "in use" if found
 	if found {
@@ -432,7 +434,7 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 			return service.statusBadRequest(errors.New("Deleting system eventTypes is prohibited"))
 		}
 
-		triggers, hits, err := service.triggerDB.GetTriggersByEventTypeId(id)
+		triggers, hits, err := service.triggerDB.GetTriggersByEventTypeID(id)
 		if err != nil {
 			return service.statusBadRequest(err)
 		}
@@ -440,7 +442,7 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
 		}
 
-		events, hits, err := service.eventDB.GetEventsByEventTypeId(eventType.Name, id)
+		events, hits, err := service.eventDB.GetEventsByEventTypeID(eventType.Name, id)
 		if err != nil {
 			return service.statusBadRequest(err)
 		}
@@ -448,7 +450,7 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
 		}
 	}
-	ok, err := service.eventTypeDB.DeleteByID(piazza.Ident(id))
+	ok, err := service.eventTypeDB.DeleteByID(id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
@@ -464,7 +466,7 @@ func (service *WorkflowService) DeleteEventType(id piazza.Ident) *piazza.JsonRes
 //------------------------------------------------------------------------------
 
 // GetEvent TODO
-func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
+func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
 	if mapping == "" {
 		return service.statusNotFound(err)
@@ -487,7 +489,7 @@ func (service *WorkflowService) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 }
 
 // GetAllEvents TODO
-func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -527,7 +529,7 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 		return service.statusBadRequest(err)
 	}
 	for i := 0; i < len(events); i++ {
-		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(events[i].EventTypeId))
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(events[i].EventTypeID))
 		if !found {
 			return service.statusNotFound(err)
 		}
@@ -552,9 +554,9 @@ func (service *WorkflowService) GetAllEvents(params *piazza.HttpQueryParams) *pi
 // The createdBy field of each subsequent event is filled with the eventId of
 // this initial event, so that searching for events created by the initial event
 // is easier.
-func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
+func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	// Post the event in the database, WITHOUT "triggering"
-	eventTypeID := event.EventTypeId
+	eventTypeID := event.EventTypeID
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil || !found {
 		return service.statusBadRequest(err)
@@ -571,7 +573,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 	if err != nil {
 		return service.statusInternalError(err)
 	}
-	event.EventId = eventID
+	event.EventID = eventID
 
 	event.CreatedOn = time.Now()
 
@@ -579,7 +581,10 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
-	service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
+	err = service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
+	if err != nil {
+		return service.statusInternalError(err)
+	}
 
 	err = service.cronDB.PostData(event, eventID)
 	if err != nil {
@@ -591,7 +596,7 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 		// If we fail, need to also remove from cronDB
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
-		service.cronDB.DeleteByID(eventID)
+		_, _ = service.cronDB.DeleteByID(eventID)
 		service.cron.Remove(eventID.String())
 		return service.statusInternalError(err)
 	}
@@ -602,8 +607,8 @@ func (service *WorkflowService) PostRepeatingEvent(event *Event) *piazza.JsonRes
 }
 
 // PostEvent TODO
-func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
-	eventTypeID := event.EventTypeId
+func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
+	eventTypeID := event.EventTypeID
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil || !found {
 		return service.statusBadRequest(err)
@@ -614,7 +619,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	if err != nil {
 		return service.statusInternalError(err)
 	}
-	event.EventId = eventID
+	event.EventID = eventID
 
 	event.CreatedOn = time.Now()
 
@@ -655,7 +660,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 					results[triggerID] = service.statusBadRequest(err)
 					return
 				}
-				if trigger.Enabled == false {
+				if !trigger.Enabled {
 					//results[triggerID] = statusOK(triggerID)
 					return
 				}
@@ -664,10 +669,10 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 				// don't have the same Eventtype as the Event
 				// Would rather have this done via the percolation itself ...
 				matches := false
-				if eventTypeID == eventType.EventTypeId {
+				if eventTypeID == eventType.EventTypeID {
 					matches = true
 				}
-				if matches == false {
+				if !matches {
 					return
 				}
 
@@ -704,7 +709,7 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 
 				service.stats.IncrTriggerJobs()
 
-				alert := Alert{EventId: eventID, TriggerId: triggerID, JobId: jobID, CreatedBy: trigger.CreatedBy}
+				alert := Alert{EventID: eventID, TriggerID: triggerID, JobID: jobID, CreatedBy: trigger.CreatedBy}
 				resp := service.PostAlert(&alert)
 				if resp.IsError() {
 					// resp will be a statusInternalError or statusBadRequest
@@ -729,7 +734,90 @@ func (service *WorkflowService) PostEvent(event *Event) *piazza.JsonResponse {
 	return service.statusCreated(&response)
 }
 
-func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
+func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	// if both specified, "by id"" wins
+	eventTypeID, err := params.GetAsString("eventTypeId", "")
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	eventTypeName, err := params.GetAsString("eventTypeName", "")
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	var query string
+
+	// Get the eventTypeName corresponding to the eventTypeId
+	if eventTypeID != "" {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
+		if !found {
+			return service.statusNotFound(err)
+		}
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		query = eventType.Name
+	} else if eventTypeName != "" {
+		query = eventTypeName
+	} else {
+		// no query param specified, get 'em all
+		query = ""
+	}
+
+	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, jsonString, format)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	resp := service.statusOK(events)
+
+	if totalHits > 0 {
+		// Unmarshal this json and extract out the pagination
+		b := []byte(jsonString)
+		var f interface{}
+		err := json.Unmarshal(b, &f)
+		if err != nil {
+			return service.statusBadRequest(err)
+		}
+		dsl := f.(map[string]interface{})
+		var size *float64
+		var from *float64
+		for k, v := range dsl {
+			if k == "size" {
+				sizeVal, ok := v.(float64)
+				if ok {
+					size = &sizeVal
+				}
+			}
+			if k == "from" {
+				fromVal, ok := v.(float64)
+				if ok {
+					from = &fromVal
+				}
+			}
+		}
+		if size != nil {
+			format.PerPage = int(*size)
+		} else {
+			floatVal := float64(format.PerPage)
+			size = &floatVal
+		}
+		if from != nil {
+			format.Page = int(*from / *size)
+		}
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
+func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id)
 	if mapping == "" {
 		return service.statusNotFound(err)
@@ -742,7 +830,7 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 		return service.statusBadRequest(errors.New("Deleting system events is prohibited"))
 	}
 
-	ok, err := service.eventDB.DeleteByID(mapping, piazza.Ident(id))
+	ok, err := service.eventDB.DeleteByID(mapping, id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
@@ -756,7 +844,7 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 		return service.statusBadRequest(err)
 	}
 	if ok {
-		ok, err := service.cronDB.DeleteByID(piazza.Ident(id))
+		ok, err := service.cronDB.DeleteByID(id)
 		if !ok {
 			return service.statusNotFound(err)
 		}
@@ -773,15 +861,15 @@ func (service *WorkflowService) DeleteEvent(id piazza.Ident) *piazza.JsonRespons
 
 //------------------------------------------------------------------------------
 
-func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
-	trigger, found, err := service.triggerDB.GetOne(piazza.Ident(id))
+func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
+	trigger, found, err := service.triggerDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(trigger.EventTypeId))
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(trigger.EventTypeID))
 	if err != nil || !found {
 		return service.statusBadRequest(err)
 	}
@@ -790,7 +878,7 @@ func (service *WorkflowService) GetTrigger(id piazza.Ident) *piazza.JsonResponse
 	return service.statusOK(trigger)
 }
 
-func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -803,7 +891,7 @@ func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
 	}
 	for i := 0; i < len(triggers); i++ {
-		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].EventTypeId))
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].EventTypeID))
 		if err != nil || !found {
 			return service.statusBadRequest(err)
 		}
@@ -820,22 +908,22 @@ func (service *WorkflowService) GetAllTriggers(params *piazza.HttpQueryParams) *
 	return resp
 }
 
-func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
+func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	triggerID, err := service.newIdent()
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	trigger.TriggerId = triggerID
+	trigger.TriggerID = triggerID
 	trigger.CreatedOn = time.Now()
 
 	eventType := &EventType{}
 	{ //check eventtype id
-		if trigger.EventTypeId == "" {
+		if trigger.EventTypeID == "" {
 			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: no eventTypeId was specified"))
 		}
-		et, found, err := service.eventTypeDB.GetOne(trigger.EventTypeId)
+		et, found, err := service.eventTypeDB.GetOne(trigger.EventTypeID)
 		if !found || err != nil {
-			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: eventType %s could not be found", trigger.EventTypeId.String()))
+			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: eventType %s could not be found", trigger.EventTypeID.String()))
 		}
 		eventType = et
 	}
@@ -858,7 +946,7 @@ func (service *WorkflowService) PostTrigger(trigger *Trigger) *piazza.JsonRespon
 	return service.statusCreated(&response)
 }
 
-func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piazza.JsonResponse {
+func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piazza.JsonResponse {
 	trigger, found, err := service.triggerDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
@@ -872,7 +960,7 @@ func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdat
 	}
 	service.logger.Info("Updated Trigger with TriggerId %s", id)
 
-	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.EventTypeId))
+	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.EventTypeID))
 	if err != nil || !found {
 		return service.statusBadRequest(err)
 	}
@@ -881,8 +969,8 @@ func (service *WorkflowService) PutTrigger(id piazza.Ident, update *TriggerUpdat
 	return service.statusOK(res)
 }
 
-func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
-	ok, err := service.triggerDB.DeleteTrigger(piazza.Ident(id))
+func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
+	ok, err := service.triggerDB.DeleteTrigger(id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
@@ -897,7 +985,7 @@ func (service *WorkflowService) DeleteTrigger(id piazza.Ident) *piazza.JsonRespo
 
 //---------------------------------------------------------------------
 
-func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
+func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 	alert, found, err := service.alertDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
@@ -909,8 +997,8 @@ func (service *WorkflowService) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 	return service.statusOK(alert)
 }
 
-func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerID, err := params.GetAsString("triggerId", "")
+func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	triggerID, err := params.GetAsID("triggerId", "")
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -952,12 +1040,12 @@ func (service *WorkflowService) GetAllAlerts(params *piazza.HttpQueryParams) *pi
 }
 
 // PostAlert TODO
-func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
+func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 	alertID, err := service.newIdent()
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	alert.AlertId = alertID
+	alert.AlertID = alertID
 
 	alert.CreatedOn = time.Now()
 
@@ -974,7 +1062,7 @@ func (service *WorkflowService) PostAlert(alert *Alert) *piazza.JsonResponse {
 }
 
 // DeleteAlert TODO
-func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
+func (service *Service) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
 	ok, err := service.alertDB.DeleteByID(id)
 	if !ok {
 		return service.statusNotFound(err)
@@ -988,12 +1076,12 @@ func (service *WorkflowService) DeleteAlert(id piazza.Ident) *piazza.JsonRespons
 	return service.statusOK(nil)
 }
 
-func (service *WorkflowService) addUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
+func (service *Service) addUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
 	outputObj := map[string]interface{}{}
 	outputObj[uniqueKey] = inputObj
 	return outputObj
 }
-func (service *WorkflowService) removeUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
+func (service *Service) removeUniqueParams(uniqueKey string, inputObj map[string]interface{}) map[string]interface{} {
 	_, ok := inputObj[uniqueKey]
 	if !ok {
 		return inputObj
@@ -1004,7 +1092,7 @@ func (service *WorkflowService) removeUniqueParams(uniqueKey string, inputObj ma
 //---------------------------------------------------------------------
 
 // InitCron TODO
-func (service *WorkflowService) InitCron() error {
+func (service *Service) InitCron() error {
 	ok, err := service.cronDB.Exists()
 	if err != nil {
 		return err
@@ -1016,7 +1104,7 @@ func (service *WorkflowService) InitCron() error {
 		}
 
 		for _, e := range *events {
-			service.cron.AddJob(e.CronSchedule, cronEvent{&e, service})
+			err = service.cron.AddJob(e.CronSchedule, cronEvent{&e, service})
 			if err != nil {
 				return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
 			}
@@ -1030,19 +1118,19 @@ func (service *WorkflowService) InitCron() error {
 
 type cronEvent struct {
 	*Event
-	service *WorkflowService
+	service *Service
 }
 
 func (c cronEvent) Run() {
 	ev := &Event{
-		EventTypeId: c.EventTypeId,
+		EventTypeID: c.EventTypeID,
 		Data:        c.Data,
 		CreatedOn:   time.Now(),
-		CreatedBy:   c.EventId.String(),
+		CreatedBy:   c.EventID.String(),
 	}
 	c.service.PostEvent(ev)
 }
 
 func (c cronEvent) Key() string {
-	return c.EventId.String()
+	return c.EventID.String()
 }

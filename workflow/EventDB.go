@@ -26,7 +26,7 @@ type EventDB struct {
 	*ResourceDB
 }
 
-func NewEventDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventDB, error) {
+func NewEventDB(service *Service, esi elasticsearch.IIndex) (*EventDB, error) {
 	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
 	if err != nil {
 		return nil, err
@@ -64,7 +64,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 }
 
 func (db *EventDB) verifyEventReadyToPost(event *Event) error {
-	eventTypeJson := db.service.GetEventType(event.EventTypeId)
+	eventTypeJson := db.service.GetEventType(event.EventTypeID)
 	eventTypeObj := eventTypeJson.Data
 	eventType, ok := eventTypeObj.(*EventType)
 	if !ok {
@@ -143,7 +143,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 	return events, searchResult.TotalHits(), nil
 }
 
-func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ident) ([]Event, int64, error) {
+func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, format *piazza.JsonPagination) ([]Event, int64, error) {
 	events := []Event{}
 	var err error
 
@@ -158,7 +158,44 @@ func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ide
 		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
 	}
 
-	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeId)
+	searchResult, err := db.Esi.SearchByJSON(mapping, jsnString)
+	if err != nil {
+		return nil, 0, LoggedError("EventDB.GetEventsByDslQuery failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, 0, LoggedError("EventDB.GetEventsByDslQuery failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
+			var event Event
+			err := json.Unmarshal(*hit.Source, &event)
+			if err != nil {
+				return nil, 0, err
+			}
+			events = append(events, event)
+		}
+	}
+
+	return events, searchResult.TotalHits(), nil
+}
+
+func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ident) ([]Event, int64, error) {
+	events := []Event{}
+	var err error
+
+	exists := true
+	if mapping != "" {
+		exists, err = db.Esi.TypeExists(mapping)
+		if err != nil {
+			return events, 0, err
+		}
+	}
+	if !exists {
+		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
+	}
+
+	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID)
 	if err != nil {
 		return nil, 0, LoggedError("EventDB.GetEventsByEventTypeId failed: %s", err)
 	}
@@ -181,7 +218,7 @@ func (db *EventDB) GetEventsByEventTypeId(mapping string, eventTypeId piazza.Ide
 }
 
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error) {
-	var mapping string = ""
+	var mapping string
 
 	types, err := db.Esi.GetTypes()
 	if err != nil {

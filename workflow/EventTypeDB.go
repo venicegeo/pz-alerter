@@ -26,7 +26,7 @@ type EventTypeDB struct {
 	mapping string
 }
 
-func NewEventTypeDB(service *WorkflowService, esi elasticsearch.IIndex) (*EventTypeDB, error) {
+func NewEventTypeDB(service *Service, esi elasticsearch.IIndex) (*EventTypeDB, error) {
 
 	rdb, err := NewResourceDB(service, esi, EventTypeIndexSettings)
 	if err != nil {
@@ -146,7 +146,7 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, bool, error) {
 		return nil, getResult.Found, err
 	}
 
-	return &eventType.EventTypeId, getResult.Found, nil
+	return &eventType.EventTypeID, getResult.Found, nil
 }
 
 func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
