@@ -174,16 +174,12 @@ func makeTestEvent(eventTypeID piazza.Ident) *Event {
 
 func makeTestTrigger(eventTypeIDs []piazza.Ident) *Trigger {
 	trigger := &Trigger{
-		Name:    "MY TRIGGER TITLE",
-		Enabled: true,
-		Condition: Condition{
-			EventTypeIDs: eventTypeIDs,
-			Query: map[string]interface{}{
-				"query": map[string]interface{}{
-					"match": map[string]interface{}{
-						"num": 31,
-					},
-				},
+		Name:        "MY TRIGGER TITLE",
+		Enabled:     true,
+		EventTypeID: eventTypeIDs[0],
+		Condition: map[string]interface{}{
+			"match": map[string]interface{}{
+				"num": 31,
 			},
 		},
 		Job: JobRequest{
@@ -631,14 +627,12 @@ func (suite *ServerTester) Test06Workflow() {
 	{
 		//log.Printf("Creating trigger:\n")
 		trigger := &Trigger{
-			Name: "the x1 trigger",
-			Condition: Condition{
-				EventTypeIDs: []piazza.Ident{et1ID},
-				Query: map[string]interface{}{
-					"query": map[string]interface{}{
-						"match": map[string]interface{}{
-							"num": 17,
-						},
+			Name:        "the x1 trigger",
+			EventTypeID: et1ID,
+			Condition: map[string]interface{}{
+				"query": map[string]interface{}{
+					"match": map[string]interface{}{
+						"num": 17,
 					},
 				},
 			},

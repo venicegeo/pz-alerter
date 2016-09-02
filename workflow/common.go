@@ -50,21 +50,17 @@ const TriggerIndexSettings = `
 					"type": "string",
 					"index": "not_analyzed"
 				},
+				"eventTypeId": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
 				"enabled": {
 					"type": "boolean",
 					"index": "not_analyzed"
 				},
 				"condition": {
-					"properties": {
-						"eventTypeIds": {
-							"type": "string",
-							"index": "not_analyzed"
-						},
-						"query": {
-							"dynamic": true,
-							"properties": {}
-						}
-					}
+					"dynamic": true,
+					"properties": {}
 				},
 				"job": {
 					"properties": {
@@ -88,13 +84,6 @@ const TriggerIndexSettings = `
 }
 `
 
-// Condition expresses the idea of "this ES query returns an event"
-// Query is specific to the event type
-type Condition struct {
-	EventTypeIDs []piazza.Ident         `json:"eventTypeIds" binding:"required"`
-	Query        map[string]interface{} `json:"query" binding:"required"`
-}
-
 type JobRequest struct {
 	CreatedBy string  `json:"createdBy"`
 	JobType   JobType `json:"jobType" binding:"required"`
@@ -109,14 +98,15 @@ type JobType struct {
 // Events are the results of the Conditions queries
 // Job is the JobMessage to submit back to Pz
 type Trigger struct {
-	TriggerID     piazza.Ident `json:"triggerId"`
-	Name          string       `json:"name" binding:"required"`
-	Condition     Condition    `json:"condition" binding:"required"`
-	Job           JobRequest   `json:"job" binding:"required"`
-	PercolationID piazza.Ident `json:"percolationId"`
-	CreatedBy     string       `json:"createdBy"`
-	CreatedOn     time.Time    `json:"createdOn"`
-	Enabled       bool         `json:"enabled"`
+	TriggerID     piazza.Ident           `json:"triggerId"`
+	Name          string                 `json:"name" binding:"required"`
+	EventTypeID   piazza.Ident           `json:"eventTypeId" binding:"required"`
+	Condition     map[string]interface{} `json:"condition" binding:"required"`
+	Job           JobRequest             `json:"job" binding:"required"`
+	PercolationID piazza.Ident           `json:"percolationId"`
+	CreatedBy     string                 `json:"createdBy"`
+	CreatedOn     time.Time              `json:"createdOn"`
+	Enabled       bool                   `json:"enabled"`
 }
 type TriggerUpdate struct {
 	Enabled bool `json:"enabled"`

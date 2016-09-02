@@ -61,37 +61,12 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			}
 		}
 	}
-	{ //CHECK EVENTTYPE IDS
-		if len(trigger.Condition.EventTypeIDs) == 0 {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: no eventTypeIds were specified")
-		}
-		for _, id := range trigger.Condition.EventTypeIDs {
-			_, found, err := db.service.eventTypeDB.GetOne(id)
-			if !found || err != nil {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: eventType %s could not be found", id.String())
-			}
-		}
-	}
 
-	ifaceObj := trigger.Condition.Query
-	//log.Printf("Query: %v", ifaceObj)
-	body, err := json.Marshal(ifaceObj)
+	//log.Printf("Query: %v", wrapper)
+	body, err := json.Marshal(trigger.Condition)
 	if err != nil {
 		return piazza.NoIdent, err
 	}
-
-	jsn := string(body)
-	//log.Printf("Current json: %s", jsn)
-	// Remove trailing }
-	jsn = jsn[:len(jsn)-1]
-	jsn += ",\"type\":["
-	// Add the types that the percolation query can match
-	for _, id := range trigger.Condition.EventTypeIDs {
-		jsn += fmt.Sprintf("\"%s\",", id)
-	}
-	jsn = jsn[:len(jsn)-1]
-	// Add back trailing } and ] to close array
-	jsn += "]}"
 
 	//log.Printf("Posting percolation query: %s", body)
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(string(trigger.TriggerID), piazza.JsonString(body))
@@ -100,7 +75,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		if strings.Contains(err.Error(), "elastic: Error 500 (Internal Server Error): failed to parse query") {
 			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: elastic failed to parse query. Common causes: [Variables do not start with 'data.' or are not found at your specified path, invalid perc query structure].")
 		} else {
-			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: %s [unknown cause]", err)
+			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed [unknown cause]: %s ", err)
 		}
 		return piazza.NoIdent, LoggedError(errMessage)
 	}
@@ -130,7 +105,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: bad trigger")
 	}
-	fixedTrigger := fixTrigger(mapTrigger)
+	fixedTrigger := replaceDot(mapTrigger)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
@@ -201,8 +176,11 @@ func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 	var obj Trigger
 	err = json.Unmarshal(*src, &obj)
 	if err != nil {
-		return nil, getResult.Found, err
+		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
 	}
+
+	fixedCondition := replaceTilde(obj.Condition)
+	obj.Condition = fixedCondition.(map[string]interface{})
 
 	return &obj, getResult.Found, nil
 }
@@ -272,42 +250,131 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
 	return deleteResult2.Found, nil
 }
 
-func fixTrigger(input interface{}) interface{} {
+func replaceDot(input interface{}) interface{} {
 	var output interface{}
 	switch input.(type) {
 	case map[string]interface{}:
-		output = fixTriggerNodeMap(input.(map[string]interface{}))
+		output = replaceDotMap(input.(map[string]interface{}))
 	case []interface{}:
-		output = fixTriggerNodeArr(input.([]interface{}))
+		output = replaceDotArr(input.([]interface{}))
 	}
 	return output
 }
-func fixTriggerNodeMap(inputObj map[string]interface{}) map[string]interface{} {
+func replaceDotMap(inputObj map[string]interface{}) map[string]interface{} {
 	outputObj := map[string]interface{}{}
 	for k, v := range inputObj {
 		switch v.(type) {
 		case []interface{}:
-			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeArr(v.([]interface{}))
+			outputObj[strings.Replace(k, ".", "~", -1)] = replaceDotArr(v.([]interface{}))
 		case map[string]interface{}:
-			outputObj[strings.Replace(k, ".", "~", -1)] = fixTriggerNodeMap(v.(map[string]interface{}))
+			outputObj[strings.Replace(k, ".", "~", -1)] = replaceDotMap(v.(map[string]interface{}))
 		default:
 			outputObj[strings.Replace(k, ".", "~", -1)] = v
 		}
 	}
 	return outputObj
 }
-
-func fixTriggerNodeArr(inputObj []interface{}) []interface{} {
+func replaceDotArr(inputObj []interface{}) []interface{} {
 	outputObj := []interface{}{}
 	for _, v := range inputObj {
 		switch v.(type) {
 		case []interface{}:
-			outputObj = append(outputObj, fixTriggerNodeArr(v.([]interface{})))
+			outputObj = append(outputObj, replaceDotArr(v.([]interface{})))
 		case map[string]interface{}:
-			outputObj = append(outputObj, fixTriggerNodeMap(v.(map[string]interface{})))
+			outputObj = append(outputObj, replaceDotMap(v.(map[string]interface{})))
 		default:
 			outputObj = append(outputObj, v)
 		}
 	}
 	return outputObj
+}
+
+func replaceTilde(input interface{}) interface{} {
+	var output interface{}
+	switch input.(type) {
+	case map[string]interface{}:
+		output = replaceTildeMap(input.(map[string]interface{}))
+	case []interface{}:
+		output = replaceTildeArr(input.([]interface{}))
+	}
+	return output
+}
+func replaceTildeMap(inputObj map[string]interface{}) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj[strings.Replace(k, "~", ".", -1)] = replaceTildeArr(v.([]interface{}))
+		case map[string]interface{}:
+			outputObj[strings.Replace(k, "~", ".", -1)] = replaceTildeMap(v.(map[string]interface{}))
+		default:
+			outputObj[strings.Replace(k, "~", ".", -1)] = v
+		}
+	}
+	return outputObj
+}
+func replaceTildeArr(inputObj []interface{}) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, replaceTildeArr(v.([]interface{})))
+		case map[string]interface{}:
+			outputObj = append(outputObj, replaceTildeMap(v.(map[string]interface{})))
+		default:
+			outputObj = append(outputObj, v)
+		}
+	}
+	return outputObj
+}
+
+func (db *TriggerDB) addUniqueParamsToQuery(input interface{}, eventType *EventType) interface{} {
+	var output interface{}
+	switch input.(type) {
+	case map[string]interface{}:
+		output = db.addUniqueParamsToQueryMap(input.(map[string]interface{}), eventType)
+	case []interface{}:
+		output = db.addUniqueParamsToQueryArr(input.([]interface{}), eventType)
+	}
+	return output
+}
+func (db *TriggerDB) addUniqueParamsToQueryMap(inputObj map[string]interface{}, eventType *EventType) map[string]interface{} {
+	outputObj := map[string]interface{}{}
+	for k, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj[db.getNewKeyName(eventType, k)] = db.addUniqueParamsToQueryArr(v.([]interface{}), eventType)
+		case map[string]interface{}:
+			outputObj[db.getNewKeyName(eventType, k)] = db.addUniqueParamsToQueryMap(v.(map[string]interface{}), eventType)
+		default:
+			outputObj[db.getNewKeyName(eventType, k)] = v
+		}
+	}
+	return outputObj
+}
+
+func (db *TriggerDB) addUniqueParamsToQueryArr(inputObj []interface{}, eventType *EventType) []interface{} {
+	outputObj := []interface{}{}
+	for _, v := range inputObj {
+		switch v.(type) {
+		case []interface{}:
+			outputObj = append(outputObj, db.addUniqueParamsToQueryArr(v.([]interface{}), eventType))
+		case map[string]interface{}:
+			outputObj = append(outputObj, db.addUniqueParamsToQueryMap(v.(map[string]interface{}), eventType))
+		default:
+			outputObj = append(outputObj, v)
+		}
+	}
+	return outputObj
+}
+
+func (db *TriggerDB) getNewKeyName(eventType *EventType, key string) string {
+	mapping := db.service.removeUniqueParams(eventType.Name, eventType.Mapping)
+	vars, _ := piazza.GetVarsFromStruct(mapping)
+	for varName, _ := range vars {
+		if "data."+varName == key {
+			return strings.Replace(key, "data.", "data."+eventType.Name+".", 1)
+		}
+	}
+	return key
 }

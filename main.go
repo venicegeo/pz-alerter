@@ -51,23 +51,23 @@ func main() {
 		log.Fatal(err)
 	}
 
-	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes", pzworkflow.EventTypeIndexSettings)
+	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes001", pzworkflow.EventTypeIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	eventsIndex, err := elasticsearch.NewIndex(sys, "events001", pzworkflow.EventIndexSettings)
+	eventsIndex, err := elasticsearch.NewIndex(sys, "events002", pzworkflow.EventIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers", pzworkflow.TriggerIndexSettings)
+	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers001", pzworkflow.TriggerIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts", pzworkflow.AlertIndexSettings)
+	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts001", pzworkflow.AlertIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
-	cronIndex, err := elasticsearch.NewIndex(sys, "crons", pzworkflow.CronIndexSettings)
+	cronIndex, err := elasticsearch.NewIndex(sys, "crons001", pzworkflow.CronIndexSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
