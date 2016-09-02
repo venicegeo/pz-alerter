@@ -380,7 +380,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	eventTypeID, err := service.newIdent()
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusInternalError(err)
 	}
 	eventType.EventTypeID = eventTypeID
 
@@ -402,13 +402,13 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	id, err := service.eventTypeDB.PostData(eventType, eventTypeID)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusInternalError(err)
 	}
 
 	err = service.eventDB.AddMapping(name, eventType.Mapping)
 	if err != nil {
 		_, _ = service.eventTypeDB.DeleteByID(id)
-		return service.statusBadRequest(err)
+		return service.statusInternalError(err)
 	}
 
 	service.logger.Info("Posted EventType with EventTypeId %s", eventTypeID)
