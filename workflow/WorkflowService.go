@@ -391,9 +391,6 @@ func (service *WorkflowService) PostEventType(eventType *EventType) *piazza.Json
 		return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: %s", err))
 	}
 	for k, _ := range vars {
-		if strings.Contains(k, "$") {
-			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '%s$': [%s]", eventType.Name, k))
-		}
 		if strings.Contains(k, "~") {
 			return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: Variable names cannot contain '%s~': [%s]", eventType.Name, k))
 		}
