@@ -40,10 +40,8 @@ func NewTriggerDB(service *Service, esi elasticsearch.IIndex) (*TriggerDB, error
 }
 
 func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error) {
-
 	{ //CHECK SERVICE EXISTS
-		jobData := trigger.Job.JobType.Data
-		serviceID := jobData["serviceId"]
+		serviceID := trigger.Job.JobType.Data["serviceId"]
 		strServiceID, ok := serviceID.(string)
 		if !ok {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
@@ -54,7 +52,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			// if err is nil, we have a servicecontroller to talk to
 			// if err is not nil, we'll assume we are mocking (which means
 			// we have no servicecontroller client to mock)
-			response, err := http.Get(serviceControllerURL)
+			response, err := http.Get(fmt.Sprintf("%s/service/%s", serviceControllerURL, strServiceID))
 			if err != nil {
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
 			}
