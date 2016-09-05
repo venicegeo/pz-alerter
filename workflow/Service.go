@@ -366,8 +366,11 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 
 	var totalHits int64
 	var eventtypes []EventType
-	dslString = syncPagination(dslString, *format)
-	eventtypes, totalHits, err = service.eventTypeDB.GetEventTypesByDslQuery(dslString, format)
+	dslString, err = syncPagination(dslString, *format)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	eventtypes, totalHits, err = service.eventTypeDB.GetEventTypesByDslQuery(dslString)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
