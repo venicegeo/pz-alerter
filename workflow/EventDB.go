@@ -143,7 +143,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 	return events, searchResult.TotalHits(), nil
 }
 
-func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, format *piazza.JsonPagination) ([]Event, int64, error) {
+func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string) ([]Event, int64, error) {
 	events := []Event{}
 	var err error
 

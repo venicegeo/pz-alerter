@@ -769,7 +769,8 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 		query = ""
 	}
 
-	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, jsonString, format)
+	jsonString = syncPagination(jsonString, format)
+	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, jsonString)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
@@ -778,7 +779,7 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 
 	if totalHits > 0 {
 		// Unmarshal this json and extract out the pagination
-		b := []byte(jsonString)
+		/*b := []byte(jsonString)
 		var f interface{}
 		err := json.Unmarshal(b, &f)
 		if err != nil {
@@ -809,12 +810,35 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 		}
 		if from != nil {
 			format.Page = int(*from / *size)
-		}
+		}*/
 		format.Count = int(totalHits)
 		resp.Pagination = format
 	}
 
 	return resp
+}
+
+func syncPagination(dslString string, format piazza.JsonPagination) (string, error) {
+	// JsonPagination takes precedence, but if pagination is including in the dsl move it over to format
+	// 1. insert pagination from format into dsl (overriding any existing values
+	b := []byte(dslString)
+	var f interface{}
+	err := json.Unmarshal(b, &f)
+	if err != nil {
+		return "", err
+	}
+	dsl := f.(map[string]interface{})
+	dsl["from"] = format.Page * format.PerPage
+	dsl["size"] = format.PerPage
+	if dsl["sort"] == nil {
+		sortMap := make([]map[string]interface{}, 1)
+		sortMap[0][format.SortBy] = format.Order
+		dsl["sort"] = sortMap
+	}
+	byteArray, err := json.Marshal(dsl)
+	//n := bytes.IndexByte(byteArray, 0)
+	s := string(byteArray)//[:n])
+	return s, nil
 }
 
 func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
