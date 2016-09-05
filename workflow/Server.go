@@ -47,6 +47,7 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/eventType", Handler: server.handleGetAllEventTypes},
 		{Verb: "GET", Path: "/eventType/:id", Handler: server.handleGetEventType},
 		{Verb: "POST", Path: "/eventType", Handler: server.handlePostEventType},
+		{Verb: "POST", Path: "/eventType/query", Handler: server.handleEventTypeQuery},
 		{Verb: "DELETE", Path: "/eventType/:id", Handler: server.handleDeleteEventType},
 
 		{Verb: "GET", Path: "/event/:id", Handler: server.handleGetEvent},
@@ -120,6 +121,28 @@ func (server *Server) handlePostEventType(c *gin.Context) {
 		return
 	}
 	resp := server.service.PostEventType(eventType)
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handleEventTypeQuery(c *gin.Context) {
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(c.Request.Body)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	jsonString := buf.String()
+	params := piazza.NewQueryParams(c.Request)
+
+	var resp *piazza.JsonResponse
+
+	resp = server.service.QueryEventTypes(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 

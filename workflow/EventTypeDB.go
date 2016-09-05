@@ -100,6 +100,39 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 	return eventTypes, searchResult.TotalHits(), nil
 }
 
+func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string, format piazza.JsonPagination) ([]EventType, int64, error) {
+	eventTypes := []EventType{}
+
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return eventTypes, 0, err
+	}
+	if !exists {
+		return eventTypes, 0, nil
+	}
+
+	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
+	if err != nil {
+		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
+			var eventType EventType
+			err := json.Unmarshal(*hit.Source, &eventType)
+			if err != nil {
+				return nil, 0, err
+			}
+			eventTypes = append(eventTypes, eventType)
+		}
+	}
+
+	return eventTypes, searchResult.TotalHits(), nil
+}
+
 func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
