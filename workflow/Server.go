@@ -59,6 +59,7 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/trigger/:id", Handler: server.handleGetTrigger},
 		{Verb: "GET", Path: "/trigger", Handler: server.handleGetAllTriggers},
 		{Verb: "POST", Path: "/trigger", Handler: server.handlePostTrigger},
+		{Verb: "POST", Path: "/trigger/query", Handler: server.handleTriggerQuery},
 		{Verb: "PUT", Path: "/trigger/:id", Handler: server.handlePutTrigger},
 		{Verb: "DELETE", Path: "/trigger/:id", Handler: server.handleDeleteTrigger},
 
@@ -244,6 +245,29 @@ func (server *Server) handlePostTrigger(c *gin.Context) {
 		return
 	}
 	resp := server.service.PostTrigger(trigger)
+	piazza.GinReturnJson(c, resp)
+}
+
+
+func (server *Server) handleTriggerQuery(c *gin.Context) {
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(c.Request.Body)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	jsonString := buf.String()
+	params := piazza.NewQueryParams(c.Request)
+
+	var resp *piazza.JsonResponse
+
+	resp = server.service.QueryTriggers(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
