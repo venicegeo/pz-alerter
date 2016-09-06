@@ -358,6 +358,38 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 	return resp
 }
 
+func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	var totalHits int64
+	var eventtypes []EventType
+	dslString, err = syncPagination(dslString, *format)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	eventtypes, totalHits, err = service.eventTypeDB.GetEventTypesByDslQuery(dslString)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	if eventtypes == nil {
+		return service.statusInternalError(errors.New("queryeventtypes returned nil"))
+	}
+	for i := 0; i < len(eventtypes); i++ {
+		eventtypes[i].Mapping = service.removeUniqueParams(eventtypes[i].Name, eventtypes[i].Mapping)
+	}
+	resp := service.statusOK(eventtypes)
+
+	if totalHits > 0 {
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
 // PostEventType TODO
 func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	// Check if our EventType.Name already exists
