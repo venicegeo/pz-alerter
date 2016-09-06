@@ -434,6 +434,9 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	id, err := service.eventTypeDB.PostData(eventType, eventTypeID)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "was not recognized as a valid mapping type") {
+			return service.statusBadRequest(err)
+		}
 		return service.statusInternalError(err)
 	}
 
