@@ -731,7 +731,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), -1)
 				}
 
-				service.logger.Info("job submission: %s\n", jobString)
+				service.logger.Info("job submission by trigger %d: %s\n", triggerID, jobString)
 
 				log.Printf("JOB ID: %s", jobID)
 				log.Printf("JOB STRING: %s", jobString)
