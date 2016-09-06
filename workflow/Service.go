@@ -703,11 +703,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				// Not the best way to do this, but should disallow Triggers from firing if they
 				// don't have the same Eventtype as the Event
 				// Would rather have this done via the percolation itself ...
-				matches := false
-				if eventTypeID == eventType.EventTypeID {
-					matches = true
-				}
-				if !matches {
+				if eventType.EventTypeID != trigger.EventTypeID {
 					return
 				}
 
@@ -731,7 +727,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), -1)
 				}
 
-				service.logger.Info("job submission by event event [%s] using trigger [%s]: %s\n", eventID.String(), triggerID.String(), jobString)
+				service.logger.Info("job submission by event [%s] using trigger [%s]: %s\n", eventID.String(), triggerID.String(), jobString)
 
 				log.Printf("JOB ID: %s", jobID)
 				log.Printf("JOB STRING: %s", jobString)
