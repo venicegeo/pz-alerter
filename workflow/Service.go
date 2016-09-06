@@ -942,6 +942,37 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 	return resp
 }
 
+func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	dslString, err = syncPagination(dslString, *format)
+	triggers, totalHits, err := service.triggerDB.GetTriggersByDslQuery(dslString)
+	if err != nil {
+		return service.statusBadRequest(err)
+	} else if triggers == nil {
+		return service.statusInternalError(errors.New("QueryTriggers returned nil"))
+	}
+	for i := 0; i < len(triggers); i++ {
+		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].EventTypeID))
+		if err != nil || !found {
+			return service.statusBadRequest(err)
+		}
+		triggers[i].Condition = service.removeUniqueParams(eventType.Name, triggers[i].Condition)
+	}
+
+	resp := service.statusOK(triggers)
+
+	if totalHits > 0 {
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
 func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	triggerID, err := service.newIdent()
 	if err != nil {

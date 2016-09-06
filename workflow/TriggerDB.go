@@ -175,6 +175,39 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, er
 	return triggers, searchResult.TotalHits(), nil
 }
 
+func (db *TriggerDB) GetTriggersByDslQuery(dslString string) ([]Trigger, int64, error) {
+	triggers := []Trigger{}
+
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return triggers, 0, err
+	}
+	if !exists {
+		return triggers, 0, nil
+	}
+
+	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
+	if err != nil {
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+
+		for _, hit := range *searchResult.GetHits() {
+			var trigger Trigger
+			err := json.Unmarshal(*hit.Source, &trigger)
+			if err != nil {
+				return nil, 0, err
+			}
+			triggers = append(triggers, trigger)
+		}
+	}
+	return triggers, searchResult.TotalHits(), nil
+}
+
 func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
