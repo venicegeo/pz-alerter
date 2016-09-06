@@ -927,6 +927,7 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 	for i := 0; i < len(triggers); i++ {
 		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(triggers[i].EventTypeID))
 		if err != nil || !found {
+			continue //v Old implementation
 			return service.statusBadRequest(err)
 		}
 		triggers[i].Condition = service.removeUniqueParams(eventType.Name, triggers[i].Condition)

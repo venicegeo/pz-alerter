@@ -122,7 +122,20 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 
 func (db *TriggerDB) PutTrigger(id piazza.Ident, trigger *Trigger, update *TriggerUpdate) (*Trigger, error) {
 	trigger.Enabled = update.Enabled
-	_, err := db.Esi.PutData(db.mapping, id.String(), trigger)
+	strTrigger, err := piazza.StructInterfaceToString(*trigger)
+	if err != nil {
+		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
+	}
+	intTrigger, err := piazza.StructStringToInterface(strTrigger)
+	if err != nil {
+		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
+	}
+	mapTrigger, ok := intTrigger.(map[string]interface{})
+	if !ok {
+		return trigger, LoggedError("TriggerDB.PutData failed: bad trigger")
+	}
+	fixedTrigger := replaceDot(mapTrigger)
+	_, err = db.Esi.PutData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
 		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
 	}
