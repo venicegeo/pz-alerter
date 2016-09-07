@@ -66,6 +66,7 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/alert/:id", Handler: server.handleGetAlert},
 		{Verb: "GET", Path: "/alert", Handler: server.handleGetAllAlerts},
 		{Verb: "POST", Path: "/alert", Handler: server.handlePostAlert},
+		{Verb: "POST", Path: "/alert/query", Handler: server.handleAlertQuery},
 		{Verb: "DELETE", Path: "/alert/:id", Handler: server.handleDeleteAlert},
 
 		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
@@ -305,6 +306,28 @@ func (server *Server) handleGetAlert(c *gin.Context) {
 func (server *Server) handleGetAllAlerts(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 	resp := server.service.GetAllAlerts(params)
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handleAlertQuery(c *gin.Context) {
+	buf := new(bytes.Buffer)
+	_, err := buf.ReadFrom(c.Request.Body)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	jsonString := buf.String()
+	params := piazza.NewQueryParams(c.Request)
+
+	var resp *piazza.JsonResponse
+
+	resp = server.service.QueryAlerts(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
