@@ -82,6 +82,39 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error)
 	return alerts, searchResult.TotalHits(), nil
 }
 
+func (db *AlertDB) GetAlertsByDslQuery(dslString string) ([]Alert, int64, error) {
+	alerts := []Alert{}
+
+	exists, err := db.Esi.TypeExists(db.mapping)
+	if err != nil {
+		return alerts, 0, err
+	}
+	if !exists {
+		return alerts, 0, nil
+	}
+
+	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
+	if err != nil {
+		return nil, 0, LoggedError("AlertDB.GetAlertsByDslQuery failed: %s", err)
+	}
+	if searchResult == nil {
+		return nil, 0, LoggedError("AlertDB.GetAlertsByDslQuery failed: no searchResult")
+	}
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
+			var alert Alert
+			err := json.Unmarshal(*hit.Source, &alert)
+			if err != nil {
+				return nil, 0, err
+			}
+			alerts = append(alerts, alert)
+		}
+	}
+
+	return alerts, searchResult.TotalHits(), nil
+}
+
 func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piazza.Ident) ([]Alert, int64, error) {
 	alerts := []Alert{}
 	var count = int64(-1)

@@ -1104,6 +1104,33 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	return resp
 }
 
+func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	var alerts []Alert
+	var totalHits int64
+
+	dslString, err = syncPagination(dslString, *format)
+	alerts, totalHits, err = service.alertDB.GetAlertsByDslQuery(dslString)
+	if err != nil {
+		return service.statusBadRequest(err)
+	} else if alerts == nil {
+		return service.statusInternalError(errors.New("QueryAlerts returned nil"))
+	}
+
+	resp := service.statusOK(alerts)
+
+	if totalHits > 0 {
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
 // PostAlert TODO
 func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 	alertID, err := service.newIdent()
