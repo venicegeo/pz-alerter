@@ -23,7 +23,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
-	"log"
 )
 
 type ClientTester struct {
@@ -359,17 +358,6 @@ func (suite *ClientTester) Test16TriggerResource() {
 	assert.NoError(err)
 	assert.Len(*triggers, 1)
 	assert.EqualValues(t1ID, (*triggers)[0].TriggerID)
-
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match_all": map[string]interface{}{},
-		},
-	}
-	triggers, err = client.QueryTriggers(query)
-	assert.NoError(err)
-	assert.Len(*triggers, 1)
-	assert.EqualValues(t1ID, (*triggers)[0].TriggerID)
-	printJSON("triggers", triggers)
 }
 
 func (suite *ClientTester) Test17Triggering() {

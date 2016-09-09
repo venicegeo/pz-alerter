@@ -181,6 +181,15 @@ func (suite *WorkflowTester) Test03GetEventType() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryEventTypes(query)
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
 	item, err := client.GetEventType(suite.eventTypeID)
 	assert.NoError(err)
 	assert.NotNil(item)
@@ -260,6 +269,15 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryTriggers(query)
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
 	item, err := client.GetTrigger(suite.triggerID)
 	assert.NoError(err)
 	assert.NotNil(item)
@@ -319,6 +337,15 @@ func (suite *WorkflowTester) Test07GetEvent() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryEvents(query)
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
 	item, err := client.GetEvent(suite.eventIDYes)
 	assert.NoError(err)
 	assert.NotNil(item)
@@ -357,6 +384,15 @@ func (suite *WorkflowTester) Test09GetAlert() {
 	client := suite.client
 
 	items, err := client.GetAllAlerts()
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryAlerts(query)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 

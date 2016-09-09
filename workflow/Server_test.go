@@ -368,16 +368,6 @@ func (suite *ServerTester) Test03Trigger() {
 	assert.NoError(err)
 	printJSON("triggers", triggers)
 
-	query := map[string]interface{}{
-		"query": map[string]interface{}{
-			"match_all": map[string]interface{}{},
-		},
-	}
-	log.Printf("Getting list of triggers:")
-	triggers, err = client.QueryTriggers(query)
-	assert.NoError(err)
-	printJSON("triggers", triggers)
-
 	//log.Printf("Getting trigger by id: %s", id)
 	trigger, err = client.GetTrigger(id)
 	assert.NoError(err)
