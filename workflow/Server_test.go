@@ -363,10 +363,10 @@ func (suite *ServerTester) Test03Trigger() {
 	id := respTrigger.TriggerID
 	//printJSON("trigger id", id)
 
-	log.Printf("Getting list of triggers:")
+	//log.Printf("Getting list of triggers:")
 	triggers, err = client.GetAllTriggers()
 	assert.NoError(err)
-	printJSON("triggers", triggers)
+	//printJSON("triggers", triggers)
 
 	//log.Printf("Getting trigger by id: %s", id)
 	trigger, err = client.GetTrigger(id)
