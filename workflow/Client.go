@@ -96,7 +96,8 @@ func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) e
 		return resp.ToError()
 	}
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusCreated &&
+	   resp.StatusCode != http.StatusOK {
 		return resp.ToError()
 	}
 

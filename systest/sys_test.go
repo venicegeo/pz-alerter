@@ -27,7 +27,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	"github.com/venicegeo/pz-workflow/workflow"
-	"encoding/json"
 )
 
 type WorkflowTester struct {
@@ -181,7 +180,7 @@ func (suite *WorkflowTester) Test03GetEventType() {
 	items, err := client.GetAllEventTypes()
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
-	log.Printf("Number of eventTypes (GetAll): %d", len(*items))
+	//log.Printf("Number of eventTypes (GetAll): %d", len(*items))
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
@@ -191,10 +190,8 @@ func (suite *WorkflowTester) Test03GetEventType() {
 	items, err = client.QueryEventTypes(query)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
-	log.Printf("Number of eventTypes (DSL Query): %d", len(*items))
-	log.Printf("query object is : %s", query)
-	b, err := json.Marshal(query)
-	log.Printf("query json is : %s", string(b))
+	//log.Printf("Number of eventTypes (DSL Query): %d", len(*items))
+	//log.Printf("query object is : %s", query)
 
 	item, err := client.GetEventType(suite.eventTypeID)
 	assert.NoError(err)
@@ -254,7 +251,9 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	println(str)
 
 	ack, err := client.PostTrigger(trigger)
-	println(err.Error())
+	if err != nil {
+		println(err.Error())
+	}
 	assert.NoError(err)
 	assert.NotNil(ack)
 
