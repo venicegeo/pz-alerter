@@ -180,6 +180,18 @@ func (suite *WorkflowTester) Test03GetEventType() {
 	items, err := client.GetAllEventTypes()
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
+	//log.Printf("Number of eventTypes (GetAll): %d", len(*items))
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryEventTypes(query)
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+	//log.Printf("Number of eventTypes (DSL Query): %d", len(*items))
+	//log.Printf("query object is : %s", query)
 
 	item, err := client.GetEventType(suite.eventTypeID)
 	assert.NoError(err)
@@ -239,7 +251,9 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	println(str)
 
 	ack, err := client.PostTrigger(trigger)
-	println(err.Error())
+	if err != nil {
+		println(err.Error())
+	}
 	assert.NoError(err)
 	assert.NotNil(ack)
 
@@ -257,6 +271,15 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 	client := suite.client
 
 	items, err := client.GetAllTriggers()
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryTriggers(query)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
@@ -319,6 +342,15 @@ func (suite *WorkflowTester) Test07GetEvent() {
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryEvents(query)
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
 	item, err := client.GetEvent(suite.eventIDYes)
 	assert.NoError(err)
 	assert.NotNil(item)
@@ -357,6 +389,15 @@ func (suite *WorkflowTester) Test09GetAlert() {
 	client := suite.client
 
 	items, err := client.GetAllAlerts()
+	assert.NoError(err)
+	assert.True(len(*items) > 1)
+
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"match_all": map[string]interface{}{},
+		},
+	}
+	items, err = client.QueryAlerts(query)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 

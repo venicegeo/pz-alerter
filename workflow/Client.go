@@ -96,7 +96,8 @@ func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) e
 		return resp.ToError()
 	}
 
-	if resp.StatusCode != http.StatusCreated {
+	if resp.StatusCode != http.StatusCreated &&
+	   resp.StatusCode != http.StatusOK {
 		return resp.ToError()
 	}
 
@@ -167,6 +168,12 @@ func (c *Client) PostEventType(eventType *EventType) (*EventType, error) {
 	return out, err
 }
 
+func (c *Client) QueryEventTypes(query map[string]interface{}) (*[]EventType, error) {
+	out := &[]EventType{}
+	err := c.postObject(query, "/eventType/query", out)
+	return out, err
+}
+
 func (c *Client) PutEventType(eventType *EventType) (*EventType, error) {
 	out := &EventType{}
 	err := c.putObject(eventType, "/eventType", out)
@@ -204,6 +211,12 @@ func (c *Client) PostEvent(event *Event) (*Event, error) {
 	return out, err
 }
 
+func (c *Client) QueryEvents(query map[string]interface{}) (*[]Event, error) {
+	out := &[]Event{}
+	err := c.postObject(query, "/event/query", out)
+	return out, err
+}
+
 func (c *Client) PutEvent(event *Event) (*Event, error) {
 	out := &Event{}
 	err := c.putObject(event, "/event", out)
@@ -232,6 +245,12 @@ func (c *Client) GetAllTriggers() (*[]Trigger, error) {
 func (c *Client) PostTrigger(trigger *Trigger) (*Trigger, error) {
 	out := &Trigger{}
 	err := c.postObject(trigger, "/trigger", out)
+	return out, err
+}
+
+func (c *Client) QueryTriggers(query map[string]interface{}) (*[]Trigger, error) {
+	out := &[]Trigger{}
+	err := c.postObject(query, "/trigger/query", out)
 	return out, err
 }
 
@@ -269,6 +288,12 @@ func (c *Client) GetAllAlerts() (*[]Alert, error) {
 func (c *Client) PostAlert(alert *Alert) (*Alert, error) {
 	out := &Alert{}
 	err := c.postObject(alert, "/alert", out)
+	return out, err
+}
+
+func (c *Client) QueryAlerts(query map[string]interface{}) (*[]Alert, error) {
+	out := &[]Alert{}
+	err := c.postObject(query, "/alert/query", out)
 	return out, err
 }
 
