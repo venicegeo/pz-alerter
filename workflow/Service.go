@@ -30,6 +30,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
+	"strconv"
 )
 
 //------------------------------------------------------------------------------
@@ -1094,31 +1095,44 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 		return service.statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
+	var resp *piazza.JsonResponse
 	inflateString, err := params.GetAsString("inflate", "false")
-	inflate := bool(inflateString)
+	inflate, err := strconv.ParseBool(inflateString)
 
 	if inflate {
+		alertExts := make([]AlertExt, len(alerts))
 		for index, alert := range alerts {
 			trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
 			if err != nil || !found {
-				// problem
 				return service.statusInternalError(
-					errors.New("Error with trigger inflation: AlertID: " + alert.AlertID + ", TriggerID: " + alert.TriggerID))
+					errors.New("Error with trigger inflation"))
 			}
-			event, found, err := service.eventDB.GetOne(alert.EventID)
+
+			mapping, err := service.eventDB.lookupEventTypeNameByEventID(alert.EventID)
+			if mapping == "" {
+				return service.statusNotFound(err)
+			}
+			if err != nil {
+				return service.statusBadRequest(err)
+			}
+
+			event, found, err := service.eventDB.GetOne(mapping, alert.EventID)
 			if err != nil || !found {
 				return service.statusInternalError(
-					errors.New("Error with event inflation: AlertID: " + alert.AlertID + ", EventID: " + alert.EventID))
+					errors.New("Error with event inflation"))
 			}
-			alertExt := AlertExt{alert}
-			alertExt.Trigger = trigger
-			alertExt.Event = event
-			alerts[index] = alertExt
+			alertExt := AlertExt{
+				Alert: alert,
+				Trigger: *trigger,
+				Event: *event,
+			}
+			alertExts[index] = alertExt
 		}
+		resp = service.statusOK(alertExts)
+	} else {
+		resp = service.statusOK(alerts)
 	}
-
-	resp := service.statusOK(alerts)
-
+	
 	if totalHits > 0 {
 		format.Count = int(totalHits)
 		resp.Pagination = format
