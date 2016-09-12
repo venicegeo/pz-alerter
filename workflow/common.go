@@ -276,6 +276,13 @@ type Alert struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
+type AlertExt struct {
+	Alert
+	Trigger   Trigger      `json:"trigger" binding:"required"`
+	Event     Event        `json:"event" binding:"required"`
+	Job       JobRequest   `json:"job" binding:"required"`
+}
+
 //-CRON-------------------------------------------------------------------------
 
 const CronIndexSettings = `

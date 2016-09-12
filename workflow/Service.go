@@ -1094,6 +1094,29 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 		return service.statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
+	inflateString, err := params.GetAsString("inflate", "false")
+	inflate := bool(inflateString)
+
+	if inflate {
+		for index, alert := range alerts {
+			trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
+			if err != nil || !found {
+				// problem
+				return service.statusInternalError(
+					errors.New("Error with trigger inflation: AlertID: " + alert.AlertID + ", TriggerID: " + alert.TriggerID))
+			}
+			event, found, err := service.eventDB.GetOne(alert.EventID)
+			if err != nil || !found {
+				return service.statusInternalError(
+					errors.New("Error with event inflation: AlertID: " + alert.AlertID + ", EventID: " + alert.EventID))
+			}
+			alertExt := AlertExt{alert}
+			alertExt.Trigger = trigger
+			alertExt.Event = event
+			alerts[index] = alertExt
+		}
+	}
+
 	resp := service.statusOK(alerts)
 
 	if totalHits > 0 {
