@@ -1122,9 +1122,12 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 					errors.New("Error with event inflation"))
 			}
 			alertExt := AlertExt{
-				Alert: alert,
+				AlertID: alert.AlertID,
 				Trigger: *trigger,
 				Event: *event,
+				JobID: alert.JobID,
+				CreatedBy: alert.CreatedBy,
+				CreatedOn: alert.CreatedOn,
 			}
 			alertExts[index] = alertExt
 		}
@@ -1132,7 +1135,7 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	} else {
 		resp = service.statusOK(alerts)
 	}
-	
+
 	if totalHits > 0 {
 		format.Count = int(totalHits)
 		resp.Pagination = format
