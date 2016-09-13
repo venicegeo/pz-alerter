@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1094,7 +1095,18 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 		return service.statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
-	resp := service.statusOK(alerts)
+	var resp *piazza.JsonResponse
+	inflate := getInflateParam(params)
+
+	if inflate {
+		alertExts, err := service.inflateAlerts(alerts)
+		if err != nil {
+			return service.statusInternalError(err)
+		}
+		resp = service.statusOK(*alertExts)
+	} else {
+		resp = service.statusOK(alerts)
+	}
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -1121,7 +1133,18 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 		return service.statusInternalError(errors.New("QueryAlerts returned nil"))
 	}
 
-	resp := service.statusOK(alerts)
+	var resp *piazza.JsonResponse
+	inflate := getInflateParam(params)
+
+	if inflate {
+		alertExts, err := service.inflateAlerts(alerts)
+		if err != nil {
+			return service.statusInternalError(err)
+		}
+		resp = service.statusOK(*alertExts)
+	} else {
+		resp = service.statusOK(alerts)
+	}
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -1129,6 +1152,59 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	}
 
 	return resp
+}
+
+func getInflateParam(params *piazza.HttpQueryParams) bool {
+	inflateString, err := params.GetAsString("inflate", "false")
+	if err != nil {
+		inflateString = "false"
+	}
+	inflate, err := strconv.ParseBool(inflateString)
+	if err != nil {
+		inflate = false
+	}
+	return inflate
+}
+
+func (service *Service) inflateAlerts(alerts []Alert) (*[]AlertExt, error) {
+	alertExts := make([]AlertExt, len(alerts))
+	for index, alert := range alerts {
+		alertExt, err := service.inflateAlert(alert)
+		if err != nil {
+			return nil, err
+		}
+		alertExts[index] = *alertExt
+	}
+	return &alertExts, nil
+}
+
+func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
+	trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
+	if err != nil || !found {
+		return nil, errors.New("Error with trigger inflation")
+	}
+
+	mapping, err := service.eventDB.lookupEventTypeNameByEventID(alert.EventID)
+	if mapping == "" {
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	event, found, err := service.eventDB.GetOne(mapping, alert.EventID)
+	if err != nil || !found {
+		return nil, errors.New("Error with event inflation")
+	}
+	alertExt := &AlertExt{
+		AlertID: alert.AlertID,
+		Trigger: *trigger,
+		Event: *event,
+		JobID: alert.JobID,
+		CreatedBy: alert.CreatedBy,
+		CreatedOn: alert.CreatedOn,
+	}
+	return alertExt, nil
 }
 
 // PostAlert TODO

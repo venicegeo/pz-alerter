@@ -276,6 +276,15 @@ type Alert struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
+type AlertExt struct {
+	AlertID   piazza.Ident `json:"alertId"`
+	Trigger   Trigger      `json:"trigger" binding:"required"`
+	Event     Event        `json:"event" binding:"required"`
+	JobID     piazza.Ident `json:"jobId"`
+	CreatedBy string       `json:"createdBy"`
+	CreatedOn time.Time    `json:"createdOn"`
+}
+
 //-CRON-------------------------------------------------------------------------
 
 const CronIndexSettings = `
@@ -376,5 +385,6 @@ func init() {
 	piazza.JsonResponseDataTypes["[]workflow.Trigger"] = "trigger-list"
 	piazza.JsonResponseDataTypes["*workflow.Alert"] = "alert"
 	piazza.JsonResponseDataTypes["[]workflow.Alert"] = "alert-list"
+	piazza.JsonResponseDataTypes["[]workflow.AlertExt"] = "alertext-list"
 	piazza.JsonResponseDataTypes["workflow.Stats"] = "workflowstats"
 }
