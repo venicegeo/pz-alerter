@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +31,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
-	"strconv"
 )
 
 //------------------------------------------------------------------------------
@@ -1096,8 +1096,7 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	}
 
 	var resp *piazza.JsonResponse
-	inflateString, err := params.GetAsString("inflate", "false")
-	inflate, err := strconv.ParseBool(inflateString)
+	inflate := getInflateParam(params)
 
 	if inflate {
 		alertExts, err := service.inflateAlerts(alerts)
@@ -1135,8 +1134,7 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	}
 
 	var resp *piazza.JsonResponse
-	inflateString, err := params.GetAsString("inflate", "false")
-	inflate, err := strconv.ParseBool(inflateString)
+	inflate := getInflateParam(params)
 
 	if inflate {
 		alertExts, err := service.inflateAlerts(alerts)
@@ -1154,6 +1152,18 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	}
 
 	return resp
+}
+
+func getInflateParam(params *piazza.HttpQueryParams) bool {
+	inflateString, err := params.GetAsString("inflate", "false")
+	if err != nil {
+		inflateString = "false"
+	}
+	inflate, err := strconv.ParseBool(inflateString)
+	if err != nil {
+		inflate = false
+	}
+	return inflate
 }
 
 func (service *Service) inflateAlerts(alerts []Alert) (*[]AlertExt, error) {
