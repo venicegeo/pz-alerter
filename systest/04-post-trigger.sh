@@ -23,8 +23,8 @@ json='{
     "title": "High Severity",
     "name": "High Severity",
     "enabled": true,
+    "eventTypeId": "'"$eventTypeId"'",
     "condition": {
-        "eventTypeIds": ["'"$eventTypeId"'"],
         "query": {
             "query": {
                 "match": {"data.beta": 17}
