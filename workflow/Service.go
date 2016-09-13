@@ -1104,7 +1104,7 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 		if err != nil {
 			return service.statusInternalError(err)
 		}
-		resp = service.statusOK(alertExts)
+		resp = service.statusOK(*alertExts)
 	} else {
 		resp = service.statusOK(alerts)
 	}
@@ -1143,7 +1143,7 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 		if err != nil {
 			return service.statusInternalError(err)
 		}
-		resp = service.statusOK(alertExts)
+		resp = service.statusOK(*alertExts)
 	} else {
 		resp = service.statusOK(alerts)
 	}
@@ -1156,23 +1156,22 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	return resp
 }
 
-func (service *Service) inflateAlerts(alerts []Alert) ([]AlertExt, error) {
+func (service *Service) inflateAlerts(alerts []Alert) (*[]AlertExt, error) {
 	alertExts := make([]AlertExt, len(alerts))
 	for index, alert := range alerts {
 		alertExt, err := service.inflateAlert(alert)
 		if err != nil {
 			return nil, err
 		}
-		alertExts[index] = alertExt
+		alertExts[index] = *alertExt
 	}
-	return alertExts, nil
+	return &alertExts, nil
 }
 
-func (service *Service) inflateAlert(alert Alert) (AlertExt, error) {
+func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 	trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
 	if err != nil || !found {
-		return nil, service.statusInternalError(
-			errors.New("Error with trigger inflation"))
+		return nil, errors.New("Error with trigger inflation")
 	}
 
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(alert.EventID)
@@ -1185,10 +1184,9 @@ func (service *Service) inflateAlert(alert Alert) (AlertExt, error) {
 
 	event, found, err := service.eventDB.GetOne(mapping, alert.EventID)
 	if err != nil || !found {
-		return nil, service.statusInternalError(
-			errors.New("Error with event inflation"))
+		return nil, errors.New("Error with event inflation")
 	}
-	alertExt := AlertExt{
+	alertExt := &AlertExt{
 		AlertID: alert.AlertID,
 		Trigger: *trigger,
 		Event: *event,
