@@ -1180,8 +1180,11 @@ func (service *Service) inflateAlerts(alerts []Alert) (*[]AlertExt, error) {
 
 func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 	trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
-	if err != nil || !found {
-		return nil, errors.New("Error with trigger inflation")
+	if err != nil {
+		return nil, LoggedError("Error with trigger inflation. %s", err.Error())
+	}
+	if !found {
+		return nil, LoggedError("Error with trigger inflation. Trigger %s not found", alert.TriggerID)
 	}
 
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(alert.EventID)
@@ -1193,8 +1196,11 @@ func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 	}
 
 	event, found, err := service.eventDB.GetOne(mapping, alert.EventID)
-	if err != nil || !found {
-		return nil, errors.New("Error with event inflation")
+	if err != nil {
+		return nil, LoggedError("Error with event inflation. %s", err.Error())
+	}
+	if !found {
+		return nil, LoggedError("Error with event inflation. Event %s not found", alert.EventID)
 	}
 	alertExt := &AlertExt{
 		AlertID: alert.AlertID,
