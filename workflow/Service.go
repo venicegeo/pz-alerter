@@ -329,7 +329,7 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 			}
 			eventtype, foundType, err = service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
 			if err != nil {
-				return service.statusBadRequest(err)
+				return service.statusInternalError(err)
 			}
 		}
 		eventtypes = make([]EventType, 0)
@@ -340,7 +340,7 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 	} else {
 		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format)
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusInternalError(err)
 		}
 	}
 	if eventtypes == nil {
@@ -562,15 +562,12 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 
 	events, totalHits, err := service.eventDB.GetAll(query, format)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusInternalError(err)
 	}
 	for i := 0; i < len(events); i++ {
 		eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(events[i].EventTypeID))
-		if !found {
-			return service.statusNotFound(err)
-		}
-		if err != nil {
-			return service.statusBadRequest(err)
+		if !found || err != nil {
+			return service.statusInternalError(err)
 		}
 		events[i].Data = service.removeUniqueParams(eventType.Name, events[i].Data)
 	}
@@ -920,7 +917,7 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 
 	triggers, totalHits, err := service.triggerDB.GetAll(format)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusInternalError(err)
 	} else if triggers == nil {
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
 	}
@@ -1080,14 +1077,14 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	if triggerID != "" && isUUID(triggerID) {
 		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID)
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusInternalError(err)
 		} else if alerts == nil {
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
 	} else if triggerID == "" {
 		alerts, totalHits, err = service.alertDB.GetAll(format)
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusInternalError(err)
 		} else if alerts == nil {
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
@@ -1203,10 +1200,10 @@ func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 		return nil, LoggedError("Error with event inflation. Event %s not found", alert.EventID)
 	}
 	alertExt := &AlertExt{
-		AlertID: alert.AlertID,
-		Trigger: *trigger,
-		Event: *event,
-		JobID: alert.JobID,
+		AlertID:   alert.AlertID,
+		Trigger:   *trigger,
+		Event:     *event,
+		JobID:     alert.JobID,
 		CreatedBy: alert.CreatedBy,
 		CreatedOn: alert.CreatedOn,
 	}
