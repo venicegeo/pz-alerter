@@ -1,18 +1,15 @@
 #!/bin/bash
 set -e
 
-space="stage"
-space="int"
-domain=geointservices.io
+export THEDOMAIN=int.geointservices.io
+export PZSERVER=pz-gateway.$THEDOMAIN
 
-export PZKEY=`cat ~/.pzkey | grep $space | cut -f 2 -d ":" | cut -d \" -f 2`
-#echo $PZKEY
-export PZDOMAIN=$space.$domain
+export PZKEY=`cat ~/.pzkey | grep $PZSERVER | cut -f 2 -d ":" | cut -d \" -f 2`
 
 curl="curl -S -s -u $PZKEY: -H Content-Type:application/json"
 
-url="http://pz-gateway.$PZDOMAIN"
-workflowurl="http://pz-workflow.$PZDOMAIN"
+url="http://$PZSERVER"
+workflowurl="http://pz-workflow.$THEDOMAIN"
 
 extract() {
     item=$1
