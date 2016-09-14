@@ -3,14 +3,19 @@ set -e
 
 source setup.sh
 
+hello=`echo $PZSERVER | sed -e sXpz-gatewayXhttp://pzsvc-helloX`
+
 service='{
-    "url": "'"http://pzsvc-hello.$PZDOMAIN/hello"'",
+    "url": "'"$hello"'",
     "contractUrl": "http://helloContract",
-    "method": "POST",
+    "method": "GET",
+    "isAsynchronous": "false",
     "resourceMetadata": {
         "name": "pzsvc-hello service",
         "description": "Hello World Example",
-        "classType": "U"
+        "classType": {
+           "classification": "UNCLASSIFIED"
+        }
     }
 }'
 
