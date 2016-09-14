@@ -16,6 +16,7 @@ package workflowsystest
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"strconv"
 	"strings"
@@ -50,6 +51,9 @@ type WorkflowTester struct {
 
 var mapType = map[string]interface{}{}
 var stringType = "string!"
+
+const goodBeta = 17
+const goodAlpha = "quick brown fox"
 
 func (suite *WorkflowTester) setupFixture() {
 	t := suite.T()
@@ -231,7 +235,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 				Data: map[string]interface{}{
 					"dataInputs": map[string]interface{}{
 						"": map[string]interface{}{
-							"content":  `{"name":"ME", "count":5}`,
+							"content":  `{"name":"$alpha", "count":$beta}`,
 							"type":     "body",
 							"mimeType": "application/json",
 						},
@@ -303,8 +307,8 @@ func (suite *WorkflowTester) Test06PostEvent() {
 	eventY := &workflow.Event{
 		EventTypeID: suite.eventTypeID,
 		Data: map[string]interface{}{
-			"beta":  17,
-			"alpha": "quick brown fox",
+			"beta":  goodBeta,
+			"alpha": goodAlpha,
 		},
 	}
 
@@ -513,9 +517,10 @@ func (suite *WorkflowTester) Test11GetData() {
 	assert.True(ok)
 
 	jsn := `{
-		"greeting": "Hello, ME!", 
-		"countSquared": 25
+		"greeting": "Hello, %s!", 
+		"countSquared": %d
 	}`
+	jsn = fmt.Sprintf(jsn, goodAlpha, goodBeta*goodBeta)
 	assert.JSONEq(jsn, content)
 }
 
