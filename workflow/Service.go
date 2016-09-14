@@ -724,7 +724,8 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				jobString := string(jobInstance)
 
 				// Not very robust,  need to find a better way
-				for key, value := range event.Data {
+				params := event.Data[eventTypeName]
+				for key, value := range params.(map[string]interface{}) {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), -1)
 				}
 
