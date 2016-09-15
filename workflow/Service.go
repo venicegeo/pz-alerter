@@ -144,11 +144,11 @@ func (service *Service) Init(
 	ingestEventTypeMapping := map[string]interface{}{
 		"dataId":   "string",
 		"dataType": "string",
-		"epsg":     "short",
-		"minX":     "long",
-		"minY":     "long",
-		"maxX":     "long",
-		"maxY":     "long",
+		"epsg":     "int",
+		"minX":     "double",
+		"minY":     "double",
+		"maxX":     "double",
+		"maxY":     "double",
 		"hosted":   "boolean",
 	}
 	ingestEventType.Mapping = ingestEventTypeMapping
