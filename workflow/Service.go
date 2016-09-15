@@ -144,7 +144,7 @@ func (service *Service) Init(
 	ingestEventTypeMapping := map[string]interface{}{
 		"dataId":   "string",
 		"dataType": "string",
-		"epsg":     "int",
+		"epsg":     "integer",
 		"minX":     "double",
 		"minY":     "double",
 		"maxX":     "double",
