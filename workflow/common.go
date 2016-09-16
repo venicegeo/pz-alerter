@@ -295,7 +295,7 @@ type TestElasticsearchBody struct {
 const TestElasticsearchIndexSettings = `
 {
 	"mappings": {
-		"TestElasticsearch": {
+		"TestElasticsearch2": {
 			"properties": {
 			}
 		}

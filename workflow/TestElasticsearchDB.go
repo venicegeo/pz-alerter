@@ -26,7 +26,7 @@ type TestElasticsearchDB struct {
 	mapping string
 }
 
-const TestElasticsearchDBMapping string = "TestElasticsearch"
+const TestElasticsearchDBMapping string = "TestElasticsearch2"
 
 func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestElasticsearchDB, error) {
 	rdb, err := NewResourceDB(service, esi, TestElasticsearchIndexSettings)
