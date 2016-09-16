@@ -53,7 +53,7 @@ func (db *TestElasticsearchDB) PostData(obj interface{}, id piazza.Ident) (piazz
 
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), p)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("TestElasticsearchDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("TestElasticsearchDB.PostData failed: %s\n%#v\n%#v", err, db.mapping, p)
 	}
 	if !indexResult.Created {
 		return piazza.NoIdent, LoggedError("TestElasticsearchDB.PostData failed: not created")
@@ -75,10 +75,10 @@ func (db *TestElasticsearchDB) GetAll(format *piazza.JsonPagination) ([]TestElas
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err)
+		return nil, 0, LoggedError("TestElasticsearchDB.GetAll failed: %s", err)
 	}
 	if searchResult == nil {
-		return nil, 0, LoggedError("EventTypeDB.GetAll failed: no searchResult")
+		return nil, 0, LoggedError("TestElasticsearchDB.GetAll failed: no searchResult")
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {

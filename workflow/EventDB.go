@@ -118,7 +118,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 		}
 	}
 	if !exists {
-		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
+		return nil, 0, fmt.Errorf("Type %s does not exist (1)", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
@@ -155,7 +155,7 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string) ([]Even
 		}
 	}
 	if !exists {
-		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
+		return nil, 0, fmt.Errorf("Type %s does not exist (2)", mapping)
 	}
 
 	searchResult, err := db.Esi.SearchByJSON(mapping, jsnString)
@@ -192,7 +192,7 @@ func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ide
 		}
 	}
 	if !exists {
-		return nil, 0, fmt.Errorf("Type %s does not exist", mapping)
+		return nil, 0, fmt.Errorf("Type %s does not exist (3)", mapping)
 	}
 
 	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID)
