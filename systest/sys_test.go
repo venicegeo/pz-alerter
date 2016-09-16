@@ -547,23 +547,30 @@ func (suite *WorkflowTester) xTest12TestElasticsearch() {
 	assert.NoError(err)
 	assert.EqualValues("2.2.0", *version)
 
+	time.Sleep(10 * time.Second)
 	{
 		datax, err := client.TestElasticsearchGetAll()
 		assert.NoError(err)
 		assert.NotNil(datax)
 		assert.Equal(0, len(*datax))
 	}
+	time.Sleep(10 * time.Second)
 
-	body := &workflow.TestElasticsearchBody{Value: 17}
-	retBody, err := client.TestElasticsearchPost(body)
-	assert.NoError(err)
-	assert.Equal(17, retBody.Value)
+	{
+		body := &workflow.TestElasticsearchBody{Value: 17}
+		retBody, err := client.TestElasticsearchPost(body)
+		assert.NoError(err)
+		assert.Equal(17, retBody.Value)
+	}
+	time.Sleep(10 * time.Second)
 
-	datax, err := client.TestElasticsearchGetAll()
-	assert.NoError(err)
-	assert.NotNil(datax)
-	assert.Equal(1, len(*datax))
-	assert.Equal(17, (*datax)[0].Value)
+	{
+		data, err := client.TestElasticsearchGetAll()
+		assert.NoError(err)
+		assert.NotNil(data)
+		assert.Equal(1, len(*data))
+		assert.Equal(17, (*data)[0].Value)
+	}
 }
 
 //---------------------------------------------------------------------
