@@ -71,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	testElasticsearchIndex, err := elasticsearch.NewIndex(sys, "testElasticsearch001", "")
+	testElasticsearchIndex, err := elasticsearch.NewIndex(sys, "testelasticsearch001", "")
 	if err != nil {
 		log.Fatal(err)
 	}
