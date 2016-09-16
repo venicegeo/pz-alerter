@@ -297,18 +297,21 @@ const TestElasticsearchIndexSettings = `
 	"mappings": {
 		"TestElasticsearch": {
 			"properties": {
-				"id": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"value": {
-					"type": "integer"
-				}
 			}
 		}
 	}
 }
 `
+
+/*
+	"id": {
+		"type": "string",
+		"index": "not_analyzed"
+	},
+	"value": {
+		"type": "integer"
+	}
+*/
 
 //-CRON-------------------------------------------------------------------------
 
