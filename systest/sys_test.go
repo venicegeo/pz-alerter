@@ -128,7 +128,6 @@ func (suite *WorkflowTester) Test01RegisterService() {
 		//Preflight:  piazza.SimplePreflight,
 		//Postflight: piazza.SimplePostflight,
 	}
-
 	obj := map[string]interface{}{}
 	code, err := h.Post("/service", body, &obj)
 	assert.NoError(err)
@@ -522,6 +521,49 @@ func (suite *WorkflowTester) Test11GetData() {
 	}`
 	jsn = fmt.Sprintf(jsn, goodAlpha, goodBeta*goodBeta)
 	assert.JSONEq(jsn, content)
+}
+
+//---------------------------------------------------------------------
+
+func (suite *WorkflowTester) xTest12TestElasticsearch() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	/*	url := strings.Replace(suite.url, "workflow", "gateway", 1)
+		h := piazza.Http{
+			BaseUrl: url,
+			ApiKey:  suite.apiKey,
+			//Preflight:  piazza.SimplePreflight,
+			//Postflight: piazza.SimplePostflight,
+		}*/
+
+	//
+	version, err := client.TestElasticsearchGetVersion()
+	assert.NoError(err)
+	assert.EqualValues("2.2.0", *version)
+
+	{
+		datax, err := client.TestElasticsearchGetAll()
+		assert.NoError(err)
+		assert.NotNil(datax)
+		assert.Equal(0, len(*datax))
+	}
+
+	body := &workflow.TestElasticsearchBody{Value: 17}
+	retBody, err := client.TestElasticsearchPost(body)
+	assert.NoError(err)
+	assert.Equal(17, retBody.Value)
+
+	datax, err := client.TestElasticsearchGetAll()
+	assert.NoError(err)
+	assert.NotNil(datax)
+	assert.Equal(1, len(*datax))
+	assert.Equal(17, (*datax)[0].Value)
 }
 
 //---------------------------------------------------------------------
