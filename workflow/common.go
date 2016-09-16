@@ -285,10 +285,30 @@ type AlertExt struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
+//---------------------------------------------------------------------------
+
 type TestElasticsearchBody struct {
 	ID    piazza.Ident `json:"id"`
 	Value int          `json:"value"`
 }
+
+const TestElasticsearchIndexSettings = `
+{
+	"mappings": {
+		"TestElasticsearch": {
+			"properties": {
+				"id": {
+					"type": "string",
+					"index": "not_analyzed"
+				},
+				"value": {
+					"type": "integer"
+				}
+			}
+		}
+	}
+}
+`
 
 //-CRON-------------------------------------------------------------------------
 
