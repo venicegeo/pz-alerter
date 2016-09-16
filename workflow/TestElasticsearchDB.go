@@ -33,7 +33,7 @@ func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestEl
 	if err != nil {
 		return nil, err
 	}
-	etrdb := TestElasticsearchDB{ResourceDB: rdb, mapping: EventTypeDBMapping}
+	etrdb := TestElasticsearchDB{ResourceDB: rdb, mapping: TestElasticsearchDBMapping}
 	return &etrdb, nil
 }
 
