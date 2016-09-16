@@ -16,6 +16,8 @@ package workflow
 
 import (
 	"encoding/json"
+	"fmt"
+	"time"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -33,6 +35,25 @@ func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestEl
 	if err != nil {
 		return nil, err
 	}
+
+	time.Sleep(5 * time.Second)
+
+	ok, err := esi.IndexExists()
+	if err != nil {
+		return nil, fmt.Errorf("Index %s failes to exist after creation", esi.IndexName())
+	}
+	if !ok {
+		return nil, fmt.Errorf("Index %s does not exist after creation", esi.IndexName())
+	}
+
+	ok, err = esi.TypeExists(TestElasticsearchDBMapping)
+	if err != nil {
+		return nil, fmt.Errorf("Type %s fails to exist in index %s after creation", TestElasticsearchDBMapping, esi.IndexName())
+	}
+	if !ok {
+		return nil, fmt.Errorf("Index %s does not exist in index %s after creation", TestElasticsearchDBMapping, esi.IndexName())
+	}
+
 	etrdb := TestElasticsearchDB{ResourceDB: rdb, mapping: TestElasticsearchDBMapping}
 	return &etrdb, nil
 }
