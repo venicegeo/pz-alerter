@@ -17,9 +17,10 @@ package workflow
 import (
 	"net/http"
 
+	"bytes"
+
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	"bytes"
 )
 
 //---------------------------------------------------------------------------
@@ -70,6 +71,10 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "DELETE", Path: "/alert/:id", Handler: server.handleDeleteAlert},
 
 		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
+
+		{Verb: "GET", Path: "/_test/elasticsearch/get", Handler: server.handleTestElasticsearchGet},
+		{Verb: "POST", Path: "/_test/elasticsearch/post", Handler: server.handleTestElasticsearchPost},
+		{Verb: "GET", Path: "/_test/elasticsearch/version", Handler: server.handleTestElasticsearchVersion},
 	}
 
 	server.origin = service.origin
@@ -249,7 +254,6 @@ func (server *Server) handlePostTrigger(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-
 func (server *Server) handleTriggerQuery(c *gin.Context) {
 	buf := new(bytes.Buffer)
 	_, err := buf.ReadFrom(c.Request.Body)
@@ -350,5 +354,36 @@ func (server *Server) handlePostAlert(c *gin.Context) {
 func (server *Server) handleDeleteAlert(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
 	resp := server.service.DeleteAlert(id)
+	piazza.GinReturnJson(c, resp)
+}
+
+//---------------------------------------------------------------------
+
+func (server *Server) handleTestElasticsearchVersion(c *gin.Context) {
+	resp := server.service.TestElasticsearchVersion()
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handleTestElasticsearchGet(c *gin.Context) {
+	params := piazza.NewQueryParams(c.Request)
+	resp := server.service.TestElasticsearchGet(params)
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handleTestElasticsearchPost(c *gin.Context) {
+	body := &TestElasticsearchBody{}
+	err := c.BindJSON(body)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+			Origin:     server.origin,
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	resp := server.service.TestElasticsearchPost(body)
+
 	piazza.GinReturnJson(c, resp)
 }

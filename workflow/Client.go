@@ -97,7 +97,7 @@ func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) e
 	}
 
 	if resp.StatusCode != http.StatusCreated &&
-	   resp.StatusCode != http.StatusOK {
+		resp.StatusCode != http.StatusOK {
 		return resp.ToError()
 	}
 
@@ -306,6 +306,27 @@ func (c *Client) PutAlert(alert *Alert) (*Alert, error) {
 func (c *Client) DeleteAlert(id piazza.Ident) error {
 	err := c.deleteObject("/alert/" + id.String())
 	return err
+}
+
+//------------------------------------------------------------------------------
+
+func (c *Client) TestElasticsearchGetVersion() (*string, error) {
+	ss := ""
+	s := &ss
+	err := c.getObject("/_test/elasticsearch/version", s)
+	return s, err
+}
+
+func (c *Client) TestElasticsearchGetAll() (*[]TestElasticsearchBody, error) {
+	out := &[]TestElasticsearchBody{}
+	err := c.getObject("/_test/elasticsearch/get", out)
+	return out, err
+}
+
+func (c *Client) TestElasticsearchPost(body *TestElasticsearchBody) (*TestElasticsearchBody, error) {
+	out := &TestElasticsearchBody{}
+	err := c.postObject(body, "/_test/elasticsearch/post", out)
+	return out, err
 }
 
 //------------------------------------------------------------------------------

@@ -81,15 +81,17 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex elasticsearch.IIndex
+	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex elasticsearch.IIndex
 	eventtypesIndex = elasticsearch.NewMockIndex("eventtypes")
 	eventsIndex = elasticsearch.NewMockIndex("events")
 	triggersIndex = elasticsearch.NewMockIndex("triggers")
 	alertsIndex = elasticsearch.NewMockIndex("alerts")
 	cronIndex = elasticsearch.NewMockIndex("crons")
+	testElasticsearchIndex = elasticsearch.NewMockIndex("testElasticsearch")
 
 	workflowService := &Service{}
-	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex)
+	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex,
+		eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -882,6 +884,28 @@ func (suite *ServerTester) Test07MultiTrigger() {
 		}()
 	}
 }*/
+
+func (suite *ServerTester) Test09Elasticsearch() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	client := suite.client
+
+	version, err := client.TestElasticsearchGetVersion()
+	assert.NoError(err)
+	assert.EqualValues("2.2.0", *version)
+
+	body := &TestElasticsearchBody{Value: 17}
+	retBody, err := client.TestElasticsearchPost(body)
+	assert.NoError(err)
+	assert.Equal(17, retBody.Value)
+
+	data, err := client.TestElasticsearchGetAll()
+	assert.NoError(err)
+	assert.NotNil(data)
+	assert.Equal(1, len(*data))
+	assert.Equal(17, (*data)[0].Value)
+}
 
 func printJSON(msg string, input interface{}) {
 	if input != nil {

@@ -285,6 +285,11 @@ type AlertExt struct {
 	CreatedOn time.Time    `json:"createdOn"`
 }
 
+type TestElasticsearchBody struct {
+	ID    piazza.Ident `json:"id"`
+	Value int          `json:"value"`
+}
+
 //-CRON-------------------------------------------------------------------------
 
 const CronIndexSettings = `
@@ -387,4 +392,6 @@ func init() {
 	piazza.JsonResponseDataTypes["[]workflow.Alert"] = "alert-list"
 	piazza.JsonResponseDataTypes["[]workflow.AlertExt"] = "alertext-list"
 	piazza.JsonResponseDataTypes["workflow.Stats"] = "workflowstats"
+	piazza.JsonResponseDataTypes["*workflow.TestElasticsearchBody"] = "testelasticsearch"
+	piazza.JsonResponseDataTypes["[]workflow.TestElasticsearchBody"] = "testelasticsearch-list"
 }

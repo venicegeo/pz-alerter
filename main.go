@@ -71,6 +71,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	testElasticsearchIndex, err := elasticsearch.NewIndex(sys, "testElasticsearch001", "")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	logger.Info("pz-workflow starting...")
 
@@ -83,7 +87,8 @@ func main() {
 		eventsIndex,
 		triggersIndex,
 		alertsIndex,
-		cronIndex)
+		cronIndex,
+		testElasticsearchIndex)
 	if err != nil {
 		log.Fatal(err)
 	}

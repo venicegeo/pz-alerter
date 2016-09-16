@@ -39,11 +39,12 @@ const ingestTypeName = "piazza:ingest"
 const executeTypeName = "piazza:executionComplete"
 
 type Service struct {
-	eventTypeDB *EventTypeDB
-	eventDB     *EventDB
-	triggerDB   *TriggerDB
-	alertDB     *AlertDB
-	cronDB      *CronDB
+	eventTypeDB         *EventTypeDB
+	eventDB             *EventDB
+	triggerDB           *TriggerDB
+	alertDB             *AlertDB
+	cronDB              *CronDB
+	testElasticsearchDB *TestElasticsearchDB
 
 	stats Stats
 	sync.Mutex
@@ -69,7 +70,8 @@ func (service *Service) Init(
 	eventsIndex elasticsearch.IIndex,
 	triggersIndex elasticsearch.IIndex,
 	alertsIndex elasticsearch.IIndex,
-	cronIndex elasticsearch.IIndex) error {
+	cronIndex elasticsearch.IIndex,
+	testElasticsearchIndex elasticsearch.IIndex) error {
 
 	service.sys = sys
 
@@ -101,6 +103,11 @@ func (service *Service) Init(
 	}
 
 	service.cronDB, err = NewCronDB(service, cronIndex)
+	if err != nil {
+		return err
+	}
+
+	service.testElasticsearchDB, err = NewTestElasticsearchDB(service, testElasticsearchIndex)
 	if err != nil {
 		return err
 	}
@@ -1182,7 +1189,7 @@ func (service *Service) inflateAlerts(alerts []Alert) (*[]AlertExt, error) {
 func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 	trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
 	if err != nil || !found {
-		trigger = &Trigger{TriggerID:alert.TriggerID}
+		trigger = &Trigger{TriggerID: alert.TriggerID}
 	}
 
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(alert.EventID)
@@ -1192,13 +1199,13 @@ func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 
 	event, found, err := service.eventDB.GetOne(mapping, alert.EventID)
 	if err != nil || !found {
-		event = &Event{EventID:alert.EventID}
+		event = &Event{EventID: alert.EventID}
 	}
 	alertExt := &AlertExt{
-		AlertID: alert.AlertID,
-		Trigger: *trigger,
-		Event: *event,
-		JobID: alert.JobID,
+		AlertID:   alert.AlertID,
+		Trigger:   *trigger,
+		Event:     *event,
+		JobID:     alert.JobID,
 		CreatedBy: alert.CreatedBy,
 		CreatedOn: alert.CreatedOn,
 	}
@@ -1299,4 +1306,67 @@ func (c cronEvent) Run() {
 
 func (c cronEvent) Key() string {
 	return c.EventID.String()
+}
+
+//---------------------------------------------------------------------
+
+func (service *Service) TestElasticsearchVersion() *piazza.JsonResponse {
+
+	version, err := service.testElasticsearchDB.GetVersion()
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	if version == "" {
+		return service.statusInternalError(errors.New("Service.TestElasticsearchVersion returned nil"))
+	}
+	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: version}
+
+	return resp
+}
+
+func (service *Service) TestElasticsearchGet(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	format, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+
+	var totalHits int64
+	var bodies []TestElasticsearchBody
+
+	bodies, totalHits, err = service.testElasticsearchDB.GetAll(format)
+	if err != nil {
+		return service.statusBadRequest(err)
+	}
+	if bodies == nil {
+		return service.statusInternalError(errors.New("Service.TestElasticsearchGet returned nil"))
+	}
+
+	resp := service.statusOK(bodies)
+
+	if totalHits > 0 {
+		format.Count = int(totalHits)
+		resp.Pagination = format
+	}
+
+	return resp
+}
+
+func (service *Service) TestElasticsearchPost(body *TestElasticsearchBody) *piazza.JsonResponse {
+	id, err := service.newIdent()
+	if err != nil {
+		return service.statusInternalError(err)
+	}
+	body.ID = id
+
+	_, err = service.testElasticsearchDB.PostData(body, id)
+	if err != nil {
+		if strings.HasSuffix(err.Error(), "was not recognized as a valid mapping type") {
+			return service.statusBadRequest(err)
+		}
+		return service.statusInternalError(err)
+	}
+
+	r := service.statusCreated(body)
+	return r
 }
