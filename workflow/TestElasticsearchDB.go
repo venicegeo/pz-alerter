@@ -32,23 +32,22 @@ type TestElasticsearchBody struct {
 }
 
 const TestElasticsearchSettings = `{
-		"Obj5":{
+	"mapping": {
+		"TestElasticsearch":{
 			"properties":{
-				"id5": {
-					"type":"integer",
-					"index": "not_analyzed"
+				"id": {
+					"type":"string"
 				},
-				"data5": {
-					"type":"string",
-					"index": "not_analyzed"
+				"data": {
+					"type":"string"
 				},
-				"foo5": {
-					"type":"boolean",
-					"index": "not_analyzed"
+				"tags": {
+					"type":"string"
 				}
 			}
 		}
-	}`
+	}
+}`
 
 const TestElasticsearchMapping = "TestElasticsearch"
 
