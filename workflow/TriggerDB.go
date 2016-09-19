@@ -56,6 +56,8 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			if err != nil {
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
 			}
+			// On error, this should close on it's own
+			defer response.Body.Close()
 			if response.StatusCode != 200 {
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceID %s does not exist", strServiceID)
 			}
