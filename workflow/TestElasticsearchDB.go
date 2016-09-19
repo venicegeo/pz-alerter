@@ -31,27 +31,27 @@ type TestElasticsearchBody struct {
 	Value int          `json:"value"`
 }
 
-func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestElasticsearchDB, error) {
-
-	const mapping = `{
-		"mapping" : {
-			"Obj2":{
-				"properties":{
-					"id2": {
-						"type":"integer"
-					},
-					"data2": {
-						"type":"string"
-					},
-					"foo2": {
-						"type":"boolean"
-					}
+const TestElasticsearchMapping = `{
+	"mapping" : {
+		"Obj2":{
+			"properties":{
+				"id2": {
+					"type":"integer"
+				},
+				"data2": {
+					"type":"string"
+				},
+				"foo2": {
+					"type":"boolean"
 				}
 			}
 		}
-	}`
+	}
+}`
 
-	rdb, err := NewResourceDB(service, esi, mapping)
+func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestElasticsearchDB, error) {
+
+	rdb, err := NewResourceDB(service, esi, TestElasticsearchMapping)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestEl
 		return nil, fmt.Errorf("Index %s does not exist in index %s after creation", TestElasticsearchDBMapping, esi.IndexName())
 	}*/
 
-	err = esi.SetMapping(typ, piazza.JsonString(mapping))
+	err = esi.SetMapping(typ, piazza.JsonString(TestElasticsearchMapping))
 	if err != nil {
 		return nil, err
 	}
