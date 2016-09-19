@@ -111,17 +111,23 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	defer suite.teardownFixture()
 
 	body := map[string]interface{}{
-		"url":         "http://pzsvc-hello.int.geointservices.io/hello",
-		"contractUrl": "http://pzsvc-hello.int.geointservices.io/contract",
-		"method":      "POST",
+		"url":            "http://pzsvc-hello.int.geointservices.io/hello",
+		"contractUrl":    "http://pzsvc-hello.int.geointservices.io/contract",
+		"method":         "POST",
+		"isAsynchronous": "false",
 		"resourceMetadata": map[string]interface{}{
 			"name":        "Hello World test",
 			"description": "This is the test of Hello World",
-			"classType":   "U",
+			"classType": map[string]interface{}{
+				"classification": "UNCLASSIFIED",
+			},
 		},
 	}
 
 	url := strings.Replace(suite.url, "workflow", "gateway", 1)
+	log.Printf("%s", url)
+	log.Printf("%s", suite.apiKey)
+
 	h := piazza.Http{
 		BaseUrl: url,
 		ApiKey:  suite.apiKey,
@@ -525,7 +531,7 @@ func (suite *WorkflowTester) Test11GetData() {
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) Test0000012TestElasticsearch() {
+func (suite *WorkflowTester) Test12TestElasticsearch() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -554,9 +560,7 @@ func (suite *WorkflowTester) Test0000012TestElasticsearch() {
 	time.Sleep(3 * time.Second)
 
 	{
-		log.Printf("id = %s", id.String())
 		retBody, err := client.TestElasticsearchGetOne(id)
-		log.Printf("id = %#v %#v", retBody, err)
 		assert.NoError(err)
 		assert.Equal(17, retBody.Value)
 		assert.NotEmpty(retBody.ID)
