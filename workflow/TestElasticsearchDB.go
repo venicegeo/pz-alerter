@@ -32,18 +32,16 @@ type TestElasticsearchBody struct {
 }
 
 const TestElasticsearchSettings = `{
-	"mapping": {
-		"TestElasticsearch":{
-			"properties":{
-				"id": {
-					"type":"string"
-				},
-				"data": {
-					"type":"string"
-				},
-				"tags": {
-					"type":"string"
-				}
+	"TestElasticsearch":{
+		"properties":{
+			"id": {
+				"type":"string"
+			},
+			"data": {
+				"type":"string"
+			},
+			"tags": {
+				"type":"string"
 			}
 		}
 	}
