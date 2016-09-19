@@ -125,8 +125,6 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	}
 
 	url := strings.Replace(suite.url, "workflow", "gateway", 1)
-	log.Printf("%s", url)
-	log.Printf("%s", suite.apiKey)
 
 	h := piazza.Http{
 		BaseUrl: url,
