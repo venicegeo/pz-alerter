@@ -318,13 +318,13 @@ func (c *Client) TestElasticsearchGetVersion() (*string, error) {
 
 func (c *Client) TestElasticsearchGetOne(id piazza.Ident) (*TestElasticsearchBody, error) {
 	out := &TestElasticsearchBody{}
-	err := c.getObject("/_test/elasticsearch/get/"+id.String(), out)
+	err := c.getObject("/_test/elasticsearch/"+id.String(), out)
 	return out, err
 }
 
 func (c *Client) TestElasticsearchPost(body *TestElasticsearchBody) (*TestElasticsearchBody, error) {
 	out := &TestElasticsearchBody{}
-	err := c.postObject(body, "/_test/elasticsearch/post", out)
+	err := c.postObject(body, "/_test/elasticsearch", out)
 	return out, err
 }
 
