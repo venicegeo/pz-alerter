@@ -32,7 +32,7 @@ type TestElasticsearchBody struct {
 }
 
 const TestElasticsearchMapping = `{
-	"mapping" : {
+	"mappings" : {
 		"Obj2":{
 			"properties":{
 				"id2": {
