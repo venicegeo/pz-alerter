@@ -32,7 +32,6 @@ type TestElasticsearchBody struct {
 }
 
 const TestElasticsearchSettings = `{
-	"mappings" : {
 		"Obj5":{
 			"properties":{
 				"id5": {
@@ -49,8 +48,7 @@ const TestElasticsearchSettings = `{
 				}
 			}
 		}
-	}
-}`
+	}`
 
 const TestElasticsearchMapping = "TestElasticsearch"
 
