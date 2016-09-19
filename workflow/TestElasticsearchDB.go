@@ -16,6 +16,7 @@ package workflow
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -117,7 +118,7 @@ func (db *TestElasticsearchDB) GetAll(format *piazza.JsonPagination) ([]TestElas
 		return bodies, 0, err
 	}
 	if !exists {
-		return bodies, 0, nil
+		return bodies, 0, fmt.Errorf("type %s in index %s does not exist", db.mapping, db.Esi.IndexName())
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
