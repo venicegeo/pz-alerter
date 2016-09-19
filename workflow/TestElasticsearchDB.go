@@ -23,7 +23,7 @@ import (
 
 type TestElasticsearchDB struct {
 	*ResourceDB
-	typ string
+	mapping string
 }
 
 type TestElasticsearchBody struct {
@@ -31,33 +31,37 @@ type TestElasticsearchBody struct {
 	Value int          `json:"value"`
 }
 
-const TestElasticsearchMapping = `{
+const TestElasticsearchSettings = `{
 	"mappings" : {
-		"Obj2":{
+		"Obj5":{
 			"properties":{
-				"id2": {
-					"type":"integer"
+				"id5": {
+					"type":"integer",
+					"index": "not_analyzed"
 				},
-				"data2": {
-					"type":"string"
+				"data5": {
+					"type":"string",
+					"index": "not_analyzed"
 				},
-				"foo2": {
-					"type":"boolean"
+				"foo5": {
+					"type":"boolean",
+					"index": "not_analyzed"
 				}
 			}
 		}
 	}
 }`
 
+const TestElasticsearchMapping = "TestElasticsearch"
+
 func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestElasticsearchDB, error) {
 
-	rdb, err := NewResourceDB(service, esi, TestElasticsearchMapping)
+	rdb, err := NewResourceDB(service, esi, TestElasticsearchSettings)
 	if err != nil {
 		return nil, err
 	}
 
-	typ := "Obj2"
-	etrdb := TestElasticsearchDB{ResourceDB: rdb, typ: typ}
+	etrdb := TestElasticsearchDB{ResourceDB: rdb, mapping: TestElasticsearchMapping}
 
 	/*time.Sleep(5 * time.Second)
 
@@ -77,11 +81,6 @@ func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestEl
 		return nil, fmt.Errorf("Index %s does not exist in index %s after creation", TestElasticsearchDBMapping, esi.IndexName())
 	}*/
 
-	err = esi.SetMapping(typ, piazza.JsonString(TestElasticsearchMapping))
-	if err != nil {
-		return nil, err
-	}
-
 	return &etrdb, nil
 }
 
@@ -99,9 +98,9 @@ func (db *TestElasticsearchDB) PostData(obj interface{}, id piazza.Ident) (piazz
 		p = &temp1
 	}
 
-	indexResult, err := db.Esi.PostData(db.typ, id.String(), p)
+	indexResult, err := db.Esi.PostData(db.mapping, id.String(), p)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("TestElasticsearchDB.PostData failed: %s\n%#v\n%#v", err, db.typ, p)
+		return piazza.NoIdent, LoggedError("TestElasticsearchDB.PostData failed: %s\n%#v\n%#v", err, db.mapping, p)
 	}
 	if !indexResult.Created {
 		return piazza.NoIdent, LoggedError("TestElasticsearchDB.PostData failed: not created")
@@ -113,7 +112,7 @@ func (db *TestElasticsearchDB) PostData(obj interface{}, id piazza.Ident) (piazz
 func (db *TestElasticsearchDB) GetAll(format *piazza.JsonPagination) ([]TestElasticsearchBody, int64, error) {
 	bodies := []TestElasticsearchBody{}
 
-	exists, err := db.Esi.TypeExists(db.typ)
+	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return bodies, 0, err
 	}
@@ -121,7 +120,7 @@ func (db *TestElasticsearchDB) GetAll(format *piazza.JsonPagination) ([]TestElas
 		return bodies, 0, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.typ, format)
+	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("TestElasticsearchDB.GetAll failed: %s", err)
 	}

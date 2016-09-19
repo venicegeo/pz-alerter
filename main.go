@@ -71,7 +71,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	testElasticsearchIndex, err := elasticsearch.NewIndex(sys, "testelasticsearch002", pzworkflow.TestElasticsearchMapping)
+	testElasticsearchIndex, err := elasticsearch.NewIndex(sys, "testelasticsearch003", pzworkflow.TestElasticsearchSettings)
 	if err != nil {
 		log.Fatal(err)
 	}
