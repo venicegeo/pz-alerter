@@ -73,8 +73,8 @@ func (server *Server) Init(service *Service) error {
 		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
 
 		{Verb: "GET", Path: "/_test/elasticsearch/version", Handler: server.handleTestElasticsearchVersion},
-		{Verb: "GET", Path: "/_test/elasticsearch/:id", Handler: server.handleTestElasticsearchGetOne},
-		{Verb: "POST", Path: "/_test/elasticsearch", Handler: server.handleTestElasticsearchPost},
+		{Verb: "GET", Path: "/_test/elasticsearch/data/:id", Handler: server.handleTestElasticsearchGetOne},
+		{Verb: "POST", Path: "/_test/elasticsearch/data", Handler: server.handleTestElasticsearchPost},
 	}
 
 	server.origin = service.origin
