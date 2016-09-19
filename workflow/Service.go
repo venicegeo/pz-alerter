@@ -1325,31 +1325,15 @@ func (service *Service) TestElasticsearchVersion() *piazza.JsonResponse {
 	return resp
 }
 
-func (service *Service) TestElasticsearchGet(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	format, err := piazza.NewJsonPagination(params)
+func (service *Service) TestElasticsearchGetOne(id piazza.Ident) *piazza.JsonResponse {
+	body, found, err := service.testElasticsearchDB.GetOne(id)
+	if !found {
+		return service.statusNotFound(err)
+	}
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-
-	var totalHits int64
-	var bodies []TestElasticsearchBody
-
-	bodies, totalHits, err = service.testElasticsearchDB.GetAll(format)
-	if err != nil {
-		return service.statusBadRequest(err)
-	}
-	if bodies == nil {
-		return service.statusInternalError(errors.New("Service.TestElasticsearchGet returned nil"))
-	}
-
-	resp := service.statusOK(bodies)
-
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
-
-	return resp
+	return service.statusOK(body)
 }
 
 func (service *Service) TestElasticsearchPost(body *TestElasticsearchBody) *piazza.JsonResponse {

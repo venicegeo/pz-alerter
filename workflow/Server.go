@@ -72,7 +72,7 @@ func (server *Server) Init(service *Service) error {
 
 		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
 
-		{Verb: "GET", Path: "/_test/elasticsearch/get", Handler: server.handleTestElasticsearchGet},
+		{Verb: "GET", Path: "/_test/elasticsearch/get/:id", Handler: server.handleTestElasticsearchGetOne},
 		{Verb: "POST", Path: "/_test/elasticsearch/post", Handler: server.handleTestElasticsearchPost},
 		{Verb: "GET", Path: "/_test/elasticsearch/version", Handler: server.handleTestElasticsearchVersion},
 	}
@@ -364,9 +364,9 @@ func (server *Server) handleTestElasticsearchVersion(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *Server) handleTestElasticsearchGet(c *gin.Context) {
-	params := piazza.NewQueryParams(c.Request)
-	resp := server.service.TestElasticsearchGet(params)
+func (server *Server) handleTestElasticsearchGetOne(c *gin.Context) {
+	id := piazza.Ident(c.Param("id"))
+	resp := server.service.TestElasticsearchGetOne(id)
 	piazza.GinReturnJson(c, resp)
 }
 

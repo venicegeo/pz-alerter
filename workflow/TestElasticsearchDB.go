@@ -16,7 +16,6 @@ package workflow
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -110,37 +109,23 @@ func (db *TestElasticsearchDB) PostData(obj interface{}, id piazza.Ident) (piazz
 	return id, nil
 }
 
-func (db *TestElasticsearchDB) GetAll(format *piazza.JsonPagination) ([]TestElasticsearchBody, int64, error) {
-	bodies := []TestElasticsearchBody{}
-
-	exists, err := db.Esi.TypeExists(db.mapping)
+func (db *TestElasticsearchDB) GetOne(id piazza.Ident) (*TestElasticsearchBody, bool, error) {
+	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return bodies, 0, err
+		return nil, getResult.Found, LoggedError("TestElasticsearchDB.GetOne failed: %s", err.Error())
 	}
-	if !exists {
-		return bodies, 0, fmt.Errorf("type %s in index %s does not exist", db.mapping, db.Esi.IndexName())
+	if getResult == nil {
+		return nil, true, LoggedError("TestElasticsearchDB.GetOne failed: no getResult")
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
+	src := getResult.Source
+	var body TestElasticsearchBody
+	err = json.Unmarshal(*src, &body)
 	if err != nil {
-		return nil, 0, LoggedError("TestElasticsearchDB.GetAll failed: %s", err)
-	}
-	if searchResult == nil {
-		return nil, 0, LoggedError("TestElasticsearchDB.GetAll failed: no searchResult")
+		return nil, getResult.Found, err
 	}
 
-	if searchResult != nil && searchResult.GetHits() != nil {
-		for _, hit := range *searchResult.GetHits() {
-			var body TestElasticsearchBody
-			err := json.Unmarshal(*hit.Source, &body)
-			if err != nil {
-				return nil, 0, err
-			}
-			bodies = append(bodies, body)
-		}
-	}
-
-	return bodies, searchResult.TotalHits(), nil
+	return &body, getResult.Found, nil
 }
 
 func (db *TestElasticsearchDB) GetVersion() (string, error) {
