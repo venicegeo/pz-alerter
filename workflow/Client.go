@@ -74,7 +74,6 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 func (c *Client) getObject(endpoint string, out interface{}) error {
 
 	h := piazza.Http{BaseUrl: c.url}
-
 	resp := h.PzGet(endpoint)
 	if resp.IsError() {
 		return resp.ToError()
@@ -317,9 +316,9 @@ func (c *Client) TestElasticsearchGetVersion() (*string, error) {
 	return s, err
 }
 
-func (c *Client) TestElasticsearchGetAll() (*[]TestElasticsearchBody, error) {
-	out := &[]TestElasticsearchBody{}
-	err := c.getObject("/_test/elasticsearch/get", out)
+func (c *Client) TestElasticsearchGetOne(id piazza.Ident) (*TestElasticsearchBody, error) {
+	out := &TestElasticsearchBody{}
+	err := c.getObject("/_test/elasticsearch/get/"+id.String(), out)
 	return out, err
 }
 

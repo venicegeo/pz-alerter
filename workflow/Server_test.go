@@ -899,12 +899,14 @@ func (suite *ServerTester) Test09Elasticsearch() {
 	retBody, err := client.TestElasticsearchPost(body)
 	assert.NoError(err)
 	assert.Equal(17, retBody.Value)
+	assert.NotEmpty(retBody.ID)
+	id := retBody.ID
 
-	data, err := client.TestElasticsearchGetAll()
+	data, err := client.TestElasticsearchGetOne(id)
 	assert.NoError(err)
 	assert.NotNil(data)
-	assert.Equal(1, len(*data))
-	assert.Equal(17, (*data)[0].Value)
+	assert.EqualValues(id, data.ID)
+	assert.Equal(17, data.Value)
 }
 
 func printJSON(msg string, input interface{}) {

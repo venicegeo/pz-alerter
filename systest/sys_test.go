@@ -525,7 +525,7 @@ func (suite *WorkflowTester) Test11GetData() {
 
 //---------------------------------------------------------------------
 
-func (suite *WorkflowTester) xTest12TestElasticsearch() {
+func (suite *WorkflowTester) Test0000012TestElasticsearch() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -534,42 +534,32 @@ func (suite *WorkflowTester) xTest12TestElasticsearch() {
 
 	client := suite.client
 
-	/*	url := strings.Replace(suite.url, "workflow", "gateway", 1)
-		h := piazza.Http{
-			BaseUrl: url,
-			ApiKey:  suite.apiKey,
-			//Preflight:  piazza.SimplePreflight,
-			//Postflight: piazza.SimplePostflight,
-		}*/
-
-	//
 	version, err := client.TestElasticsearchGetVersion()
 	assert.NoError(err)
 	assert.EqualValues("2.2.0", *version)
 
-	time.Sleep(10 * time.Second)
-	{
-		datax, err := client.TestElasticsearchGetAll()
-		assert.NoError(err)
-		assert.NotNil(datax)
-		assert.Equal(0, len(*datax))
-	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
+
+	var id piazza.Ident
+
+	body := &workflow.TestElasticsearchBody{Value: 17, ID: "19"}
 
 	{
-		body := &workflow.TestElasticsearchBody{Value: 17}
 		retBody, err := client.TestElasticsearchPost(body)
 		assert.NoError(err)
 		assert.Equal(17, retBody.Value)
+		assert.NotEmpty(retBody.ID)
+		id = retBody.ID
 	}
-	time.Sleep(10 * time.Second)
+	time.Sleep(3 * time.Second)
 
 	{
-		data, err := client.TestElasticsearchGetAll()
+		log.Printf("id = %s", id.String())
+		retBody, err := client.TestElasticsearchGetOne(id)
+		log.Printf("id = %#v %#v", retBody, err)
 		assert.NoError(err)
-		assert.NotNil(data)
-		assert.Equal(1, len(*data))
-		assert.Equal(17, (*data)[0].Value)
+		assert.Equal(17, retBody.Value)
+		assert.NotEmpty(retBody.ID)
 	}
 }
 
