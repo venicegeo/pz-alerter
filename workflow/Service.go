@@ -1297,9 +1297,10 @@ type cronEvent struct {
 }
 
 func (c cronEvent) Run() {
+	uniqueMap := c.Data[c.eventTypeName]
 	ev := &Event{
 		EventTypeID: c.EventTypeID,
-		Data:        c.Data[c.eventTypeName],
+		Data:        uniqueMap.(map[string]interface{}),
 		CreatedOn:   time.Now(),
 		CreatedBy:   c.EventID.String(),
 	}
