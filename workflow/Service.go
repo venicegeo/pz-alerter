@@ -454,7 +454,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 		return service.statusInternalError(err)
 	}
 
-	service.logger.Info("Posted EventType with EventTypeId %s", eventTypeID)
+	service.logger.Info("User %s created EventType %s", eventType.CreatedBy, eventTypeID)
 
 	service.stats.IncrEventTypes()
 
@@ -501,7 +501,7 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("Deleted EventType with EventTypeId %s", id)
+	service.logger.Info("Deleted EventType %s", id)
 
 	return service.statusOK(nil)
 }
@@ -643,6 +643,8 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 
 	service.stats.IncrEvents()
 
+	service.logger.Info("User %s created repeating Event %s on the schedule %s", event.CreatedBy, eventID, event.CronSchedule)
+
 	return service.statusCreated(&response)
 }
 
@@ -672,7 +674,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted Event with EventId %s", eventID)
+	service.logger.Info("User %s created Event %s", event.CreatedBy, eventID)
 
 	{
 		// Find triggers associated with event
@@ -733,7 +735,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), -1)
 				}
 
-				service.logger.Info("job submission by event [%s] using trigger [%s]: %s\n", eventID.String(), triggerID.String(), jobString)
+				service.logger.Info("job [%s] submission by event [%s] using trigger [%s]: %s\n", jobID, eventID.String(), triggerID.String(), jobString)
 
 				log.Printf("JOB ID: %s", jobID)
 				log.Printf("JOB STRING: %s", jobString)
@@ -1010,7 +1012,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("Posted Trigger with TriggerId %s", triggerID)
+	service.logger.Info("User %s created Trigger %s", trigger.CreatedBy, triggerID)
 
 	service.stats.IncrTriggers()
 
@@ -1029,7 +1031,7 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	service.logger.Info("Updated Trigger with TriggerId %s", id)
+	service.logger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
 
 	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.EventTypeID))
 	if err != nil || !found {
@@ -1224,7 +1226,7 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 		return service.statusInternalError(err)
 	}
 
-	service.logger.Info("Posted Alert with AlertId %s", alertID)
+	service.logger.Info("User %s created Alert %s", alert.CreatedBy, alertID)
 
 	service.stats.IncrAlerts()
 
