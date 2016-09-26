@@ -621,7 +621,7 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
-	err = service.cron.AddJob(event.CronSchedule, cronEvent{event, service})
+	err = service.cron.AddJob(event.CronSchedule, cronEvent{event, eventTypeName, service})
 	if err != nil {
 		return service.statusInternalError(err)
 	}
@@ -1274,7 +1274,11 @@ func (service *Service) InitCron() error {
 		}
 
 		for _, e := range *events {
-			err = service.cron.AddJob(e.CronSchedule, cronEvent{&e, service})
+			eventType, found, err := service.eventTypeDB.GetOne(e.EventTypeID)
+			if !found || err != nil {
+				return LoggedError("WorkflowService.InitCron: Unable to retreive event type for cron event %#v", e)
+			}
+			err = service.cron.AddJob(e.CronSchedule, cronEvent{&e, eventType.Name, service})
 			if err != nil {
 				return LoggedError("WorkflowService.InitCron: Unable to register cron event %#v", e)
 			}
@@ -1288,13 +1292,15 @@ func (service *Service) InitCron() error {
 
 type cronEvent struct {
 	*Event
+	eventTypeName string
 	service *Service
 }
 
 func (c cronEvent) Run() {
+	uniqueMap := c.Data[c.eventTypeName]
 	ev := &Event{
 		EventTypeID: c.EventTypeID,
-		Data:        c.Data,
+		Data:        uniqueMap.(map[string]interface{}),
 		CreatedOn:   time.Now(),
 		CreatedBy:   c.EventID.String(),
 	}
