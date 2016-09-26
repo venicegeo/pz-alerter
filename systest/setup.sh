@@ -2,13 +2,12 @@
 set -e
 
 export THEDOMAIN=int.geointservices.io
-export PZSERVER=pz-gateway.$THEDOMAIN
+export PZSERVER=piazza.$THEDOMAIN
 
-export PZKEY=`cat ~/.pzkey | grep $PZSERVER | cut -f 2 -d ":" | cut -d \" -f 2`
-
+export PZKEY=`cat ~/.pzkey | jq -r .'"'$PZSERVER'"'`
 curl="curl -S -s -u $PZKEY: -H Content-Type:application/json"
 
-url="http://$PZSERVER"
+url="https://$PZSERVER"
 workflowurl="http://pz-workflow.$THEDOMAIN"
 
 extract() {
