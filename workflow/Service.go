@@ -1300,6 +1300,9 @@ type cronEvent struct {
 
 func (c cronEvent) Run() {
 	uniqueMap := c.Data[c.eventTypeName]
+	if uniqueMap == nil {
+		uniqueMap = make(map[string]interface{})
+	}
 	ev := &Event{
 		EventTypeID: c.EventTypeID,
 		Data:        uniqueMap.(map[string]interface{}),
