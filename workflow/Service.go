@@ -695,7 +695,8 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 				trigger, found, err := service.triggerDB.GetOne(triggerID)
 				if !found {
-					results[triggerID] = service.statusNotFound(err)
+					// Don't fail for this, just log something and continue to the next trigger id
+					service.logger.Warn("Percolation error: Trigger %s does not exist", string(triggerID))
 					return
 				}
 				if err != nil {
