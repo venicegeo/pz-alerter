@@ -296,6 +296,25 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 	assert.EqualValues(suite.triggerID, item.TriggerID)
 }
 
+func (suite *WorkflowTester) Test05PutTrigger() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	item, err := client.GetTrigger(suite.triggerID)
+	assert.NoError(err)
+	assert.NotNil(item)
+	assert.EqualValues(suite.triggerID, item.TriggerID)
+
+	item.Enabled = false
+	err = client.PutTrigger(item)
+	assert.NoError(err)
+}
+
 //---------------------------------------------------------------------
 
 func (suite *WorkflowTester) Test06PostEvent() {

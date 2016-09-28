@@ -1028,19 +1028,13 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	res, err := service.triggerDB.PutTrigger(id, trigger, update)
+	_, err = service.triggerDB.PutTrigger(id, trigger, update)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
 	service.logger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
 
-	eventType, found, err := service.eventTypeDB.GetOne(piazza.Ident(res.EventTypeID))
-	if err != nil || !found {
-		return service.statusBadRequest(err)
-	}
-	res.Condition = service.removeUniqueParams(eventType.Name, res.Condition)
-
-	return service.statusOK(res)
+	return service.statusOK(nil)
 }
 
 func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
