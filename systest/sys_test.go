@@ -310,8 +310,11 @@ func (suite *WorkflowTester) Test05PutTrigger() {
 	assert.NotNil(item)
 	assert.EqualValues(suite.triggerID, item.TriggerID)
 
-	item.Enabled = false
-	err = client.PutTrigger(item)
+	triggerUpdate := workflow.TriggerUpdate{
+		Enabled: false,
+	}
+
+	err = client.PutTrigger(&triggerUpdate)
 	assert.NoError(err)
 }
 
