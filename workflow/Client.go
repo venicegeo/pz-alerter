@@ -253,8 +253,8 @@ func (c *Client) QueryTriggers(query map[string]interface{}) (*[]Trigger, error)
 	return out, err
 }
 
-func (c *Client) PutTrigger(triggerUpdate *TriggerUpdate) error {
-	err := c.putObject(triggerUpdate, "/trigger", nil)
+func (c *Client) PutTrigger(id piazza.Ident, triggerUpdate *TriggerUpdate) error {
+	err := c.putObject(triggerUpdate, "/trigger/" + id.String(), nil)
 	return err
 }
 

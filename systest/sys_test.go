@@ -314,7 +314,7 @@ func (suite *WorkflowTester) Test05PutTrigger() {
 		Enabled: false,
 	}
 
-	err = client.PutTrigger(&triggerUpdate)
+	err = client.PutTrigger(suite.triggerID, &triggerUpdate)
 	assert.NoError(err)
 }
 
