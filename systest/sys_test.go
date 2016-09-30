@@ -222,7 +222,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 
 	trigger := &workflow.Trigger{
 		Name:        suite.triggerName,
-		Enabled:     true,
+		Enabled:     false,
 		EventTypeID: suite.eventTypeID,
 		Condition: map[string]interface{}{
 			"query": map[string]interface{}{
@@ -294,6 +294,28 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 	assert.NoError(err)
 	assert.NotNil(item)
 	assert.EqualValues(suite.triggerID, item.TriggerID)
+}
+
+func (suite *WorkflowTester) Test05PutTrigger() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	item, err := client.GetTrigger(suite.triggerID)
+	assert.NoError(err)
+	assert.NotNil(item)
+	assert.EqualValues(suite.triggerID, item.TriggerID)
+
+	triggerUpdate := workflow.TriggerUpdate{
+		Enabled: true,
+	}
+
+	err = client.PutTrigger(suite.triggerID, &triggerUpdate)
+	assert.NoError(err)
 }
 
 //---------------------------------------------------------------------
