@@ -197,7 +197,7 @@ const EventTypeIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"mapping": {
-					"dynamic": true,
+					"dynamic": false,
 					"properties": {}
 				}
 			}
