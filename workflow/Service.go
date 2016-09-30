@@ -454,7 +454,9 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 		return service.statusInternalError(err)
 	}
 
-	service.logger.Info("User %s created EventType %s", eventType.CreatedBy, eventTypeID)
+	go func() {
+		service.logger.Info("User %s created EventType %s", eventType.CreatedBy, eventTypeID)
+	}()
 
 	service.stats.IncrEventTypes()
 
@@ -1296,7 +1298,7 @@ func (service *Service) InitCron() error {
 type cronEvent struct {
 	*Event
 	eventTypeName string
-	service *Service
+	service       *Service
 }
 
 func (c cronEvent) Run() {
