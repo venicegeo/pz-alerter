@@ -222,7 +222,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 
 	trigger := &workflow.Trigger{
 		Name:        suite.triggerName,
-		Enabled:     true,
+		Enabled:     false,
 		EventTypeID: suite.eventTypeID,
 		Condition: map[string]interface{}{
 			"query": map[string]interface{}{
@@ -311,7 +311,7 @@ func (suite *WorkflowTester) Test05PutTrigger() {
 	assert.EqualValues(suite.triggerID, item.TriggerID)
 
 	triggerUpdate := workflow.TriggerUpdate{
-		Enabled: false,
+		Enabled: true,
 	}
 
 	err = client.PutTrigger(suite.triggerID, &triggerUpdate)

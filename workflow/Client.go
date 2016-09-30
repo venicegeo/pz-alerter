@@ -254,7 +254,8 @@ func (c *Client) QueryTriggers(query map[string]interface{}) (*[]Trigger, error)
 }
 
 func (c *Client) PutTrigger(id piazza.Ident, triggerUpdate *TriggerUpdate) error {
-	err := c.putObject(triggerUpdate, "/trigger/" + id.String(), nil)
+	out := &TriggerUpdate{}
+	err := c.putObject(triggerUpdate, "/trigger/" + id.String(), out)
 	return err
 }
 
