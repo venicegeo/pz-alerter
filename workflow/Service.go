@@ -246,8 +246,13 @@ func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
 	return resp
 }
 
-func (service *Service) statusPutOK() *piazza.JsonResponse {
-	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Type: "success", Message: "Updated trigger", Origin: "workflow"}
+func (service *Service) statusPutOK(message string) *piazza.JsonResponse {
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Type: 	    "success",
+		Message:    message,
+		Origin:     service.origin,
+	}
 	return resp
 }
 
@@ -1041,7 +1046,7 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 	}
 	service.logger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
 
-	return service.statusPutOK()
+	return service.statusPutOK("Updated trigger")
 }
 
 func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
