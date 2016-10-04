@@ -44,6 +44,7 @@ type WorkflowTester struct {
 	serviceID     piazza.Ident
 	eventIDYes    piazza.Ident
 	eventIDNo     piazza.Ident
+	repeatID      piazza.Ident
 	alertID       piazza.Ident
 	jobID         piazza.Ident
 	dataID        piazza.Ident
@@ -585,6 +586,45 @@ func (suite *WorkflowTester) Test12TestElasticsearch() {
 		assert.Equal(17, retBody.Value)
 		assert.NotEmpty(retBody.ID)
 	}
+}
+
+func (suite *WorkflowTester) Test13RepeatingEvent() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	client := suite.client
+
+	allEvents, err := client.GetAllEventsByEventType(suite.eventTypeID)
+	numEventsBefore := len(allEvents)
+
+	repeatingEvent := &workflow.Event{
+		EventTypeID: suite.eventTypeID,
+		Data: map[string]interface{}{
+			"beta":  goodBeta,
+			"alpha": goodAlpha,
+		},
+		CronSchedule: "* * * * * *",
+	}
+
+	ack, err := client.PostEvent(repeatingEvent)
+	assert.NoError(err)
+	assert.NotNil(ack)
+	suite.repeatID = ack.EventID
+	log.Printf("RepeatId: %s", suite.repeatID)
+
+	time.Sleep(10 * time.Second)
+
+	err = client.DeleteEvent(suite.repeatID)
+	assert.NoError(err)
+
+	allEvents, err = client.GetAllEventsByEventType(suite.eventTypeID)
+	numEventsAfter := len(allEvents)
+
+	numEventsCreated := numEventsAfter - numEventsBefore
+	assert.InDelta(7, numEventsCreated, 3.0)
 }
 
 //---------------------------------------------------------------------
