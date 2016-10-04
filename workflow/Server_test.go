@@ -118,6 +118,11 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
+	_, err = NewClient2("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	mappingTester := &MappingTester{}
 	suite.Run(t, mappingTester)
 
@@ -170,6 +175,18 @@ func makeTestEvent(eventTypeID piazza.Ident) *Event {
 		Data: map[string]interface{}{
 			"num": 17,
 		},
+	}
+	return event
+}
+
+func makeTestCronEvent(eventTypeID piazza.Ident) *Event {
+	event := &Event{
+		EventTypeID: eventTypeID,
+		CreatedOn:   time.Now(),
+		Data: map[string]interface{}{
+			"num": 17,
+		},
+		CronSchedule: "* 30 * * * *",
 	}
 	return event
 }
@@ -259,7 +276,11 @@ func (suite *ServerTester) Test01EventType() {
 	assert.NoError(err)
 	assert.Len(*typs, 2)
 
+	_, err = client.PostEventType(nil)
+	assert.Error(err)
+
 	//printJSON("EventTypes", typs)
+
 }
 
 func (suite *ServerTester) Test02Event() {
@@ -294,6 +315,11 @@ func (suite *ServerTester) Test02Event() {
 	id := respEvent.EventID
 	assert.NoError(err)
 	//printJSON("event id", id)
+
+	respEvent, err = client.PostEvent(makeTestCronEvent(eventTypeID))
+	assert.NoError(err)
+	err = client.DeleteEvent(respEvent.EventID)
+	assert.NoError(err)
 
 	//log.Printf("Getting list of events (typeId=%s):", eventTypeID)
 	events, err = client.GetAllEventsByEventType(eventTypeID)
@@ -332,6 +358,9 @@ func (suite *ServerTester) Test02Event() {
 	//log.Printf("Deleting event type by id: %s", eventTypeID)
 	err = client.DeleteEventType(eventTypeID)
 	assert.NoError(err)
+
+	_, err = client.PostEvent(nil)
+	assert.Error(err)
 }
 
 func (suite *ServerTester) Test03Trigger() {
@@ -376,6 +405,9 @@ func (suite *ServerTester) Test03Trigger() {
 	assert.EqualValues(string(id), string(trigger.TriggerID))
 	//printJSON("Trigger", trigger)
 
+	err = client.PutTrigger(id, &TriggerUpdate{})
+	assert.NoError(err)
+
 	//log.Printf("Delete trigger by id: %s", id)
 	err = client.DeleteTrigger(id)
 	assert.NoError(err)
@@ -389,6 +421,9 @@ func (suite *ServerTester) Test03Trigger() {
 	//log.Printf("Delete event type by id: %s", eventTypeID)
 	err = client.DeleteEventType(eventTypeID)
 	assert.NoError(err)
+
+	_, err = client.PostTrigger(nil)
+	assert.Error(err)
 }
 
 func (suite *ServerTester) Test04Alert() {
@@ -429,6 +464,9 @@ func (suite *ServerTester) Test04Alert() {
 	eventID := respPostEvent.EventID
 	assert.NoError(err)
 	//printJSON("eventID", eventID)
+
+	_, err = client.GetAlertByTrigger(triggerID)
+	assert.NoError(err)
 
 	//log.Printf("Creating new alert:")
 	alert := &Alert{
