@@ -168,6 +168,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 		err = client.DeleteEventType(id)
 		assert.NoError(err)
 	}()
+	client.GetEventTypeByName("typnam")
 
 	eventTypes, err := client.GetAllEventTypes()
 	assert.NoError(err)
