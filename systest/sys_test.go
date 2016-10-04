@@ -598,7 +598,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	client := suite.client
 
 	allEvents, err := client.GetAllEventsByEventType(suite.eventTypeID)
-	numEventsBefore := len(allEvents)
+	numEventsBefore := len(*allEvents)
 
 	repeatingEvent := &workflow.Event{
 		EventTypeID: suite.eventTypeID,
@@ -621,7 +621,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	assert.NoError(err)
 
 	allEvents, err = client.GetAllEventsByEventType(suite.eventTypeID)
-	numEventsAfter := len(allEvents)
+	numEventsAfter := len(*allEvents)
 
 	numEventsCreated := numEventsAfter - numEventsBefore
 	assert.InDelta(7, numEventsCreated, 3.0)
