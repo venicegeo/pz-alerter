@@ -1,0 +1,50 @@
+hash: d6e9fe396401a270ad31a46dacabca456ea09f5fc5dd8c23873ee62e7b1e2220
+updated: 2016-10-07T11:51:05.08833141-04:00
+imports:
+- name: github.com/fvbock/endless
+  version: 67d0a784ad8ab10a69d12107f6de220db0c18002
+- name: github.com/gin-gonic/gin
+  version: f931d1ea80ae95a6fc739213cdd9399bd2967fb6
+  subpackages:
+  - binding
+  - render
+- name: github.com/golang/protobuf
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
+  subpackages:
+  - proto
+- name: github.com/manucorporat/sse
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
+- name: github.com/venicegeo/pz-gocommon
+  version: 8764612861fbf39e39fcc7b492abcfc8563ea55a
+  subpackages:
+  - elasticsearch
+  - gocommon
+- name: golang.org/x/net
+  version: f315505cf3349909cdf013ea56690da34e96a451
+  subpackages:
+  - context
+  - context/ctxhttp
+- name: gopkg.in/go-playground/validator.v8
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
+- name: gopkg.in/olivere/elastic.v3
+  version: eaecbad7a83e6b60f131825553e5eb7fd5a50b41
+  subpackages:
+  - backoff
+  - uritemplates
+- name: gopkg.in/yaml.v2
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+testImports:
+- name: github.com/davecgh/go-spew
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  subpackages:
+  - spew
+- name: github.com/pmezard/go-difflib
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
+  subpackages:
+  - difflib
+- name: github.com/stretchr/testify
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
+  subpackages:
+  - assert
+  - require
+  - suite

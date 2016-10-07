@@ -14,6 +14,7 @@ import:
 - package: github.com/venicegeo/pz-uuidgen
   subpackages:
   - uuidgen
+testImport:
 - package: github.com/stretchr/testify
   subpackages:
   - assert

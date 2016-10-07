@@ -1,0 +1,10 @@
+applications:
+- name: pz-uuidgen
+  host: pz-uuidgen
+  command: chmod 755 pz-uuidgen.bin && ./pz-uuidgen.bin
+  buildpack: binary_buildpack
+  memory: 512M
+  instances: 1
+  timeout: 180
+  services:
+      - pz-elasticsearch
