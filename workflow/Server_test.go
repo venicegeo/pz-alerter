@@ -515,7 +515,6 @@ func (suite *ServerTester) Test05EventMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 	client := suite.client
-	var err error
 
 	assertNoData(suite.T(), suite.client)
 	defer assertNoData(suite.T(), suite.client)
@@ -609,26 +608,28 @@ func (suite *ServerTester) Test05EventMapping() {
 		assert.EqualValues(string(et1Id), string((*x).EventTypeID))
 	}
 
-	e1Id := createEvent(et1Id, eventTypeName1, 17)
-	checkEvents(et1Id, 1)
+	{
+		e1Id := createEvent(et1Id, eventTypeName1, 17)
+		checkEvents(et1Id, 1)
 
-	e2Id := createEvent(et1Id, eventTypeName1, 18)
-	checkEvents(et1Id, 2)
+		e2Id := createEvent(et1Id, eventTypeName1, 18)
+		checkEvents(et1Id, 2)
 
-	e3Id := createEvent(et2Id, eventTypeName2, 19)
-	checkEvents(et2Id, 1)
+		e3Id := createEvent(et2Id, eventTypeName2, 19)
+		checkEvents(et2Id, 1)
 
-	err = client.DeleteEvent(e1Id)
-	assert.NoError(err)
-	err = client.DeleteEvent(e2Id)
-	assert.NoError(err)
-	err = client.DeleteEvent(e3Id)
-	assert.NoError(err)
+		err := client.DeleteEvent(e1Id)
+		assert.NoError(err)
+		err = client.DeleteEvent(e2Id)
+		assert.NoError(err)
+		err = client.DeleteEvent(e3Id)
+		assert.NoError(err)
 
-	err = client.DeleteEventType(et1Id)
-	assert.NoError(err)
-	err = client.DeleteEventType(et2Id)
-	assert.NoError(err)
+		err = client.DeleteEventType(et1Id)
+		assert.NoError(err)
+		err = client.DeleteEventType(et2Id)
+		assert.NoError(err)
+	}
 }
 
 func (suite *ServerTester) Test06Workflow() {

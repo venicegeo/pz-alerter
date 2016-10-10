@@ -168,7 +168,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 		err = client.DeleteEventType(id)
 		assert.NoError(err)
 	}()
-	client.GetEventTypeByName("typnam")
+	_, _ = client.GetEventTypeByName("typnam")
 
 	eventTypes, err := client.GetAllEventTypes()
 	assert.NoError(err)
@@ -370,8 +370,6 @@ func (suite *ClientTester) Test17Triggering() {
 	assertNoData(suite.T(), client)
 	defer assertNoData(suite.T(), client)
 
-	var err error
-
 	//-----------------------------------------------------
 
 	var etC, etD, etE piazza.Ident
@@ -399,7 +397,7 @@ func (suite *ClientTester) Test17Triggering() {
 	}
 
 	defer func() {
-		err = client.DeleteEventType(etC)
+		err := client.DeleteEventType(etC)
 		assert.NoError(err)
 		err = client.DeleteEventType(etD)
 		assert.NoError(err)

@@ -11,5 +11,7 @@ gometalinter \
 --exclude="Id.* should be .*ID" \
 --exclude="Json.* should be .*JSON" \
 --exclude="Url.* should be .*URL" \
+--exclude="[iI][dD] can be fmt\.Stringer" \
+--exclude=" duplicate of [A-Za-z\._0-9]*" \
 ./...
 

@@ -621,6 +621,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	assert.NoError(err)
 
 	allEvents, err = client.GetAllEventsByEventType(suite.eventTypeID)
+	assert.NoError(err)
 	numEventsAfter := len(*allEvents)
 
 	numEventsCreated := numEventsAfter - numEventsBefore

@@ -57,7 +57,12 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
 			}
 			// On error, this should close on it's own
-			defer response.Body.Close()
+			defer func() {
+				err = response.Body.Close()
+				if err != nil {
+					panic(err) // TODO: defer doesn't handle errs well
+				}
+			}()
 			if response.StatusCode != 200 {
 				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceID %s does not exist", strServiceID)
 			}
@@ -419,7 +424,7 @@ func (db *TriggerDB) addUniqueParamsToQueryArr(inputObj []interface{}, eventType
 func (db *TriggerDB) getNewKeyName(eventType *EventType, key string) string {
 	mapping := db.service.removeUniqueParams(eventType.Name, eventType.Mapping)
 	vars, _ := piazza.GetVarsFromStruct(mapping)
-	for varName, _ := range vars {
+	for varName := range vars {
 		if "data."+varName == key {
 			return strings.Replace(key, "data.", "data."+eventType.Name+".", 1)
 		}
