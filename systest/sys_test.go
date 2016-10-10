@@ -606,7 +606,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 			"beta":  goodBeta,
 			"alpha": goodAlpha,
 		},
-		CronSchedule: "* * * * * *",
+		CronSchedule: "*/2 * * * * *",
 	}
 
 	ack, err := client.PostEvent(repeatingEvent)
@@ -615,7 +615,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	suite.repeatID = ack.EventID
 	log.Printf("RepeatId: %s", suite.repeatID)
 
-	time.Sleep(10 * time.Second)
+	time.Sleep(20 * time.Second)
 
 	err = client.DeleteEvent(suite.repeatID)
 	assert.NoError(err)
@@ -624,7 +624,8 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	numEventsAfter := len(*allEvents)
 
 	numEventsCreated := numEventsAfter - numEventsBefore
-	assert.InDelta(7, numEventsCreated, 3.0)
+	log.Printf("Number of repeating events created: %d", numEventsCreated)
+	assert.InDelta(10, numEventsCreated, 4.0)
 }
 
 //---------------------------------------------------------------------
