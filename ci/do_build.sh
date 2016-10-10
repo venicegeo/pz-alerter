@@ -22,8 +22,8 @@ go get github.com/venicegeo/pz-workflow
 cd $GOPATH/src/github.com/venicegeo/pz-workflow
 
 # run unit tests w/ coverage collection
-go test -v -coverprofile=workflow.cov github.com/venicegeo/pz-workflow/workflow
+go test -v -coverprofile=$root/workflow.cov github.com/venicegeo/pz-workflow/workflow
 
 # lint
-sh ci/metalinter.sh | tee lint.txt
-wc -l lint.txt
+sh ci/metalinter.sh | tee $root/lint.txt
+wc -l $root/lint.txt
