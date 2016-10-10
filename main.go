@@ -25,6 +25,54 @@ import (
 )
 
 func main() {
+	sys, logger, uuidgen := makeSystem()
+
+	logger.Info("pz-workflow starting...")
+
+	indices := makeIndexes(sys)
+
+	workflowServer := makeWorkflow(sys, indices, logger, uuidgen)
+
+	serverLoop(sys, workflowServer)
+}
+
+func makeWorkflow(sys *piazza.SystemConfig,
+	indices []*elasticsearch.Index,
+	logger *pzlogger.Client,
+	uuidgen *pzuuidgen.Client) *pzworkflow.Server {
+	workflowService := &pzworkflow.Service{}
+	err := workflowService.Init(
+		sys,
+		logger,
+		uuidgen,
+		indices[0],
+		indices[1],
+		indices[2],
+		indices[3],
+		indices[4],
+		indices[5])
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = workflowService.InitCron()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	workflowServer := &pzworkflow.Server{}
+	err = workflowServer.Init(workflowService)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return workflowServer
+}
+
+func makeSystem() (
+	*piazza.SystemConfig,
+	*pzlogger.Client,
+	*pzuuidgen.Client) {
 
 	required := []piazza.ServiceName{
 		piazza.PzElasticSearch,
@@ -44,13 +92,35 @@ func main() {
 		log.Fatal(err)
 	}
 
-	//	uuidgen, err := uuidgenPkg.NewMockUuidGenService(sys)
 	uuidgen, err := pzuuidgen.NewClient(sys)
-
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	return sys, logger, uuidgen
+}
+
+func serverLoop(sys *piazza.SystemConfig,
+	workflowServer *pzworkflow.Server) {
+	genericServer := piazza.GenericServer{Sys: sys}
+
+	err := genericServer.Configure(workflowServer.Routes)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	done, err := genericServer.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = <-done
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func makeIndexes(sys *piazza.SystemConfig) []*elasticsearch.Index {
 	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes003", pzworkflow.EventTypeIndexSettings)
 	if err != nil {
 		log.Fatal(err)
@@ -76,48 +146,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger.Info("pz-workflow starting...")
-
-	workflowService := &pzworkflow.Service{}
-	err = workflowService.Init(
-		sys,
-		logger,
-		uuidgen,
-		eventtypesIndex,
-		eventsIndex,
-		triggersIndex,
-		alertsIndex,
-		cronIndex,
-		testElasticsearchIndex)
-	if err != nil {
-		log.Fatal(err)
+	ret := []*elasticsearch.Index{
+		eventtypesIndex, eventsIndex, triggersIndex,
+		alertsIndex, cronIndex, testElasticsearchIndex,
 	}
-
-	err = workflowService.InitCron()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	workflowServer := &pzworkflow.Server{}
-	err = workflowServer.Init(workflowService)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	genericServer := piazza.GenericServer{Sys: sys}
-
-	err = genericServer.Configure(workflowServer.Routes)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	done, err := genericServer.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = <-done
-	if err != nil {
-		log.Fatal(err)
-	}
+	return ret
 }
