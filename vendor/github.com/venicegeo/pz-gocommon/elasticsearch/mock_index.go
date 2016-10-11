@@ -53,7 +53,7 @@ func NewMockIndex(indexName string) *MockIndex {
 	return &esi
 }
 
-func (client *MockIndex) GetVersion() string {
+func (esi *MockIndex) GetVersion() string {
 	return "2.2.0"
 }
 

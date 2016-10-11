@@ -1,5 +1,5 @@
 #!/bin/bash
 
-APP=pz-logger
+APP=pz-gocommon
 EXT=tgz
 

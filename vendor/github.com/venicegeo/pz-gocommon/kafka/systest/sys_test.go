@@ -134,7 +134,7 @@ func doReads(t *testing.T, server string, topic string, numReads *int) {
 	defer close(t, partitionConsumer)
 
 	for {
-		_ = <-partitionConsumer.Messages()
+		<-partitionConsumer.Messages()
 		//t.Logf("Consumed: offset:%d  value:%v", msg.Offset, string(msg.Value))
 		*numReads++
 	}

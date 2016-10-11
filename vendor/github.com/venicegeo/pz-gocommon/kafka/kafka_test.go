@@ -36,4 +36,5 @@ func TestRunSuite(t *testing.T) {
 //=================================================================
 
 func (suite *KafkaTester) Test01() {
+	Stub()
 }

@@ -80,29 +80,45 @@ func uniq() string {
 	return fmt.Sprintf("%d", time.Now().Nanosecond())
 }
 
+func closer(t *testing.T, esi elasticsearch.IIndex) {
+	if esi == nil {
+		return
+	}
+	err := esi.Close()
+	assert.NoError(t, err)
+	err = esi.Delete()
+	assert.NoError(t, err)
+}
+
 func (suite *EsTester) SetUpIndex() elasticsearch.IIndex {
 	t := suite.T()
 	assert := assert.New(t)
 
-	esi, err := elasticsearch.NewIndex2(suite.url, "estest$"+uniq(), "")
-	assert.NoError(err)
+	var esi *elasticsearch.Index
+	var err error
+	var ok bool
 
-	err = esi.Delete()
-	//assert.NoError(err)
+	{
+		esi, err = elasticsearch.NewIndex2(suite.url, "estest$"+uniq(), "")
+		assert.NoError(err)
 
-	ok, err := esi.IndexExists()
-	assert.NoError(err)
-	assert.False(ok)
+		err = esi.Delete()
+		//assert.NoError(err)
 
-	// make the index
-	err = esi.Create("")
-	assert.NoError(err)
-	ok, err = esi.IndexExists()
-	assert.NoError(err)
-	assert.True(ok)
+		ok, err = esi.IndexExists()
+		assert.NoError(err)
+		assert.False(ok)
 
-	err = esi.SetMapping(objType, objMapping)
-	assert.NoError(err)
+		// make the index
+		err = esi.Create("")
+		assert.NoError(err)
+		ok, err = esi.IndexExists()
+		assert.NoError(err)
+		assert.True(ok)
+
+		err = esi.SetMapping(objType, objMapping)
+		assert.NoError(err)
+	}
 
 	// populate the index
 	for _, o := range objs {
@@ -123,13 +139,26 @@ func (suite *EsTester) SetUpIndex() elasticsearch.IIndex {
 		return false, nil
 	})
 
-	_, err = elasticsearch.PollFunction(pollingFn)
-	assert.NoError(err)
+	{
+		_, err := elasticsearch.PollFunction(pollingFn)
+		assert.NoError(err)
+	}
 
 	return esi
 }
 
 //---------------------------------------------------------------------------
+
+func hasKnownPrefix(v string) bool {
+	return strings.HasPrefix(v, "alerts.") ||
+		strings.HasPrefix(v, "triggers.") ||
+		strings.HasPrefix(v, "events.") ||
+		strings.HasPrefix(v, "eventtypes.") ||
+		strings.HasPrefix(v, "estest.") ||
+		strings.HasPrefix(v, "test.") ||
+		strings.HasPrefix(v, "getall.") ||
+		strings.HasPrefix(v, "pzlogger.")
+}
 
 func deleteOldIndexes(es *elastic.Client) {
 	s, err := es.IndexNames()
@@ -148,14 +177,7 @@ func deleteOldIndexes(es *elastic.Client) {
 	}
 
 	for _, v := range s {
-		if strings.HasPrefix(v, "alerts.") ||
-			strings.HasPrefix(v, "triggers.") ||
-			strings.HasPrefix(v, "events.") ||
-			strings.HasPrefix(v, "eventtypes.") ||
-			strings.HasPrefix(v, "estest.") ||
-			strings.HasPrefix(v, "test.") ||
-			strings.HasPrefix(v, "getall.") ||
-			strings.HasPrefix(v, "pzlogger.") {
+		if hasKnownPrefix(v) {
 			del(v)
 		} else {
 			log.Printf("Skipping %s", v)
@@ -188,10 +210,7 @@ func (suite *EsTester) Test02SimplePost() {
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
 
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	type Obj2 struct {
 		ID2   int    `json:"id" binding:"required"`
@@ -246,16 +265,11 @@ func (suite *EsTester) Test03Operations() {
 	assert := assert.New(t)
 
 	var tmp1, tmp2 Obj
-	var err error
 	var src *json.RawMessage
-	var searchResult *elasticsearch.SearchResult
 
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	{
 		// GET a specific one
@@ -293,7 +307,7 @@ func (suite *EsTester) Test03Operations() {
 
 	{
 		// SEARCH for a specific one
-		searchResult, err = esi.FilterByTermQuery(objType, "id", "id1")
+		searchResult, err := esi.FilterByTermQuery(objType, "id", "id1")
 		assert.NoError(err)
 		assert.NotNil(searchResult)
 		assert.EqualValues(1, searchResult.TotalHits())
@@ -308,7 +322,7 @@ func (suite *EsTester) Test03Operations() {
 
 	{
 		// SEARCH fuzzily
-		searchResult, err = esi.FilterByTermQuery(objType, "tags", "foo")
+		searchResult, err := esi.FilterByTermQuery(objType, "tags", "foo")
 		assert.NoError(err)
 		assert.NotNil(searchResult)
 		assert.EqualValues(2, searchResult.TotalHits())
@@ -333,9 +347,9 @@ func (suite *EsTester) Test03Operations() {
 
 	{
 		// DELETE by id
-		_, err = esi.DeleteByID(objType, "id2")
+		_, err := esi.DeleteByID(objType, "id2")
 		assert.NoError(err)
-		_, err := esi.GetByID(objType, "id2")
+		_, err = esi.GetByID(objType, "id2")
 		assert.Error(err)
 	}
 }
@@ -352,10 +366,7 @@ func (suite *EsTester) Test04JsonOperations() {
 
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	// SEARCH for everything
 	{
@@ -441,10 +452,7 @@ func (suite *EsTester) Test05Mapping() {
 
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	mapping :=
 		`{
@@ -485,10 +493,7 @@ func (suite *EsTester) Test06SetMapping() {
 
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	var err error
 
@@ -526,12 +531,9 @@ func (suite *EsTester) Test07ConstructMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	es := suite.SetUpIndex()
-	assert.NotNil(es)
-	defer func() {
-		es.Close()
-		es.Delete()
-	}()
+	esi := suite.SetUpIndex()
+	assert.NotNil(esi)
+	defer closer(t, esi)
 
 	items := make(map[string]elasticsearch.MappingElementTypeName)
 
@@ -561,7 +563,7 @@ func (suite *EsTester) Test07ConstructMapping() {
 
 	assert.Equal(expected, actual)
 
-	err = es.SetMapping("MyTestObj", piazza.JsonString(actual))
+	err = esi.SetMapping("MyTestObj", piazza.JsonString(actual))
 	assert.NoError(err)
 }
 
@@ -571,10 +573,7 @@ func (suite *EsTester) Test08Percolation() {
 
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	items := make(map[string]elasticsearch.MappingElementTypeName)
 	items["tag"] = elasticsearch.MappingElementTypeString
@@ -655,17 +654,14 @@ func (suite *EsTester) Test09FullPercolation() {
 
 	var esi elasticsearch.IIndex
 
-	var err error
-
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
-
 	// create index
 	{
+		var err error
+
 		esi, err = elasticsearch.NewIndex2(suite.url, "estest09$"+uniq(), "")
 		assert.NoError(err)
+
+		defer closer(t, esi)
 
 		// make the index
 		err = esi.Create("")
@@ -690,7 +686,7 @@ func (suite *EsTester) Test09FullPercolation() {
 
 	addQueries := func(queries map[string]piazza.JsonString) {
 		for k, v := range queries {
-			_, err = esi.AddPercolationQuery(k, v)
+			_, err := esi.AddPercolationQuery(k, v)
 			assert.NoError(err)
 		}
 	}
@@ -859,10 +855,7 @@ func (suite *EsTester) Test10GetAll() {
 
 	esi, err := elasticsearch.NewIndex2(suite.url, "getall$", "")
 	assert.NoError(err)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	// make the index
 	err = esi.Create("")
@@ -1019,10 +1012,7 @@ func (suite *EsTester) Test11Pagination() {
 
 	esi := suite.SetUpIndex()
 	assert.NotNil(esi)
-	defer func() {
-		esi.Close()
-		esi.Delete()
-	}()
+	defer closer(t, esi)
 
 	type Obj3 struct {
 		ID3   string `json:"id3" binding:"required"`

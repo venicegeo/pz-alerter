@@ -136,7 +136,15 @@ func (h *Http) doVerb(verb string, endpoint string, input interface{}, output in
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+
+	defer func() {
+		err = resp.Body.Close()
+		if err != nil {
+			// TODO: no way to handle error in a defer!
+			panic(err)
+		}
+	}()
+
 	err = h.convertResponseBodyToObject(resp, output)
 	if err != nil {
 		s := fmt.Sprintf("FAILED/1: %#v\nFAILED/2: %#v\nFAILED/3: %#v\n", err, resp, output)

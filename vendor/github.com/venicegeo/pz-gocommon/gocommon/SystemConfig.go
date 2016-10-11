@@ -30,15 +30,16 @@ const DefaultPzUuidgenAddress = "localhost:14800"
 const DefaultDomain = ".int.geointservices.io"
 const DefaultProtocol = "http"
 
-const waitTimeoutMs = 2000
-const waitSleepMs = 100
+const waitTimeoutMs = 3000
+const waitSleepMs = 250
 
 type ServiceName string
 
 const (
 	PzDiscover          ServiceName = "pz-discover"
 	PzElasticSearch     ServiceName = "pz-elasticsearch"
-	PzGoCommon          ServiceName = "PZ-GOCOMMON" // not a real service, just for testing
+	PzGoCommon          ServiceName = "PZ-GOCOMMON"     // not a real service, just for testing
+	PzGoCommonTest      ServiceName = "PZ-GOCOMMONTEST" // not a real service, just for testing
 	PzKafka             ServiceName = "pz-kafka"
 	PzLogger            ServiceName = "pz-logger"
 	PzUuidgen           ServiceName = "pz-uuidgen"
@@ -59,6 +60,7 @@ var LocalPortNumbers = map[ServiceName]string{
 	PzKafka:             "20007",
 	PzsvcHello:          "20008",
 	PzGoCommon:          "20009",
+	PzGoCommonTest:      "20010",
 }
 
 var EndpointPrefixes = map[ServiceName]string{
@@ -208,7 +210,12 @@ func (sys *SystemConfig) runHealthChecks() error {
 			//log.Printf(s)
 			return errors.New(s)
 		}
-		resp.Body.Close()
+
+		err = resp.Body.Close()
+		if err != nil {
+			return err
+		}
+
 		if resp.StatusCode != http.StatusOK {
 			s := fmt.Sprintf("Health check failed for service: %s at %s <%#v>", name, url, resp)
 			//log.Printf(s)
@@ -270,10 +277,14 @@ func (sys *SystemConfig) WaitForServiceByAddress(name ServiceName, address strin
 		resp, err := http.Get(url)
 		if err == nil && resp.StatusCode == http.StatusOK {
 			//log.Printf("found service %s", name)
-			resp.Body.Close()
-			return nil
+			err = resp.Body.Close()
+			return err
 		}
 		if msTime >= waitTimeoutMs {
+			err = resp.Body.Close()
+			if err != nil {
+				return err
+			}
 			return fmt.Errorf("timed out waiting for service: %s at %s", name, url)
 		}
 		time.Sleep(waitSleepMs * time.Millisecond)
@@ -302,7 +313,12 @@ func (sys *SystemConfig) WaitForServiceToDieByAddress(name ServiceName, address 
 		if err != nil {
 			return nil
 		}
-		resp.Body.Close()
+
+		err = resp.Body.Close()
+		if err != nil {
+			return err
+		}
+
 		if msTime >= waitTimeoutMs {
 			return fmt.Errorf("timed out waiting for service to die: %s at %s", name, url)
 		}

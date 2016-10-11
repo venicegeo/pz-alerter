@@ -1,5 +1,5 @@
 hash: 894a7fc7931d9766d6a3a3dcd9919a23fbfbd40328a416cfc39f3239083d80f7
-updated: 2016-10-07T11:54:31.704377255-04:00
+updated: 2016-10-11T12:20:03.554936784-04:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -39,16 +39,16 @@ imports:
 - name: github.com/vegertar/cron
   version: 5ac5cfd06ab8d01d4cb729441c7db2ac9fbe11b3
 - name: github.com/venicegeo/pz-gocommon
-  version: 8764612861fbf39e39fcc7b492abcfc8563ea55a
+  version: 960518f95e43596aca08149feb2b178509f9d725
   subpackages:
   - elasticsearch
   - gocommon
 - name: github.com/venicegeo/pz-logger
-  version: 2f5aafdfe45ebf92f18f80fb5f832d51a9a445cd
+  version: 4edb0aa89c0311c83dcad98e0474b97f0475577c
   subpackages:
   - logger
 - name: github.com/venicegeo/pz-uuidgen
-  version: 29a436660c279c56801e713537c13a19ee658114
+  version: 5389bc7ca3d83622b0361129159eea068f1356df
   subpackages:
   - uuidgen
 - name: golang.org/x/net

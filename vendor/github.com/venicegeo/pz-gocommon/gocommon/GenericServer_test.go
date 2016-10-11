@@ -170,24 +170,31 @@ func Test07Server(t *testing.T) {
 	JsonResponseDataTypes["piazza.Thing"] = "thing"
 	JsonResponseDataTypes["*piazza.Thing"] = "thing"
 
-	required := []ServiceName{}
-	sys, err := NewSystemConfig(PzGoCommon, required)
-	assert.NoError(err)
+	var genericServer *GenericServer
+	var server *ThingServer
+	var sys *SystemConfig
 
-	genericServer := GenericServer{Sys: sys}
+	{
+		var err error
+		required := []ServiceName{}
+		sys, err = NewSystemConfig(PzGoCommon, required)
+		assert.NoError(err)
 
-	service := &ThingService{
-		assert:  assert,
-		IDCount: 0,
-		Data:    make(map[string]string),
+		genericServer = &GenericServer{Sys: sys}
+		server = &ThingServer{}
+		service := &ThingService{
+			assert:  assert,
+			IDCount: 0,
+			Data:    make(map[string]string),
+		}
+
+		server.Init(service)
 	}
-
-	server := &ThingServer{}
-	server.Init(service)
 
 	h := &Http{}
 
 	{
+		var err error
 		err = genericServer.Configure(server.routes)
 		if err != nil {
 			assert.FailNow("server failed to configure: " + err.Error())
@@ -205,6 +212,8 @@ func Test07Server(t *testing.T) {
 	var jresp *JsonResponse = &JsonResponse{}
 
 	{
+		var err error
+
 		// GET /
 		jresp = h.PzGet("/")
 		assert.Equal(200, jresp.StatusCode)
@@ -310,10 +319,10 @@ func Test07Server(t *testing.T) {
 	}
 
 	{
-		err = genericServer.Stop()
+		err := genericServer.Stop()
 		//assert.NoError(err)
 
-		_, err := http.Get(h.BaseUrl)
+		_, err = http.Get(h.BaseUrl)
 		assert.Error(err)
 	}
 }

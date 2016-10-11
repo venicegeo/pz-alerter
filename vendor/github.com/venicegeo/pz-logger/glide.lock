@@ -1,5 +1,5 @@
 hash: d6e9fe396401a270ad31a46dacabca456ea09f5fc5dd8c23873ee62e7b1e2220
-updated: 2016-10-07T11:51:05.08833141-04:00
+updated: 2016-10-11T12:16:38.729070795-04:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
@@ -15,7 +15,7 @@ imports:
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/venicegeo/pz-gocommon
-  version: 8764612861fbf39e39fcc7b492abcfc8563ea55a
+  version: 960518f95e43596aca08149feb2b178509f9d725
   subpackages:
   - elasticsearch
   - gocommon

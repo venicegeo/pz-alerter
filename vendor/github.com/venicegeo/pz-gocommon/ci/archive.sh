@@ -15,10 +15,10 @@ sh $root/ci/do_build.sh
 source $root/ci/vars.sh
 
 cd $root
-cp $GOPATH/bin/$APP .
 tar cvzf $APP.$EXT \
-    $APP \
-    logger.cov \
+    common.cov \
+    elastic.cov \
+    kafka.cov \
     lint.txt \
     glide.lock \
     glide.yaml

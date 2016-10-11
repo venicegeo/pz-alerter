@@ -22,10 +22,11 @@ import (
 	"testing"
 	"time"
 
+	"gopkg.in/olivere/elastic.v3"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	"gopkg.in/olivere/elastic.v3"
 )
 
 type EsTester struct {
@@ -186,6 +187,25 @@ func (suite *EsTester) Test01Client() {
 	version := esi.GetVersion()
 	assert.NoError(err)
 	assert.Contains("2.2.0", version)
+
+	{
+		settings := `
+		{
+			"mappings": {
+				"Frobnitz": {
+					"properties": {
+						"alertId": {
+							"type": "string",
+							"index": "not_analyzed"
+						}
+					}
+				}
+			}
+		}`
+
+		err = esi.Create(settings)
+		assert.NoError(err)
+	}
 }
 
 func (suite *EsTester) Test02SimplePost() {
@@ -668,10 +688,28 @@ func (suite *EsTester) Test14Coverage() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	indexResponse := NewIndexResponse(&elastic.IndexResponse{"index", "type", "1", 1, true})
+	indexResponse := NewIndexResponse(&elastic.IndexResponse{
+		Index:   "index",
+		Type:    "type",
+		Id:      "1",
+		Version: 1,
+		Created: true,
+	},
+	)
 	assert.NotNil(indexResponse)
 
-	percolateResponse := NewPercolateResponse(&elastic.PercolateResponse{TookInMillis: 0, Total: 1, Matches: []*elastic.PercolateMatch{&elastic.PercolateMatch{"1", "2", 3}}})
+	percolateResponse := NewPercolateResponse(&elastic.PercolateResponse{
+		TookInMillis: 0,
+		Total:        1,
+		Matches: []*elastic.PercolateMatch{
+			&elastic.PercolateMatch{
+				Index: "1",
+				Id:    "2",
+				Score: 3,
+			},
+		},
+	},
+	)
 	assert.NotNil(percolateResponse)
 
 	getResult := NewGetResult(&elastic.GetResult{Id: "", Source: &json.RawMessage{}, Found: false})
@@ -694,4 +732,30 @@ func (suite *EsTester) Test14Coverage() {
 	assert.True(IsValidArrayTypeMapping("[string]"))
 	assert.False(IsValidMappingType(5))
 	assert.False(IsValidArrayTypeMapping(5))
+}
+
+func (suite *EsTester) Test15NewIndex2() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	required := []piazza.ServiceName{}
+	sys, err := piazza.NewSystemConfig(piazza.PzGoCommon, required)
+	assert.NoError(err)
+	idx, err := NewIndex(sys, "", "")
+	assert.Error(err)
+
+	idx = &Index{
+		version: "a",
+		index:   "b",
+	}
+	assert.Equal("a", idx.GetVersion())
+	assert.Equal("b", idx.IndexName())
+
+	err = idx.DirectAccess("", "", nil, nil)
+	assert.Error(err)
+
+	_, err = NewIndex2("", "$", "")
+	assert.Error(err)
+	_, err = NewIndexInterface(sys, "", "", false)
+	assert.Error(err)
 }

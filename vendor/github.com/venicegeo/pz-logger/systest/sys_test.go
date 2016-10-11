@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package logger_demo
+package systest
 
 import (
 	"bytes"
@@ -126,7 +126,10 @@ func (suite *LoggerTester) Test01RawGet() {
 
 	raw := make([]byte, resp.ContentLength)
 	_, err = io.ReadFull(resp.Body, raw)
-	defer resp.Body.Close()
+	defer func() {
+		err = resp.Body.Close()
+		assert.NoError(err)
+	}()
 	if err != nil && err != io.EOF {
 		assert.NoError(err)
 	}
@@ -157,7 +160,10 @@ func (suite *LoggerTester) Test02RawPost() {
 
 	raw := make([]byte, resp.ContentLength)
 	_, err = io.ReadFull(resp.Body, raw)
-	defer resp.Body.Close()
+	defer func() {
+		err = resp.Body.Close()
+		assert.NoError(err)
+	}()
 	if err != nil && err != io.EOF {
 		assert.NoError(err)
 	}

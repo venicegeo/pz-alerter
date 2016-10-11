@@ -13,6 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
 package piazza
 
 import (
@@ -64,7 +65,15 @@ func HTTP(requestType, url string, headers [][2]string, toSend io.Reader) (int, 
 	if err != nil {
 		return 0, nil, nil, err
 	}
-	defer response.Body.Close()
+
+	defer func() {
+		err = response.Body.Close()
+		if err != nil {
+			// TODO: no way to handle error in a defer!
+			panic(err)
+		}
+	}()
+
 	body, err := ioutil.ReadAll(response.Body)
 	if err != nil {
 		return response.StatusCode, nil, nil, err

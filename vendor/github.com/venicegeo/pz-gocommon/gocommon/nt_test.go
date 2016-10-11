@@ -23,19 +23,48 @@ import (
 
 //--------------------------
 
-func xTestNT(t *testing.T) {
+func TestNT(t *testing.T) {
 	assert := assert.New(t)
-	server := &http.Server{Addr: ":19999", Handler: http.DefaultServeMux}
-	err := server.ListenAndServe()
-	assert.NoError(err)
+
+	var genericServer *GenericServer
+	var server *ThingServer
+	var sys *SystemConfig
+
+	{
+		var err error
+		required := []ServiceName{}
+		sys, err = NewSystemConfig(PzGoCommonTest, required)
+		if err != nil {
+			assert.FailNow(err.Error())
+		}
+		genericServer = &GenericServer{Sys: sys}
+		server = &ThingServer{}
+		service := &ThingService{
+			assert:  assert,
+			IDCount: 0,
+			Data:    make(map[string]string),
+		}
+		server.Init(service)
+	}
+	{
+		var err error
+		err = genericServer.Configure(server.routes)
+		if err != nil {
+			assert.FailNow("server failed to configure: " + err.Error())
+		}
+		_, err = genericServer.Start()
+		if err != nil {
+			assert.FailNow("server failed to start: " + err.Error())
+		}
+	}
 
 	GetValueFromHeader(http.Header{}, "Content-Type")
-	_, _, _, err = HTTP(GET, "localhost:19999", NewHeaderBuilder().AddJsonContentType().AddBasicAuth("foo", "bar").GetHeader(), nil)
-	assert.NoError(err)
-	_, _, _, err = HTTP(GET, "localhost:19999/exit", NewHeaderBuilder().GetHeader(), nil)
-	assert.NoError(err)
-}
+	_, _, _, err := HTTP(GET, "localhost:"+LocalPortNumbers[PzGoCommonTest], NewHeaderBuilder().AddJsonContentType().AddBasicAuth("foo", "bar").GetHeader(), nil)
+	if err != nil {
+		assert.FailNow(err.Error())
+	}
 
-func ExitFunc(response http.ResponseWriter, request *http.Request) {
-	//log.Fatal("/exit handler called")
+	err = genericServer.Stop()
+	assert.NoError(err)
+
 }
