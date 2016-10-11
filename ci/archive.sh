@@ -16,7 +16,7 @@ sh $root/ci/do_build.sh
 source $root/ci/vars.sh
 
 cd $root
-tar cvzf $APP.tgz \
+tar cvzf $APP.$EXT \
     $GOPATH/bin/pz-workflow \
     workflow.cov \
     lint.txt \
