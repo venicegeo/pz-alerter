@@ -1,7 +1,7 @@
 applications:
 - name: pz-workflow
   host: pz-workflow
-  command: chmod 755 pz-workflow.bin && ./pz-workflow.bin
+  command: chmod 755 pz-workflow && ./pz-workflow
   buildpack: binary_buildpack
   memory: 512M
   instances: 1
