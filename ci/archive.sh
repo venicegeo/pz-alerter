@@ -16,8 +16,9 @@ sh $root/ci/do_build.sh
 source $root/ci/vars.sh
 
 cd $root
+cp $GOPATH/bin/$APP .
 tar cvzf $APP.$EXT \
-    $GOPATH/bin/pz-workflow \
+    $APP \
     workflow.cov \
     lint.txt \
     glide.lock \
