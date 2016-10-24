@@ -59,7 +59,7 @@ const TriggerIndexSettings = `
 					"index": "not_analyzed"
 				},
 				"condition": {
-					"dynamic": true,
+					"dynamic": false,
 					"properties": {}
 				},
 				"job": {
@@ -69,7 +69,7 @@ const TriggerIndexSettings = `
 							"index": "not_analyzed"
 						},
 						"jobType": {
-							"dynamic": true,
+							"dynamic": false,
 							"properties": {}
 						}
 					}
