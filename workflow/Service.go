@@ -685,9 +685,9 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 		return service.statusInternalError(err)
 	}
 
-	err = service.cronDB.PostData(event, eventID)
+	err, etyp = service.cronDB.PostData(event, eventID)
 	if err != nil {
-		return service.statusInternalError(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	_, err, etyp = service.eventDB.PostData(eventTypeName, event, eventID)
@@ -695,7 +695,7 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 		// If we fail, need to also remove from cronDB
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
-		_, _ = service.cronDB.DeleteByID(eventID)
+		_, _, _ = service.cronDB.DeleteByID(eventID)
 		service.cron.Remove(eventID.String())
 		return service.statusGeneric(err, etyp)
 	}
@@ -937,17 +937,17 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 	}
 
 	// If it's a cron event, remove from cronDB, stop cronjob
-	ok, err = service.cronDB.itemExists(id)
+	ok, err, etyp = service.cronDB.itemExists(id)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	if ok {
-		ok, err := service.cronDB.DeleteByID(id)
+		ok, err, etyp := service.cronDB.DeleteByID(id)
 		if !ok {
 			return service.statusNotFound(err)
 		}
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusGeneric(err, etyp)
 		}
 		service.cron.Remove(id.String())
 	}
@@ -1317,12 +1317,12 @@ func (service *Service) removeUniqueParams(uniqueKey string, inputObj map[string
 
 // InitCron TODO
 func (service *Service) InitCron() error {
-	ok, err := service.cronDB.Exists()
+	ok, err, _ := service.cronDB.Exists()
 	if err != nil {
 		return err
 	}
 	if ok {
-		events, err := service.cronDB.GetAll()
+		events, err, _ := service.cronDB.GetAll()
 		if err != nil {
 			return LoggedError("WorkflowService.InitCron: Unable to get all from CronDB")
 		}

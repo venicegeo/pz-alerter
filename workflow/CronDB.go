@@ -38,34 +38,34 @@ func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 }
 
 // PostData TODO
-func (db *CronDB) PostData(obj interface{}, id piazza.Ident) error {
+func (db *CronDB) PostData(obj interface{}, id piazza.Ident) (error, statusResponseCode) {
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return LoggedError("CronDB.PostData failed: %s", err)
+		return LoggedError("CronDB.PostData failed: %s", err), statusBadRequestResponse
 	} else if !indexResult.Created {
-		return LoggedError("CronDB.PostData failed: not created")
+		return LoggedError("CronDB.PostData failed: not created"), statusInternalErrorResponse
 	}
 
-	return nil
+	return nil, statusNilReponse
 }
 
 // GetAll TODO
-func (db *CronDB) GetAll() (*[]Event, error) {
+func (db *CronDB) GetAll() (*[]Event, error, statusResponseCode) {
 	var events []Event
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return &events, err
+		return &events, err, statusInternalErrorResponse
 	}
 	if !exists {
-		return nil, LoggedError("Type %s does not exist", db.mapping)
+		return nil, LoggedError("Type %s does not exist", db.mapping), statusBadRequestResponse
 	}
 
 	searchResult, err := db.Esi.GetAllElements(db.mapping)
 	if err != nil {
-		return nil, LoggedError("CronDB.GetAll failed: %s", err)
+		return nil, LoggedError("CronDB.GetAll failed: %s", err), statusBadRequestResponse
 	} else if searchResult == nil {
-		return nil, LoggedError("CronDB.GetAll failed: no searchResult")
+		return nil, LoggedError("CronDB.GetAll failed: no searchResult"), statusInternalErrorResponse
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -73,42 +73,47 @@ func (db *CronDB) GetAll() (*[]Event, error) {
 			var event Event
 			err := json.Unmarshal(*hit.Source, &event)
 			if err != nil {
-				return nil, LoggedError("CronDB.GetAll failed: %s", err)
+				return nil, LoggedError("CronDB.GetAll failed: %s", err), statusBadRequestResponse
 			}
 			events = append(events, event)
 		}
 	}
 
-	return &events, nil
+	return &events, nil, statusNilReponse
 }
 
 // Exists checks to see if the database exists
-func (db *CronDB) Exists() (bool, error) {
+func (db *CronDB) Exists() (bool, error, statusResponseCode) {
 	exists, err := db.Esi.IndexExists()
 	if err != nil {
-		return false, err
+		return false, err, statusInternalErrorResponse
 	}
 	if exists {
 		exists, err = db.Esi.TypeExists(db.mapping)
 		if err != nil {
-			return false, err
+			return false, err, statusInternalErrorResponse
 		}
 	}
-	return exists, nil
+	return exists, nil, statusNilReponse
 }
 
-func (db *CronDB) itemExists(id piazza.Ident) (bool, error) {
-	return db.Esi.ItemExists(db.mapping, id.String())
+func (db *CronDB) itemExists(id piazza.Ident) (bool, error, statusResponseCode) {
+	found, err := db.Esi.ItemExists(db.mapping, id.String())
+	if err != nil {
+		return found, err, statusBadRequestResponse
+	} else {
+		return found, err, statusNilReponse
+	}
 }
 
-func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {
+func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error, statusResponseCode) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err), statusBadRequestResponse
 	}
 	if deleteResult == nil {
-		return false, LoggedError("CronDB.DeleteById failed: no deleteResult")
+		return false, LoggedError("CronDB.DeleteById failed: no deleteResult"), statusInternalErrorResponse
 	}
 
-	return deleteResult.Found, nil
+	return deleteResult.Found, nil, statusNilReponse
 }
