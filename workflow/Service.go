@@ -1112,12 +1112,12 @@ func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 //---------------------------------------------------------------------
 
 func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
-	alert, found, err := service.alertDB.GetOne(id)
+	alert, found, err, etyp := service.alertDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	return service.statusOK(alert)
@@ -1136,18 +1136,20 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 
 	var alerts []Alert
 	var totalHits int64
+	var etyp statusResponseCode
 
 	if triggerID != "" && isUUID(triggerID) {
-		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID)
+		alerts, totalHits, err, etyp = service.alertDB.GetAllByTrigger(format, triggerID)
 		if err != nil {
-			return service.statusInternalError(err)
+			return service.statusGeneric(err, etyp)
 		} else if alerts == nil {
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
 	} else if triggerID == "" {
-		alerts, totalHits, err = service.alertDB.GetAll(format)
+		var etyp statusResponseCode
+		alerts, totalHits, err, etyp = service.alertDB.GetAll(format)
 		if err != nil {
-			return service.statusInternalError(err)
+			return service.statusGeneric(err, etyp)
 		} else if alerts == nil {
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
@@ -1182,13 +1184,10 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 		return service.statusBadRequest(err)
 	}
 
-	var alerts []Alert
-	var totalHits int64
-
 	dslString, err = syncPagination(dslString, *format)
-	alerts, totalHits, err = service.alertDB.GetAlertsByDslQuery(dslString)
+	alerts, totalHits, err, etyp := service.alertDB.GetAlertsByDslQuery(dslString)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	} else if alerts == nil {
 		return service.statusInternalError(errors.New("QueryAlerts returned nil"))
 	}
@@ -1274,9 +1273,9 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 
 	alert.CreatedOn = time.Now()
 
-	_, err = service.alertDB.PostData(&alert, alertID)
+	_, err, etyp := service.alertDB.PostData(&alert, alertID)
 	if err != nil {
-		return service.statusInternalError(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.logger.Info("User %s created Alert %s", alert.CreatedBy, alertID)
@@ -1288,12 +1287,12 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 
 // DeleteAlert TODO
 func (service *Service) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
-	ok, err := service.alertDB.DeleteByID(id)
+	ok, err, etyp := service.alertDB.DeleteByID(id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.logger.Info("Deleted Alert with AlertId %s", id)
