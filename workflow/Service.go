@@ -538,9 +538,10 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 
 		var triggers []Trigger
 		var hits int64
-		triggers, hits, err = service.triggerDB.GetTriggersByEventTypeID(id)
+		var etyp statusResponseCode
+		triggers, hits, err, etyp = service.triggerDB.GetTriggersByEventTypeID(id)
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusGeneric(err, etyp)
 		}
 		if hits > 0 || len(triggers) > 0 {
 			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
@@ -752,14 +753,14 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 			go func(triggerID piazza.Ident) {
 				defer waitGroup.Done()
 
-				trigger, found, err := service.triggerDB.GetOne(triggerID)
+				trigger, found, err, etyp := service.triggerDB.GetOne(triggerID)
 				if !found {
 					// Don't fail for this, just log something and continue to the next trigger id
 					service.logger.Warn("Percolation error: Trigger %s does not exist", string(triggerID))
 					return
 				}
 				if err != nil {
-					results[triggerID] = service.statusBadRequest(err)
+					results[triggerID] = service.statusGeneric(err, etyp)
 					return
 				}
 				if !trigger.Enabled {
@@ -960,12 +961,12 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 //------------------------------------------------------------------------------
 
 func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
-	trigger, found, err := service.triggerDB.GetOne(id)
+	trigger, found, err, etyp := service.triggerDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	eventType, found, err, etyp := service.eventTypeDB.GetOne(trigger.EventTypeID)
 	if err != nil || !found {
@@ -982,9 +983,9 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 		return service.statusBadRequest(err)
 	}
 
-	triggers, totalHits, err := service.triggerDB.GetAll(format)
+	triggers, totalHits, err, etyp := service.triggerDB.GetAll(format)
 	if err != nil {
-		return service.statusInternalError(err)
+		return service.statusGeneric(err, etyp)
 	} else if triggers == nil {
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
 	}
@@ -1014,9 +1015,9 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 	}
 
 	dslString, err = syncPagination(dslString, *format)
-	triggers, totalHits, err := service.triggerDB.GetTriggersByDslQuery(dslString)
+	triggers, totalHits, err, etyp := service.triggerDB.GetTriggersByDslQuery(dslString)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	} else if triggers == nil {
 		return service.statusInternalError(errors.New("QueryTriggers returned nil"))
 	}
@@ -1066,9 +1067,9 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	response := *trigger
 	trigger.Condition = fixedQuery
 
-	_, err = service.triggerDB.PostTrigger(trigger, triggerID)
+	_, err, etyp := service.triggerDB.PostTrigger(trigger, triggerID)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.logger.Info("User %s created Trigger %s", trigger.CreatedBy, triggerID)
@@ -1079,16 +1080,16 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 }
 
 func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piazza.JsonResponse {
-	trigger, found, err := service.triggerDB.GetOne(id)
+	trigger, found, err, etyp := service.triggerDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
-	_, err = service.triggerDB.PutTrigger(id, trigger, update)
+	_, err, etyp = service.triggerDB.PutTrigger(id, trigger, update)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	service.logger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
 
@@ -1096,12 +1097,12 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 }
 
 func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
-	ok, err := service.triggerDB.DeleteTrigger(id)
+	ok, err, etyp := service.triggerDB.DeleteTrigger(id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.logger.Info("Deleted Trigger with TriggerId %s", id)
@@ -1238,7 +1239,7 @@ func (service *Service) inflateAlerts(alerts []Alert) (*[]AlertExt, error) {
 }
 
 func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
-	trigger, found, err := service.triggerDB.GetOne(alert.TriggerID)
+	trigger, found, err, _ := service.triggerDB.GetOne(alert.TriggerID)
 	if err != nil || !found {
 		trigger = &Trigger{TriggerID: alert.TriggerID}
 	}

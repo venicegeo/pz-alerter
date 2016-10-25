@@ -39,12 +39,12 @@ func NewTriggerDB(service *Service, esi elasticsearch.IIndex) (*TriggerDB, error
 	return &ardb, nil
 }
 
-func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error) {
+func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Ident, error, statusResponseCode) {
 	{ //CHECK SERVICE EXISTS
 		serviceID := trigger.Job.JobType.Data["serviceId"]
 		strServiceID, ok := serviceID.(string)
 		if !ok {
-			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
+			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string"), statusBadRequestResponse
 		}
 		serviceControllerURL, err := db.service.sys.GetURL("pz-servicecontroller")
 		if err == nil {
@@ -54,7 +54,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 			// we have no servicecontroller client to mock)
 			response, err := http.Get(fmt.Sprintf("%s/service/%s", serviceControllerURL, strServiceID))
 			if err != nil {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err)
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed to make request to ServiceController: %s", err), statusInternalErrorResponse
 			}
 			// On error, this should close on it's own
 			defer func() {
@@ -64,7 +64,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 				}
 			}()
 			if response.StatusCode != 200 {
-				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceID %s does not exist", strServiceID)
+				return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceID %s does not exist", strServiceID), statusBadRequestResponse
 			}
 		}
 	}
@@ -72,7 +72,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	//log.Printf("Query: %v", wrapper)
 	body, err := json.Marshal(trigger.Condition)
 	if err != nil {
-		return piazza.NoIdent, err
+		return piazza.NoIdent, err, statusBadRequestResponse
 	}
 
 	//log.Printf("Posting percolation query: %s", body)
@@ -84,13 +84,13 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		} else {
 			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed [unknown cause]: %s ", err)
 		}
-		return piazza.NoIdent, LoggedError(errMessage)
+		return piazza.NoIdent, LoggedError(errMessage), statusInternalErrorResponse
 	}
 	if indexResult == nil {
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: no indexResult")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: no indexResult"), statusInternalErrorResponse
 	}
 	if !indexResult.Created {
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData addpercquery failed: not created"), statusInternalErrorResponse
 	}
 
 	//log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
@@ -100,72 +100,72 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 	strTrigger, err := piazza.StructInterfaceToString(trigger)
 	if err != nil {
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err), statusBadRequestResponse
 	}
 	intTrigger, err := piazza.StructStringToInterface(strTrigger)
 	if err != nil {
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err), statusBadRequestResponse
 	}
 	mapTrigger, ok := intTrigger.(map[string]interface{})
 	if !ok {
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: bad trigger")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: bad trigger"), statusBadRequestResponse
 	}
 	fixedTrigger := replaceDot(mapTrigger)
 
 	indexResult2, err := db.Esi.PostData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerID))
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: %s", err), statusInternalErrorResponse
 	}
 	if !indexResult2.Created {
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.TriggerID))
-		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: not created"), statusInternalErrorResponse
 	}
 
-	return id, nil
+	return id, nil, statusNilReponse
 }
 
-func (db *TriggerDB) PutTrigger(id piazza.Ident, trigger *Trigger, update *TriggerUpdate) (*Trigger, error) {
+func (db *TriggerDB) PutTrigger(id piazza.Ident, trigger *Trigger, update *TriggerUpdate) (*Trigger, error, statusResponseCode) {
 	trigger.Enabled = update.Enabled
 	strTrigger, err := piazza.StructInterfaceToString(*trigger)
 	if err != nil {
-		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
+		return trigger, LoggedError("TriggerDB.PutData failed: %s", err), statusBadRequestResponse
 	}
 	intTrigger, err := piazza.StructStringToInterface(strTrigger)
 	if err != nil {
-		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
+		return trigger, LoggedError("TriggerDB.PutData failed: %s", err), statusBadRequestResponse
 	}
 	mapTrigger, ok := intTrigger.(map[string]interface{})
 	if !ok {
-		return trigger, LoggedError("TriggerDB.PutData failed: bad trigger")
+		return trigger, LoggedError("TriggerDB.PutData failed: bad trigger"), statusBadRequestResponse
 	}
 	fixedTrigger := replaceDot(mapTrigger)
 	_, err = db.Esi.PutData(db.mapping, id.String(), fixedTrigger)
 	if err != nil {
-		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
+		return trigger, LoggedError("TriggerDB.PutData failed: %s", err), statusInternalErrorResponse
 	}
-	return trigger, nil
+	return trigger, nil, statusNilReponse
 }
 
-func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error, statusResponseCode) {
 	triggers := []Trigger{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return triggers, 0, err
+		return triggers, 0, err, statusInternalErrorResponse
 	}
 	if !exists {
-		return triggers, 0, nil
+		return triggers, 0, nil, statusBadRequestResponse
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, 0, LoggedError("TriggerDB.GetAll failed: %s", err)
+		return nil, 0, LoggedError("TriggerDB.GetAll failed: %s", err), statusBadRequestResponse
 	}
 	if searchResult == nil {
-		return nil, 0, LoggedError("TriggerDB.GetAll failed: no searchResult")
+		return nil, 0, LoggedError("TriggerDB.GetAll failed: no searchResult"), statusInternalErrorResponse
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -174,31 +174,31 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, er
 			var trigger Trigger
 			err := json.Unmarshal(*hit.Source, &trigger)
 			if err != nil {
-				return nil, 0, err
+				return nil, 0, err, statusBadRequestResponse
 			}
 			triggers = append(triggers, trigger)
 		}
 	}
-	return triggers, searchResult.TotalHits(), nil
+	return triggers, searchResult.TotalHits(), nil, statusNilReponse
 }
 
-func (db *TriggerDB) GetTriggersByDslQuery(dslString string) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByDslQuery(dslString string) ([]Trigger, int64, error, statusResponseCode) {
 	triggers := []Trigger{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return triggers, 0, err
+		return triggers, 0, err, statusInternalErrorResponse
 	}
 	if !exists {
-		return triggers, 0, nil
+		return triggers, 0, nil, statusBadRequestResponse
 	}
 
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
-		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: %s", err)
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: %s", err), statusBadRequestResponse
 	}
 	if searchResult == nil {
-		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: no searchResult")
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: no searchResult"), statusInternalErrorResponse
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -207,54 +207,54 @@ func (db *TriggerDB) GetTriggersByDslQuery(dslString string) ([]Trigger, int64, 
 			var trigger Trigger
 			err := json.Unmarshal(*hit.Source, &trigger)
 			if err != nil {
-				return nil, 0, err
+				return nil, 0, err, statusBadRequestResponse
 			}
 			triggers = append(triggers, trigger)
 		}
 	}
-	return triggers, searchResult.TotalHits(), nil
+	return triggers, searchResult.TotalHits(), nil, statusNilReponse
 }
 
-func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error) {
+func (db *TriggerDB) GetOne(id piazza.Ident) (*Trigger, bool, error, statusResponseCode) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
+		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err), statusBadRequestResponse
 	}
 	if getResult == nil {
-		return nil, true, LoggedError("TriggerDB.GetOne failed: no getResult")
+		return nil, true, LoggedError("TriggerDB.GetOne failed: no getResult"), statusInternalErrorResponse
 	}
 
 	src := getResult.Source
 	var obj Trigger
 	err = json.Unmarshal(*src, &obj)
 	if err != nil {
-		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
+		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err), statusBadRequestResponse
 	}
 
 	fixedCondition := replaceTilde(obj.Condition)
 	obj.Condition = fixedCondition.(map[string]interface{})
 
-	return &obj, getResult.Found, nil
+	return &obj, getResult.Found, nil, statusNilReponse
 }
 
-func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64, error, statusResponseCode) {
 	triggers := []Trigger{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return triggers, 0, err
+		return triggers, 0, err, statusInternalErrorResponse
 	}
 	if !exists {
-		return triggers, 0, nil
+		return triggers, 0, nil, statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "eventTypeId", id)
 	if err != nil {
-		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err)
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err), statusInternalErrorResponse
 	}
 	if searchResult == nil {
-		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: no searchResult")
+		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: no searchResult"), statusInternalErrorResponse
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -263,44 +263,44 @@ func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64
 			var trigger Trigger
 			err := json.Unmarshal(*hit.Source, &trigger)
 			if err != nil {
-				return nil, 0, err
+				return nil, 0, err, statusBadRequestResponse
 			}
 			triggers = append(triggers, trigger)
 		}
 	}
-	return triggers, searchResult.TotalHits(), nil
+	return triggers, searchResult.TotalHits(), nil, statusNilReponse
 }
 
-func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error) {
+func (db *TriggerDB) DeleteTrigger(id piazza.Ident) (bool, error, statusResponseCode) {
 
-	trigger, found, err := db.GetOne(id)
+	trigger, found, err, etyp := db.GetOne(id)
 	if err != nil {
-		return found, err
+		return found, err, etyp
 	}
 	if trigger == nil {
-		return false, nil
+		return false, nil, etyp
 	}
 
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, LoggedError("TriggerDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("TriggerDB.DeleteById failed: %s", err), statusBadRequestResponse
 	}
 	if deleteResult == nil {
-		return false, LoggedError("TriggerDB.DeleteById failed: no deleteResult")
+		return false, LoggedError("TriggerDB.DeleteById failed: no deleteResult"), statusInternalErrorResponse
 	}
 	if !deleteResult.Found {
-		return false, nil
+		return false, nil, statusNilReponse
 	}
 
 	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
 	if err != nil {
-		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
+		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err), statusInternalErrorResponse
 	}
 	if deleteResult2 == nil {
-		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult")
+		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult"), statusInternalErrorResponse
 	}
 
-	return deleteResult2.Found, nil
+	return deleteResult2.Found, nil, statusNilReponse
 }
 
 func replaceDot(input interface{}) interface{} {
