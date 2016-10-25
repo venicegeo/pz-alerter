@@ -16,6 +16,7 @@ package workflow
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -78,6 +79,9 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
+	fmt.Println(eventTypeMappingVars)
+	fmt.Println()
+	fmt.Println(eventDataVars)
 	notFound := []string{}
 	for k, v := range eventTypeMappingVars {
 		found := false
@@ -103,7 +107,55 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	if len(notFound) > 0 {
 		return LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
 	}
+	for k, v := range eventTypeMappingVars {
+		temp, err := db.valueIsValidType(v, eventDataVars[k])
+		fmt.Println(k, v, eventDataVars[k], temp, err)
+	}
 	return nil
+}
+
+func (db *EventDB) valueIsValidType(key interface{}, value interface{}) (bool, error) {
+	fmt.Println()
+	k := fmt.Sprint(key)
+	if !elasticsearch.IsValidMappingType(k) { //TODO :Array types
+		return false, errors.New(fmt.Sprintf("Variable %s is not a valid mapping type", key))
+	}
+	switch elasticsearch.MappingElementTypeName(k) {
+	case elasticsearch.MappingElementTypeString:
+		fmt.Println("String")
+		_, ok := value.(string)
+		fmt.Println("Is good", ok)
+	case elasticsearch.MappingElementTypeLong:
+		fmt.Println("Long")
+		_, ok := value.(int64)
+		fmt.Println("Is good", ok)
+	case elasticsearch.MappingElementTypeInteger:
+		fmt.Println("Integer")
+		fmt.Println(value)
+		_, ok := value.(int64)
+		fmt.Println("Is good", ok)
+	case elasticsearch.MappingElementTypeShort:
+		fmt.Println("Short")
+		_, ok := value.(int64)
+		fmt.Println("Is good", ok) //TODO
+	case elasticsearch.MappingElementTypeByte:
+		fmt.Println("Byte")
+		_, ok := value.(int64)
+		fmt.Println("Is good", ok)
+	case elasticsearch.MappingElementTypeDouble:
+		fmt.Println("Double")
+		_, ok := value.(float64)
+		fmt.Println("Is good", ok)
+	case elasticsearch.MappingElementTypeFloat:
+		fmt.Println("Float")
+		_, ok := value.(float64)
+		fmt.Println("Is good", ok)
+	case elasticsearch.MappingElementTypeBool:
+		fmt.Println("Bool")
+		_, ok := value.(bool)
+		fmt.Println("Is good", ok)
+	}
+	return true, nil
 }
 
 func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, int64, error) {
