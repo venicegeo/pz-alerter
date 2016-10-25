@@ -239,6 +239,18 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident) erro
 
 //---------------------------------------------------------------------
 
+type statusResponseCode string
+
+const (
+	statusOkResponse            statusResponseCode = "statusOkResponse"
+	statusPutOkResponse         statusResponseCode = "statusPutOkResponse"
+	statusCreatedResponse       statusResponseCode = "statusCreatedResponse"
+	statusBadRequestResponse    statusResponseCode = "statusBadRequestResponse"
+	statusForbiddenResponse     statusResponseCode = "statusForbiddenResponse"
+	statusInternalErrorResponse statusResponseCode = "statusInternalErrorResponse"
+	statusNotFoundResponse      statusResponseCode = "statusNotFoundResponse"
+)
+
 func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
 	err := resp.SetType()
@@ -296,6 +308,32 @@ func (service *Service) statusNotFound(err error) *piazza.JsonResponse {
 		StatusCode: http.StatusNotFound,
 		Message:    err.Error(),
 		Origin:     service.origin,
+	}
+}
+
+func (service *Service) statusGeneric(obj interface{}, typ statusResponseCode) *piazza.JsonResponse {
+	switch typ {
+	case statusOkResponse:
+		return service.statusOK(obj)
+	case statusPutOkResponse:
+		return service.statusPutOK(fmt.Sprint(obj))
+	case statusCreatedResponse:
+		return service.statusCreated(obj)
+	case statusBadRequestResponse:
+		err, _ := obj.(error)
+		return service.statusBadRequest(err)
+	case statusForbiddenResponse:
+		err, _ := obj.(error)
+		return service.statusForbidden(err)
+	case statusInternalErrorResponse:
+		err, _ := obj.(error)
+		return service.statusInternalError(err)
+	case statusNotFoundResponse:
+		err, _ := obj.(error)
+		return service.statusNotFound(err)
+	default:
+		err, _ := obj.(error)
+		return service.statusBadRequest(err)
 	}
 }
 
