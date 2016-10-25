@@ -35,32 +35,32 @@ func NewEventDB(service *Service, esi elasticsearch.IIndex) (*EventDB, error) {
 	return &erdb, nil
 }
 
-func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error, statusResponseCode) {
 	var event Event
 	ok1 := false
 	event, ok1 = obj.(Event)
 	if !ok1 {
 		temp, ok2 := obj.(*Event)
 		if !ok2 {
-			return piazza.NoIdent, LoggedError("EventDB.PostData failed: was not given an Event")
+			return piazza.NoIdent, LoggedError("EventDB.PostData failed: was not given an Event"), statusBadRequestResponse
 		}
 		event = *temp
 	}
 
 	err := db.verifyEventReadyToPost(&event)
 	if err != nil {
-		return piazza.NoIdent, err
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err), statusBadRequestResponse
 	}
 
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err), statusInternalErrorResponse
 	}
 	if !indexResult.Created {
-		return piazza.NoIdent, LoggedError("EventDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: not created"), statusInternalErrorResponse
 	}
 
-	return id, nil
+	return id, nil, statusNilReponse
 }
 
 func (db *EventDB) verifyEventReadyToPost(event *Event) error {

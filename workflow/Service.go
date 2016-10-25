@@ -249,6 +249,7 @@ const (
 	statusForbiddenResponse     statusResponseCode = "statusForbiddenResponse"
 	statusInternalErrorResponse statusResponseCode = "statusInternalErrorResponse"
 	statusNotFoundResponse      statusResponseCode = "statusNotFoundResponse"
+	statusNilReponse            statusResponseCode = "statusNilResponse"
 )
 
 func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
@@ -331,6 +332,8 @@ func (service *Service) statusGeneric(obj interface{}, typ statusResponseCode) *
 	case statusNotFoundResponse:
 		err, _ := obj.(error)
 		return service.statusNotFound(err)
+	case statusNilReponse:
+		return nil
 	default:
 		err, _ := obj.(error)
 		return service.statusBadRequest(err)
@@ -690,14 +693,14 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 		return service.statusInternalError(err)
 	}
 
-	_, err = service.eventDB.PostData(eventTypeName, event, eventID)
+	_, err, typ := service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
 		// If we fail, need to also remove from cronDB
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
 		_, _ = service.cronDB.DeleteByID(eventID)
 		service.cron.Remove(eventID.String())
-		return service.statusInternalError(err)
+		return service.statusGeneric(err, typ)
 	}
 
 	service.stats.IncrEvents()
@@ -728,9 +731,9 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
-	_, err = service.eventDB.PostData(eventTypeName, event, eventID)
+	_, err, typ := service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, typ)
 	}
 
 	service.logger.Info("User %s created Event %s", event.CreatedBy, eventID)
