@@ -354,12 +354,12 @@ func (service *Service) GetStats() *piazza.JsonResponse {
 
 // GetEventType TODO
 func (service *Service) GetEventType(id piazza.Ident) *piazza.JsonResponse {
-	eventType, found, err := service.eventTypeDB.GetOne(id)
+	eventType, found, err, etyp := service.eventTypeDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	eventType.Mapping = service.removeUniqueParams(eventType.Name, eventType.Mapping)
 	return service.statusOK(eventType)
@@ -367,6 +367,7 @@ func (service *Service) GetEventType(id piazza.Ident) *piazza.JsonResponse {
 
 // GetAllEventTypes TODO
 func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	var etyp statusResponseCode
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -389,9 +390,9 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 			if err != nil {
 				return service.statusBadRequest(err)
 			}
-			eventtype, foundType, err = service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
+			eventtype, foundType, err, etyp = service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
 			if err != nil {
-				return service.statusInternalError(err)
+				return service.statusGeneric(err, etyp)
 			}
 		}
 		eventtypes = make([]EventType, 0)
@@ -400,9 +401,10 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 		}
 		totalHits = int64(len(eventtypes))
 	} else {
-		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format)
+		var etyp statusResponseCode
+		eventtypes, totalHits, err, etyp = service.eventTypeDB.GetAll(format)
 		if err != nil {
-			return service.statusInternalError(err)
+			return service.statusGeneric(err, etyp)
 		}
 	}
 	if eventtypes == nil {
@@ -433,9 +435,9 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventtypes, totalHits, err = service.eventTypeDB.GetEventTypesByDslQuery(dslString)
+	eventtypes, totalHits, err, etyp := service.eventTypeDB.GetEventTypesByDslQuery(dslString)
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	if eventtypes == nil {
 		return service.statusInternalError(errors.New("queryeventtypes returned nil"))
@@ -495,18 +497,15 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	eventType.Mapping = service.addUniqueParams(eventType.Name, eventType.Mapping)
 
-	id, err := service.eventTypeDB.PostData(eventType, eventTypeID)
+	id, err, etyp := service.eventTypeDB.PostData(eventType, eventTypeID)
 	if err != nil {
-		if strings.HasSuffix(err.Error(), "was not recognized as a valid mapping type") {
-			return service.statusBadRequest(err)
-		}
-		return service.statusInternalError(err)
+		return service.statusGeneric(err, etyp)
 	}
 
-	err, typ := service.eventDB.AddMapping(name, eventType.Mapping)
+	err, etyp = service.eventDB.AddMapping(name, eventType.Mapping)
 	if err != nil {
 		_, _ = service.eventTypeDB.DeleteByID(id)
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	go func() {
@@ -527,7 +526,10 @@ func IsSystemEvent(name string) bool {
 
 // DeleteEventType TODO
 func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
-	eventType, found, err := service.eventTypeDB.GetOne(id)
+	eventType, found, err, etyp := service.eventTypeDB.GetOne(id)
+	if err != nil {
+		return service.statusGeneric(err, etyp)
+	}
 	// Only check for system events or "in use" if found
 	if found {
 		if eventType != nil && IsSystemEvent(eventType.Name) {
@@ -545,9 +547,9 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 		}
 
 		var events []Event
-		events, hits, err, typ := service.eventDB.GetEventsByEventTypeID(eventType.Name, id)
+		events, hits, err, etyp := service.eventDB.GetEventsByEventTypeID(eventType.Name, id)
 		if err != nil {
-			return service.statusGeneric(err, typ)
+			return service.statusGeneric(err, etyp)
 		}
 		if hits > 0 || len(events) > 0 {
 			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
@@ -570,18 +572,18 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 
 // GetEvent TODO
 func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
-	mapping, err, typ := service.eventDB.lookupEventTypeNameByEventID(id)
+	mapping, err, etyp := service.eventDB.lookupEventTypeNameByEventID(id)
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
-	event, found, err, typ := service.eventDB.GetOne(mapping, id)
+	event, found, err, etyp := service.eventDB.GetOne(mapping, id)
 
 	if !found {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	event.Data = service.removeUniqueParams(mapping, event.Data)
@@ -609,14 +611,12 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 
 	// Get the eventTypeName corresponding to the eventTypeId
 	if eventTypeID != "" {
-		var eventType *EventType
-		var found bool
-		eventType, found, err = service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
+		eventType, found, err, etyp := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
 		if !found {
 			return service.statusNotFound(err)
 		}
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusGeneric(err, etyp)
 		}
 		query = eventType.Name
 	} else if eventTypeName != "" {
@@ -626,14 +626,14 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 		query = ""
 	}
 
-	events, totalHits, err, typ := service.eventDB.GetAll(query, format)
+	events, totalHits, err, etyp := service.eventDB.GetAll(query, format)
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 	for i := 0; i < len(events); i++ {
-		eventType, found, err := service.eventTypeDB.GetOne(events[i].EventTypeID)
+		eventType, found, err, etyp := service.eventTypeDB.GetOne(events[i].EventTypeID)
 		if !found || err != nil {
-			return service.statusInternalError(err)
+			return service.statusGeneric(err, etyp)
 		}
 		events[i].Data = service.removeUniqueParams(eventType.Name, events[i].Data)
 	}
@@ -656,9 +656,9 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	// Post the event in the database, WITHOUT "triggering"
 	eventTypeID := event.EventTypeID
-	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
+	eventType, found, err, etyp := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil || !found {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	eventTypeName := eventType.Name
 
@@ -690,14 +690,14 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 		return service.statusInternalError(err)
 	}
 
-	_, err, typ := service.eventDB.PostData(eventTypeName, event, eventID)
+	_, err, etyp = service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
 		// If we fail, need to also remove from cronDB
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
 		_, _ = service.cronDB.DeleteByID(eventID)
 		service.cron.Remove(eventID.String())
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.stats.IncrEvents()
@@ -710,9 +710,9 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 // PostEvent TODO
 func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 	eventTypeID := event.EventTypeID
-	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
+	eventType, found, err, etyp := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil || !found {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 	eventTypeName := eventType.Name
 
@@ -728,18 +728,18 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
-	_, err, typ := service.eventDB.PostData(eventTypeName, event, eventID)
+	_, err, etyp = service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.logger.Info("User %s created Event %s", event.CreatedBy, eventID)
 
 	{
 		// Find triggers associated with event
-		triggerIDs, err, typ := service.eventDB.PercolateEventData(eventTypeName, event.Data, eventID)
+		triggerIDs, err, etyp := service.eventDB.PercolateEventData(eventTypeName, event.Data, eventID)
 		if err != nil {
-			return service.statusGeneric(err, typ)
+			return service.statusGeneric(err, etyp)
 		}
 
 		// For each trigger,  apply the event data and submit job
@@ -853,14 +853,12 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 
 	// Get the eventTypeName corresponding to the eventTypeId
 	if eventTypeID != "" {
-		var eventType *EventType
-		var found bool
-		eventType, found, err = service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
+		eventType, found, err, etyp := service.eventTypeDB.GetOne(piazza.Ident(eventTypeID))
 		if !found {
 			return service.statusNotFound(err)
 		}
 		if err != nil {
-			return service.statusBadRequest(err)
+			return service.statusGeneric(err, etyp)
 		}
 		query = eventType.Name
 	} else if eventTypeName != "" {
@@ -874,9 +872,9 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	events, totalHits, err, typ := service.eventDB.GetEventsByDslQuery(query, jsonString)
+	events, totalHits, err, etyp := service.eventDB.GetEventsByDslQuery(query, jsonString)
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	resp := service.statusOK(events)
@@ -921,21 +919,21 @@ func syncPagination(dslString string, format piazza.JsonPagination) (string, err
 }
 
 func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
-	mapping, err, typ := service.eventDB.lookupEventTypeNameByEventID(id)
+	mapping, err, etyp := service.eventDB.lookupEventTypeNameByEventID(id)
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	if IsSystemEvent(mapping) {
 		return service.statusBadRequest(errors.New("Deleting system events is prohibited"))
 	}
 
-	ok, err, typ := service.eventDB.DeleteByID(mapping, id)
+	ok, err, etyp := service.eventDB.DeleteByID(mapping, id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusGeneric(err, typ)
+		return service.statusGeneric(err, etyp)
 	}
 
 	// If it's a cron event, remove from cronDB, stop cronjob
@@ -969,9 +967,9 @@ func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	eventType, found, err := service.eventTypeDB.GetOne(trigger.EventTypeID)
+	eventType, found, err, etyp := service.eventTypeDB.GetOne(trigger.EventTypeID)
 	if err != nil || !found {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	trigger.Condition = service.removeUniqueParams(eventType.Name, trigger.Condition)
@@ -991,7 +989,7 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
 	}
 	for i := 0; i < len(triggers); i++ {
-		eventType, found, err := service.eventTypeDB.GetOne(triggers[i].EventTypeID)
+		eventType, found, err, _ := service.eventTypeDB.GetOne(triggers[i].EventTypeID)
 		if err != nil || !found {
 			continue //v Old implementation
 			//return service.statusBadRequest(err)
@@ -1023,9 +1021,9 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 		return service.statusInternalError(errors.New("QueryTriggers returned nil"))
 	}
 	for i := 0; i < len(triggers); i++ {
-		eventType, found, err := service.eventTypeDB.GetOne(triggers[i].EventTypeID)
+		eventType, found, err, etyp := service.eventTypeDB.GetOne(triggers[i].EventTypeID)
 		if err != nil || !found {
-			return service.statusBadRequest(err)
+			return service.statusGeneric(err, etyp)
 		}
 		triggers[i].Condition = service.removeUniqueParams(eventType.Name, triggers[i].Condition)
 	}
@@ -1055,7 +1053,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 		}
 		var et *EventType
 		var found bool
-		et, found, err = service.eventTypeDB.GetOne(trigger.EventTypeID)
+		et, found, err, _ = service.eventTypeDB.GetOne(trigger.EventTypeID)
 		if !found || err != nil {
 			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: eventType %s could not be found", trigger.EventTypeID.String()))
 		}
@@ -1331,7 +1329,7 @@ func (service *Service) InitCron() error {
 		}
 
 		for _, e := range *events {
-			eventType, found, err := service.eventTypeDB.GetOne(e.EventTypeID)
+			eventType, found, err, _ := service.eventTypeDB.GetOne(e.EventTypeID)
 			if !found || err != nil {
 				return LoggedError("WorkflowService.InitCron: Unable to retreive event type for cron event %#v", e)
 			}

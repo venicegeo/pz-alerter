@@ -35,54 +35,54 @@ func NewEventTypeDB(service *Service, esi elasticsearch.IIndex) (*EventTypeDB, e
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error, statusResponseCode) {
 	var eventType EventType
 	ok1 := false
 	eventType, ok1 = obj.(EventType)
 	if !ok1 {
 		temp, ok2 := obj.(*EventType)
 		if !ok2 {
-			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: was not given an EventType to post")
+			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: was not given an EventType to post"), statusBadRequestResponse
 		}
 		eventType = *temp
 	}
 	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err), statusBadRequestResponse
 	}
 	for _, v := range vars {
 		if !elasticsearch.IsValidMappingType(v) {
-			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
+			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v), statusBadRequestResponse
 		}
 	}
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), eventType)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err), statusBadRequestResponse
 	}
 	if !indexResult.Created {
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: not created")
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: not created"), statusInternalErrorResponse
 	}
 
-	return id, nil
+	return id, nil, statusNilReponse
 }
 
-func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64, error) {
+func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64, error, statusResponseCode) {
 	eventTypes := []EventType{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return eventTypes, 0, err
+		return eventTypes, 0, err, statusInternalErrorResponse
 	}
 	if !exists {
-		return eventTypes, 0, nil
+		return eventTypes, 0, nil, statusBadRequestResponse
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err)
+		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err), statusBadRequestResponse
 	}
 	if searchResult == nil {
-		return nil, 0, LoggedError("EventTypeDB.GetAll failed: no searchResult")
+		return nil, 0, LoggedError("EventTypeDB.GetAll failed: no searchResult"), statusInternalErrorResponse
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -90,32 +90,32 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
 			if err != nil {
-				return nil, 0, err
+				return nil, 0, err, statusBadRequestResponse
 			}
 			eventTypes = append(eventTypes, eventType)
 		}
 	}
 
-	return eventTypes, searchResult.TotalHits(), nil
+	return eventTypes, searchResult.TotalHits(), nil, statusNilReponse
 }
 
-func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, int64, error) {
+func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, int64, error, statusResponseCode) {
 	eventTypes := []EventType{}
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return eventTypes, 0, err
+		return eventTypes, 0, err, statusInternalErrorResponse
 	}
 	if !exists {
-		return eventTypes, 0, nil
+		return eventTypes, 0, nil, statusBadRequestResponse
 	}
 
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
-		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: %s", err)
+		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: %s", err), statusBadRequestResponse
 	}
 	if searchResult == nil {
-		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: no searchResult")
+		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: no searchResult"), statusInternalErrorResponse
 	}
 
 	if searchResult != nil && searchResult.GetHits() != nil {
@@ -123,33 +123,33 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, i
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
 			if err != nil {
-				return nil, 0, err
+				return nil, 0, err, statusBadRequestResponse
 			}
 			eventTypes = append(eventTypes, eventType)
 		}
 	}
 
-	return eventTypes, searchResult.TotalHits(), nil
+	return eventTypes, searchResult.TotalHits(), nil, statusNilReponse
 }
 
-func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error) {
+func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error, statusResponseCode) {
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
+		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error()), statusBadRequestResponse
 	}
 	if getResult == nil {
-		return nil, true, LoggedError("EventTypeDB.GetOne failed: no getResult")
+		return nil, true, LoggedError("EventTypeDB.GetOne failed: no getResult"), statusInternalErrorResponse
 	}
 
 	src := getResult.Source
 	var eventType EventType
 	err = json.Unmarshal(*src, &eventType)
 	if err != nil {
-		return nil, getResult.Found, err
+		return nil, getResult.Found, err, statusBadRequestResponse
 	}
 
-	return &eventType, getResult.Found, nil
+	return &eventType, getResult.Found, nil, statusNilReponse
 }
 
 func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, bool, error) {
