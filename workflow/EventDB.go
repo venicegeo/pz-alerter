@@ -55,7 +55,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err), statusInternalErrorResponse
+		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if !indexResult.Created {
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: not created"), statusInternalErrorResponse
@@ -115,16 +115,16 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Even
 	if mapping != "" {
 		exists, err = db.Esi.TypeExists(mapping)
 		if err != nil {
-			return events, 0, err, statusInternalErrorResponse
+			return events, 0, err, db.service.getEsiStatus(err)
 		}
 	}
 	if !exists {
-		return nil, 0, fmt.Errorf("Type %s does not exist (1)", mapping), statusBadRequestResponse
+		return nil, 0, fmt.Errorf("Type %s does not exist (1)", mapping), statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
 	if err != nil {
-		return nil, 0, LoggedError("EventDB.GetAll failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("EventDB.GetAll failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("EventDB.GetAll failed: no searchResult"), statusInternalErrorResponse
@@ -152,16 +152,16 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string) ([]Even
 	if mapping != "" {
 		exists, err = db.Esi.TypeExists(mapping)
 		if err != nil {
-			return events, 0, err, statusInternalErrorResponse
+			return events, 0, err, db.service.getEsiStatus(err)
 		}
 	}
 	if !exists {
-		return nil, 0, fmt.Errorf("Type %s does not exist (2)", mapping), statusBadRequestResponse
+		return nil, 0, fmt.Errorf("Type %s does not exist (2)", mapping), statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.SearchByJSON(mapping, jsnString)
 	if err != nil {
-		return nil, 0, LoggedError("EventDB.GetEventsByDslQuery failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("EventDB.GetEventsByDslQuery failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("EventDB.GetEventsByDslQuery failed: no searchResult"), statusInternalErrorResponse
@@ -189,11 +189,11 @@ func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ide
 	if mapping != "" {
 		exists, err = db.Esi.TypeExists(mapping)
 		if err != nil {
-			return events, 0, err, statusInternalErrorResponse
+			return events, 0, err, db.service.getEsiStatus(err)
 		}
 	}
 	if !exists {
-		return nil, 0, fmt.Errorf("Type %s does not exist (3)", mapping), statusBadRequestResponse
+		return nil, 0, fmt.Errorf("Type %s does not exist (3)", mapping), statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID)
@@ -223,12 +223,12 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error,
 
 	types, err := db.Esi.GetTypes()
 	if err != nil {
-		return "", err, statusInternalErrorResponse
+		return "", err, db.service.getEsiStatus(err)
 	}
 	for _, typ := range types {
 		ok, err := db.Esi.ItemExists(typ, id.String())
 		if err != nil {
-			return "", err, statusInternalErrorResponse
+			return "", err, db.service.getEsiStatus(err)
 		}
 		if ok {
 			mapping = typ
@@ -247,16 +247,16 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident) (string, error,
 func (db *EventDB) NameExists(name string) (bool, error, statusResponseCode) {
 	found, err := db.Esi.TypeExists(name)
 	if err != nil {
-		return found, err, statusNilReponse
+		return found, err, db.service.getEsiStatus(err)
 	} else {
-		return found, err, statusNotFoundResponse
+		return found, err, statusNilReponse
 	}
 }
 
 func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error, statusResponseCode) {
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
-		return nil, false, LoggedError("EventDB.GetOne failed: %s", err), statusBadRequestResponse
+		return nil, false, LoggedError("EventDB.GetOne failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if getResult == nil {
 		return nil, true, LoggedError("EventDB.GetOne failed: no getResult"), statusInternalErrorResponse
@@ -275,7 +275,7 @@ func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error,
 func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error, statusResponseCode) {
 	deleteResult, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, LoggedError("EventDB.DeleteById failed: %s", err), statusBadRequestResponse
+		return deleteResult.Found, LoggedError("EventDB.DeleteById failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("EventDB.DeleteById failed: no deleteResult"), statusInternalErrorResponse
@@ -291,7 +291,7 @@ func (db *EventDB) AddMapping(name string, mapping map[string]interface{}) (erro
 	}
 	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
-		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err), statusInternalErrorResponse
+		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err), db.service.getEsiStatus(err)
 	}
 
 	return nil, statusNilReponse
@@ -301,9 +301,8 @@ func (db *EventDB) PercolateEventData(eventType string, data map[string]interfac
 	fixed := map[string]interface{}{}
 	fixed["data"] = data
 	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, fixed)
-
 	if err != nil {
-		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err), statusBadRequestResponse
+		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if percolateResponse == nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: no percolateResult"), statusInternalErrorResponse

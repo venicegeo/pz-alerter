@@ -41,7 +41,7 @@ func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 func (db *CronDB) PostData(obj interface{}, id piazza.Ident) (error, statusResponseCode) {
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return LoggedError("CronDB.PostData failed: %s", err), statusBadRequestResponse
+		return LoggedError("CronDB.PostData failed: %s", err), db.service.getEsiStatus(err)
 	} else if !indexResult.Created {
 		return LoggedError("CronDB.PostData failed: not created"), statusInternalErrorResponse
 	}
@@ -55,15 +55,15 @@ func (db *CronDB) GetAll() (*[]Event, error, statusResponseCode) {
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return &events, err, statusInternalErrorResponse
+		return &events, err, db.service.getEsiStatus(err)
 	}
 	if !exists {
-		return nil, LoggedError("Type %s does not exist", db.mapping), statusBadRequestResponse
+		return nil, LoggedError("Type %s does not exist", db.mapping), statusInternalErrorResponse
 	}
 
 	searchResult, err := db.Esi.GetAllElements(db.mapping)
 	if err != nil {
-		return nil, LoggedError("CronDB.GetAll failed: %s", err), statusBadRequestResponse
+		return nil, LoggedError("CronDB.GetAll failed: %s", err), db.service.getEsiStatus(err)
 	} else if searchResult == nil {
 		return nil, LoggedError("CronDB.GetAll failed: no searchResult"), statusInternalErrorResponse
 	}
@@ -73,7 +73,7 @@ func (db *CronDB) GetAll() (*[]Event, error, statusResponseCode) {
 			var event Event
 			err := json.Unmarshal(*hit.Source, &event)
 			if err != nil {
-				return nil, LoggedError("CronDB.GetAll failed: %s", err), statusBadRequestResponse
+				return nil, LoggedError("CronDB.GetAll failed: %s", err), statusInternalErrorResponse
 			}
 			events = append(events, event)
 		}
@@ -86,12 +86,12 @@ func (db *CronDB) GetAll() (*[]Event, error, statusResponseCode) {
 func (db *CronDB) Exists() (bool, error, statusResponseCode) {
 	exists, err := db.Esi.IndexExists()
 	if err != nil {
-		return false, err, statusInternalErrorResponse
+		return false, err, db.service.getEsiStatus(err)
 	}
 	if exists {
 		exists, err = db.Esi.TypeExists(db.mapping)
 		if err != nil {
-			return false, err, statusInternalErrorResponse
+			return false, err, db.service.getEsiStatus(err)
 		}
 	}
 	return exists, nil, statusNilReponse
@@ -100,16 +100,15 @@ func (db *CronDB) Exists() (bool, error, statusResponseCode) {
 func (db *CronDB) itemExists(id piazza.Ident) (bool, error, statusResponseCode) {
 	found, err := db.Esi.ItemExists(db.mapping, id.String())
 	if err != nil {
-		return found, err, statusBadRequestResponse
-	} else {
-		return found, err, statusNilReponse
+		return found, err, db.service.getEsiStatus(err)
 	}
+	return found, err, statusNilReponse
 }
 
 func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error, statusResponseCode) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err), statusBadRequestResponse
+		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if deleteResult == nil {
 		return false, LoggedError("CronDB.DeleteById failed: no deleteResult"), statusInternalErrorResponse

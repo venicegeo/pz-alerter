@@ -57,7 +57,7 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 	}
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), eventType)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err), statusBadRequestResponse
+		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if !indexResult.Created {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: not created"), statusInternalErrorResponse
@@ -71,15 +71,15 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return eventTypes, 0, err, statusInternalErrorResponse
+		return eventTypes, 0, err, db.service.getEsiStatus(err)
 	}
 	if !exists {
-		return eventTypes, 0, nil, statusBadRequestResponse
+		return eventTypes, 0, nil, statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("EventTypeDB.GetAll failed: no searchResult"), statusInternalErrorResponse
@@ -90,7 +90,7 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
 			if err != nil {
-				return nil, 0, err, statusBadRequestResponse
+				return nil, 0, err, statusInternalErrorResponse
 			}
 			eventTypes = append(eventTypes, eventType)
 		}
@@ -104,15 +104,15 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, i
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return eventTypes, 0, err, statusInternalErrorResponse
+		return eventTypes, 0, err, db.service.getEsiStatus(err)
 	}
 	if !exists {
-		return eventTypes, 0, nil, statusBadRequestResponse
+		return eventTypes, 0, nil, statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
-		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: no searchResult"), statusInternalErrorResponse
@@ -123,7 +123,7 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, i
 			var eventType EventType
 			err := json.Unmarshal(*hit.Source, &eventType)
 			if err != nil {
-				return nil, 0, err, statusBadRequestResponse
+				return nil, 0, err, statusInternalErrorResponse
 			}
 			eventTypes = append(eventTypes, eventType)
 		}
@@ -136,7 +136,7 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error, statusR
 
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error()), statusBadRequestResponse
+		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error()), db.service.getEsiStatus(err)
 	}
 	if getResult == nil {
 		return nil, true, LoggedError("EventTypeDB.GetOne failed: no getResult"), statusInternalErrorResponse
@@ -146,49 +146,49 @@ func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error, statusR
 	var eventType EventType
 	err = json.Unmarshal(*src, &eventType)
 	if err != nil {
-		return nil, getResult.Found, err, statusBadRequestResponse
+		return nil, getResult.Found, err, statusInternalErrorResponse
 	}
 
 	return &eventType, getResult.Found, nil, statusNilReponse
 }
 
-func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, bool, error) {
+func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, bool, error, statusResponseCode) {
 
 	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
 	if err != nil {
-		return nil, getResult.Found, LoggedError("EventTypeDB.GetIDByName failed: %s", err.Error())
+		return nil, getResult.Found, LoggedError("EventTypeDB.GetIDByName failed: %s", err.Error()), db.service.getEsiStatus(err)
 	}
 	if getResult == nil {
-		return nil, true, LoggedError("EventTypeDB.GetIDByName failed: no getResult")
+		return nil, true, LoggedError("EventTypeDB.GetIDByName failed: no getResult"), statusInternalErrorResponse
 	}
 
 	// This should not happen once we have 1 to 1 mappings of EventTypes to names
 	if getResult.NumHits() > 1 {
-		return nil, true, LoggedError("EventTypeDB.GetIDByName failed: matched more than one EventType!")
+		return nil, true, LoggedError("EventTypeDB.GetIDByName failed: matched more than one EventType!"), statusInternalErrorResponse
 	}
 
 	if getResult.NumHits() == 0 {
-		return nil, false, nil
+		return nil, false, nil, statusNilReponse
 	}
 
 	src := getResult.GetHit(0).Source
 	var eventType EventType
 	err = json.Unmarshal(*src, &eventType)
 	if err != nil {
-		return nil, getResult.Found, err
+		return nil, getResult.Found, err, statusInternalErrorResponse
 	}
 
-	return &eventType.EventTypeID, getResult.Found, nil
+	return &eventType.EventTypeID, getResult.Found, nil, statusNilReponse
 }
 
-func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
+func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error, statusResponseCode) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, LoggedError("EventTypeDB.DeleteById failed: %s", err)
+		return deleteResult.Found, LoggedError("EventTypeDB.DeleteById failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if deleteResult == nil {
-		return false, LoggedError("EventTypeDB.DeleteById failed: no deleteResult")
+		return false, LoggedError("EventTypeDB.DeleteById failed: no deleteResult"), statusInternalErrorResponse
 	}
 
-	return deleteResult.Found, nil
+	return deleteResult.Found, nil, statusNilReponse
 }

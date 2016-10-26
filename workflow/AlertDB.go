@@ -40,7 +40,7 @@ func (db *AlertDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, err
 
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err), statusBadRequestResponse
+		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if !indexResult.Created {
 		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: not created"), statusInternalErrorResponse
@@ -54,15 +54,15 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error,
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return alerts, 0, err, statusInternalErrorResponse
+		return alerts, 0, err, db.service.getEsiStatus(err)
 	}
 	if !exists {
-		return alerts, 0, nil, statusBadRequestResponse
+		return alerts, 0, nil, statusNotFoundResponse
 	}
 
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
-		return nil, 0, LoggedError("AlertDB.GetAll failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("AlertDB.GetAll failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("AlertDB.GetAll failed: no searchResult"), statusInternalErrorResponse
@@ -73,7 +73,7 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error,
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
-				return nil, 0, err, statusBadRequestResponse
+				return nil, 0, err, statusInternalErrorResponse
 			}
 			alerts = append(alerts, alert)
 		}
@@ -87,7 +87,7 @@ func (db *AlertDB) GetAlertsByDslQuery(dslString string) ([]Alert, int64, error,
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return alerts, 0, err, statusInternalErrorResponse
+		return alerts, 0, err, db.service.getEsiStatus(err)
 	}
 	if !exists {
 		return alerts, 0, nil, statusBadRequestResponse
@@ -95,7 +95,7 @@ func (db *AlertDB) GetAlertsByDslQuery(dslString string) ([]Alert, int64, error,
 
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
-		return nil, 0, LoggedError("AlertDB.GetAlertsByDslQuery failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("AlertDB.GetAlertsByDslQuery failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("AlertDB.GetAlertsByDslQuery failed: no searchResult"), statusInternalErrorResponse
@@ -106,7 +106,7 @@ func (db *AlertDB) GetAlertsByDslQuery(dslString string) ([]Alert, int64, error,
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
-				return nil, 0, err, statusBadRequestResponse
+				return nil, 0, err, statusInternalErrorResponse
 			}
 			alerts = append(alerts, alert)
 		}
@@ -121,10 +121,10 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
-		return alerts, 0, err, statusInternalErrorResponse
+		return alerts, 0, err, db.service.getEsiStatus(err)
 	}
 	if !exists {
-		return alerts, 0, nil, statusBadRequestResponse
+		return alerts, 0, nil, statusInternalErrorResponse
 	}
 
 	// This will be an Elasticsearch term query of roughly the following structure:
@@ -132,7 +132,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 	// This matches the '_id' field of the Elasticsearch document exactly
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerID)
 	if err != nil {
-		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: %s", err), statusBadRequestResponse
+		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if searchResult == nil {
 		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: no searchResult"), statusInternalErrorResponse
@@ -148,7 +148,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 			var alert Alert
 			err := json.Unmarshal(*hit.Source, &alert)
 			if err != nil {
-				return nil, 0, err, statusBadRequestResponse
+				return nil, 0, err, statusInternalErrorResponse
 			}
 			alerts = append(alerts, alert)
 		}
@@ -160,7 +160,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error, statusResponseCode) {
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err), statusInternalErrorResponse
+		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if getResult == nil {
 		return nil, true, fmt.Errorf("AlertDB.GetOne failed: %s no getResult", id.String()), statusInternalErrorResponse
@@ -170,7 +170,7 @@ func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error, statusResponseC
 	var alert Alert
 	err = json.Unmarshal(*src, &alert)
 	if err != nil {
-		return nil, getResult.Found, err, statusBadRequestResponse
+		return nil, getResult.Found, err, statusInternalErrorResponse
 	}
 
 	return &alert, getResult.Found, nil, statusNilReponse
@@ -179,7 +179,7 @@ func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error, statusResponseC
 func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error, statusResponseCode) {
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
-		return deleteResult.Found, fmt.Errorf("AlertDB.DeleteById failed: %s", err), statusBadRequestResponse
+		return deleteResult.Found, fmt.Errorf("AlertDB.DeleteById failed: %s", err), db.service.getEsiStatus(err)
 	}
 	if deleteResult == nil {
 		return false, fmt.Errorf("AlertDB.DeleteById failed: no deleteResult"), statusInternalErrorResponse

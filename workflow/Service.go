@@ -340,6 +340,34 @@ func (service *Service) statusGeneric(obj interface{}, typ statusResponseCode) *
 	}
 }
 
+func (service *Service) getEsiStatus(err error) statusResponseCode {
+	if !strings.HasPrefix(err.Error(), "elastic: Error ") {
+		return statusBadRequestResponse
+	}
+	i, err := strconv.Atoi(strings.Split(err.Error(), " ")[2])
+	if err != nil {
+		return statusBadRequestResponse
+	}
+	if i < 300 && i != 201 {
+		return statusOkResponse
+	} else if i == 201 {
+		return statusCreatedResponse
+	} else if i >= 300 && i < 400 {
+		return statusInternalErrorResponse
+	} else if i < 500 && i != 403 && i != 404 {
+		return statusBadRequestResponse
+	} else if i == 403 {
+		return statusForbiddenResponse
+	} else if i == 404 {
+		return statusNotFoundResponse
+	} else if i >= 500 {
+		return statusInternalErrorResponse
+	} else {
+		return statusBadRequestResponse
+	}
+
+}
+
 //------------------------------------------------------------------------------
 
 // GetStats TODO
@@ -383,12 +411,12 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 		nameParamValue := nameParam
 		var foundName bool
 		var eventtypeid *piazza.Ident
-		eventtypeid, foundName, err = service.eventTypeDB.GetIDByName(nameParamValue)
+		eventtypeid, foundName, err, etyp = service.eventTypeDB.GetIDByName(nameParamValue)
 		var foundType = false
 		var eventtype *EventType
 		if foundName && eventtypeid != nil {
 			if err != nil {
-				return service.statusBadRequest(err)
+				return service.statusGeneric(err, etyp)
 			}
 			eventtype, foundType, err, etyp = service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()))
 			if err != nil {
@@ -466,9 +494,9 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 	if found {
 		return service.statusBadRequest(LoggedError("EventType Name already exists"))
 	}
-	id1, found, err := service.eventTypeDB.GetIDByName(name)
+	id1, found, err, etyp := service.eventTypeDB.GetIDByName(name)
 	if err != nil {
-		return service.statusInternalError(err)
+		return service.statusGeneric(err, etyp)
 	}
 	if found {
 		return service.statusBadRequest(
@@ -504,7 +532,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	err, etyp = service.eventDB.AddMapping(name, eventType.Mapping)
 	if err != nil {
-		_, _ = service.eventTypeDB.DeleteByID(id)
+		_, _, _ = service.eventTypeDB.DeleteByID(id)
 		return service.statusGeneric(err, etyp)
 	}
 
@@ -556,12 +584,12 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
 		}
 	}
-	ok, err := service.eventTypeDB.DeleteByID(id)
+	ok, err, etyp := service.eventTypeDB.DeleteByID(id)
 	if !ok {
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		return service.statusBadRequest(err)
+		return service.statusGeneric(err, etyp)
 	}
 
 	service.logger.Info("Deleted EventType %s", id)
