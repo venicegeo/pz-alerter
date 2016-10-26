@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -108,54 +109,128 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
 	}
 	for k, v := range eventTypeMappingVars {
-		temp, err := db.valueIsValidType(v, eventDataVars[k])
-		fmt.Println(k, v, eventDataVars[k], temp, err)
+		err := db.valueIsValidType(v, eventDataVars[k])
+		fmt.Println(k, v, eventDataVars[k], err)
+		if err != nil {
+			return LoggedError("EventDB.PostData failed: %s", err.Error())
+		}
 	}
 	return nil
 }
 
-func (db *EventDB) valueIsValidType(key interface{}, value interface{}) (bool, error) {
+func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	fmt.Println()
 	k := fmt.Sprint(key)
 	if !elasticsearch.IsValidMappingType(k) { //TODO :Array types
-		return false, errors.New(fmt.Sprintf("Variable %s is not a valid mapping type", key))
+		return errors.New(fmt.Sprintf("Variable %s is not a valid mapping type", key))
 	}
+
 	switch elasticsearch.MappingElementTypeName(k) {
 	case elasticsearch.MappingElementTypeString:
 		fmt.Println("String")
-		_, ok := value.(string)
-		fmt.Println("Is good", ok)
-	case elasticsearch.MappingElementTypeLong:
-		fmt.Println("Long")
-		_, ok := value.(int64)
-		fmt.Println("Is good", ok)
-	case elasticsearch.MappingElementTypeInteger:
+		/*str*/ _, ok := value.(string)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid String", value))
+		}
+		//fmt.Printf("Value: %s\n", str)
+
+	case elasticsearch.MappingElementTypeLong: //int64
 		fmt.Println("Integer")
-		fmt.Println(value)
-		_, ok := value.(int64)
-		fmt.Println("Is good", ok)
-	case elasticsearch.MappingElementTypeShort:
+		floatVar, ok := value.(float64)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
+		}
+		/*intVar*/ _, err := float64ToInt64(floatVar)
+		if err != nil {
+			return err
+		}
+		//fmt.Printf("Value: %d\n", intVar)
+
+	case elasticsearch.MappingElementTypeInteger: //int32
+		fmt.Println("Integer")
+		floatVar, ok := value.(float64)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
+		}
+		intVar, err := float64ToInt64(floatVar)
+		if err != nil {
+			return err
+		}
+		if int64(int32(intVar)) != intVar {
+			return errors.New(fmt.Sprintf("Value %d is outside the range of Integer", intVar))
+		}
+		//final := int32(intVar)
+		//fmt.Printf("Value: %d\n", final)
+
+	case elasticsearch.MappingElementTypeShort: //int16
 		fmt.Println("Short")
-		_, ok := value.(int64)
-		fmt.Println("Is good", ok) //TODO
-	case elasticsearch.MappingElementTypeByte:
-		fmt.Println("Byte")
-		_, ok := value.(int64)
-		fmt.Println("Is good", ok)
-	case elasticsearch.MappingElementTypeDouble:
+		floatVar, ok := value.(float64)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Short", value))
+		}
+		intVar, err := float64ToInt64(floatVar)
+		if err != nil {
+			return err
+		}
+		if int64(int16(intVar)) != intVar {
+			return errors.New(fmt.Sprintf("Value %d is outside the range of Short", intVar))
+		}
+		//final := int16(intVar)
+		//fmt.Printf("Value: %d\n", final)
+
+	case elasticsearch.MappingElementTypeByte: //int8
+		fmt.Println("Short")
+		floatVar, ok := value.(float64)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Byte", value))
+		}
+		intVar, err := float64ToInt64(floatVar)
+		if err != nil {
+			return err
+		}
+		if int64(int8(intVar)) != intVar {
+			return errors.New(fmt.Sprintf("Value %d is outside the range of Byte", intVar))
+		}
+		//final := int8(intVar)
+		//fmt.Printf("Value: %d\n", final)
+
+	case elasticsearch.MappingElementTypeDouble: //float64
 		fmt.Println("Double")
-		_, ok := value.(float64)
-		fmt.Println("Is good", ok)
-	case elasticsearch.MappingElementTypeFloat:
+		val, ok := value.(float64)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Double", val))
+		}
+		//fmt.Printf("Value: %f\n", val)
+
+	case elasticsearch.MappingElementTypeFloat: //float32
 		fmt.Println("Float")
-		_, ok := value.(float64)
-		fmt.Println("Is good", ok)
+		d, ok := value.(float64)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Float", value))
+		}
+		if d > 3.4*10E38 || d < 3.4*10E38 {
+			return errors.New(fmt.Sprintf("Value %f is outside the range of Float", d))
+		}
+		//final := float32(d)
+		//fmt.Printf("Value: %f\n", final)
+
 	case elasticsearch.MappingElementTypeBool:
 		fmt.Println("Bool")
-		_, ok := value.(bool)
-		fmt.Println("Is good", ok)
+		/*val*/ _, ok := value.(bool)
+		if !ok {
+			return errors.New(fmt.Sprintf("Value %s is not a valid Boolean", value))
+		}
+		//fmt.Printf("Value: %t\n", val)
 	}
-	return true, nil
+	return nil
+}
+
+func float64ToInt64(float float64) (int64, error) {
+	s := fmt.Sprint(float)
+	if strings.Contains(s, ".") {
+		return 0, errors.New("Unable to convert float64 to int64")
+	}
+	return int64(float), nil
 }
 
 func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, int64, error) {
