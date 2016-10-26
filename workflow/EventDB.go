@@ -80,9 +80,9 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
-	fmt.Println(eventTypeMappingVars)
-	fmt.Println()
-	fmt.Println(eventDataVars)
+	//fmt.Println(eventTypeMappingVars)
+	//fmt.Println()
+	//fmt.Println(eventDataVars)
 	notFound := []string{}
 	for k, v := range eventTypeMappingVars {
 		found := false
@@ -110,7 +110,7 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	}
 	for k, v := range eventTypeMappingVars {
 		err := db.valueIsValidType(v, eventDataVars[k])
-		fmt.Println(k, v, eventDataVars[k], err)
+		//fmt.Println(k, v, eventDataVars[k], err)
 		if err != nil {
 			return LoggedError("EventDB.PostData failed: %s", err.Error())
 		}
@@ -119,7 +119,7 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 }
 
 func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
-	fmt.Println()
+	//fmt.Println()
 	k := fmt.Sprint(key)
 	if !elasticsearch.IsValidMappingType(k) { //TODO :Array types
 		return errors.New(fmt.Sprintf("Variable %s is not a valid mapping type", key))
@@ -127,7 +127,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 
 	switch elasticsearch.MappingElementTypeName(k) {
 	case elasticsearch.MappingElementTypeString:
-		fmt.Println("String")
+		//fmt.Println("String")
 		/*str*/ _, ok := value.(string)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid String", value))
@@ -135,7 +135,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %s\n", str)
 
 	case elasticsearch.MappingElementTypeLong: //int64
-		fmt.Println("Integer")
+		//fmt.Println("Integer")
 		floatVar, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
@@ -147,7 +147,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %d\n", intVar)
 
 	case elasticsearch.MappingElementTypeInteger: //int32
-		fmt.Println("Integer")
+		//fmt.Println("Integer")
 		floatVar, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
@@ -163,7 +163,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %d\n", final)
 
 	case elasticsearch.MappingElementTypeShort: //int16
-		fmt.Println("Short")
+		//fmt.Println("Short")
 		floatVar, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Short", value))
@@ -179,7 +179,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %d\n", final)
 
 	case elasticsearch.MappingElementTypeByte: //int8
-		fmt.Println("Short")
+		//fmt.Println("Short")
 		floatVar, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Byte", value))
@@ -195,7 +195,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %d\n", final)
 
 	case elasticsearch.MappingElementTypeDouble: //float64
-		fmt.Println("Double")
+		//fmt.Println("Double")
 		val, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Double", val))
@@ -203,7 +203,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %f\n", val)
 
 	case elasticsearch.MappingElementTypeFloat: //float32
-		fmt.Println("Float")
+		//fmt.Println("Float")
 		d, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Float", value))
@@ -215,7 +215,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %f\n", final)
 
 	case elasticsearch.MappingElementTypeBool:
-		fmt.Println("Bool")
+		//fmt.Println("Bool")
 		/*val*/ _, ok := value.(bool)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Boolean", value))
