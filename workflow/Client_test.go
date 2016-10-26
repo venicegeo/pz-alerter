@@ -107,7 +107,7 @@ func (suite *ClientTester) Test13EventResource() {
 	var err error
 
 	mapping := map[string]interface{}{
-		"myint": elasticsearch.MappingElementTypeString,
+		"myint": elasticsearch.MappingElementTypeInteger,
 		"mystr": elasticsearch.MappingElementTypeString,
 	}
 	eventTypeName := "mytype"

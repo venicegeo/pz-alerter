@@ -11,12 +11,13 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-
 package workflow
 
 import (
 	"encoding/json"
+	//"fmt"
 	"log"
+	"math/big"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -630,6 +631,53 @@ func (suite *ServerTester) Test05EventMapping() {
 		err = client.DeleteEventType(et2Id)
 		assert.NoError(err)
 	}
+}
+
+func (suite *ServerTester) Test05bBreakEventMapping() {
+	t := suite.T()
+	assert := assert.New(t)
+	client := suite.client
+
+	assertNoData(suite.T(), suite.client)
+	defer assertNoData(suite.T(), suite.client)
+
+	eventType := &EventType{Name: "allDataTypes", Mapping: map[string]interface{}{
+		"String":  elasticsearch.MappingElementTypeString,
+		"Long":    elasticsearch.MappingElementTypeLong,
+		"Integer": elasticsearch.MappingElementTypeInteger,
+		"Short":   elasticsearch.MappingElementTypeShort,
+		"Byte":    elasticsearch.MappingElementTypeByte,
+		"Double":  elasticsearch.MappingElementTypeDouble,
+		"Float":   elasticsearch.MappingElementTypeFloat,
+		"Bool":    elasticsearch.MappingElementTypeBool,
+	}}
+
+	respEventType, err := client.PostEventType(eventType)
+	eventTypeID := respEventType.EventTypeID
+	assert.NoError(err)
+
+	postEvent := func(mapping map[string]interface{}) error {
+		event := &Event{
+			EventTypeID: eventTypeID,
+			CreatedOn:   time.Now(),
+			Data:        mapping,
+		}
+
+		respEvent, err := client.PostEvent(event)
+		if err == nil {
+			defer client.DeleteEvent(respEvent.EventID)
+		}
+		return err
+	}
+	assert.Error(postEvent(map[string]interface{}{"String": "This is a string"}))
+	assert.NoError(postEvent(map[string]interface{}{"String": "This is a string", "Long": 100, "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}))
+	assert.Error(postEvent(map[string]interface{}{"String": 5, "Long": 100, "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}))
+	//assert.Error(postEvent(map[string]interface{}{"String": "This is a string", "Long": float64(-9223372036854775808), "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}))
+	mapping := map[string]interface{}{"String": "This is a string", "Long": big.NewFloat(9223372036854775800), "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}
+	//a := mapping["Long"].(*big.Float)
+	//fmt.Println(a.Text('f', 20))
+	assert.Error(postEvent(mapping))
+	defer client.DeleteEventType(eventTypeID)
 }
 
 func (suite *ServerTester) Test06Workflow() {

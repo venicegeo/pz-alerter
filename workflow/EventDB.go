@@ -18,7 +18,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
+	"math"
+	"math/big"
+	"strconv"
+	//"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -135,11 +138,17 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %s\n", str)
 
 	case elasticsearch.MappingElementTypeLong: //int64
-		//fmt.Println("Integer")
+		fmt.Println("Long")
+		_, m := value.(*big.Float)
+		fmt.Println(m)
+		fmt.Println(value)
+		fmt.Printf("%T\n", value)
 		floatVar, ok := value.(float64)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
+			return errors.New(fmt.Sprintf("Value %s is not a valid Long", value))
 		}
+		fmt.Println(floatVar)
+		fmt.Println(big.NewFloat(floatVar).Text('f', 20))
 		/*intVar*/ _, err := float64ToInt64(floatVar)
 		if err != nil {
 			return err
@@ -179,7 +188,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		//fmt.Printf("Value: %d\n", final)
 
 	case elasticsearch.MappingElementTypeByte: //int8
-		//fmt.Println("Short")
+		//fmt.Println("Byte")
 		floatVar, ok := value.(float64)
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Byte", value))
@@ -208,7 +217,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		if !ok {
 			return errors.New(fmt.Sprintf("Value %s is not a valid Float", value))
 		}
-		if d > 3.4*10E38 || d < 3.4*10E38 {
+		if d > 3.4*math.Pow10(38) || d < -3.4*math.Pow10(38) {
 			return errors.New(fmt.Sprintf("Value %f is outside the range of Float", d))
 		}
 		//final := float32(d)
@@ -226,11 +235,8 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 }
 
 func float64ToInt64(float float64) (int64, error) {
-	s := fmt.Sprint(float)
-	if strings.Contains(s, ".") {
-		return 0, errors.New("Unable to convert float64 to int64")
-	}
-	return int64(float), nil
+	s := strconv.FormatFloat(float, 'f', -1, 64)
+	return strconv.ParseInt(s, 10, 64)
 }
 
 func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, int64, error) {
