@@ -15,9 +15,9 @@
 package workflow
 
 import (
-	"net/http"
-
 	"bytes"
+	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -191,6 +191,7 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 	if event.CronSchedule != "" {
 		resp = server.service.PostRepeatingEvent(event)
 	} else {
+		fmt.Println("Server sending:", event.Data)
 		resp = server.service.PostEvent(event)
 	}
 	piazza.GinReturnJson(c, resp)

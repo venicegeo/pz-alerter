@@ -51,7 +51,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		}
 		event = *temp
 	}
-
+	fmt.Println("Verfying:", event.Data)
 	err := db.verifyEventReadyToPost(&event)
 	if err != nil {
 		return piazza.NoIdent, err
@@ -79,13 +79,16 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
-	eventDataVars, err := piazza.GetVarsFromStruct(db.service.removeUniqueParams(eventType.Name, event.Data))
+	fmt.Println(event.Data)
+	uniqueParams := db.service.removeUniqueParams(eventType.Name, event.Data)
+	fmt.Println(uniqueParams)
+	eventDataVars, err := piazza.GetVarsFromStruct(uniqueParams)
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	//fmt.Println(eventTypeMappingVars)
 	//fmt.Println()
-	//fmt.Println(eventDataVars)
+	fmt.Println(eventDataVars)
 	notFound := []string{}
 	for k, v := range eventTypeMappingVars {
 		found := false
