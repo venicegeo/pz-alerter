@@ -671,7 +671,6 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 
 // PostEvent TODO
 func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
-	fmt.Println("service got:", event.Data)
 	eventTypeID := event.EventTypeID
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID)
 	if err != nil || !found {
@@ -688,9 +687,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 	event.CreatedOn = time.Now()
 
 	response := *event
-	fmt.Println("Adding unique params to:", event.Data)
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
-	fmt.Println("sending to db:", event.Data)
 	_, err = service.eventDB.PostData(eventTypeName, event, eventID)
 	if err != nil {
 		return service.statusBadRequest(err)

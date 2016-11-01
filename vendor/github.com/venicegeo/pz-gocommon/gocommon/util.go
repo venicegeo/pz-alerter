@@ -46,9 +46,18 @@ func getVarsFromStructHelper(inputObj map[string]interface{}, res map[string]int
 		wasMap := false
 		switch v.(type) {
 		case map[string]interface{}:
-			wasMap = true
-			path = append(path, k)
-			res = getVarsFromStructHelper(v.(map[string]interface{}), res, path)
+			if k == "geo_point" {
+				data, _ := json.Marshal(v)
+				temp := ""
+				for i := 0; i < len(path); i++ {
+					temp += path[i] + "."
+				}
+				res[fmt.Sprintf("%s%s", temp, k)] = string(data)
+			} else {
+				wasMap = true
+				path = append(path, k)
+				res = getVarsFromStructHelper(v.(map[string]interface{}), res, path)
+			}
 		default:
 			temp := ""
 			for i := 0; i < len(path); i++ {

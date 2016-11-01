@@ -16,7 +16,7 @@ package workflow
 
 import (
 	"bytes"
-	"fmt"
+	"encoding/json"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -175,7 +175,9 @@ func (server *Server) handleGetAllEvents(c *gin.Context) {
 
 func (server *Server) handlePostEvent(c *gin.Context) {
 	event := &Event{}
-	err := c.BindJSON(event)
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.UseNumber()
+	err := decoder.Decode(&event)
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
@@ -191,7 +193,6 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 	if event.CronSchedule != "" {
 		resp = server.service.PostRepeatingEvent(event)
 	} else {
-		fmt.Println("Server sending:", event.Data)
 		resp = server.service.PostEvent(event)
 	}
 	piazza.GinReturnJson(c, resp)
