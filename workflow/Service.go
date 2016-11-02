@@ -440,7 +440,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	eventType.CreatedOn = time.Now()
 
-	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	vars, err := piazza.GetVarsFromStruct(eventType.Mapping, map[string]bool{})
 	if err != nil {
 		return service.statusBadRequest(LoggedError("EventTypeDB.PostData failed: %s", err))
 	}

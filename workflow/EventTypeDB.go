@@ -46,7 +46,7 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 		}
 		eventType = *temp
 	}
-	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	vars, err := piazza.GetVarsFromStruct(eventType.Mapping, map[string]bool{})
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
 	}

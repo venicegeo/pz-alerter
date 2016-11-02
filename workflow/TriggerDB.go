@@ -423,7 +423,7 @@ func (db *TriggerDB) addUniqueParamsToQueryArr(inputObj []interface{}, eventType
 
 func (db *TriggerDB) getNewKeyName(eventType *EventType, key string) string {
 	mapping := db.service.removeUniqueParams(eventType.Name, eventType.Mapping)
-	vars, _ := piazza.GetVarsFromStruct(mapping)
+	vars, _ := piazza.GetVarsFromStruct(mapping, map[string]bool{})
 	for varName := range vars {
 		if "data."+varName == key {
 			return strings.Replace(key, "data.", "data."+eventType.Name+".", 1)
