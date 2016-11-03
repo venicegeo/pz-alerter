@@ -35,20 +35,19 @@ type QueryFormat struct {
 
 // Constants representing the supported data types for the Event parameters.
 const (
-	MappingElementTypeString   MappingElementTypeName = "string"
-	MappingElementTypeLong     MappingElementTypeName = "long"
-	MappingElementTypeInteger  MappingElementTypeName = "integer"
-	MappingElementTypeShort    MappingElementTypeName = "short"
-	MappingElementTypeByte     MappingElementTypeName = "byte"
-	MappingElementTypeDouble   MappingElementTypeName = "double"
-	MappingElementTypeFloat    MappingElementTypeName = "float"
-	MappingElementTypeDate     MappingElementTypeName = "date"
-	MappingElementTypeBool     MappingElementTypeName = "boolean"
-	MappingElementTypeBinary   MappingElementTypeName = "binary"
-	MappingElementTypeGeoPoint MappingElementTypeName = "geo_point"
-	MappingElementTypeGeoShape MappingElementTypeName = "geo_shape"
-	MappingElementTypeIp       MappingElementTypeName = "ip"
-	//MappingElementTypeCompletion  MappingElementTypeName = "completion"
+	MappingElementTypeString    MappingElementTypeName = "string"
+	MappingElementTypeLong      MappingElementTypeName = "long"
+	MappingElementTypeInteger   MappingElementTypeName = "integer"
+	MappingElementTypeShort     MappingElementTypeName = "short"
+	MappingElementTypeByte      MappingElementTypeName = "byte"
+	MappingElementTypeDouble    MappingElementTypeName = "double"
+	MappingElementTypeFloat     MappingElementTypeName = "float"
+	MappingElementTypeDate      MappingElementTypeName = "date"
+	MappingElementTypeBool      MappingElementTypeName = "boolean"
+	MappingElementTypeBinary    MappingElementTypeName = "binary"
+	MappingElementTypeGeoPoint  MappingElementTypeName = "geo_point"
+	MappingElementTypeGeoShape  MappingElementTypeName = "geo_shape"
+	MappingElementTypeIp        MappingElementTypeName = "ip"
 	MappingElementTypeStringA   MappingElementTypeName = "[string]"
 	MappingElementTypeLongA     MappingElementTypeName = "[long]"
 	MappingElementTypeIntegerA  MappingElementTypeName = "[integer]"
@@ -62,7 +61,6 @@ const (
 	MappingElementTypeGeoPointA MappingElementTypeName = "[geo_point]"
 	MappingElementTypeGeoShapeA MappingElementTypeName = "[geo_shape]"
 	MappingElementTypeIpA       MappingElementTypeName = "[ip]"
-	//MappingElementTypeCompletionA MappingElementTypeName = "[completion]"
 )
 
 // IIndex is an interface to Elasticsearch Index methods
@@ -196,7 +194,6 @@ func (name MappingElementTypeName) isValidScalarMappingType() bool {
 		MappingElementTypeGeoPoint,
 		MappingElementTypeGeoShape,
 		MappingElementTypeIp:
-		//MappingElementTypeCompletion:
 		return true
 	}
 
@@ -219,7 +216,6 @@ func (name MappingElementTypeName) isValidArrayMappingType() bool {
 		MappingElementTypeGeoPointA,
 		MappingElementTypeGeoShapeA,
 		MappingElementTypeIpA:
-		//MappingElementTypeCompletionA:
 		return true
 	}
 

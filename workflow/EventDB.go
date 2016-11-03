@@ -71,18 +71,18 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: unable to obtain specified eventtype")
 	}
 	eventTypeMapping := eventType.Mapping
-	eventTypeMappingVars, err := piazza.GetVarsFromStruct(eventTypeMapping, map[string]bool{})
+	eventTypeMappingVars, err := piazza.GetVarsFromStruct(eventTypeMapping)
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
-	exclude := map[string]bool{}
+	exclude := []string{}
 	for k, v := range eventTypeMappingVars {
 		if fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoPoint) || fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoShape) {
-			exclude[k] = false
+			exclude = append(exclude, k)
 		}
 	}
 	eventData := db.service.removeUniqueParams(eventType.Name, event.Data)
-	eventDataVars, err := piazza.GetVarsFromStruct(eventData, exclude)
+	eventDataVars, err := piazza.GetVarsFromStructSkip(eventData, exclude)
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}

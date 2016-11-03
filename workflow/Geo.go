@@ -21,9 +21,19 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
+const typeGeometryCollection = "geometrycollection"
+const typePoint = "point"
+const typeLineString = "linestring"
+const typePolygon = "polygon"
+const typeMultiPoint = "multipoint"
+const typeMultiLineString = "multilinestring"
+const typeMultiPolygon = "multipolygon"
+const typeEnvelope = "envelope"
+const typeCircle = "circle"
+
 type Geo_Point struct {
-	Lat float64 `json:"lat" binding:"required"`
 	Lon float64 `json:"lon" binding:"required"`
+	Lat float64 `json:"lat" binding:"required"`
 }
 
 func (p *Geo_Point) valid() bool { //TODO
@@ -31,16 +41,17 @@ func (p *Geo_Point) valid() bool { //TODO
 }
 
 type Geo_Shape struct {
-	Type             string      `json:"type" binding:"required"`
-	Coordinates      interface{} `json:"coordinates" binding:"required"`
-	Tree             string      `json:"tree,omitempty"`
-	Precision        string      `json:"precision,omitempty"`
-	TreeLevels       string      `json:"tree_levels,omitempty"`
-	Strategy         string      `json:"strategy,omitempty"`
-	DistanceErrorPct float64     `json:"distance_error_pct,omitempty"`
-	Orientation      string      `json:"orientation,omitempty"`
-	PointsOnly       bool        `json:"points_only,omitempty"`
-	Radius           string      `json:"radius,omitempty"`
+	Type             interface{} `json:"type"`               //string
+	Coordinates      interface{} `json:"coordinates"`        //interface{}
+	Geometries       interface{} `json:"geometries"`         //interface{}
+	Tree             interface{} `json:"tree"`               //string
+	Precision        interface{} `json:"precision"`          //string
+	TreeLevels       interface{} `json:"tree_levels"`        //string
+	Strategy         interface{} `json:"strategy"`           //string
+	DistanceErrorPct interface{} `json:"distance_error_pct"` //float64
+	Orientation      interface{} `json:"orientation"`        //string
+	PointsOnly       interface{} `json:"points_only"`        //bool
+	Radius           interface{} `json:"radius"`             //string
 }
 
 type geo_GeometryCollection []Geo_Shape
@@ -58,26 +69,54 @@ func NewDefaultGeo_Shape() Geo_Shape {
 }
 
 func (gs *Geo_Shape) valid() (bool, error) {
-	if ok, err := gs.validTree(gs.Tree); !ok {
-		return false, err
+	if gs.Tree != nil {
+		if ok, err := gs.validTree(gs.Tree); !ok {
+			return false, err
+		}
 	}
-	if ok, err := gs.validPrecision(gs.Precision); !ok {
-		return false, err
+	if gs.Precision != nil {
+		if ok, err := gs.validPrecision(gs.Precision); !ok {
+			return false, err
+		}
 	}
-	if ok, err := gs.validTreeLevels(gs.TreeLevels); !ok {
-		return false, err
+	if gs.TreeLevels != nil {
+		if ok, err := gs.validTreeLevels(gs.TreeLevels); !ok {
+			return false, err
+		}
 	}
-	if ok, err := gs.validStrategy(gs.Strategy); !ok {
-		return false, err
+	if gs.Strategy != nil {
+		if ok, err := gs.validStrategy(gs.Strategy); !ok {
+			return false, err
+		}
 	}
-	if ok, err := gs.validDistanceErrorPct(gs.DistanceErrorPct); !ok {
-		return false, err
+	if gs.DistanceErrorPct != nil {
+		if ok, err := gs.validDistanceErrorPct(gs.DistanceErrorPct); !ok {
+			return false, err
+		}
 	}
-	if ok, err := gs.validOrientation(gs.Orientation); !ok {
-		return false, err
+	if gs.Orientation != nil {
+		if ok, err := gs.validOrientation(gs.Orientation); !ok {
+			return false, err
+		}
 	}
+	if gs.PointsOnly != nil {
+		if ok, err := gs.validPointsOnly(gs.PointsOnly); !ok {
+			return false, err
+		}
+	}
+
+	if gs.Type == typeGeometryCollection {
+		if gs.Coordinates != nil || gs.Geometries == nil {
+			return false, nil
+		}
+	} else {
+		if gs.Geometries != nil || gs.Coordinates == nil {
+			return false, nil
+		}
+	}
+
 	switch gs.Type {
-	case "geometrycollection":
+	case typeGeometryCollection:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -87,7 +126,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "point":
+	case typePoint:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -97,7 +136,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "linestring":
+	case typeLineString:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -107,7 +146,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "polygon":
+	case typePolygon:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -117,7 +156,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "multipoint":
+	case typeMultiPoint:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -127,7 +166,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "multilinestring":
+	case typeMultiLineString:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -137,7 +176,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "multipolygon":
+	case typeMultiPolygon:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -147,7 +186,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "envelope":
+	case typeEnvelope:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -157,7 +196,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
-	case "circle":
+	case typeCircle:
 		str, err := piazza.StructInterfaceToString(gs.Coordinates)
 		if err != nil {
 			return false, err
@@ -167,6 +206,8 @@ func (gs *Geo_Shape) valid() (bool, error) {
 			return false, err
 		}
 		return temp.valid(gs)
+	default:
+		return false, nil
 	}
 	return true, nil
 }
@@ -188,11 +229,11 @@ func (p *geo_Sub_Point) valid(gs *Geo_Shape) (bool, error) { //TODO
 			return false, nil
 		}
 	}
-	return true, nil
+	point := Geo_Point{(*p)[0].(float64), (*p)[1].(float64)}
+	return point.valid(), nil
 }
 func (ls *geo_LineString) valid(gs *Geo_Shape) (bool, error) {
 	for _, v := range *ls {
-
 		if ok, _ := v.valid(gs); !ok {
 			return false, nil
 		}
@@ -258,39 +299,67 @@ func (c *geo_Circle) valid(gs *Geo_Shape) (bool, error) {
 	return gs.validRadius(gs.Radius)
 }
 
-func (gs *Geo_Shape) validDistance(distance string) (bool, error) {
+func (gs *Geo_Shape) validDistance(distance interface{}) (bool, error) {
+	v, ok := distance.(string)
+	if !ok {
+		return false, nil
+	}
 	re, err := regexp.Compile(`^(([1-9][0-9]*)((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters)|$))$`)
 	if err != nil {
 		return false, err
 	}
-	return re.MatchString(distance), nil
+	return re.MatchString(v), nil
 }
-func (gs *Geo_Shape) validRadius(radius string) (bool, error) {
+func (gs *Geo_Shape) validRadius(radius interface{}) (bool, error) {
 	return gs.validDistance(radius)
 }
-func (gs *Geo_Shape) validTree(tree string) (bool, error) {
-	return tree == "geohash" || tree == "quadtree", nil
+func (gs *Geo_Shape) validTree(tree interface{}) (bool, error) {
+	v, ok := tree.(string)
+	if !ok {
+		return false, nil
+	}
+	return v == "geohash" || v == "quadtree", nil
 }
-func (gs *Geo_Shape) validPrecision(precision string) (bool, error) {
+func (gs *Geo_Shape) validPrecision(precision interface{}) (bool, error) {
+	v, ok := precision.(string)
+	if !ok {
+		return ok, nil
+	}
 	re, err := regexp.Compile(`^((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters))$`)
 	if err != nil {
 		return false, err
 	}
-	return re.MatchString(precision), nil
+	return re.MatchString(v), nil
 }
-func (gs *Geo_Shape) validTreeLevels(treeLevels string) (bool, error) {
+func (gs *Geo_Shape) validTreeLevels(treeLevels interface{}) (bool, error) {
 	return gs.validDistance(treeLevels)
 }
-func (gs *Geo_Shape) validStrategy(strategy string) (bool, error) {
-	return strategy == "recursive" || strategy == "term", nil
+func (gs *Geo_Shape) validStrategy(strategy interface{}) (bool, error) {
+	v, ok := strategy.(string)
+	if !ok {
+		return false, nil
+	}
+	return v == "recursive" || v == "term", nil
 }
-func (gs *Geo_Shape) validDistanceErrorPct(errorPct float64) (bool, error) {
-	return errorPct >= 0 && errorPct <= 100, nil
+func (gs *Geo_Shape) validDistanceErrorPct(errorPct interface{}) (bool, error) {
+	v, ok := errorPct.(float64)
+	if !ok {
+		return false, nil
+	}
+	return v >= 0 && v <= 100, nil
 }
-func (gs *Geo_Shape) validOrientation(orientation string) (bool, error) {
+func (gs *Geo_Shape) validOrientation(orientation interface{}) (bool, error) {
+	v, ok := orientation.(string)
+	if !ok {
+		return false, nil
+	}
 	re, err := regexp.Compile(`^((right)|(ccw)|(counterclockwise)|(left)|(cw)|(clockwise))$`)
 	if err != nil {
 		return false, err
 	}
-	return re.MatchString(orientation), nil
+	return re.MatchString(v), nil
+}
+func (gs *Geo_Shape) validPointsOnly(pointsOnly interface{}) (bool, error) {
+	_, ok := pointsOnly.(bool)
+	return ok, nil
 }
