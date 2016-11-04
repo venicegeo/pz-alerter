@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	//"fmt"
 	"log"
-	"math/big"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -633,53 +632,6 @@ func (suite *ServerTester) Test05EventMapping() {
 	}
 }
 
-func (suite *ServerTester) Test05bBreakEventMapping() {
-	t := suite.T()
-	assert := assert.New(t)
-	client := suite.client
-
-	assertNoData(suite.T(), suite.client)
-	defer assertNoData(suite.T(), suite.client)
-
-	eventType := &EventType{Name: "allDataTypes", Mapping: map[string]interface{}{
-		"String":  elasticsearch.MappingElementTypeString,
-		"Long":    elasticsearch.MappingElementTypeLong,
-		"Integer": elasticsearch.MappingElementTypeInteger,
-		"Short":   elasticsearch.MappingElementTypeShort,
-		"Byte":    elasticsearch.MappingElementTypeByte,
-		"Double":  elasticsearch.MappingElementTypeDouble,
-		"Float":   elasticsearch.MappingElementTypeFloat,
-		"Bool":    elasticsearch.MappingElementTypeBool,
-	}}
-
-	respEventType, err := client.PostEventType(eventType)
-	eventTypeID := respEventType.EventTypeID
-	assert.NoError(err)
-
-	postEvent := func(mapping map[string]interface{}) error {
-		event := &Event{
-			EventTypeID: eventTypeID,
-			CreatedOn:   time.Now(),
-			Data:        mapping,
-		}
-
-		respEvent, err := client.PostEvent(event)
-		if err == nil {
-			defer client.DeleteEvent(respEvent.EventID)
-		}
-		return err
-	}
-	assert.Error(postEvent(map[string]interface{}{"String": "This is a string"}))
-	assert.NoError(postEvent(map[string]interface{}{"String": "This is a string", "Long": 100, "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}))
-	assert.Error(postEvent(map[string]interface{}{"String": 5, "Long": 100, "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}))
-	//assert.Error(postEvent(map[string]interface{}{"String": "This is a string", "Long": float64(-9223372036854775808), "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}))
-	mapping := map[string]interface{}{"String": "This is a string", "Long": big.NewFloat(9223372036854775800), "Integer": 90, "Short": 80, "Byte": 70, "Double": 300.0, "Float": 150.0, "Bool": true}
-	//a := mapping["Long"].(*big.Float)
-	//fmt.Println(a.Text('f', 20))
-	assert.Error(postEvent(mapping))
-	defer client.DeleteEventType(eventTypeID)
-}
-
 func (suite *ServerTester) Test06Workflow() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -906,72 +858,6 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	}()
 }
 
-/*func (suite *ServerTester) Test08BadEvents() {
-	t := suite.T()
-	assert := assert.New(t)
-	client := suite.client
-
-	assertNoData(suite.T(), suite.client)
-	defer assertNoData(suite.T(), suite.client)
-
-	eventTypeName := makeTestEventTypeName()
-
-	var eterrID piazza.Ident
-	{
-		mapping := map[string]interface{}{
-			"num":      elasticsearch.MappingElementTypeInteger,
-			"str":      elasticsearch.MappingElementTypeString,
-			"userName": elasticsearch.MappingElementTypeString,
-		}
-
-		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
-		respEventType, err := client.PostEventType(eventType)
-		eterrID = respEventType.EventTypeId
-		assert.NoError(err)
-		defer func() {
-			err := client.DeleteEventType(eterrID)
-			assert.NoError(err)
-		}()
-	}
-	{
-		event := &Event{
-			EventTypeId: eterrID,
-			CreatedOn:   time.Now(),
-			Data: map[string]interface{}{
-				"num": 17,
-				"str": "quick",
-			},
-		}
-
-		respEvent, err := client.PostEvent(event)
-		assert.NotNil(err)
-		e1ID := respEvent.EventId
-		defer func() {
-			err := client.DeleteEvent(e1ID)
-			assert.NoError(err)
-		}()
-	}
-	{
-		event := &Event{
-			EventTypeId: eterrID,
-			CreatedOn:   time.Now(),
-			Data: map[string]interface{}{
-				"num":      17,
-				"str":      []string{"quick"},
-				"userName": "quick",
-			},
-		}
-
-		respEvent, err := client.PostEvent(event)
-		assert.NotNil(err)
-		e1ID := respEvent.EventId
-		defer func() {
-			err := client.DeleteEvent(e1ID)
-			assert.NoError(err)
-		}()
-	}
-}*/
-
 func (suite *ServerTester) Test09Elasticsearch() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -1007,3 +893,111 @@ func printJSON(msg string, input interface{}) {
 		log.Printf("\t%s: null\n", msg)
 	}
 }
+
+/*func (suite *ServerTester) xTestEventMappingXtreme() {
+	fmt.Println("Starting mappingXtreme")
+	t := suite.T()
+	assert := assert.New(t)
+	client := suite.client
+
+	assertNoData(suite.T(), suite.client)
+	defer assertNoData(suite.T(), suite.client)
+
+	eventType := &EventType{Name: "allDataTypes", Mapping: map[string]interface{}{
+		"String":      elasticsearch.MappingElementTypeString,
+		"Long":        elasticsearch.MappingElementTypeLong,
+		"Int":         elasticsearch.MappingElementTypeInteger,
+		"Short":       elasticsearch.MappingElementTypeShort,
+		"Byte":        elasticsearch.MappingElementTypeByte,
+		"Double":      elasticsearch.MappingElementTypeDouble,
+		"Float":       elasticsearch.MappingElementTypeFloat,
+		"Bool":        elasticsearch.MappingElementTypeBool,
+		"Binary":      elasticsearch.MappingElementTypeBinary,
+		"Ip":          elasticsearch.MappingElementTypeIp,
+		"Date":        elasticsearch.MappingElementTypeDate,
+		"Geo_point":   elasticsearch.MappingElementTypeGeoPoint,
+		"Geo_shape":   elasticsearch.MappingElementTypeGeoShape,
+		"AStringA":    elasticsearch.MappingElementTypeStringA,
+		"ALongA":      elasticsearch.MappingElementTypeLongA,
+		"AIntA":       elasticsearch.MappingElementTypeIntegerA,
+		"AShortA":     elasticsearch.MappingElementTypeShortA,
+		"AByteA":      elasticsearch.MappingElementTypeByteA,
+		"ADoubleA":    elasticsearch.MappingElementTypeDoubleA,
+		"AFloatA":     elasticsearch.MappingElementTypeFloatA,
+		"ABoolA":      elasticsearch.MappingElementTypeBoolA,
+		"ABinaryA":    elasticsearch.MappingElementTypeBinaryA,
+		"AIpA":        elasticsearch.MappingElementTypeIpA,
+		"ADateA":      elasticsearch.MappingElementTypeDateA,
+		"AGeo_pointA": elasticsearch.MappingElementTypeGeoPointA,
+		"AGeo_shapeA": elasticsearch.MappingElementTypeGeoShapeA,
+	}}
+
+	respEventType, err := client.PostEventType(eventType)
+	eventTypeID := respEventType.EventTypeID
+	assert.NoError(err)
+
+	postEvent := func(mapping map[string]interface{}) (*Event, error) {
+		event := &Event{
+			EventTypeID: eventTypeID,
+			CreatedOn:   time.Now(),
+			Data:        mapping,
+		}
+
+		respEvent, err := client.PostEvent(event)
+		return respEvent, err
+	}
+	mapping := `
+		{
+			"String": "string",
+		   	"Long": 9223372036854775807,
+    		"Int": 2147483647,
+			"Short": 32767,
+			"Byte": 127,
+			"Double": 13350445929846516516879898651654987951213549879516513.6891654,
+			"Float": 340282346638528866549651.68791,
+			"Bool": false,
+			"Binary":"U29tZSBiaW5hcnkgYmxvYg==",
+			"Ip":"192.168.0.1",
+			"Date":"2015-01-01T12:10:30Z",
+			"Geo_point": {
+				"lon": 99.25,
+				"lat": -34.8
+			},
+			"Geo_shape": {
+    	 		"type" : "multipolygon",
+    	 		"coordinates" : [
+            		[ [[102.0, 2.0], [103.0, 2.0], [103.0, 3.0], [102.0, 3.0], [102.0, 2.0]] ],
+	            	[ [[100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0]],
+    	        	  [[100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2]] ]
+        		]
+    		},
+	    	"AStringA":["this","is","array","of","strings"],
+	    	"ALongA": [9223372036854775807,98756462165498165,-1000000000000],
+		   	"AIntA": [2147483647,654651,-9879874],
+    		"AShortA": [32767,5416,-30000],
+    		"AByteA": [127,100,-125],
+    		"ADoubleA": [13350445929846516516879898651654987951213549879516513.6891654,654651.654656854654321654,-100000000000000000000000000000000000000.21651],
+    		"AFloatA": [340282346638528866549651.68791,16151624651.1651651,-1000000000000000000.324654981],
+    		"ABoolA": [false,true,false,true,true],
+    		"ABinaryA":["U29tZSBiaW5hcnkgYmxvYg==","VGhpcyBpcyBiYXNlIDY0","VGhlIDMgbGF3cw=="],
+    		"AIpA":["192.168.1.1","127.0.0.1","10.0.0.1"],
+    		"ADateA":["2015-01-01T12:10:30Z","2016-01-01"],
+    		"AGeo_pointA":[{"lon": 99.25,"lat": -34.8},{"lon": 0,"lat": 0}],
+    		"AGeo_shapeA":[{
+        		"type" : "polygon",
+        		"coordinates" : [[ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ]]
+		    },{
+        		"type" : "polygon",
+        		"coordinates" : [
+        		    [ [100.0, 0.0], [101.0, 0.0], [101.0, 1.0], [100.0, 1.0], [100.0, 0.0] ],
+            		[ [100.2, 0.2], [100.8, 0.2], [100.8, 0.8], [100.2, 0.8], [100.2, 0.2] ]
+        		]
+    		}]
+    	}`
+	e, _ := piazza.StructStringToInterface(mapping)
+	ev, err := postEvent(e.(map[string]interface{}))
+	fmt.Println(ev)
+	assert.NoError(err)
+	defer client.DeleteEvent(ev.EventID)
+	defer client.DeleteEventType(eventTypeID)
+}*/

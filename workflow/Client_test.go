@@ -202,8 +202,9 @@ func (suite *ClientTester) Test15One() {
 	var etID piazza.Ident
 	{
 		mapping := map[string]interface{}{
-			"num": elasticsearch.MappingElementTypeInteger,
-			"str": elasticsearch.MappingElementTypeString,
+			"num":      elasticsearch.MappingElementTypeInteger,
+			"str":      elasticsearch.MappingElementTypeString,
+			"userName": elasticsearch.MappingElementTypeString,
 		}
 
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
@@ -283,8 +284,9 @@ func (suite *ClientTester) Test15One() {
 			EventTypeID: etID,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
-				"num": 18,
-				"str": "brown",
+				"num":      18,
+				"str":      "brown",
+				"userName": "my-api-key-39n987",
 			},
 		}
 
@@ -375,8 +377,10 @@ func (suite *ClientTester) Test17Triggering() {
 	var etC, etD, etE piazza.Ident
 	{
 		mapping := map[string]interface{}{
-			"num": elasticsearch.MappingElementTypeInteger,
-			"str": elasticsearch.MappingElementTypeString,
+			"num":      elasticsearch.MappingElementTypeInteger,
+			"str":      elasticsearch.MappingElementTypeString,
+			"userName": elasticsearch.MappingElementTypeString,
+			"jobId":    elasticsearch.MappingElementTypeString,
 		}
 		eventTypeC := &EventType{Name: "EventType C", Mapping: mapping}
 		eventTypeD := &EventType{Name: "EventType D", Mapping: mapping}
@@ -519,8 +523,10 @@ func (suite *ClientTester) Test17Triggering() {
 			EventTypeID: etE,
 			CreatedOn:   time.Now(),
 			Data: map[string]interface{}{
-				"num": 19,
-				"str": "fox",
+				"num":      19,
+				"str":      "fox",
+				"userName": "my-api-key-39n987",
+				"jobId":    "43688858-b6d4-4ef8-a98b-163e1980bba8",
 			},
 		}
 		respEventH, err := client.PostEvent(&e3)

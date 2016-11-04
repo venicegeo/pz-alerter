@@ -15,6 +15,7 @@
 package piazza
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"reflect"
@@ -22,11 +23,20 @@ import (
 	"unicode"
 )
 
+//func StructStringToInterface(stru string) (interface{}, error) {
+//	data := []byte(stru)
+//	source := (*json.RawMessage)(&data)
+//	var res interface{}
+//	err := json.Unmarshal(*source, &res)
+//	return res, err
+//}
 func StructStringToInterface(stru string) (interface{}, error) {
 	data := []byte(stru)
 	source := (*json.RawMessage)(&data)
 	var res interface{}
-	err := json.Unmarshal(*source, &res)
+	decoder := json.NewDecoder(bytes.NewReader(*source))
+	decoder.UseNumber()
+	err := decoder.Decode(&res)
 	return res, err
 }
 func StructInterfaceToString(stru interface{}) (string, error) {

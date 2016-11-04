@@ -639,7 +639,6 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	event.CreatedOn = time.Now()
 
 	response := *event
-
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
 	err = service.cron.AddJob(event.CronSchedule, cronEvent{event, eventTypeName, service})
