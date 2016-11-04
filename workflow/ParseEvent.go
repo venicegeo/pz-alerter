@@ -30,41 +30,42 @@ import (
 
 const ipRegex = `^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
 
-func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
-	k := fmt.Sprint(key)
-	if !elasticsearch.IsValidMappingType(k) {
-		return errors.New(fmt.Sprintf("Variable %s is not a valid mapping type", key))
+func (db *EventDB) valueIsValidType(typi interface{}, nami interface{}, value interface{}) error {
+	typ := fmt.Sprint(typi)
+	name := fmt.Sprint(nami)
+	if !elasticsearch.IsValidMappingType(typ) {
+		return errors.New(fmt.Sprintf("Variable %s is not a valid mapping type", typ))
 	}
-	if elasticsearch.IsValidArrayTypeMapping(k) {
+	if elasticsearch.IsValidArrayTypeMapping(typ) {
 		if !piazza.ValueIsValidArray(value) {
-			return errors.New(fmt.Sprintf("Value %s was passed into an array field", value))
+			return errors.New(fmt.Sprintf("Value %s was passed into array field %s", value, name))
 		}
 	} else {
 		if piazza.ValueIsValidArray(value) {
-			return errors.New(fmt.Sprintf("Value %s was passed into a non-array field", value))
+			return errors.New(fmt.Sprintf("Value %s was passed into non-array field %s", value, value))
 		}
 	}
 
-	switch elasticsearch.MappingElementTypeName(k) {
+	switch elasticsearch.MappingElementTypeName(typ) {
 	case elasticsearch.MappingElementTypeString:
 		if reflect.TypeOf(value).Kind() != reflect.String {
-			return errors.New(fmt.Sprintf("Value %s is not a valid String", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid String", name))
 		}
 	case elasticsearch.MappingElementTypeStringA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid String array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid String array", name))
 		}
 		for _, v := range arr {
 			if reflect.TypeOf(v).Kind() != reflect.String {
-				return errors.New(fmt.Sprintf("Value %s is not a valid String", value))
+				return errors.New(fmt.Sprintf("String array %s contains non-valid String %s", name, v))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeLong: //int64
 		num, ok := value.(json.Number)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Long", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Long", name))
 		}
 		/*intNum*/ _, err := num.Int64()
 		if err != nil {
@@ -73,12 +74,12 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeLongA: //int64A
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Long array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Long array", name))
 		}
 		for _, v := range arr {
 			num, ok := v.(json.Number)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Long", value))
+				return errors.New(fmt.Sprintf("Long array %s contains a non-valid Long %s", name, v))
 			}
 			/*intNum*/ _, err := num.Int64()
 			if err != nil {
@@ -89,100 +90,100 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeInteger: //int32
 		num, ok := value.(json.Number)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Integer", name))
 		}
 		intNum, err := num.Int64()
 		if err != nil {
 			return err
 		}
 		if int64(int32(intNum)) != intNum {
-			return errors.New(fmt.Sprintf("Value %d is outside the range of Integer", intNum))
+			return errors.New(fmt.Sprintf("Value of %s is outside the range of Integer", name))
 		}
 	case elasticsearch.MappingElementTypeIntegerA: //int32A
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Integer array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Integer array", name))
 		}
 		for _, v := range arr {
 			num, ok := v.(json.Number)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Integer", value))
+				return errors.New(fmt.Sprintf("Integer array %s contains a non-valid Integer %s", name, v))
 			}
 			intNum, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			if int64(int32(intNum)) != intNum {
-				return errors.New(fmt.Sprintf("Value %d is outside the range of Integer", intNum))
+				return errors.New(fmt.Sprintf("Integer array %s contains value %d - outside the range of Integer", name, intNum))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeShort: //int16
 		num, ok := value.(json.Number)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Short", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Short", name))
 		}
 		intNum, err := num.Int64()
 		if err != nil {
 			return err
 		}
 		if int64(int16(intNum)) != intNum {
-			return errors.New(fmt.Sprintf("Value %d is outside the range of Short", intNum))
+			return errors.New(fmt.Sprintf("Value of %s is outside the range of Short", name))
 		}
 	case elasticsearch.MappingElementTypeShortA: //int16A
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Short array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Short array", name))
 		}
 		for _, v := range arr {
 			num, ok := v.(json.Number)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Short", value))
+				return errors.New(fmt.Sprintf("Short array %s contains a non-valid Short %s", name, v))
 			}
 			intNum, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			if int64(int16(intNum)) != intNum {
-				return errors.New(fmt.Sprintf("Value %d is outside the range of Short", intNum))
+				return errors.New(fmt.Sprintf("Short array %s contains value %d - outside the range of Short", name, intNum))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeByte: //int8
 		num, ok := value.(json.Number)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Byte", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Byte", name))
 		}
 		intNum, err := num.Int64()
 		if err != nil {
 			return err
 		}
 		if int64(int8(intNum)) != intNum {
-			return errors.New(fmt.Sprintf("Value %d is outside the range of Byte", intNum))
+			return errors.New(fmt.Sprintf("Value of %d is outside the range of Byte", name))
 		}
 	case elasticsearch.MappingElementTypeByteA: //int8A
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Byte array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Byte array", name))
 		}
 		for _, v := range arr {
 			num, ok := v.(json.Number)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Byte", value))
+				return errors.New(fmt.Sprintf("Byte array %s contains a non-valid Byte %s", name, v))
 			}
 			intNum, err := num.Int64()
 			if err != nil {
 				return err
 			}
 			if int64(int8(intNum)) != intNum {
-				return errors.New(fmt.Sprintf("Value %d is outside the range of Byte", intNum))
+				return errors.New(fmt.Sprintf("Byte array %s contains value %d - outside the range of Byte", name, intNum))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeDouble: //float64
 		num, ok := value.(json.Number)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Double", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Double", name))
 		}
 		/*floatNum*/ _, err := num.Float64()
 		if err != nil {
@@ -191,12 +192,12 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeDoubleA: //float64A
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Double array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Double array", name))
 		}
 		for _, v := range arr {
 			num, ok := v.(json.Number)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Double", value))
+				return errors.New(fmt.Sprintf("Double array %s contains a non-valid Double %s", name, v))
 			}
 			/*floatNum*/ _, err := num.Float64()
 			if err != nil {
@@ -207,53 +208,53 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeFloat: //float32
 		num, ok := value.(json.Number)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Float", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Float", name))
 		}
 		floatNum, err := num.Float64()
 		if err != nil {
 			return err
 		}
 		if floatNum > 3.4*math.Pow10(38) || floatNum < -3.4*math.Pow10(38) {
-			return errors.New(fmt.Sprintf("Value %f is outside the range of Float", floatNum))
+			return errors.New(fmt.Sprintf("Value of %s is outside the range of Float", name))
 		}
 	case elasticsearch.MappingElementTypeFloatA: //float32A
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Float array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Float array", name))
 		}
 		for _, v := range arr {
 			num, ok := v.(json.Number)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Float", value))
+				return errors.New(fmt.Sprintf("Float array %s contains a non-valid Float %s", name, v))
 			}
 			floatNum, err := num.Float64()
 			if err != nil {
 				return err
 			}
 			if floatNum > 3.4*math.Pow10(38) || floatNum < -3.4*math.Pow10(38) {
-				return errors.New(fmt.Sprintf("Value %f is outside the range of Float", floatNum))
+				return errors.New(fmt.Sprintf("Float array %s contains %f - outside the range of Float", name, floatNum))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeBool:
 		if reflect.TypeOf(value).Kind() != reflect.Bool {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Boolean", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Boolean", name))
 		}
 	case elasticsearch.MappingElementTypeBoolA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Boolean array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Boolean array", name))
 		}
 		for _, v := range arr {
 			if reflect.TypeOf(v).Kind() != reflect.Bool {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Boolean", value))
+				return errors.New(fmt.Sprintf("Boolean array %s contains a non-valid Boolean %s", name, v))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeBinary:
 		v, ok := value.(string)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Binary", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Binary", name))
 		}
 		/*binary*/ _, err := base64.StdEncoding.DecodeString(v)
 		if err != nil {
@@ -262,12 +263,12 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeBinaryA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Binary array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Binary array", name))
 		}
 		for _, vA := range arr {
 			v, ok := vA.(string)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Binary", value))
+				return errors.New(fmt.Sprintf("Binary array %s contains a non-valid Binary %s", name, vA))
 			}
 			/*binary*/ _, err := base64.StdEncoding.DecodeString(v)
 			if err != nil {
@@ -278,31 +279,31 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeIp:
 		ip, ok := value.(string)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid IP", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid IP", name))
 		}
 		re, err := regexp.Compile(ipRegex)
 		if err != nil {
 			return err
 		}
 		if !re.MatchString(ip) {
-			return errors.New(fmt.Sprintf("Value %s is not a valid IP", ip))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid IP", name))
 		}
 	case elasticsearch.MappingElementTypeIpA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid IP array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid IP array", name))
 		}
 		for _, v := range arr {
 			ip, ok := v.(string)
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid IP", value))
+				return errors.New(fmt.Sprintf("IP array %s contains a non-valid IP %s", name, v))
 			}
 			re, err := regexp.Compile(ipRegex)
 			if err != nil {
 				return err
 			}
 			if !re.MatchString(ip) {
-				return errors.New(fmt.Sprintf("Value %s is not a valid IP", ip))
+				return errors.New(fmt.Sprintf("IP array %s contains a non-valid IP %s", name, ip))
 			}
 		}
 
@@ -310,13 +311,13 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		stringDate, okString := value.(string)
 		milliDate, okNumber := value.(json.Number)
 		if !okString && !okNumber {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Date", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Date", name))
 		}
 		if okString {
 			_, err1 := time.Parse("2006-01-02T15:04:05Z07:00", stringDate)
 			_, err2 := time.Parse("2006-01-02", stringDate)
 			if err1 != nil && err2 != nil {
-				return err2
+				return errors.New(fmt.Sprintf("Value of %s is not a valid Date", name))
 			}
 		} else {
 			num, err := milliDate.Int64()
@@ -324,25 +325,25 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 				return err
 			}
 			if num <= 0 {
-				return errors.New(fmt.Sprintf("Value %d is not a valid Date", num))
+				return errors.New(fmt.Sprintf("Value of %s is not a valid Date", name))
 			}
 		}
 	case elasticsearch.MappingElementTypeDateA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid Date array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid Date array", name))
 		}
 		for _, v := range arr {
 			stringDate, okString := v.(string)
 			milliDate, okNumber := v.(json.Number)
 			if !okString && !okNumber {
-				return errors.New(fmt.Sprintf("Value %s is not a valid Date", value))
+				return errors.New(fmt.Sprintf("Date array %s contains a non-valid Date %s", name, v))
 			}
 			if okString {
 				_, err1 := time.Parse("2006-01-02T15:04:05Z07:00", stringDate)
 				_, err2 := time.Parse("2006-01-02", stringDate)
 				if err1 != nil && err2 != nil {
-					return err2
+					return errors.New(fmt.Sprintf("Date array %s contains a non-valid Date %s", name, stringDate))
 				}
 			} else {
 				num, err := milliDate.Int64()
@@ -350,7 +351,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 					return err
 				}
 				if num <= 0 {
-					return errors.New(fmt.Sprintf("Value %d is not a valid Date", num))
+					return errors.New(fmt.Sprintf("Date array %s contains a non-valid Date %d", name, num))
 				}
 			}
 		}
@@ -358,7 +359,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 	case elasticsearch.MappingElementTypeGeoPoint:
 		sPoint, ok := value.(string)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid geo_point", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid geo_point", name))
 		}
 		var point Geo_Point
 		err := json.Unmarshal([]byte(sPoint), &point)
@@ -366,17 +367,17 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 			return err
 		}
 		if !point.valid() {
-			return errors.New(fmt.Sprintf("Value %s is not a valid geo_point", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid geo_point", name))
 		}
 	case elasticsearch.MappingElementTypeGeoPointA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid geo_point array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid geo_point array", name))
 		}
 		for _, v := range arr {
 			mPoint, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid geo_point", value))
+				return errors.New(fmt.Sprintf("geo_point array %s contains a non-valid geo_point %s", name, v))
 			}
 			sPoint, err := piazza.StructInterfaceToString(mPoint)
 			if err != nil {
@@ -388,14 +389,14 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 				return err
 			}
 			if !point.valid() {
-				return errors.New(fmt.Sprintf("Value %s is not a valid geo_point", value))
+				return errors.New(fmt.Sprintf("geo_point array %s contains a non-valid geo_point %s", name, point))
 			}
 		}
 
 	case elasticsearch.MappingElementTypeGeoShape:
 		sShape, ok := value.(string)
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid geo_shape", name))
 		}
 		shape := Geo_Shape{}
 		err := json.Unmarshal([]byte(sShape), &shape)
@@ -404,19 +405,19 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		}
 		if ok, err := shape.valid(); !ok {
 			if err != nil {
-				return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape: %s", value, err.Error()))
+				return errors.New(fmt.Sprintf("Value of %s is not a valid geo_shape: %s", name, err.Error()))
 			}
-			return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid geo_shape", name))
 		}
 	case elasticsearch.MappingElementTypeGeoShapeA:
 		arr, ok := value.([]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape array", value))
+			return errors.New(fmt.Sprintf("Value of %s is not a valid geo_shape array", name))
 		}
 		for _, v := range arr {
 			mShape, ok := v.(map[string]interface{})
 			if !ok {
-				return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape", value))
+				return errors.New(fmt.Sprintf("geo_shape array %s contains a non-valid geo_shape %s", name, mShape))
 			}
 			sShape, err := piazza.StructInterfaceToString(mShape)
 			if err != nil {
@@ -429,13 +430,13 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 			}
 			if ok, err := shape.valid(); !ok {
 				if err != nil {
-					return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape: %s", value, err.Error()))
+					return errors.New(fmt.Sprintf("geo_shape array %s is not a valid geo_shape %s. Info: [%s]", name, shape, err.Error()))
 				}
-				return errors.New(fmt.Sprintf("Value %s is not a valid geo_shape", value))
+				return errors.New(fmt.Sprintf("geo_shape array %s contains a non-valid geo_shape %s", name, shape))
 			}
 		}
 	default:
-		return errors.New(fmt.Sprintf("Unknown type %s", k))
+		return errors.New(fmt.Sprintf("Unknown type %s: %s", typ, name))
 	}
 	return nil
 }

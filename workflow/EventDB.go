@@ -75,10 +75,9 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	exclude := []string{}
-	excludeTypes := []string{string(elasticsearch.MappingElementTypeGeoPoint), string(elasticsearch.MappingElementTypeGeoShape)} //, string(elasticsearch.MappingElementTypeGeoPointA), string(elasticsearch.MappingElementTypeGeoShapeA)}
+	excludeTypes := []string{string(elasticsearch.MappingElementTypeGeoPoint), string(elasticsearch.MappingElementTypeGeoShape)}
 	for k, v := range eventTypeMappingVars {
 		if piazza.Contains(excludeTypes, fmt.Sprint(v)) {
-			//		if fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoPoint) || fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoShape) {
 			exclude = append(exclude, k)
 		}
 	}
@@ -133,7 +132,7 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	}
 
 	for k, v := range eventTypeMappingVars {
-		err := db.valueIsValidType(v, eventDataVars[k])
+		err := db.valueIsValidType(v, k, eventDataVars[k])
 		if err != nil {
 			return LoggedError("EventDB.PostData failed: %s", err.Error())
 		}
