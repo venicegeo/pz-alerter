@@ -75,7 +75,7 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	exclude := []string{}
-	excludeTypes := []string{string(elasticsearch.MappingElementTypeGeoPoint), string(elasticsearch.MappingElementTypeGeoShape)}
+	excludeTypes := []string{string(elasticsearch.MappingElementTypeGeoPoint), string(elasticsearch.MappingElementTypeGeoShape)} //, string(elasticsearch.MappingElementTypeGeoPointA), string(elasticsearch.MappingElementTypeGeoShapeA)}
 	for k, v := range eventTypeMappingVars {
 		if piazza.Contains(excludeTypes, fmt.Sprint(v)) {
 			//		if fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoPoint) || fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoShape) {
@@ -88,15 +88,15 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	//DEBUG
-	//fmt.Println("EventType Mapping")
-	//for k, v := range eventTypeMappingVars {
-	//	fmt.Println(k, v)
-	//}
-	//fmt.Println()
-	//fmt.Println("Event Data")
-	//for k, v := range eventDataVars {
-	//	fmt.Println(k, v)
-	//}
+	//	fmt.Println("EventType Mapping")
+	//	for k, v := range eventTypeMappingVars {
+	//		fmt.Println(k, v)
+	//	}
+	//	fmt.Println()
+	//	fmt.Println("Event Data")
+	//	for k, v := range eventDataVars {
+	//		fmt.Println(k, v)
+	//	}
 	if len(eventTypeMappingVars) > len(eventDataVars) {
 		notFound := []string{}
 		for k, _ := range eventTypeMappingVars {
