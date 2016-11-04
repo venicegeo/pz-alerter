@@ -31,6 +31,10 @@ const typeMultiPolygon = "multipolygon"
 const typeEnvelope = "envelope"
 const typeCircle = "circle"
 
+const orientationRegex = `^((right)|(ccw)|(counterclockwise)|(left)|(cw)|(clockwise))$`
+const precisionRegex = `^((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters))$`
+const distanceRegex = `^(([1-9][0-9]*)((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters)|$))$`
+
 type Geo_Point struct {
 	Lon float64 `json:"lon" binding:"required"`
 	Lat float64 `json:"lat" binding:"required"`
@@ -220,7 +224,7 @@ func (gc *geo_GeometryCollection) valid(gs *Geo_Shape) (bool, error) {
 	}
 	return true, nil
 }
-func (p *geo_Sub_Point) valid(gs *Geo_Shape) (bool, error) { //TODO
+func (p *geo_Sub_Point) valid(gs *Geo_Shape) (bool, error) {
 	if len(*p) != 2 {
 		return false, nil
 	}
@@ -304,7 +308,7 @@ func (gs *Geo_Shape) validDistance(distance interface{}) (bool, error) {
 	if !ok {
 		return false, nil
 	}
-	re, err := regexp.Compile(`^(([1-9][0-9]*)((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters)|$))$`)
+	re, err := regexp.Compile(distanceRegex)
 	if err != nil {
 		return false, err
 	}
@@ -325,7 +329,7 @@ func (gs *Geo_Shape) validPrecision(precision interface{}) (bool, error) {
 	if !ok {
 		return ok, nil
 	}
-	re, err := regexp.Compile(`^((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters))$`)
+	re, err := regexp.Compile(precisionRegex)
 	if err != nil {
 		return false, err
 	}
@@ -353,7 +357,7 @@ func (gs *Geo_Shape) validOrientation(orientation interface{}) (bool, error) {
 	if !ok {
 		return false, nil
 	}
-	re, err := regexp.Compile(`^((right)|(ccw)|(counterclockwise)|(left)|(cw)|(clockwise))$`)
+	re, err := regexp.Compile(orientationRegex)
 	if err != nil {
 		return false, err
 	}

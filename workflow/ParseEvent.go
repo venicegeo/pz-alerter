@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
-	"github.com/venicegeo/pz-gocommon/gocommon"
+	//"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
@@ -181,11 +181,7 @@ func (db *EventDB) valueIsValidType(key interface{}, value interface{}) error {
 		}
 		//shape := NewDefaultGeo_Shape()
 		shape := Geo_Shape{}
-		str, _ := piazza.StructInterfaceToString(shape)
-		fmt.Println(str)
 		err := json.Unmarshal([]byte(sShape), &shape)
-		str, _ = piazza.StructInterfaceToString(shape)
-		fmt.Println(str)
 		if err != nil {
 			return err
 		}

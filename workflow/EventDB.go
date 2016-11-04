@@ -17,7 +17,6 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -76,8 +75,10 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	exclude := []string{}
+	excludeTypes := []string{string(elasticsearch.MappingElementTypeGeoPoint), string(elasticsearch.MappingElementTypeGeoShape)}
 	for k, v := range eventTypeMappingVars {
-		if fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoPoint) || fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoShape) {
+		if piazza.Contains(excludeTypes, fmt.Sprint(v)) {
+			//		if fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoPoint) || fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoShape) {
 			exclude = append(exclude, k)
 		}
 	}
@@ -138,11 +139,6 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		}
 	}
 	return nil
-}
-
-func float64ToInt64(float float64) (int64, error) {
-	s := strconv.FormatFloat(float, 'f', -1, 64)
-	return strconv.ParseInt(s, 10, 64)
 }
 
 func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination) ([]Event, int64, error) {
