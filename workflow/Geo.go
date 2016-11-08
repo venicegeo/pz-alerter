@@ -16,6 +16,9 @@ package workflow
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
+	"reflect"
 	"regexp"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -36,12 +39,44 @@ const precisionRegex = `^((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)
 const distanceRegex = `^(([1-9][0-9]*)((in)|(inch)|(yd)|(yard)|(mi)|(miles)|(km)|(kilometers)|(m)|(meters)|(cm)|(centimeters)|(mm)|(millimeters)|$))$`
 
 type Geo_Point struct {
-	Lon float64 `json:"lon" binding:"required"`
-	Lat float64 `json:"lat" binding:"required"`
+	Lon float64 `json:"lon"`
+	Lat float64 `json:"lat"`
 }
 
 func (p *Geo_Point) valid() bool { //TODO
 	return true
+}
+
+func NewGeo_Point_FromJSON(sPoint string) (Geo_Point, error) {
+	var iPoint, i2Point interface{}
+	var mPoint, m2Point map[string]interface{}
+	var s2Point string
+	var err error
+	var ok bool
+	var point Geo_Point
+
+	if iPoint, err = piazza.StructStringToInterface(sPoint); err != nil {
+		return Geo_Point{}, err
+	}
+	if mPoint, ok = iPoint.(map[string]interface{}); !ok {
+		return Geo_Point{}, errors.New("Not valid geo_point")
+	}
+	if err = json.Unmarshal([]byte(sPoint), &point); err != nil {
+		return Geo_Point{}, err
+	}
+	if s2Point, err = piazza.StructInterfaceToString(point); err != nil {
+		return Geo_Point{}, err
+	}
+	if i2Point, err = piazza.StructStringToInterface(s2Point); err != nil {
+		return Geo_Point{}, err
+	}
+	if m2Point, ok = i2Point.(map[string]interface{}); !ok {
+		return Geo_Point{}, errors.New("Not valid geo_point")
+	}
+	if !reflect.DeepEqual(mPoint, m2Point) {
+		return Geo_Point{}, errors.New("Not valid geo_point")
+	}
+	return point, nil
 }
 
 type Geo_Shape struct {
@@ -237,10 +272,18 @@ func (p *geo_Sub_Point) valid(gs *Geo_Shape) (bool, error) {
 	return point.valid(), nil
 }
 func (ls *geo_LineString) valid(gs *Geo_Shape) (bool, error) {
+	keys := map[string]bool{}
+	if len(*ls) < 2 {
+		return false, nil
+	}
 	for _, v := range *ls {
 		if ok, _ := v.valid(gs); !ok {
 			return false, nil
 		}
+		if _, exists := keys[fmt.Sprint(v)]; exists {
+			return false, nil
+		}
+		keys[fmt.Sprint(v)] = false
 	}
 	return true, nil
 }
@@ -250,6 +293,9 @@ func (ply *geo_Polygon) valid(gs *Geo_Shape) (bool, error) {
 	}
 	for _, v := range *ply {
 		if len(v) != 5 {
+			return false, nil
+		}
+		if fmt.Sprint(v[0]) != fmt.Sprint(v[4]) {
 			return false, nil
 		}
 		for _, p := range v {
