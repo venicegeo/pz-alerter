@@ -18,7 +18,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"reflect"
+	//"reflect"
 	"regexp"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -73,24 +73,29 @@ func NewGeo_Point_FromJSON(sPoint string) (Geo_Point, error) {
 	if m2Point, ok = i2Point.(map[string]interface{}); !ok {
 		return Geo_Point{}, errors.New("Not valid geo_point")
 	}
-	if !reflect.DeepEqual(mPoint, m2Point) {
+	if len(mPoint) != len(m2Point) {
 		return Geo_Point{}, errors.New("Not valid geo_point")
+	}
+	for k := range mPoint {
+		if _, ok := m2Point[k]; !ok {
+			return Geo_Point{}, errors.New("Not valid geo_point")
+		}
 	}
 	return point, nil
 }
 
 type Geo_Shape struct {
-	Type             interface{} `json:"type"`               //string
-	Coordinates      interface{} `json:"coordinates"`        //interface{}
-	Geometries       interface{} `json:"geometries"`         //interface{}
-	Tree             interface{} `json:"tree"`               //string
-	Precision        interface{} `json:"precision"`          //string
-	TreeLevels       interface{} `json:"tree_levels"`        //string
-	Strategy         interface{} `json:"strategy"`           //string
-	DistanceErrorPct interface{} `json:"distance_error_pct"` //float64
-	Orientation      interface{} `json:"orientation"`        //string
-	PointsOnly       interface{} `json:"points_only"`        //bool
-	Radius           interface{} `json:"radius"`             //string
+	Type             interface{} `json:"type"`                         //string
+	Coordinates      interface{} `json:"coordinates,omitempty"`        //interface{}
+	Geometries       interface{} `json:"geometries,omitempty"`         //interface{}
+	Tree             interface{} `json:"tree,omitempty"`               //string
+	Precision        interface{} `json:"precision,omitempty"`          //string
+	TreeLevels       interface{} `json:"tree_levels,omitempty"`        //string
+	Strategy         interface{} `json:"strategy,omitempty"`           //string
+	DistanceErrorPct interface{} `json:"distance_error_pct,omitempty"` //float64
+	Orientation      interface{} `json:"orientation,omitempty"`        //string
+	PointsOnly       interface{} `json:"points_only,omitempty"`        //bool
+	Radius           interface{} `json:"radius,omitempty"`             //string
 }
 
 type geo_GeometryCollection []Geo_Shape
@@ -105,6 +110,43 @@ type geo_Circle geo_Sub_Point
 
 func NewDefaultGeo_Shape() Geo_Shape {
 	return Geo_Shape{Tree: "geohash", Precision: "meters", TreeLevels: "50m", Strategy: "recursive", DistanceErrorPct: 0.025, Orientation: "ccw", PointsOnly: false}
+}
+
+func NewGeo_Shape_FromJSON(sShape string) (Geo_Shape, error) {
+	var iShape, i2Shape interface{}
+	var mShape, m2Shape map[string]interface{}
+	var s2Shape string
+	var err error
+	var ok bool
+	var shape Geo_Shape
+
+	if iShape, err = piazza.StructStringToInterface(sShape); err != nil {
+		return Geo_Shape{}, err
+	}
+	if mShape, ok = iShape.(map[string]interface{}); !ok {
+		return Geo_Shape{}, errors.New("Not valid geo_shape")
+	}
+	if err = json.Unmarshal([]byte(sShape), &shape); err != nil {
+		return Geo_Shape{}, err
+	}
+	if s2Shape, err = piazza.StructInterfaceToString(shape); err != nil {
+		return Geo_Shape{}, err
+	}
+	if i2Shape, err = piazza.StructStringToInterface(s2Shape); err != nil {
+		return Geo_Shape{}, err
+	}
+	if m2Shape, ok = i2Shape.(map[string]interface{}); !ok {
+		return Geo_Shape{}, errors.New("Not valid geo_shape")
+	}
+	if len(mShape) != len(m2Shape) {
+		return Geo_Shape{}, errors.New("Not valid geo_shape")
+	}
+	for k := range mShape {
+		if _, ok := m2Shape[k]; !ok {
+			return Geo_Shape{}, errors.New("Not valid geo_shape")
+		}
+	}
+	return shape, nil
 }
 
 func (gs *Geo_Shape) valid() (bool, error) {
@@ -156,7 +198,7 @@ func (gs *Geo_Shape) valid() (bool, error) {
 
 	switch gs.Type {
 	case typeGeometryCollection:
-		str, err := piazza.StructInterfaceToString(gs.Coordinates)
+		str, err := piazza.StructInterfaceToString(gs.Geometries)
 		if err != nil {
 			return false, err
 		}
@@ -292,13 +334,21 @@ func (ply *geo_Polygon) valid(gs *Geo_Shape) (bool, error) {
 		return false, nil
 	}
 	for _, v := range *ply {
-		if len(v) != 5 {
+		if fmt.Sprint(v[0]) != fmt.Sprint(v[len(v)-1]) {
 			return false, nil
 		}
-		if fmt.Sprint(v[0]) != fmt.Sprint(v[4]) {
-			return false, nil
-		}
-		for _, p := range v {
+		points := []string{}
+		for k, p := range v {
+			if k < (len(v) - 1) {
+				if piazza.Contains(points, fmt.Sprint(p)) {
+					return false, nil
+				}
+				points = append(points, fmt.Sprint(p))
+			} else {
+				if piazza.Contains(points[1:], fmt.Sprint(p)) {
+					return false, nil
+				}
+			}
 			if ok, err := p.valid(gs); !ok {
 				return false, err
 			}

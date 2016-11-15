@@ -87,15 +87,16 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	//DEBUG
-	//	fmt.Println("EventType Mapping")
-	//	for k, v := range eventTypeMappingVars {
-	//		fmt.Println(k, v)
-	//	}
-	//	fmt.Println()
-	//	fmt.Println("Event Data")
-	//	for k, v := range eventDataVars {
-	//		fmt.Println(k, v)
-	//	}
+	//fmt.Println("EventType Mapping")
+	//for k, v := range eventTypeMappingVars {
+	//	fmt.Println(k, v)
+	//}
+	//fmt.Println()
+	//fmt.Println("Event Data")
+	//for k, v := range eventDataVars {
+	//	fmt.Println(k, v)
+	//}
+	//
 	if len(eventTypeMappingVars) > len(eventDataVars) {
 		notFound := []string{}
 		for k, _ := range eventTypeMappingVars {
@@ -113,6 +114,7 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 		}
 		return LoggedError("EventDB.PostData failed: the variables %s were not specified in the EventType but were found in the Event", extra)
 	} else {
+		//TODO remove?
 		for k, v := range eventTypeMappingVars {
 			v2, ok := eventDataVars[k]
 			if !ok {

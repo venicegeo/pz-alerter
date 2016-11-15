@@ -321,15 +321,11 @@ func isValidGeoShape(typ, name string, value interface{}) error {
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_shape", name))
 	}
-	shape := Geo_Shape{}
-	err := json.Unmarshal([]byte(sShape), &shape)
+	shape, err := NewGeo_Shape_FromJSON(sShape)
 	if err != nil {
-		return err
+		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_shape", name))
 	}
-	if ok, err := shape.valid(); !ok {
-		if err != nil {
-			return errors.New(fmt.Sprintf("Value of %v is not a valid geo_shape: %v", name, err.Error()))
-		}
+	if ok, err := shape.valid(); !ok || err != nil {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_shape", name))
 	}
 	return nil
@@ -342,22 +338,14 @@ func isValidGeoShapeArray(typ, name string, value interface{}) error {
 	for _, v := range arr {
 		mShape, ok := v.(map[string]interface{})
 		if !ok {
-			return errors.New(fmt.Sprintf("geo_shape array %v contains a non-valid geo_shape: %v", name, mShape))
+			return errors.New(fmt.Sprintf("geo_shape array %v contains a non-valid geo_shape: %v", name, v))
 		}
 		sShape, err := piazza.StructInterfaceToString(mShape)
 		if err != nil {
 			return err
 		}
-		var shape Geo_Shape
-		err = json.Unmarshal([]byte(sShape), &shape)
-		if err != nil {
-			return err
-		}
-		if ok, err := shape.valid(); !ok {
-			if err != nil {
-				return errors.New(fmt.Sprintf("geo_shape array %v is not a valid geo_shape %v. Info: [%v]", name, shape, err.Error()))
-			}
-			return errors.New(fmt.Sprintf("geo_shape array %v contains a non-valid geo_shape: %v", name, shape))
+		if err := isValidGeoShape(typ, name, sShape); err != nil {
+			return errors.New(fmt.Sprintf("geo_shape array %v contains a non-valid geo_shape: %v", name, v))
 		}
 	}
 	return nil
