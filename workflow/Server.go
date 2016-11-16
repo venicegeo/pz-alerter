@@ -17,6 +17,7 @@ package workflow
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -117,7 +118,12 @@ func (server *Server) handleGetAllEventTypes(c *gin.Context) {
 
 func (server *Server) handlePostEventType(c *gin.Context) {
 	eventType := &EventType{}
-	err := c.BindJSON(eventType)
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.UseNumber()
+	err := decoder.Decode(&eventType)
+	if eventType == nil {
+		err = errors.New("EventType is <nil>")
+	}
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
@@ -127,6 +133,7 @@ func (server *Server) handlePostEventType(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
+
 	resp := server.service.PostEventType(eventType)
 	piazza.GinReturnJson(c, resp)
 }
@@ -178,6 +185,9 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 	decoder := json.NewDecoder(c.Request.Body)
 	decoder.UseNumber()
 	err := decoder.Decode(&event)
+	if event == nil {
+		err = errors.New("Event is <nil>")
+	}
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
@@ -242,7 +252,12 @@ func (server *Server) handleGetAllTriggers(c *gin.Context) {
 
 func (server *Server) handlePostTrigger(c *gin.Context) {
 	trigger := &Trigger{Enabled: true}
-	err := c.BindJSON(trigger)
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.UseNumber()
+	err := decoder.Decode(&trigger)
+	if trigger == nil {
+		err = errors.New("Trigger is <nil>")
+	}
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
@@ -339,7 +354,12 @@ func (server *Server) handleAlertQuery(c *gin.Context) {
 
 func (server *Server) handlePostAlert(c *gin.Context) {
 	alert := &Alert{}
-	err := c.BindJSON(alert)
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.UseNumber()
+	err := decoder.Decode(&alert)
+	if alert == nil {
+		err = errors.New("Alert is <nil>")
+	}
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,

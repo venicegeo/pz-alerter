@@ -283,6 +283,7 @@ func (suite *ServerTester) Test01EventType() {
 
 }
 
+//TODO
 func (suite *ServerTester) Test02Event() {
 	t := suite.T()
 	assert := assert.New(t)
