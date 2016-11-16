@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workflow
+package elasticsearch
 
 import (
 	"encoding/base64"
@@ -27,25 +27,27 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-func isValidString(typ, name string, value interface{}) error {
+const ipRegex = `^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
+
+func IsValidString(typ, name string, value interface{}) error {
 	if fmt.Sprint(reflect.TypeOf(value)) != "string" {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid String", name))
 	}
 	return nil
 }
-func isValidStringArray(typ, name string, value interface{}) error {
+func IsValidStringArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid String array", name))
 	}
 	for _, v := range arr {
-		if err := isValidString(typ, name, v); err != nil {
+		if err := IsValidString(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("String array %v contains non-valid String: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidLong(typ, name string, value interface{}) error {
+func IsValidLong(typ, name string, value interface{}) error {
 	num, ok := value.(json.Number)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Long", name))
@@ -56,20 +58,20 @@ func isValidLong(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidLongArray(typ, name string, value interface{}) error {
+func IsValidLongArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Long array", name))
 	}
 	for _, v := range arr {
-		if err := isValidLong(typ, name, v); err != nil {
+		if err := IsValidLong(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Long array %v contains a non-valid Long: %v", name, v))
 
 		}
 	}
 	return nil
 }
-func isValidInteger(typ, name string, value interface{}) error {
+func IsValidInteger(typ, name string, value interface{}) error {
 	num, ok := value.(json.Number)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Integer", name))
@@ -83,19 +85,19 @@ func isValidInteger(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidIntegerArray(typ, name string, value interface{}) error {
+func IsValidIntegerArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Integer array", name))
 	}
 	for _, v := range arr {
-		if err := isValidInteger(typ, name, v); err != nil {
+		if err := IsValidInteger(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Integer array %v contains a non-valid Integer: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidShort(typ, name string, value interface{}) error {
+func IsValidShort(typ, name string, value interface{}) error {
 	num, ok := value.(json.Number)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Short", name))
@@ -109,19 +111,19 @@ func isValidShort(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidShortArray(typ, name string, value interface{}) error {
+func IsValidShortArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Short array", name))
 	}
 	for _, v := range arr {
-		if err := isValidShort(typ, name, v); err != nil {
+		if err := IsValidShort(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Short array %v contains a non-valid Short: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidByte(typ, name string, value interface{}) error {
+func IsValidByte(typ, name string, value interface{}) error {
 	num, ok := value.(json.Number)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Byte", name))
@@ -135,19 +137,19 @@ func isValidByte(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidByteArray(typ, name string, value interface{}) error {
+func IsValidByteArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Byte array", name))
 	}
 	for _, v := range arr {
-		if err := isValidByte(typ, name, v); err != nil {
+		if err := IsValidByte(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Byte array %v contains a non-valid Byte: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidDouble(typ, name string, value interface{}) error {
+func IsValidDouble(typ, name string, value interface{}) error {
 	num, ok := value.(json.Number)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Double", name))
@@ -158,20 +160,20 @@ func isValidDouble(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidDoubleArray(typ, name string, value interface{}) error {
+func IsValidDoubleArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		fmt.Println(typ, name, value, reflect.TypeOf(value))
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Double array", name))
 	}
 	for _, v := range arr {
-		if err := isValidDouble(typ, name, v); err != nil {
+		if err := IsValidDouble(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Double array %v contains a non-valid Double: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidFloat(typ, name string, value interface{}) error {
+func IsValidFloat(typ, name string, value interface{}) error {
 	num, ok := value.(json.Number)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Float", name))
@@ -185,37 +187,37 @@ func isValidFloat(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidFloatArray(typ, name string, value interface{}) error {
+func IsValidFloatArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Float array", name))
 	}
 	for _, v := range arr {
-		if err := isValidFloat(typ, name, v); err != nil {
+		if err := IsValidFloat(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Float array %v contains a non-valid Float: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidBool(typ, name string, value interface{}) error {
+func IsValidBool(typ, name string, value interface{}) error {
 	if reflect.TypeOf(value).Kind() != reflect.Bool {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Boolean", name))
 	}
 	return nil
 }
-func isValidBoolArray(typ, name string, value interface{}) error {
+func IsValidBoolArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Boolean array", name))
 	}
 	for _, v := range arr {
-		if err := isValidBool(typ, name, v); err != nil {
+		if err := IsValidBool(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Boolean array %v contains a non-valid Boolean: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidBinary(typ, name string, value interface{}) error {
+func IsValidBinary(typ, name string, value interface{}) error {
 	v, ok := value.(string)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Binary", name))
@@ -226,20 +228,20 @@ func isValidBinary(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidBinaryArray(typ, name string, value interface{}) error {
+func IsValidBinaryArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Binary array", name))
 	}
 	for _, v := range arr {
-		if err := isValidBinary(typ, name, v); err != nil {
+		if err := IsValidBinary(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Binary array %v contains a non-valid Binary: %v", name, v))
 		}
 
 	}
 	return nil
 }
-func isValidIp(typ, name string, value interface{}) error {
+func IsValidIp(typ, name string, value interface{}) error {
 	ip, ok := value.(string)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid IP", name))
@@ -253,19 +255,19 @@ func isValidIp(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidIpArray(typ, name string, value interface{}) error {
+func IsValidIpArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid IP array", name))
 	}
 	for _, v := range arr {
-		if err := isValidIp(typ, name, v); err != nil {
+		if err := IsValidIp(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("IP array %v contains a non-valid IP: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidDate(typ, name string, value interface{}) error {
+func IsValidDate(typ, name string, value interface{}) error {
 	stringDate, okString := value.(string)
 	milliDate, okNumber := value.(json.Number)
 	if !okString && !okNumber {
@@ -288,19 +290,19 @@ func isValidDate(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidDateArray(typ, name string, value interface{}) error {
+func IsValidDateArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid Date array", name))
 	}
 	for _, v := range arr {
-		if err := isValidDate(typ, name, v); err != nil {
+		if err := IsValidDate(typ, name, v); err != nil {
 			return errors.New(fmt.Sprintf("Date array %v contains a non-valid Date: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidGeoPoint(typ, name string, value interface{}) error {
+func IsValidGeoPoint(typ, name string, value interface{}) error {
 	sPoint, ok := value.(string)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_point", name))
@@ -310,7 +312,7 @@ func isValidGeoPoint(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidGeoPointArray(typ, name string, value interface{}) error {
+func IsValidGeoPointArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_point array", name))
@@ -324,13 +326,13 @@ func isValidGeoPointArray(typ, name string, value interface{}) error {
 		if err != nil {
 			return err
 		}
-		if err := isValidGeoPoint(typ, name, sPoint); err != nil {
+		if err := IsValidGeoPoint(typ, name, sPoint); err != nil {
 			return errors.New(fmt.Sprintf("geo_point array %v contains a non-valid geo_point: %v", name, v))
 		}
 	}
 	return nil
 }
-func isValidGeoShape(typ, name string, value interface{}) error {
+func IsValidGeoShape(typ, name string, value interface{}) error {
 	sShape, ok := value.(string)
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_shape", name))
@@ -344,7 +346,7 @@ func isValidGeoShape(typ, name string, value interface{}) error {
 	}
 	return nil
 }
-func isValidGeoShapeArray(typ, name string, value interface{}) error {
+func IsValidGeoShapeArray(typ, name string, value interface{}) error {
 	arr, ok := value.([]interface{})
 	if !ok {
 		return errors.New(fmt.Sprintf("Value of %v is not a valid geo_shape array", name))
@@ -358,7 +360,7 @@ func isValidGeoShapeArray(typ, name string, value interface{}) error {
 		if err != nil {
 			return err
 		}
-		if err := isValidGeoShape(typ, name, sShape); err != nil {
+		if err := IsValidGeoShape(typ, name, sShape); err != nil {
 			return errors.New(fmt.Sprintf("geo_shape array %v contains a non-valid geo_shape: %v", name, v))
 		}
 	}

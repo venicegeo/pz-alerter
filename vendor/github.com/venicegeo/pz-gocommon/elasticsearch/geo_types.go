@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package workflow
+package elasticsearch
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	//"reflect"
 	"regexp"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"

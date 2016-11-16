@@ -22,8 +22,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
-const ipRegex = `^(([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])\.){3}([0-9]|[1-9][0-9]|1[0-9]{2}|2[0-4][0-9]|25[0-5])$`
-
 func (db *EventDB) valueIsValidType(typi interface{}, nami interface{}, value interface{}) error {
 	typ := fmt.Sprint(typi)
 	name := fmt.Sprint(nami)
@@ -43,119 +41,119 @@ func (db *EventDB) valueIsValidType(typi interface{}, nami interface{}, value in
 	switch elasticsearch.MappingElementTypeName(typ) {
 
 	case elasticsearch.MappingElementTypeString:
-		if err := isValidString(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidString(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeStringA:
-		if err := isValidStringArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidStringArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeLong: //int64
-		if err := isValidLong(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidLong(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeLongA: //int64A
-		if err := isValidLongArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidLongArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeInteger: //int32
-		if err := isValidInteger(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidInteger(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeIntegerA: //int32A
-		if err := isValidIntegerArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidIntegerArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeShort: //int16
-		if err := isValidShort(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidShort(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeShortA: //int16A
-		if err := isValidShortArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidShortArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeByte: //int8
-		if err := isValidByte(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidByte(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeByteA: //int8A
-		if err := isValidByteArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidByteArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeDouble: //float64
-		if err := isValidDouble(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidDouble(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeDoubleA: //float64A
-		if err := isValidDoubleArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidDoubleArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeFloat: //float32
-		if err := isValidFloat(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidFloat(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeFloatA: //float32A
-		if err := isValidFloatArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidFloatArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeBool:
-		if err := isValidBool(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidBool(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeBoolA:
-		if err := isValidBoolArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidBoolArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeBinary:
-		if err := isValidBinary(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidBinary(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeBinaryA:
-		if err := isValidBinaryArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidBinaryArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeIp:
-		if err := isValidIp(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidIp(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeIpA:
-		if err := isValidIpArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidIpArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeDate:
-		if err := isValidDate(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidDate(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeDateA:
-		if err := isValidDateArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidDateArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeGeoPoint:
-		if err := isValidGeoPoint(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidGeoPoint(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeGeoPointA:
-		if err := isValidGeoPointArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidGeoPointArray(typ, name, value); err != nil {
 			return err
 		}
 
 	case elasticsearch.MappingElementTypeGeoShape:
-		if err := isValidGeoShape(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidGeoShape(typ, name, value); err != nil {
 			return err
 		}
 	case elasticsearch.MappingElementTypeGeoShapeA:
-		if err := isValidGeoShapeArray(typ, name, value); err != nil {
+		if err := elasticsearch.IsValidGeoShapeArray(typ, name, value); err != nil {
 			return err
 		}
 	default:
