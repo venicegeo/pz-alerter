@@ -26,11 +26,11 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
-	cron "github.com/vegertar/cron"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
+	cron "github.com/venicegeo/vegertar-cron"
 )
 
 //------------------------------------------------------------------------------

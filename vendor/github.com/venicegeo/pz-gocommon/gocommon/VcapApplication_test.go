@@ -53,7 +53,7 @@ func Test05VcapApplication(t *testing.T) {
          "application_id": "14fca253-8087-402e-abf5-8fd40ddda81f",
          "application_name": "pz-workflow",
          "application_uris": [
-             "pz-workflow.int.geointservices.io"
+             "pz-workflow.venicegeo.io"
          ],
          "application_version": "5f0ee99d-252c-4f8d-b241-bc3e22534afc",
          "limits": {
@@ -65,7 +65,7 @@ func Test05VcapApplication(t *testing.T) {
          "space_id": "d65a0987-df00-4d69-a50b-657e52cb2f8e",
          "space_name": "simulator-stage",
          "uris": [
-             "pz-workflow.int.geointservices.io"
+             "pz-workflow.venicegeo.io"
          ],
          "users": null,
          "version": "5f0ee99d-252c-4f8d-b241-bc3e22534afc"

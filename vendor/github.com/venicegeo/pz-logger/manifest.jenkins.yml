@@ -1,7 +1,7 @@
 applications:
 - name: pz-logger
   host: pz-logger
-  command: chmod 755 ./pz-logger.bin && ./pz-logger.bin
+  command: chmod 755 ./pz-logger && ./pz-logger
   buildpack: binary_buildpack
   memory: 512M
   instances: 1

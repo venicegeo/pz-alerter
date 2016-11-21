@@ -64,7 +64,7 @@ func TestApiKey(t *testing.T) {
 	// (note the test can't control whether $HOME/.pzkey actually exists or not)
 
 	if fileExists(path) {
-		key, err := GetApiKey("piazza.int.geointservices.io")
+		key, err := GetApiKey("piazza.venicegeo.io")
 		assert.NoError(err)
 
 		raw, err := ioutil.ReadFile(path)
@@ -72,11 +72,11 @@ func TestApiKey(t *testing.T) {
 		data := map[string]string{}
 		err = json.Unmarshal(raw, &data)
 		assert.NoError(err)
-		actual := data["piazza.int.geointservices.io"]
+		actual := data["piazza.venicegeo.io"]
 
 		assert.EqualValues(actual, key)
 	} else {
-		_, err := GetApiKey("piazza.int.geointservices.io")
+		_, err := GetApiKey("piazza.venicegeo.io")
 		assert.Error(err)
 	}
 

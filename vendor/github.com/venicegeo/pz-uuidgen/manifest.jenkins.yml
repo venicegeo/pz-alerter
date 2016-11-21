@@ -1,7 +1,7 @@
 applications:
 - name: pz-uuidgen
   host: pz-uuidgen
-  command: chmod 755 pz-uuidgen.bin && ./pz-uuidgen.bin
+  command: chmod 755 pz-uuidgen && ./pz-uuidgen
   buildpack: binary_buildpack
   memory: 512M
   instances: 1
