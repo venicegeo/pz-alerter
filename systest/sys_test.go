@@ -111,9 +111,11 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
+	helloUrl := strings.Replace(suite.url, "pz-workflow", "pzsvc-hello", 1)
+
 	body := map[string]interface{}{
-		"url":            "http://pzsvc-hello.int.geointservices.io/hello",
-		"contractUrl":    "http://pzsvc-hello.int.geointservices.io/contract",
+		"url":            helloUrl + "/hello",
+		"contractUrl":    helloUrl + "/contract",
 		"method":         "POST",
 		"isAsynchronous": "false",
 		"resourceMetadata": map[string]interface{}{
@@ -126,7 +128,6 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	}
 
 	url := strings.Replace(suite.url, "workflow", "gateway", 1)
-
 	h := piazza.Http{
 		BaseUrl: url,
 		ApiKey:  suite.apiKey,
