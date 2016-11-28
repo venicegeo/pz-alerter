@@ -28,6 +28,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 	cron "github.com/venicegeo/vegertar-cron"
@@ -49,8 +50,8 @@ type Service struct {
 	stats Stats
 	sync.Mutex
 
-	logger  pzlogger.IClient
-	uuidgen pzuuidgen.IClient
+	syslogger *syslogger.Logger
+	uuidgen   pzuuidgen.IClient
 
 	sys *piazza.SystemConfig
 
@@ -79,7 +80,12 @@ func (service *Service) Init(
 
 	var err error
 
-	service.logger = logger
+	writer := &pzlogger.SyslogElkWriter{
+		Client: logger,
+	}
+
+	service.syslogger = syslogger.NewLogger(writer, "pz-workflow")
+
 	service.uuidgen = uuidgen
 
 	service.eventTypeDB, err = NewEventTypeDB(service, eventtypesIndex)
@@ -166,10 +172,10 @@ func (service *Service) Init(
 	//log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
 	if postedIngestEventType.StatusCode == 201 {
 		// everything is ok
-		service.logger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+		service.syslogger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	} else {
 		// something is wrong
-		service.logger.Info("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
+		service.syslogger.Info("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	}
 
 	// Execution Completed event type
@@ -184,10 +190,10 @@ func (service *Service) Init(
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
 	if postedExecutionCompletedType.StatusCode == 201 {
 		// everything is ok
-		service.logger.Info("  SUCCESS Created piazza:executionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
+		service.syslogger.Info("  SUCCESS Created piazza:executionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
 	} else {
 		// something is wrong or it was already there
-		service.logger.Info("  ERROR creating piazza:excutionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
+		service.syslogger.Info("  ERROR creating piazza:excutionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
 	}
 
 	service.origin = string(sys.Name)
@@ -469,7 +475,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 	}
 
 	go func() {
-		service.logger.Info("User %s created EventType %s", eventType.CreatedBy, eventTypeID)
+		service.syslogger.Info("User %s created EventType %s", eventType.CreatedBy, eventTypeID)
 	}()
 
 	service.stats.IncrEventTypes()
@@ -520,7 +526,7 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("Deleted EventType %s", id)
+	service.syslogger.Info("Deleted EventType %s", id)
 
 	return service.statusOK(nil)
 }
@@ -664,7 +670,7 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 
 	service.stats.IncrEvents()
 
-	service.logger.Info("User %s created repeating Event %s on the schedule %s", event.CreatedBy, eventID, event.CronSchedule)
+	service.syslogger.Info("User %s created repeating Event %s on the schedule %s", event.CreatedBy, eventID, event.CronSchedule)
 
 	return service.statusCreated(&response)
 }
@@ -695,7 +701,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("User %s created Event %s", event.CreatedBy, eventID)
+	service.syslogger.Info("User %s created Event %s", event.CreatedBy, eventID)
 
 	{
 		// Find triggers associated with event
@@ -717,7 +723,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				trigger, found, err := service.triggerDB.GetOne(triggerID)
 				if !found {
 					// Don't fail for this, just log something and continue to the next trigger id
-					service.logger.Warn("Percolation error: Trigger %s does not exist", string(triggerID))
+					service.syslogger.Warning("Percolation error: Trigger %s does not exist", string(triggerID))
 					return
 				}
 				if err != nil {
@@ -757,7 +763,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					jobString = strings.Replace(jobString, "$"+key, fmt.Sprintf("%v", value), -1)
 				}
 
-				service.logger.Info("job [%s] submission by event [%s] using trigger [%s]: %s\n", jobID, eventID.String(), triggerID.String(), jobString)
+				service.syslogger.Info("job [%s] submission by event [%s] using trigger [%s]: %s\n", jobID, eventID.String(), triggerID.String(), jobString)
 
 				log.Printf("JOB ID: %s", jobID)
 				log.Printf("JOB STRING: %s", jobString)
@@ -919,7 +925,7 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 		service.cron.Remove(id.String())
 	}
 
-	service.logger.Info("Deleted Event with EventId %s", id)
+	service.syslogger.Info("Deleted Event with EventId %s", id)
 
 	return service.statusOK(nil)
 }
@@ -1038,7 +1044,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("User %s created Trigger %s", trigger.CreatedBy, triggerID)
+	service.syslogger.Info("User %s created Trigger %s", trigger.CreatedBy, triggerID)
 
 	service.stats.IncrTriggers()
 
@@ -1057,7 +1063,7 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
-	service.logger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
+	service.syslogger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
 
 	return service.statusPutOK("Updated trigger")
 }
@@ -1071,7 +1077,7 @@ func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("Deleted Trigger with TriggerId %s", id)
+	service.syslogger.Info("Deleted Trigger with TriggerId %s", id)
 
 	return service.statusOK(nil)
 }
@@ -1246,7 +1252,7 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 		return service.statusInternalError(err)
 	}
 
-	service.logger.Info("User %s created Alert %s", alert.CreatedBy, alertID)
+	service.syslogger.Info("User %s created Alert %s", alert.CreatedBy, alertID)
 
 	service.stats.IncrAlerts()
 
@@ -1263,7 +1269,7 @@ func (service *Service) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
-	service.logger.Info("Deleted Alert with AlertId %s", id)
+	service.syslogger.Info("Deleted Alert with AlertId %s", id)
 
 	return service.statusOK(nil)
 }

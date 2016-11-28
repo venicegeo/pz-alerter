@@ -19,12 +19,13 @@ import (
 	"strings"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 	loggerpkg "github.com/venicegeo/pz-logger/logger"
 )
 
 type Client struct {
-	url    string
-	logger loggerpkg.IClient
+	url       string
+	syslogger *syslogger.Logger
 }
 
 func NewClient(sys *piazza.SystemConfig, logger loggerpkg.IClient) (*Client, error) {
@@ -41,12 +42,17 @@ func NewClient(sys *piazza.SystemConfig, logger loggerpkg.IClient) (*Client, err
 		return nil, err
 	}
 
+	writer := &loggerpkg.SyslogElkWriter{
+		Client: logger,
+	}
+	slogger := syslogger.NewLogger(writer, "pz-workflow-client")
+
 	service := &Client{
-		url:    url,
-		logger: logger,
+		url:       url,
+		syslogger: slogger,
 	}
 
-	service.logger.Info("Client started")
+	service.syslogger.Info("Client started")
 
 	return service, nil
 }
@@ -61,9 +67,15 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 		return nil, err
 	}
 
+	writer := &loggerpkg.SyslogElkWriter{
+		Client: logger,
+	}
+
+	slogger := syslogger.NewLogger(writer, "pz-workflow-client")
+
 	service := &Client{
-		url:    url,
-		logger: logger,
+		url:       url,
+		syslogger: slogger,
 	}
 
 	return service, nil
@@ -255,7 +267,7 @@ func (c *Client) QueryTriggers(query map[string]interface{}) (*[]Trigger, error)
 
 func (c *Client) PutTrigger(id piazza.Ident, triggerUpdate *TriggerUpdate) error {
 	out := &TriggerUpdate{}
-	err := c.putObject(triggerUpdate, "/trigger/" + id.String(), out)
+	err := c.putObject(triggerUpdate, "/trigger/"+id.String(), out)
 	return err
 }
 
