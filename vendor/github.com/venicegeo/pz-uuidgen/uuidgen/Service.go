@@ -16,12 +16,14 @@ package uuidgen
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/pborman/uuid"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 )
 
@@ -29,25 +31,34 @@ import (
 
 type Service struct {
 	sync.Mutex
-	stats  Stats
-	logger pzlogger.IClient
-	origin string
+	stats     Stats
+	syslogger *syslogger.Logger
+	origin    string
 }
 
 //---------------------------------------------------------------------
 
-func (service *Service) Init(sys *piazza.SystemConfig, logger pzlogger.IClient) error {
-	service.logger = logger
+func (service *Service) Init(sys *piazza.SystemConfig, loggerClient pzlogger.IClient) error {
+	//service.logger = loggerClient
 	service.stats.CreatedOn = time.Now()
 
-	service.logger.Info("uuidgen started")
-
 	service.origin = string(sys.Name)
+
+	writer := &pzlogger.SyslogElkWriter{
+		Client: loggerClient,
+	}
+
+	service.syslogger = syslogger.NewLogger(writer, "pz-uuidgen")
+
+	service.syslogger.Info("uuidgen service started")
 
 	return nil
 }
 
 func (service *Service) GetStats() *piazza.JsonResponse {
+	log.Printf("uuidgen stats service called (1)")
+	service.syslogger.Info("uuidgen stats service called (2)")
+
 	service.Lock()
 	data := service.stats
 	service.Unlock()
@@ -61,6 +72,7 @@ func (service *Service) GetStats() *piazza.JsonResponse {
 			Origin:     service.origin,
 		}
 	}
+
 	return resp
 }
 

@@ -1,5 +1,5 @@
-hash: d7a3725cb587ab5e78180ecc1ec3c3a4ef4ab7803d981ed6288e790d2ed36d3c
-updated: 2016-11-21T16:15:36.658979944-05:00
+hash: 69526480efd40af76f6e23f394b7fbf88597e9caa8ddf15dc81422690dc3b30d
+updated: 2016-11-28T16:07:46.222711351-05:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -16,7 +16,7 @@ imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
 - name: github.com/gin-gonic/gin
-  version: 9177f01c2843b91820780197f521ba48554b9df3
+  version: bb159f9260a262fccbdbd6f37f8575d1e7e6aaa0
   subpackages:
   - binding
   - render
@@ -26,31 +26,42 @@ imports:
   - proto
 - name: github.com/golang/snappy
   version: d9eb7a3d35ec988b8585d4a0068e462c27d28380
+- name: github.com/jeromer/syslogparser
+  version: 0e4ae46ea3f08de351074b643d649d5d00661a3c
+  subpackages:
+  - rfc5424
 - name: github.com/klauspost/crc32
-  version: 19b0b332c9e4516a6370a0456e6182c3b5036720
+  version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
+- name: github.com/pierrec/lz4
+  version: ed384a0ef355ee01915875486e8c245ebd567527
+- name: github.com/pierrec/xxHash
+  version: 5a004441f897722c627870a981d02b29924215fa
+  subpackages:
+  - xxHash32
 - name: github.com/rcrowley/go-metrics
-  version: ab2277b1c5d15c3cba104e9cbddbdfc622df5ad8
-- name: github.com/robfig/cron
-  version: 9585fd555638e77bba25f25db5c44b41f264aeb7
+  version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
-  version: 02452b3987ac0e7b93702149e96d4f9b2e6521ec
+  version: 353cc46052ce0298f42b89cabed721dfbf233830
 - name: github.com/venicegeo/pz-gocommon
-  version: 9ff55d3982048040d71544ba84cf870bf2a48347
+  version: 1f38b128e8ab87ffb1cdd960c810af0abc515d36
   subpackages:
   - elasticsearch
   - gocommon
+  - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 8a1a0bb2ebd890a76c6ee49fcaac0de9104bb499
+  version: cb1566866bdf2f9c7a13d3d0a63b9f72b760c5df
   subpackages:
   - logger
 - name: github.com/venicegeo/pz-uuidgen
-  version: 09fc21980ff8c259a3465fae3f223c4b604c92ca
+  version: bbca737e2fe93d0009bb113f475e779385604299
   subpackages:
   - uuidgen
+- name: github.com/venicegeo/vegertar-cron
+  version: cffdae6aaf2ddc29a99ff27db06aa108d40f21e6
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
@@ -59,7 +70,7 @@ imports:
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: eaecbad7a83e6b60f131825553e5eb7fd5a50b41
+  version: 060365a7e27c56c938b234824ef7f9a3a7834b99
   subpackages:
   - backoff
   - uritemplates

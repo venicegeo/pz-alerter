@@ -1,10 +1,10 @@
-hash: 1269c0b0a9f5ef8921474bff3d924875ce6437a77cc64e96998a2926a323cd2b
-updated: 2016-10-11T12:18:51.956261909-04:00
+hash: 01ae7c5a37307646a7cd354c30cfe652e2560e4d024b11bfef8e6e664243781a
+updated: 2016-11-28T16:06:12.769099025-05:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
 - name: github.com/gin-gonic/gin
-  version: f931d1ea80ae95a6fc739213cdd9399bd2967fb6
+  version: bb159f9260a262fccbdbd6f37f8575d1e7e6aaa0
   subpackages:
   - binding
   - render
@@ -12,17 +12,22 @@ imports:
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
+- name: github.com/jeromer/syslogparser
+  version: 0e4ae46ea3f08de351074b643d649d5d00661a3c
+  subpackages:
+  - rfc5424
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/venicegeo/pz-gocommon
-  version: 960518f95e43596aca08149feb2b178509f9d725
+  version: 1f38b128e8ab87ffb1cdd960c810af0abc515d36
   subpackages:
   - elasticsearch
   - gocommon
+  - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 4edb0aa89c0311c83dcad98e0474b97f0475577c
+  version: cb1566866bdf2f9c7a13d3d0a63b9f72b760c5df
   subpackages:
   - logger
 - name: golang.org/x/net
@@ -33,7 +38,7 @@ imports:
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: eaecbad7a83e6b60f131825553e5eb7fd5a50b41
+  version: 060365a7e27c56c938b234824ef7f9a3a7834b99
   subpackages:
   - backoff
   - uritemplates

@@ -5,6 +5,7 @@ import:
 - package: github.com/venicegeo/pz-gocommon
   subpackages:
   - gocommon
+  - syslog
 - package: github.com/venicegeo/pz-logger
   subpackages:
   - logger

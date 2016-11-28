@@ -42,13 +42,6 @@ type IClient interface {
 
 	// write support
 	PostMessage(mssg *Message) error
-	PostLog(service piazza.ServiceName, address string, severity Severity, t time.Time, message string, v ...interface{}) error
-
-	Debug(message string, v ...interface{})
-	Info(message string, v ...interface{})
-	Warn(message string, v ...interface{})
-	Error(message string, v ...interface{})
-	Fatal(message string, v ...interface{})
 
 	// config support
 	SetService(name piazza.ServiceName, address string)

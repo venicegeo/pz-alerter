@@ -17,10 +17,9 @@ package logger
 import (
 	"errors"
 	"fmt"
-	"log"
-	"time"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	syslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 //---------------------------------------------------------------------
@@ -161,7 +160,7 @@ func (c *Client) PostMessage(mssg *Message) error {
 
 	err := mssg.Validate()
 	if err != nil {
-		return errors.New("message did not validate")
+		return fmt.Errorf("message did not validate: %s", err.Error())
 	}
 
 	jresp := c.h.PzPost("/message", mssg)
@@ -172,66 +171,47 @@ func (c *Client) PostMessage(mssg *Message) error {
 	return nil
 }
 
-// PostLog sends the components of a LogMessage to the logger.
-func (c *Client) PostLog(
-	service piazza.ServiceName,
-	address string,
-	severity Severity,
-	t time.Time,
-	message string, v ...interface{}) error {
-
-	str := fmt.Sprintf(message, v...)
-	mssg := Message{Service: service, Address: address, Severity: severity, CreatedOn: t, Message: str}
-
-	return c.PostMessage(&mssg)
-}
-
 func (c *Client) SetService(name piazza.ServiceName, address string) {
 	c.serviceName = name
 	c.serviceAddress = address
 }
 
-func (c *Client) post(severity Severity, message string, v ...interface{}) error {
-	str := fmt.Sprintf(message, v...)
-	return c.PostLog(c.serviceName, c.serviceAddress, severity, time.Now(), str)
+type SyslogElkWriter struct {
+	Client IClient
 }
 
-// Debug sends a Debug-level message to the logger.
-func (c *Client) Debug(message string, v ...interface{}) {
-	err := c.post(SeverityDebug, message, v...)
-	if err != nil {
-		log.Printf("Error sending to logger: %s", err.Error())
+func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
+	if w.Client == nil {
+		return fmt.Errorf("Log writer client not set")
 	}
-}
 
-// Info sends an Info-level message to the logger.
-func (c *Client) Info(message string, v ...interface{}) {
-	err := c.post(SeverityInfo, message, v...)
-	if err != nil {
-		log.Printf("Error sending to logger: %s", err.Error())
+	severity := SeverityInfo
+	switch mNew.Severity {
+	case syslog.Debug:
+		severity = SeverityDebug
+	case syslog.Informational:
+		severity = SeverityInfo
+	case syslog.Warning:
+		severity = SeverityWarning
+	case syslog.Error:
+		severity = SeverityError
+	case syslog.Fatal:
+		severity = SeverityFatal
 	}
-}
 
-// Warn sends a Waring-level message to the logger.
-func (c *Client) Warn(message string, v ...interface{}) {
-	err := c.post(SeverityWarning, message, v...)
-	if err != nil {
-		log.Printf("Error sending to logger: %s", err.Error())
+	// translate syslog.Message to a logger.Message and the post it via the client
+	mOld := &Message{
+		Service:   piazza.ServiceName(mNew.Application),
+		Address:   mNew.HostName,
+		CreatedOn: mNew.TimeStamp,
+		Severity:  severity,
+		Message:   mNew.String(),
 	}
-}
 
-// Error sends a Error-level message to the logger.
-func (c *Client) Error(message string, v ...interface{}) {
-	err := c.post(SeverityError, message, v...)
+	err := w.Client.PostMessage(mOld)
 	if err != nil {
-		log.Printf("Error sending to logger: %s", err.Error())
+		return err
 	}
-}
 
-// Fatal sends a Fatal-level message to the logger.
-func (c *Client) Fatal(message string, v ...interface{}) {
-	err := c.post(SeverityFatal, message, v...)
-	if err != nil {
-		log.Printf("Error sending to logger: %s", err.Error())
-	}
+	return nil
 }

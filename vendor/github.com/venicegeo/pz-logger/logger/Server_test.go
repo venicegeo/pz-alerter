@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	"github.com/venicegeo/pz-gocommon/syslog"
 )
 
 func sleep() {
@@ -212,11 +213,6 @@ func (suite *LoggerTester) Test02One() {
 }
 
 func (suite *LoggerTester) Test03Help() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	err := suite.client.PostLog("mocktest", "0.0.0.0", SeverityInfo, time.Now(), "message from logger unit test via piazza.Log()")
-	assert.NoError(err, "pzService.Log()")
 }
 
 func (suite *LoggerTester) Test04Admin() {
@@ -246,11 +242,46 @@ func (suite *LoggerTester) Test05Pagination() {
 
 	client.SetService("myservice", "1.2.3.4")
 
-	client.Debug("d")
-	client.Info("i")
-	client.Warn("w")
-	client.Error("e")
-	client.Fatal("f")
+	d := Message{
+		Service:   "log-tester",
+		Address:   "128.1.2.3",
+		CreatedOn: time.Now(),
+		Severity:  "Debug",
+		Message:   "d",
+	}
+	i := Message{
+		Service:   "log-tester",
+		Address:   "128.1.2.3",
+		CreatedOn: time.Now(),
+		Severity:  "Info",
+		Message:   "i",
+	}
+	w := Message{
+		Service:   "log-tester",
+		Address:   "128.1.2.3",
+		CreatedOn: time.Now(),
+		Severity:  "Warn",
+		Message:   "w",
+	}
+	e := Message{
+		Service:   "log-tester",
+		Address:   "128.1.2.3",
+		CreatedOn: time.Now(),
+		Severity:  "Error",
+		Message:   "e",
+	}
+	f := Message{
+		Service:   "log-tester",
+		Address:   "128.1.2.3",
+		CreatedOn: time.Now(),
+		Severity:  "Fatal",
+		Message:   "f",
+	}
+	client.PostMessage(&d)
+	client.PostMessage(&i)
+	client.PostMessage(&w)
+	client.PostMessage(&e)
+	client.PostMessage(&f)
 	sleep()
 
 	format := piazza.JsonPagination{
@@ -482,4 +513,45 @@ func (suite *LoggerTester) Test09GerMessagesErrors() {
 	assert.NoError(err)
 	assert.Equal(0, count)
 	assert.EqualValues([]Message{}, mssgs)
+}
+
+func (suite *LoggerTester) Test10Syslog() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	writer := &SyslogElkWriter{
+		Client: suite.client,
+	}
+	syslogger := syslog.NewLogger(writer, "loggertester")
+
+	{
+		s := "The quick brown fox"
+		syslogger.Warning(s)
+		sleep()
+		actual := suite.getLastMessage()
+		assert.Contains(actual, s)
+		pri := fmt.Sprintf("<%d>%d",
+			8*syslog.DefaultFacility+syslog.Warning.Value(), syslog.DefaultVersion)
+		assert.Contains(actual, pri)
+	}
+
+	{
+		s := "The lazy dog"
+		syslogger.Error(s)
+		sleep()
+		actual := suite.getLastMessage()
+		assert.Contains(actual, s)
+		pri := fmt.Sprintf("<%d>%d",
+			8*syslog.DefaultFacility+syslog.Error.Value(), syslog.DefaultVersion)
+		assert.Contains(actual, pri)
+	}
+
+	{
+		stats, err := suite.client.GetStats()
+		assert.NoError(err)
+		assert.EqualValues(2, stats.NumMessages)
+	}
 }

@@ -5,6 +5,7 @@ import:
   subpackages:
   - elasticsearch
   - gocommon
+  - syslog
 testImport:
 - package: github.com/stretchr/testify
   subpackages:

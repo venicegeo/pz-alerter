@@ -3,7 +3,6 @@ import:
 - package: github.com/Shopify/sarama
 - package: github.com/gin-gonic/gin
 - package: github.com/pborman/uuid
-- package: github.com/robfig/cron
 - package: github.com/venicegeo/pz-gocommon
   subpackages:
   - elasticsearch
@@ -14,6 +13,7 @@ import:
 - package: github.com/venicegeo/pz-uuidgen
   subpackages:
   - uuidgen
+- package: github.com/venicegeo/vegertar-cron
 testImport:
 - package: github.com/stretchr/testify
   subpackages:

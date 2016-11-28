@@ -6,8 +6,9 @@ msg="Yow. $1"
 PZDOMAIN=int.geointservices.io
 
 # %z gives "-0700" but we need "-07:00"
-#d=`date +%Y-%m-%dT%T%z`
-d=2006-01-02T15:04:05+07:00
+d=`date +%Y-%m-%dT%T`
+#d=2006-01-02T15:04:05+07:00
+d=$d-05:00
 
 input='{
     "service":  "alpha",

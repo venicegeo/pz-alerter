@@ -24,7 +24,6 @@ import (
 //--------------------------------------------------
 
 type Server struct {
-	//logger  pzlogger.IClient
 	Routes  []piazza.RouteData
 	service *Service
 }
