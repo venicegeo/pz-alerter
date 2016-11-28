@@ -28,6 +28,20 @@ type Server struct {
 
 const Version = "1.0.0"
 
+func (server *Server) Init(service *Service) {
+	server.service = service
+
+	server.Routes = []piazza.RouteData{
+		{Verb: "GET", Path: "/", Handler: server.handleGetRoot},
+		{Verb: "GET", Path: "/version", Handler: server.handleGetVersion},
+		{Verb: "GET", Path: "/message", Handler: server.handleGetMessage},
+		{Verb: "POST", Path: "/message", Handler: server.handlePostMessage},
+		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
+
+		{Verb: "POST", Path: "/syslog", Handler: server.handlePostSyslog},
+	}
+}
+
 func (server *Server) handleGetRoot(c *gin.Context) {
 	resp := server.service.GetRoot()
 	piazza.GinReturnJson(c, resp)
@@ -62,14 +76,17 @@ func (server *Server) handleGetMessage(c *gin.Context) {
 	piazza.GinReturnJson(c, resp)
 }
 
-func (server *Server) Init(service *Service) {
-	server.service = service
-
-	server.Routes = []piazza.RouteData{
-		{Verb: "GET", Path: "/", Handler: server.handleGetRoot},
-		{Verb: "GET", Path: "/version", Handler: server.handleGetVersion},
-		{Verb: "GET", Path: "/message", Handler: server.handleGetMessage},
-		{Verb: "POST", Path: "/message", Handler: server.handlePostMessage},
-		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
+func (server *Server) handlePostSyslog(c *gin.Context) {
+	sysM := piazza.NewSyslogMessage()
+	err := c.BindJSON(&sysM)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+		}
+		piazza.GinReturnJson(c, resp)
+		return
 	}
+	resp := server.service.PostSyslog(sysM)
+	piazza.GinReturnJson(c, resp)
 }

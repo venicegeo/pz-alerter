@@ -1,5 +1,5 @@
 hash: 01ae7c5a37307646a7cd354c30cfe652e2560e4d024b11bfef8e6e664243781a
-updated: 2016-11-28T16:06:12.769099025-05:00
+updated: 2016-11-28T18:34:46.823480545-05:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
@@ -27,7 +27,7 @@ imports:
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: cb1566866bdf2f9c7a13d3d0a63b9f72b760c5df
+  version: 3cb0efed40bd80c5a9a1306ba6268cebe592191f
   subpackages:
   - logger
 - name: golang.org/x/net

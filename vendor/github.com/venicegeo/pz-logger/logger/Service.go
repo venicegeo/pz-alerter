@@ -24,6 +24,7 @@ import (
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 const schema = "LogData7"
@@ -357,4 +358,61 @@ func createQueryDslAsString(
 	}
 
 	return string(output), nil
+}
+
+func (service *Service) PostSyslog(mNew *piazza.SyslogMessage) *piazza.JsonResponse {
+	err := mNew.Validate()
+	if err != nil {
+		return service.newBadRequestResponse(err)
+	}
+
+	rfc := mNew.String()
+
+	var oldSev Severity
+	switch syslogger.Severity(mNew.Severity) {
+	case syslogger.Debug:
+		oldSev = SeverityDebug
+	case syslogger.Informational:
+		oldSev = SeverityInfo
+	case syslogger.Warning:
+		oldSev = SeverityWarning
+	case syslogger.Error:
+		oldSev = SeverityError
+	case syslogger.Fatal:
+		oldSev = SeverityFatal
+	}
+
+	mssgOld := Message{
+		CreatedOn: time.Now(),
+		Service:   piazza.ServiceName(mNew.Application),
+		Address:   mNew.HostName,
+		Severity:  Severity(oldSev),
+		Message:   rfc,
+	}
+	err = mssgOld.Validate()
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
+	service.Lock()
+	idStr := strconv.Itoa(service.id)
+	service.id++
+	service.Unlock()
+
+	_, err = service.esIndex.PostData(schema, idStr, mssgOld)
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Data:       rfc,
+	}
+
+	err = resp.SetType()
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
+	return resp
 }

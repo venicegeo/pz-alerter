@@ -155,7 +155,8 @@ func (c *Client) GetStats() (*Stats, error) {
 
 //---------------------------------------------------------------------
 
-// PostMessage puts a new message into Elasticsearch.
+// PostMessage puts an old-style message (perhaps with a new-style text payload)
+// into Elasticsearch
 func (c *Client) PostMessage(mssg *Message) error {
 
 	err := mssg.Validate()
@@ -185,6 +186,27 @@ func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
 		return fmt.Errorf("Log writer client not set")
 	}
 
+	switch w.Client.(type) {
+	default:
+		return fmt.Errorf("Log writer client has invalid type")
+	case *Client:
+		h := w.Client.(*Client).h
+		jresp := h.PzPost("/message", mNew)
+		if jresp.IsError() {
+			return jresp.ToError()
+		}
+	case *MockClient:
+		mOld := toOldStyle(mNew)
+		err := w.Client.(*MockClient).PostMessage(mOld)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func toOldStyle(mNew *syslog.Message) *Message {
+
 	severity := SeverityInfo
 	switch mNew.Severity {
 	case syslog.Debug:
@@ -207,11 +229,5 @@ func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
 		Severity:  severity,
 		Message:   mNew.String(),
 	}
-
-	err := w.Client.PostMessage(mOld)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return mOld
 }
