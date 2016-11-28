@@ -27,7 +27,7 @@ import (
 func main() {
 	sys, logger, uuidgen := makeSystem()
 
-	logger.Info("pz-workflow starting...")
+	log.Printf("pz-workflow starting...")
 
 	indices := makeIndexes(sys)
 
