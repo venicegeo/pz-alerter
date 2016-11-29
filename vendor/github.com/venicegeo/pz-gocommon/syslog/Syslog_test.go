@@ -194,9 +194,15 @@ func Test05Logger(t *testing.T) {
 			Writer: &buf,
 		}
 		logger := NewLogger(writer, "testapp")
+		logger.UseSourceElement = false
+		logger.Debug("debug %d", 999)
+		logger.Info("info %d", 123)
+		logger.Notice("notice %d", 321)
 		logger.Warning("bonk %d", 3)
 		logger.Error("Bonk %s", ".1")
 		logger.Fatal("BONK %f", 4.0)
+		logger.Audit("1", "2", "3", "brown%s", "fox")
+		logger.Metric("i", 5952567, "k", "lazy%s", "dog")
 	}
 
 	mssg := buf.String()
@@ -211,9 +217,16 @@ func Test05Logger(t *testing.T) {
 		assert.Contains(mssg, str)
 	}
 
+	check(Debug, "debug 999")
+	check(Informational, "info 123")
+	check(Notice, "notice 321")
 	check(Warning, "bonk 3")
 	check(Error, "Bonk .1")
 	check(Fatal, "BONK 4.0")
+	check(Notice, "Actor=\"1\"")
+	check(Notice, "brownfox")
+	check(Notice, "Value=\"5952567.0")
+	check(Notice, "lazydog")
 }
 
 func Test06LogLevel(t *testing.T) {
@@ -225,6 +238,7 @@ func Test06LogLevel(t *testing.T) {
 			Writer: &buf,
 		}
 		logger := NewLogger(writer, "testapp")
+		logger.UseSourceElement = false
 		logger.MinimumSeverity = Error
 		logger.Warning("bonk")
 		logger.Error("Bonk")
@@ -266,21 +280,34 @@ func Test07StackFrame(t *testing.T) {
 	assert.EqualValues("syslog.Test07StackFrame", function)
 }
 
-func Test08SourceElement(t *testing.T) {
+func Test09AuditEnvVar(t *testing.T) {
 	assert := assert.New(t)
 
 	var buf bytes.Buffer
-	{
-		writer := &Writer{
-			Writer: &buf,
-		}
-		logger := NewLogger(writer, "testapp")
-		logger.UseSourceElement = true
-		logger.Fatal("BONK")
+
+	writer := &Writer{
+		Writer: &buf,
 	}
 
-	mssg := buf.String()
+	os.Unsetenv("PZ_AUDIT_ACTIONS")
+	logger := NewLogger(writer, "testapp")
+	assert.Len(logger.auditActions, 0)
 
-	assert.Contains(mssg, "pzsource")
-	assert.Contains(mssg, "syslog.Test08SourceElement")
+	os.Setenv("PZ_AUDIT_ACTIONS", "[\"one\", \"two\",\"three\"]")
+	logger = NewLogger(writer, "testapp")
+	assert.Len(logger.auditActions, 3)
+	assert.EqualValues([]string{"one", "two", "three"}, logger.auditActions)
+
+	m := &Message{
+		AuditData: &AuditElement{
+			Action: "two",
+		},
+	}
+	assert.True(logger.IsSecurityAudit(m))
+	m.AuditData.Action = "bazmumph"
+	assert.False(logger.IsSecurityAudit(m))
+	m.AuditData = nil
+	assert.False(logger.IsSecurityAudit(m))
+
+	os.Unsetenv("PZ_AUDIT_ACTIONS")
 }

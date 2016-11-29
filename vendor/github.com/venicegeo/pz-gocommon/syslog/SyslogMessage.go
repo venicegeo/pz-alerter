@@ -46,7 +46,7 @@ const (
 )
 
 // Message represents all the fields of a native RFC5424 object, plus
-// our own two SDEs.
+// our own SDEs.
 type Message struct {
 	Facility    int            `json:"facility"`
 	Severity    Severity       `json:"severity"`
@@ -160,21 +160,6 @@ func ParseMessageString(s string) (*Message, error) {
 	return m, nil
 }
 
-// IsSecurityAudit returns true iff the audit action is something we need to formally
-// record as an auidtable event.
-func (m *Message) IsSecurityAudit() bool {
-	if m.AuditData == nil {
-		return false
-	}
-
-	for _, s := range securityAuditActions {
-		if m.AuditData.Action == s {
-			return true
-		}
-	}
-	return false
-}
-
 func (m *Message) validate() error {
 	if m.Facility != DefaultFacility {
 		return fmt.Errorf("Invalid Message.Facility: %d", m.Facility)
@@ -241,14 +226,6 @@ type AuditElement struct {
 	Actor  string `json:"actor"`
 	Action string `json:"action"`
 	Actee  string `json:"actee"`
-}
-
-// TODO: fill these in
-var securityAuditActions = []string{
-	"create",
-	"read",
-	"update",
-	"delete",
 }
 
 func (ae *AuditElement) validate() error {

@@ -15,6 +15,7 @@
 package syslog
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -32,12 +33,13 @@ type Logger struct {
 	application      string
 	hostname         string
 	processId        string
+	auditActions     []string
 }
 
 func NewLogger(writer WriterI, application string) *Logger {
 	hostname, err := os.Hostname()
 	if err != nil {
-		hostname = "UNKNONW_HOSTNAME"
+		hostname = "UNKNOWN_HOSTNAME"
 	}
 	log.Printf("Hostname: %s", hostname)
 
@@ -45,24 +47,55 @@ func NewLogger(writer WriterI, application string) *Logger {
 
 	logger := &Logger{
 		writer:           writer,
-		MinimumSeverity:  Informational,
-		UseSourceElement: false,
+		MinimumSeverity:  Debug,
+		UseSourceElement: true,
 		application:      application,
 		hostname:         hostname,
 		processId:        processId,
+		auditActions:     readAuditActions(),
 	}
+
 	return logger
+}
+
+func readAuditActions() []string {
+	verbs := []string{}
+
+	jsn := os.Getenv("PZ_AUDIT_ACTIONS")
+	if jsn == "" {
+		return verbs
+	}
+
+	err := json.Unmarshal([]byte(jsn), &verbs)
+	if err != nil {
+		log.Printf("Unable to parse $PZ_AUDIT_ACTIONS: %s", jsn)
+		return verbs
+	}
+
+	return verbs
 }
 
 func (logger *Logger) severityAllowed(desiredSeverity Severity) bool {
 	return logger.MinimumSeverity.Value() >= desiredSeverity.Value()
 }
 
-// postMessage sends a log message
-func (logger *Logger) postMessage(severity Severity, text string, v ...interface{}) {
-	if !logger.severityAllowed(severity) {
-		return
+// IsSecurityAudit returns true iff the audit action is something we need to formally
+// record as an auidtable event.
+func (logger *Logger) IsSecurityAudit(m *Message) bool {
+	ae := m.AuditData
+	if ae == nil {
+		return false
 	}
+	for _, s := range logger.auditActions {
+		if ae.Action == s {
+			return true
+		}
+	}
+	return false
+}
+
+// makeMessage sends a log message
+func (logger *Logger) makeMessage(severity Severity, text string, v ...interface{}) *Message {
 
 	newText := fmt.Sprintf(text, v...)
 
@@ -83,6 +116,15 @@ func (logger *Logger) postMessage(severity Severity, text string, v ...interface
 		mssg.SourceData = NewSourceElement(skip)
 	}
 
+	return mssg
+}
+
+// postMessage sends a log message
+func (logger *Logger) postMessage(mssg *Message) {
+	if !logger.severityAllowed(mssg.Severity) {
+		return
+	}
+
 	err := logger.writer.Write(mssg)
 	if err != nil {
 		log.Printf("logger.postMessage: %s", err.Error())
@@ -91,30 +133,58 @@ func (logger *Logger) postMessage(severity Severity, text string, v ...interface
 
 // Debug sends a log message with severity "Debug".
 func (logger *Logger) Debug(text string, v ...interface{}) {
-	logger.postMessage(Debug, text, v...)
+	mssg := logger.makeMessage(Debug, text, v...)
+	logger.postMessage(mssg)
 }
 
 // Info sends a log message with severity "Informational".
 func (logger *Logger) Info(text string, v ...interface{}) {
-	logger.postMessage(Informational, text, v...)
+	mssg := logger.makeMessage(Informational, text, v...)
+	logger.postMessage(mssg)
 }
 
 // Notice sends a log message with severity "Notice".
 func (logger *Logger) Notice(text string, v ...interface{}) {
-	logger.postMessage(Notice, text, v...)
+	mssg := logger.makeMessage(Notice, text, v...)
+	logger.postMessage(mssg)
 }
 
 // Warning sends a log message with severity "Warning".
 func (logger *Logger) Warning(text string, v ...interface{}) {
-	logger.postMessage(Warning, text, v...)
+	mssg := logger.makeMessage(Warning, text, v...)
+	logger.postMessage(mssg)
 }
 
 // Error sends a log message with severity "Error".
 func (logger *Logger) Error(text string, v ...interface{}) {
-	logger.postMessage(Error, text, v...)
+	mssg := logger.makeMessage(Error, text, v...)
+	logger.postMessage(mssg)
 }
 
 // Fatal sends a log message with severity "Fatal".
 func (logger *Logger) Fatal(text string, v ...interface{}) {
-	logger.postMessage(Fatal, text, v...)
+	mssg := logger.makeMessage(Fatal, text, v...)
+	logger.postMessage(mssg)
+}
+
+// Audit sends a log message with the audit SDE.
+func (logger *Logger) Audit(actor string, action string, actee string, text string, v ...interface{}) {
+	mssg := logger.makeMessage(Notice, text, v...)
+	mssg.AuditData = &AuditElement{
+		Actor:  actor,
+		Action: action,
+		Actee:  actee,
+	}
+	logger.postMessage(mssg)
+}
+
+// Metric sends a log message with the metric SDE.
+func (logger *Logger) Metric(name string, value float64, object string, text string, v ...interface{}) {
+	mssg := logger.makeMessage(Notice, text, v...)
+	mssg.MetricData = &MetricElement{
+		Name:   name,
+		Value:  value,
+		Object: object,
+	}
+	logger.postMessage(mssg)
 }
