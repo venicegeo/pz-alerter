@@ -17,6 +17,7 @@ package logger
 import (
 	"errors"
 	"fmt"
+	"log"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	syslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -182,26 +183,36 @@ type SyslogElkWriter struct {
 }
 
 func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
+	log.Printf("AAA")
 	if w.Client == nil {
+		log.Printf("BBB")
 		return fmt.Errorf("Log writer client not set")
 	}
 
 	switch w.Client.(type) {
 	default:
+		log.Printf("CCC")
 		return fmt.Errorf("Log writer client has invalid type")
 	case *Client:
+		log.Printf("DDD")
 		h := w.Client.(*Client).h
 		jresp := h.PzPost("/message", mNew)
 		if jresp.IsError() {
+			log.Printf("EEE")
 			return jresp.ToError()
 		}
+		log.Printf("FFF")
 	case *MockClient:
+		log.Printf("GGG")
 		mOld := toOldStyle(mNew)
 		err := w.Client.(*MockClient).PostMessage(mOld)
 		if err != nil {
 			return err
 		}
+		log.Printf("HHH")
 	}
+	log.Printf("III")
+
 	return nil
 }
 
