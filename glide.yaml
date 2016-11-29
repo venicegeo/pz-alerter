@@ -7,6 +7,7 @@ import:
   subpackages:
   - elasticsearch
   - gocommon
+  - syslog
 - package: github.com/venicegeo/pz-logger
   subpackages:
   - logger

@@ -1,5 +1,5 @@
 hash: 875eec2a1c2d76a09a0ee7873a597d046abfed5db8afabb83b236f56fa1fbea2
-updated: 2016-11-28T11:00:35.165965831-05:00
+updated: 2016-11-28T18:55:46.914522912-05:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -41,7 +41,7 @@ imports:
   subpackages:
   - xxHash32
 - name: github.com/rcrowley/go-metrics
-  version: ab2277b1c5d15c3cba104e9cbddbdfc622df5ad8
+  version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
   version: 353cc46052ce0298f42b89cabed721dfbf233830
 - name: golang.org/x/net

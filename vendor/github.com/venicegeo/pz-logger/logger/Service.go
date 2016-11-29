@@ -360,7 +360,7 @@ func createQueryDslAsString(
 	return string(output), nil
 }
 
-func (service *Service) PostSyslog(mNew *piazza.SyslogMessage) *piazza.JsonResponse {
+func (service *Service) PostSyslog(mNew *syslogger.Message) *piazza.JsonResponse {
 	err := mNew.Validate()
 	if err != nil {
 		return service.newBadRequestResponse(err)

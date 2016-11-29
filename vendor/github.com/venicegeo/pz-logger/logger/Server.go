@@ -19,6 +19,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 type Server struct {
@@ -77,7 +78,7 @@ func (server *Server) handleGetMessage(c *gin.Context) {
 }
 
 func (server *Server) handlePostSyslog(c *gin.Context) {
-	sysM := piazza.NewSyslogMessage()
+	sysM := syslogger.NewMessage()
 	err := c.BindJSON(&sysM)
 	if err != nil {
 		resp := &piazza.JsonResponse{
