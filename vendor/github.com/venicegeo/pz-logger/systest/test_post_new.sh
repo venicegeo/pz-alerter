@@ -18,7 +18,7 @@ input='{
     "timeStamp":    "'"$d"'",
     "hostName":     "MYHOST",
     "application":  "MYAPP",
-    "process":      124,
+    "process":      "124",
     "messageId":    "9999",
     "message":      "'"$msg"'"
 }'

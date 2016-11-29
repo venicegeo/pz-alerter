@@ -17,7 +17,6 @@ package logger
 import (
 	"errors"
 	"fmt"
-	"log"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	syslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -192,14 +191,10 @@ func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
 		return fmt.Errorf("Log writer client has invalid type")
 	case *Client:
 		h := w.Client.(*Client).h
-		log.Printf("pre-EEE1: %#v ===== %#v", h, mNew)
 		jresp := h.PzPost("/syslog", mNew)
-		log.Printf("pre-EEE2: %#v", jresp)
 		if jresp.IsError() {
-			log.Printf("EEE")
 			return jresp.ToError()
 		}
-		log.Printf("FFF")
 	case *MockClient:
 		mOld := toOldStyle(mNew)
 		err := w.Client.(*MockClient).PostMessage(mOld)
@@ -207,7 +202,6 @@ func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
