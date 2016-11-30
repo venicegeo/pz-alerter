@@ -420,7 +420,7 @@ func visitNodeTesting(inputObj map[string]interface{}) (map[string]interface{}, 
 			outputObj[k] = tree
 
 		default:
-			return nil, fmt.Errorf("unexpected type %T\n", t)
+			return nil, fmt.Errorf("unexpected type %T", t)
 		}
 	}
 
