@@ -51,9 +51,10 @@ func (db *CronDB) PostData(obj interface{}, id piazza.Ident, actor string) error
 }
 
 // GetAll TODO
-func (db *CronDB) GetAll() (*[]Event, error) {
+func (db *CronDB) GetAll(actor string) (*[]Event, error) {
 	var events []Event
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "CronDB.GetAll")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return &events, err
@@ -62,6 +63,7 @@ func (db *CronDB) GetAll() (*[]Event, error) {
 		return nil, LoggedError("Type %s does not exist", db.mapping)
 	}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "CronDB.GetAll")
 	searchResult, err := db.Esi.GetAllElements(db.mapping)
 	if err != nil {
 		return nil, LoggedError("CronDB.GetAll failed: %s", err)
@@ -84,12 +86,14 @@ func (db *CronDB) GetAll() (*[]Event, error) {
 }
 
 // Exists checks to see if the database exists
-func (db *CronDB) Exists() (bool, error) {
+func (db *CronDB) Exists(actor string) (bool, error) {
+	db.service.syslogger.Audit(actor, "read", db.Esi.IndexName(), "CronDB.Exists")
 	exists, err := db.Esi.IndexExists()
 	if err != nil {
 		return false, err
 	}
 	if exists {
+		db.service.syslogger.Audit(actor, "read", db.mapping, "CronDB.Exists")
 		exists, err = db.Esi.TypeExists(db.mapping)
 		if err != nil {
 			return false, err

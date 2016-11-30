@@ -67,9 +67,10 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident, actor string) 
 	return id, nil
 }
 
-func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64, error) {
+func (db *EventTypeDB) GetAll(format *piazza.JsonPagination, actor string) ([]EventType, int64, error) {
 	eventTypes := []EventType{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "EventTypeDB.GetAll")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return eventTypes, 0, err
@@ -78,6 +79,7 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 		return eventTypes, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "EventTypeDB.GetAll")
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err)
@@ -100,9 +102,10 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination) ([]EventType, int64
 	return eventTypes, searchResult.TotalHits(), nil
 }
 
-func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, int64, error) {
+func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string, actor string) ([]EventType, int64, error) {
 	eventTypes := []EventType{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "EventTypeDB.GetEventTypesByDslQuery")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return eventTypes, 0, err
@@ -111,6 +114,7 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, i
 		return eventTypes, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "EventTypeDB.GetEVentTypesByDslQuery")
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
 		return nil, 0, LoggedError("EventTypeDB.GetEventTypesByDslQuery failed: %s", err)
@@ -153,8 +157,9 @@ func (db *EventTypeDB) GetOne(id piazza.Ident, actor string) (*EventType, bool, 
 	return &eventType, getResult.Found, nil
 }
 
-func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, bool, error) {
+func (db *EventTypeDB) GetIDByName(name string, actor string) (*piazza.Ident, bool, error) {
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "EventTypeDB.GetIDByName")
 	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
 	if err != nil {
 		return nil, getResult.Found, LoggedError("EventTypeDB.GetIDByName failed: %s", err.Error())

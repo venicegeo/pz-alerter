@@ -157,9 +157,10 @@ func (db *TriggerDB) PutTrigger(id piazza.Ident, trigger *Trigger, update *Trigg
 	return trigger, nil
 }
 
-func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetAll(format *piazza.JsonPagination, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetAll")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return triggers, 0, err
@@ -168,6 +169,7 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, er
 		return triggers, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetAll")
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetAll failed: %s", err)
@@ -190,9 +192,10 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination) ([]Trigger, int64, er
 	return triggers, searchResult.TotalHits(), nil
 }
 
-func (db *TriggerDB) GetTriggersByDslQuery(dslString string) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByDslQuery(dslString string, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetTriggersByDslQuery")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return triggers, 0, err
@@ -201,6 +204,7 @@ func (db *TriggerDB) GetTriggersByDslQuery(dslString string) ([]Trigger, int64, 
 		return triggers, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetTriggersByDslQuery")
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: %s", err)
@@ -246,9 +250,10 @@ func (db *TriggerDB) GetOne(id piazza.Ident, actor string) (*Trigger, bool, erro
 	return &obj, getResult.Found, nil
 }
 
-func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetTriggersByEventTypeID")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return triggers, 0, err
@@ -257,6 +262,7 @@ func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident) ([]Trigger, int64
 		return triggers, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetTriggersByEventTypeID")
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "eventTypeId", id)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err)

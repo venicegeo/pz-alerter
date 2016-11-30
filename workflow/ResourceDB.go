@@ -28,7 +28,7 @@ func NewResourceDB(service *Service, esi elasticsearch.IIndex, settings string) 
 	}
 
 	// _ = esi.Delete()
-
+	defer db.service.syslogger.Audit("pz-workflow", "create", esi.IndexName(), "NewResourceDB")
 	err := esi.Create(settings)
 	if err != nil {
 		return nil, err

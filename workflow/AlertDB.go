@@ -49,9 +49,10 @@ func (db *AlertDB) PostData(obj interface{}, id piazza.Ident, actor string) (pia
 	return id, nil
 }
 
-func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error) {
+func (db *AlertDB) GetAll(format *piazza.JsonPagination, actor string) ([]Alert, int64, error) {
 	alerts := []Alert{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "AlertDB.GetAll")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return alerts, 0, err
@@ -82,9 +83,10 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination) ([]Alert, int64, error)
 	return alerts, searchResult.TotalHits(), nil
 }
 
-func (db *AlertDB) GetAlertsByDslQuery(dslString string) ([]Alert, int64, error) {
+func (db *AlertDB) GetAlertsByDslQuery(dslString string, actor string) ([]Alert, int64, error) {
 	alerts := []Alert{}
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "AlertDB.GetAlertsByDslQuery")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return alerts, 0, err
@@ -115,10 +117,11 @@ func (db *AlertDB) GetAlertsByDslQuery(dslString string) ([]Alert, int64, error)
 	return alerts, searchResult.TotalHits(), nil
 }
 
-func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piazza.Ident) ([]Alert, int64, error) {
+func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piazza.Ident, actor string) ([]Alert, int64, error) {
 	alerts := []Alert{}
 	var count = int64(-1)
 
+	db.service.syslogger.Audit(actor, "read", db.mapping, "AlertDB.GetAllByTrigger")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return alerts, 0, err
