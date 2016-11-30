@@ -35,7 +35,7 @@ func NewEventDB(service *Service, esi elasticsearch.IIndex) (*EventDB, error) {
 	return &erdb, nil
 }
 
-func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
 	var event Event
 	ok1 := false
 	event, ok1 = obj.(Event)
@@ -52,6 +52,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 		return piazza.NoIdent, err
 	}
 
+	db.service.syslogger.Audit(actor, "create", string(id), "EventDB.PostData")
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
@@ -64,7 +65,7 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident) (p
 }
 
 func (db *EventDB) verifyEventReadyToPost(event *Event) error {
-	eventTypeJson := db.service.GetEventType(event.EventTypeID)
+	eventTypeJson := db.service.GetEventType(event.EventTypeID, event.CreatedBy)
 	eventTypeObj := eventTypeJson.Data
 	eventType, ok := eventTypeObj.(*EventType)
 	if !ok {
@@ -247,7 +248,8 @@ func (db *EventDB) NameExists(name string) (bool, error) {
 	return db.Esi.TypeExists(name)
 }
 
-func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error) {
+func (db *EventDB) GetOne(mapping string, id piazza.Ident, actor string) (*Event, bool, error) {
+	db.service.syslogger.Audit(actor, "read", string(id), "EventDB.GetOne")
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
 		return nil, false, LoggedError("EventDB.GetOne failed: %s", err)
@@ -266,7 +268,8 @@ func (db *EventDB) GetOne(mapping string, id piazza.Ident) (*Event, bool, error)
 	return &event, getResult.Found, nil
 }
 
-func (db *EventDB) DeleteByID(mapping string, id piazza.Ident) (bool, error) {
+func (db *EventDB) DeleteByID(mapping string, id piazza.Ident, actor string) (bool, error) {
+	db.service.syslogger.Audit(actor, "delete", string(id), "EventDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
 		return deleteResult.Found, LoggedError("EventDB.DeleteById failed: %s", err)

@@ -105,7 +105,7 @@ func (server *Server) handleGetStats(c *gin.Context) {
 
 func (server *Server) handleGetEventType(c *gin.Context) {
 	id := piazza.Ident(c.Param("id"))
-	resp := server.service.GetEventType(id)
+	resp := server.service.GetEventType(id, "pz-workflow")
 	piazza.GinReturnJson(c, resp)
 }
 

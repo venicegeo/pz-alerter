@@ -35,7 +35,7 @@ func NewEventTypeDB(service *Service, esi elasticsearch.IIndex) (*EventTypeDB, e
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
+func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
 	var eventType EventType
 	ok1 := false
 	eventType, ok1 = obj.(EventType)
@@ -55,6 +55,7 @@ func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident,
 			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
 		}
 	}
+	db.service.syslogger.Audit(actor, "create", string(id), "EventTypeDB.PostData")
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), eventType)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
@@ -132,8 +133,8 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string) ([]EventType, i
 	return eventTypes, searchResult.TotalHits(), nil
 }
 
-func (db *EventTypeDB) GetOne(id piazza.Ident) (*EventType, bool, error) {
-
+func (db *EventTypeDB) GetOne(id piazza.Ident, actor string) (*EventType, bool, error) {
+	db.service.syslogger.Audit(actor, "read", string(id), "EventTypeDB.GetOne")
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
 		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
@@ -181,7 +182,8 @@ func (db *EventTypeDB) GetIDByName(name string) (*piazza.Ident, bool, error) {
 	return &eventType.EventTypeID, getResult.Found, nil
 }
 
-func (db *EventTypeDB) DeleteByID(id piazza.Ident) (bool, error) {
+func (db *EventTypeDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
+	db.service.syslogger.Audit(actor, "delete", string(id), "EventTypeDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return deleteResult.Found, LoggedError("EventTypeDB.DeleteById failed: %s", err)

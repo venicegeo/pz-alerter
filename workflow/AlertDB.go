@@ -36,8 +36,8 @@ func NewAlertDB(service *Service, esi elasticsearch.IIndex) (*AlertDB, error) {
 	return &ardb, nil
 }
 
-func (db *AlertDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
-
+func (db *AlertDB) PostData(obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
+	db.service.syslogger.Audit(actor, "create", string(id), "AlertDB.PostData")
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
 		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
@@ -157,7 +157,8 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 	return alerts, searchResult.TotalHits(), nil
 }
 
-func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error) {
+func (db *AlertDB) GetOne(id piazza.Ident, actor string) (*Alert, bool, error) {
+	db.service.syslogger.Audit(actor, "read", string(id), "AlertDB.GetOne")
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
 		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err)
@@ -176,7 +177,8 @@ func (db *AlertDB) GetOne(id piazza.Ident) (*Alert, bool, error) {
 	return &alert, getResult.Found, nil
 }
 
-func (db *AlertDB) DeleteByID(id piazza.Ident) (bool, error) {
+func (db *AlertDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
+	db.service.syslogger.Audit(actor, "delete", string(id), "AlertDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return deleteResult.Found, fmt.Errorf("AlertDB.DeleteById failed: %s", err)

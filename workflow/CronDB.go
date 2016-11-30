@@ -38,7 +38,8 @@ func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 }
 
 // PostData TODO
-func (db *CronDB) PostData(obj interface{}, id piazza.Ident) error {
+func (db *CronDB) PostData(obj interface{}, id piazza.Ident, actor string) error {
+	db.service.syslogger.Audit(actor, "create", string(id), "CronDB.PostData")
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
 		return LoggedError("CronDB.PostData failed: %s", err)
@@ -97,11 +98,13 @@ func (db *CronDB) Exists() (bool, error) {
 	return exists, nil
 }
 
-func (db *CronDB) itemExists(id piazza.Ident) (bool, error) {
+func (db *CronDB) itemExists(id piazza.Ident, actor string) (bool, error) {
+	db.service.syslogger.Audit(actor, "read", string(id), "CronDB.itemExists")
 	return db.Esi.ItemExists(db.mapping, id.String())
 }
 
-func (db *CronDB) DeleteByID(id piazza.Ident) (bool, error) {
+func (db *CronDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
+	db.service.syslogger.Audit(actor, "delete", string(id), "CronDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err)
