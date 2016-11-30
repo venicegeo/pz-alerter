@@ -155,23 +155,6 @@ func (c *Client) GetStats() (*Stats, error) {
 
 //---------------------------------------------------------------------
 
-// PostMessage puts an old-style message (perhaps with a new-style text payload)
-// into Elasticsearch
-func (c *Client) PostMessage(mssg *Message) error {
-
-	err := mssg.Validate()
-	if err != nil {
-		return fmt.Errorf("message did not validate: %s", err.Error())
-	}
-
-	jresp := c.h.PzPost("/message", mssg)
-	if jresp.IsError() {
-		return jresp.ToError()
-	}
-
-	return nil
-}
-
 func (c *Client) SetService(name piazza.ServiceName, address string) {
 	c.serviceName = name
 	c.serviceAddress = address

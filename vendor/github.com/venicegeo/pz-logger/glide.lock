@@ -1,5 +1,5 @@
 hash: 2fc3bf436db0c442e46ecd0ebc3a32a523ce8eb57c1eae71763cfb31776c06e8
-updated: 2016-11-29T12:26:35.264258001-05:00
+updated: 2016-11-30T15:11:41.531121551-05:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
@@ -12,14 +12,10 @@ imports:
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
-- name: github.com/jeromer/syslogparser
-  version: 0e4ae46ea3f08de351074b643d649d5d00661a3c
-  subpackages:
-  - rfc5424
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/venicegeo/pz-gocommon
-  version: b6f154e0bebf707b062ac84a8364374764894847
+  version: 1507ab6946f64303db0939758ca62c634546d383
   subpackages:
   - elasticsearch
   - gocommon

@@ -20,8 +20,6 @@ import (
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/jeromer/syslogparser/rfc5424"
 )
 
 //---------------------------------------------------------------------
@@ -133,6 +131,7 @@ func (m *Message) String() string {
 	return s
 }
 
+/*
 func ParseMessageString(s string) (*Message, error) {
 	m := &Message{}
 
@@ -158,6 +157,13 @@ func ParseMessageString(s string) (*Message, error) {
 	//log.Printf("SDES: %s", sdes)
 
 	return m, nil
+}
+*/
+
+// IsSecurityAudit returns true iff the audit action is something we need to formally
+// record as an auidtable event.
+func (m *Message) IsSecurityAudit() bool {
+	return m.AuditData != nil
 }
 
 func (m *Message) validate() error {

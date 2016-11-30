@@ -40,9 +40,6 @@ type IClient interface {
 	// read support
 	GetMessages(format *piazza.JsonPagination, params *piazza.HttpQueryParams) ([]Message, int, error)
 
-	// write support
-	PostMessage(mssg *Message) error
-
 	// config support
 	SetService(name piazza.ServiceName, address string)
 }

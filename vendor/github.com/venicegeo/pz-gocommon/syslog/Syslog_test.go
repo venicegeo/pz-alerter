@@ -105,10 +105,10 @@ func Test01Message(t *testing.T) {
 	s := m.String()
 	assert.EqualValues(expected, s)
 
-	mm, err := ParseMessageString(expected)
-	assert.NoError(err)
+	//	mm, err := ParseMessageString(expected)
+	//	assert.NoError(err)
 
-	assert.EqualValues(m, mm)
+	//	assert.EqualValues(m, mm)
 }
 
 func Test02MessageSDE(t *testing.T) {
@@ -278,36 +278,4 @@ func Test07StackFrame(t *testing.T) {
 	assert.EqualValues(file, "Syslog_test.go")
 	assert.True(line > 1 && line < 1000)
 	assert.EqualValues("syslog.Test07StackFrame", function)
-}
-
-func Test09AuditEnvVar(t *testing.T) {
-	assert := assert.New(t)
-
-	var buf bytes.Buffer
-
-	writer := &Writer{
-		Writer: &buf,
-	}
-
-	os.Unsetenv("PZ_AUDIT_ACTIONS")
-	logger := NewLogger(writer, "testapp")
-	assert.Len(logger.auditActions, 0)
-
-	os.Setenv("PZ_AUDIT_ACTIONS", "[\"one\", \"two\",\"three\"]")
-	logger = NewLogger(writer, "testapp")
-	assert.Len(logger.auditActions, 3)
-	assert.EqualValues([]string{"one", "two", "three"}, logger.auditActions)
-
-	m := &Message{
-		AuditData: &AuditElement{
-			Action: "two",
-		},
-	}
-	assert.True(logger.IsSecurityAudit(m))
-	m.AuditData.Action = "bazmumph"
-	assert.False(logger.IsSecurityAudit(m))
-	m.AuditData = nil
-	assert.False(logger.IsSecurityAudit(m))
-
-	os.Unsetenv("PZ_AUDIT_ACTIONS")
 }

@@ -1,5 +1,5 @@
 hash: 01ae7c5a37307646a7cd354c30cfe652e2560e4d024b11bfef8e6e664243781a
-updated: 2016-11-29T12:27:17.187557008-05:00
+updated: 2016-11-30T15:16:41.815314769-05:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
@@ -12,22 +12,18 @@ imports:
   version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
-- name: github.com/jeromer/syslogparser
-  version: 0e4ae46ea3f08de351074b643d649d5d00661a3c
-  subpackages:
-  - rfc5424
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/venicegeo/pz-gocommon
-  version: b6f154e0bebf707b062ac84a8364374764894847
+  version: 1507ab6946f64303db0939758ca62c634546d383
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 239bccbff898689db7427fb154f5fb9e0235b978
+  version: 5176f8f1bbdcb3917898b739d360ddffbb144c31
   subpackages:
   - logger
 - name: golang.org/x/net

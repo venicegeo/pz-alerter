@@ -15,7 +15,6 @@
 package syslog
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -33,7 +32,6 @@ type Logger struct {
 	application      string
 	hostname         string
 	processId        string
-	auditActions     []string
 }
 
 func NewLogger(writer WriterI, application string) *Logger {
@@ -52,46 +50,13 @@ func NewLogger(writer WriterI, application string) *Logger {
 		application:      application,
 		hostname:         hostname,
 		processId:        processId,
-		auditActions:     readAuditActions(),
 	}
 
 	return logger
 }
 
-func readAuditActions() []string {
-	verbs := []string{}
-
-	jsn := os.Getenv("PZ_AUDIT_ACTIONS")
-	if jsn == "" {
-		return verbs
-	}
-
-	err := json.Unmarshal([]byte(jsn), &verbs)
-	if err != nil {
-		log.Printf("Unable to parse $PZ_AUDIT_ACTIONS: %s", jsn)
-		return verbs
-	}
-
-	return verbs
-}
-
 func (logger *Logger) severityAllowed(desiredSeverity Severity) bool {
 	return logger.MinimumSeverity.Value() >= desiredSeverity.Value()
-}
-
-// IsSecurityAudit returns true iff the audit action is something we need to formally
-// record as an auidtable event.
-func (logger *Logger) IsSecurityAudit(m *Message) bool {
-	ae := m.AuditData
-	if ae == nil {
-		return false
-	}
-	for _, s := range logger.auditActions {
-		if ae.Action == s {
-			return true
-		}
-	}
-	return false
 }
 
 // makeMessage sends a log message
@@ -128,6 +93,7 @@ func (logger *Logger) postMessage(mssg *Message) {
 	err := logger.writer.Write(mssg)
 	if err != nil {
 		log.Printf("logger.postMessage: %s", err.Error())
+		log.Printf("logger.postMessage: mssg was %#v", mssg)
 	}
 }
 

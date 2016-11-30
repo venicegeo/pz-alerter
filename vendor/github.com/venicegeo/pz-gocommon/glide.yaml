@@ -3,9 +3,6 @@ import:
 - package: github.com/Shopify/sarama
 - package: github.com/fvbock/endless
 - package: github.com/gin-gonic/gin
-- package: github.com/jeromer/syslogparser
-  subpackages:
-  - rfc5424
 - package: gopkg.in/olivere/elastic.v3
 testImport:
 - package: github.com/stretchr/testify

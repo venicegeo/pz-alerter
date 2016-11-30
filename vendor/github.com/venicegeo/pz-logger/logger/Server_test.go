@@ -15,8 +15,6 @@
 package logger
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -153,63 +151,6 @@ func (suite *LoggerTester) Test01Version() {
 }
 
 func (suite *LoggerTester) Test02One() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	suite.setupFixture()
-	defer suite.teardownFixture()
-
-	client := suite.client
-
-	var err error
-
-	data1 := Message{
-		Service:   "log-tester",
-		Address:   "128.1.2.3",
-		CreatedOn: time.Now(),
-		Severity:  "Info",
-		Message:   "The quick brown fox",
-	}
-
-	data2 := Message{
-		Service:   "log-tester",
-		Address:   "128.0.0.0",
-		CreatedOn: time.Now(),
-		Severity:  "Fatal",
-		Message:   "The quick brown fox",
-	}
-
-	{
-		err = client.PostMessage(&data1)
-		assert.NoError(err, "PostToMessages")
-	}
-
-	sleep()
-
-	{
-		actualMssg := suite.getLastMessage()
-		expectedMssg := data1.String()
-		assert.EqualValues(actualMssg, expectedMssg)
-	}
-
-	{
-		err = client.PostMessage(&data2)
-		assert.NoError(err, "PostToMessages")
-	}
-
-	sleep()
-
-	{
-		actualMssg := suite.getLastMessage()
-		expectedMssg := data2.String()
-		assert.EqualValues(actualMssg, expectedMssg)
-	}
-
-	{
-		stats, err := client.GetStats()
-		assert.NoError(err, "GetFromAdminStats")
-		assert.EqualValues(2, stats.NumMessages, "stats check")
-	}
 }
 
 func (suite *LoggerTester) Test03Help() {
@@ -232,155 +173,159 @@ func (suite *LoggerTester) Test04Admin() {
 }
 
 func (suite *LoggerTester) Test05Pagination() {
-	t := suite.T()
-	assert := assert.New(t)
+	/*
+		t := suite.T()
+		assert := assert.New(t)
 
-	suite.setupFixture()
-	defer suite.teardownFixture()
+		suite.setupFixture()
+		defer suite.teardownFixture()
 
-	client := suite.client
+		client := suite.client
 
-	client.SetService("myservice", "1.2.3.4")
+		client.SetService("myservice", "1.2.3.4")
 
-	d := Message{
-		Service:   "log-tester",
-		Address:   "128.1.2.3",
-		CreatedOn: time.Now(),
-		Severity:  "Debug",
-		Message:   "d",
-	}
-	i := Message{
-		Service:   "log-tester",
-		Address:   "128.1.2.3",
-		CreatedOn: time.Now(),
-		Severity:  "Info",
-		Message:   "i",
-	}
-	w := Message{
-		Service:   "log-tester",
-		Address:   "128.1.2.3",
-		CreatedOn: time.Now(),
-		Severity:  "Warn",
-		Message:   "w",
-	}
-	e := Message{
-		Service:   "log-tester",
-		Address:   "128.1.2.3",
-		CreatedOn: time.Now(),
-		Severity:  "Error",
-		Message:   "e",
-	}
-	f := Message{
-		Service:   "log-tester",
-		Address:   "128.1.2.3",
-		CreatedOn: time.Now(),
-		Severity:  "Fatal",
-		Message:   "f",
-	}
-	client.PostMessage(&d)
-	client.PostMessage(&i)
-	client.PostMessage(&w)
-	client.PostMessage(&e)
-	client.PostMessage(&f)
-	sleep()
+		d := Message{
+			Service:   "log-tester",
+			Address:   "128.1.2.3",
+			CreatedOn: time.Now(),
+			Severity:  "Debug",
+			Message:   "d",
+		}
+		i := Message{
+			Service:   "log-tester",
+			Address:   "128.1.2.3",
+			CreatedOn: time.Now(),
+			Severity:  "Info",
+			Message:   "i",
+		}
+		w := Message{
+			Service:   "log-tester",
+			Address:   "128.1.2.3",
+			CreatedOn: time.Now(),
+			Severity:  "Warn",
+			Message:   "w",
+		}
+		e := Message{
+			Service:   "log-tester",
+			Address:   "128.1.2.3",
+			CreatedOn: time.Now(),
+			Severity:  "Error",
+			Message:   "e",
+		}
+		f := Message{
+			Service:   "log-tester",
+			Address:   "128.1.2.3",
+			CreatedOn: time.Now(),
+			Severity:  "Fatal",
+			Message:   "f",
+		}
+		client.PostMessage(&d)
+		client.PostMessage(&i)
+		client.PostMessage(&w)
+		client.PostMessage(&e)
+		client.PostMessage(&f)
+		sleep()
 
-	format := piazza.JsonPagination{
-		PerPage: 1,
-		Page:    0,
-		SortBy:  "createdOn",
-		Order:   piazza.SortOrderDescending,
-	}
-	ms, count, err := client.GetMessages(&format, nil)
-	assert.NoError(err)
-	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/message?page=0", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
-	assert.NoError(err)
+		format := piazza.JsonPagination{
+			PerPage: 1,
+			Page:    0,
+			SortBy:  "createdOn",
+			Order:   piazza.SortOrderDescending,
+		}
+		ms, count, err := client.GetMessages(&format, nil)
+		assert.NoError(err)
+		_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/message?page=0", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
+		assert.NoError(err)
 
-	assert.Len(ms, 1)
-	assert.EqualValues(SeverityDebug, ms[0].Severity)
-	assert.Equal(5, count)
+		assert.Len(ms, 1)
+		assert.EqualValues(SeverityDebug, ms[0].Severity)
+		assert.Equal(5, count)
 
-	format = piazza.JsonPagination{
-		PerPage: 5,
-		Page:    0,
-		SortBy:  "createdOn",
-		Order:   piazza.SortOrderAscending,
-	}
-	ms, count, err = client.GetMessages(&format, nil)
-	assert.NoError(err)
-	assert.Len(ms, 5)
-	assert.EqualValues(SeverityFatal, ms[4].Severity)
-	assert.Equal(5, count)
+		format = piazza.JsonPagination{
+			PerPage: 5,
+			Page:    0,
+			SortBy:  "createdOn",
+			Order:   piazza.SortOrderAscending,
+		}
+		ms, count, err = client.GetMessages(&format, nil)
+		assert.NoError(err)
+		assert.Len(ms, 5)
+		assert.EqualValues(SeverityFatal, ms[4].Severity)
+		assert.Equal(5, count)
 
-	format = piazza.JsonPagination{
-		PerPage: 3,
-		Page:    1,
-		SortBy:  "createdOn",
-		Order:   piazza.SortOrderDescending,
-	}
-	ms, count, err = client.GetMessages(&format, nil)
-	assert.NoError(err)
-	assert.Len(ms, 2)
+		format = piazza.JsonPagination{
+			PerPage: 3,
+			Page:    1,
+			SortBy:  "createdOn",
+			Order:   piazza.SortOrderDescending,
+		}
+		ms, count, err = client.GetMessages(&format, nil)
+		assert.NoError(err)
+		assert.Len(ms, 2)
 
-	assert.EqualValues(SeverityError, ms[1].Severity)
-	assert.EqualValues(SeverityFatal, ms[0].Severity)
-	assert.Equal(5, count)
+		assert.EqualValues(SeverityError, ms[1].Severity)
+		assert.EqualValues(SeverityFatal, ms[0].Severity)
+		assert.Equal(5, count)
+	*/
 }
 
 func (suite *LoggerTester) Test06OtherParams() {
-	t := suite.T()
-	assert := assert.New(t)
+	/*
+		t := suite.T()
+		assert := assert.New(t)
 
-	suite.setupFixture()
-	defer suite.teardownFixture()
+		suite.setupFixture()
+		defer suite.teardownFixture()
 
-	client := suite.client
+		client := suite.client
 
-	client.SetService("myservice", "1.2.3.4")
+		client.SetService("myservice", "1.2.3.4")
 
-	sometime := time.Now()
+		sometime := time.Now()
 
-	var testData = []Message{
-		{
-			Address:   "gnemud7smfv/10.254.0.66",
-			Message:   "Received Message to Relay on topic Request-Job with key f3b63085-b482-4ae8-8297-3c7d1fcfff7d",
-			Service:   "Dispatcher",
-			Severity:  "Info",
-			CreatedOn: sometime,
-		}, {
-			Address:   "gnfbnqsn5m9/10.254.0.14",
-			Message:   "Processed Update Status for Job 6d0ea538-4382-4ea5-9669-56519b8c8f58 with Status Success",
-			Service:   "JobManager",
-			Severity:  "Info",
-			CreatedOn: sometime,
-		}, {
-			Address:   "0.0.0.0",
-			Message:   "generated 1: 09d4ec60-ea61-4066-8697-5568a47f84bf",
-			Service:   "pz-uuidgen",
-			Severity:  "Info",
-			CreatedOn: sometime,
-		}, {
-			Address:   "gnfbnqsn5m9/10.254.0.14",
-			Message:   "Handling Job with Topic Create-Job for Job ID 09d4ec60-ea61-4066-8697-5568a47f84bf",
-			Service:   "JobManager",
-			Severity:  "Info",
-			CreatedOn: sometime,
-		}, {
-			Address:   "gnfbnqsn5m9/10.254.0.14",
-			Message:   "Handling Job with Topic Update-Job for Job ID be4ce034-1187-4a4f-95a9-a9c31826248b",
-			Service:   "JobManager",
-			Severity:  "Info",
-			CreatedOn: sometime,
-		},
-	}
+		var testData = []Message{
+			{
+				Address:   "gnemud7smfv/10.254.0.66",
+				Message:   "Received Message to Relay on topic Request-Job with key f3b63085-b482-4ae8-8297-3c7d1fcfff7d",
+				Service:   "Dispatcher",
+				Severity:  "Info",
+				CreatedOn: sometime,
+			}, {
+				Address:   "gnfbnqsn5m9/10.254.0.14",
+				Message:   "Processed Update Status for Job 6d0ea538-4382-4ea5-9669-56519b8c8f58 with Status Success",
+				Service:   "JobManager",
+				Severity:  "Info",
+				CreatedOn: sometime,
+			}, {
+				Address:   "0.0.0.0",
+				Message:   "generated 1: 09d4ec60-ea61-4066-8697-5568a47f84bf",
+				Service:   "pz-uuidgen",
+				Severity:  "Info",
+				CreatedOn: sometime,
+			}, {
+				Address:   "gnfbnqsn5m9/10.254.0.14",
+				Message:   "Handling Job with Topic Create-Job for Job ID 09d4ec60-ea61-4066-8697-5568a47f84bf",
+				Service:   "JobManager",
+				Severity:  "Info",
+				CreatedOn: sometime,
+			}, {
+				Address:   "gnfbnqsn5m9/10.254.0.14",
+				Message:   "Handling Job with Topic Update-Job for Job ID be4ce034-1187-4a4f-95a9-a9c31826248b",
+				Service:   "JobManager",
+				Severity:  "Info",
+				CreatedOn: sometime,
+			},
+		}
 
-	for _, e := range testData {
-		err := client.PostMessage(&e)
+		for _, e := range testData {
+			err := client.PostMessage(&e)
+			assert.NoError(err)
+		}
+		httpMessage, _ := json.Marshal(testData[0])
+		_, body, _, err := piazza.HTTP(piazza.POST, fmt.Sprintf("localhost:%s/message", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader(httpMessage))
 		assert.NoError(err)
-	}
-	httpMessage, _ := json.Marshal(testData[0])
-	_, body, _, err := piazza.HTTP(piazza.POST, fmt.Sprintf("localhost:%s/message", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader(httpMessage))
-	assert.NoError(err)
-	println(string(body))
+		println(string(body))
+	*/
 	/*
 		sleep()
 
@@ -553,5 +498,15 @@ func (suite *LoggerTester) Test10Syslog() {
 		stats, err := suite.client.GetStats()
 		assert.NoError(err)
 		assert.EqualValues(2, stats.NumMessages)
+	}
+
+	{
+		syslogger.Audit("123", "login", "456", "789")
+		sleep()
+		actual := suite.getLastMessage()
+		assert.Contains(actual, "login")
+		pri := fmt.Sprintf("<%d>%d",
+			8*syslog.DefaultFacility+syslog.Notice.Value(), syslog.DefaultVersion)
+		assert.Contains(actual, pri)
 	}
 }

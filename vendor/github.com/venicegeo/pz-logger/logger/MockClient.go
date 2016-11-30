@@ -100,57 +100,7 @@ func (c *MockClient) PostMessage(mssg *Message) error {
 	return nil
 }
 
-func (c *MockClient) PostLog(service piazza.ServiceName, address string, severity Severity, t time.Time, message string, v ...interface{}) error {
-	mssg := Message{Service: service, Address: address, Severity: severity, Message: message, CreatedOn: t}
-	return c.PostMessage(&mssg)
-}
-
 func (c *MockClient) SetService(name piazza.ServiceName, address string) {
 	c.serviceName = name
 	c.serviceAddress = address
-}
-
-func (c *MockClient) post(severity Severity, message string, v ...interface{}) error {
-	str := fmt.Sprintf(message, v...)
-	return c.PostLog(c.serviceName, c.serviceAddress, severity, time.Now(), str)
-}
-
-// Debug sends a Debug-level message to the logger.
-func (c *MockClient) Debug(message string, v ...interface{}) {
-	err := c.post(SeverityDebug, message, v...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Info sends an Info-level message to the logger.
-func (c *MockClient) Info(message string, v ...interface{}) {
-	err := c.post(SeverityInfo, message, v...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Warn sends a Waring-level message to the logger.
-func (c *MockClient) Warn(message string, v ...interface{}) {
-	err := c.post(SeverityWarning, message, v...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Error sends a Error-level message to the logger.
-func (c *MockClient) Error(message string, v ...interface{}) {
-	err := c.post(SeverityError, message, v...)
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Fatal sends a Fatal-level message to the logger.
-func (c *MockClient) Fatal(message string, v ...interface{}) {
-	err := c.post(SeverityFatal, message, v...)
-	if err != nil {
-		panic(err)
-	}
 }
