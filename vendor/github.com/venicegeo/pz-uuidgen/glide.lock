@@ -1,5 +1,5 @@
 hash: 01ae7c5a37307646a7cd354c30cfe652e2560e4d024b11bfef8e6e664243781a
-updated: 2016-11-30T15:16:41.815314769-05:00
+updated: 2016-12-01T09:10:04.067605797-05:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
@@ -17,13 +17,13 @@ imports:
 - name: github.com/pborman/uuid
   version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
 - name: github.com/venicegeo/pz-gocommon
-  version: 1507ab6946f64303db0939758ca62c634546d383
+  version: c46e662fb04c58dfdd1e1a74bdae9fd03f53c6e5
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 5176f8f1bbdcb3917898b739d360ddffbb144c31
+  version: 2677aaa0d6aca43ef57ce549921f43b7aa447867
   subpackages:
   - logger
 - name: golang.org/x/net

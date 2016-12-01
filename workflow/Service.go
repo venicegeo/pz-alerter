@@ -84,7 +84,7 @@ func (service *Service) Init(
 		Client: logger,
 	}
 
-	service.syslogger = syslogger.NewLogger(writer, "pz-workflow")
+	service.syslogger = syslogger.NewLogger(writer, "Workflow")
 
 	service.uuidgen = uuidgen
 

@@ -87,8 +87,8 @@ func makeMessage(sde bool) (*Message, string) {
 		}
 
 		expected = "<10>1 " + m.TimeStamp.Format(time.RFC3339) + " HOST APPLICATION 1234 msg1of2 " +
-			"[pzaudit@48851 Actor=\"=actor=\" Action=\"-action-\" Actee=\"_actee_\"] " +
-			"[pzmetric@48851 Name=\"=name=\" Value=\"-3.140000\" Object=\"_object_\"] " +
+			"[pzaudit@48851 actor=\"=actor=\" action=\"-action-\" actee=\"_actee_\"] " +
+			"[pzmetric@48851 name=\"=name=\" value=\"-3.140000\" object=\"_object_\"] " +
 			"Yow"
 	}
 

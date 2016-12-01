@@ -231,7 +231,7 @@ func (m *Message) Validate() error {
 type AuditElement struct {
 	Actor  string `json:"actor"`
 	Action string `json:"action"`
-	Actee  string `json:"actee"`
+	Actee  string `json:"actee"` // optional
 }
 
 func (ae *AuditElement) validate() error {
@@ -241,9 +241,6 @@ func (ae *AuditElement) validate() error {
 	if ae.Action == "" {
 		return fmt.Errorf("AuditElement.Action not set")
 	}
-	if ae.Actee == "" {
-		return fmt.Errorf("AuditElement.Actee not set")
-	}
 
 	// TODO: check for valid UUIDs?
 
@@ -252,7 +249,7 @@ func (ae *AuditElement) validate() error {
 
 // String builds and returns the RFC5424-style textual representation of an Audit SDE
 func (ae *AuditElement) String() string {
-	s := fmt.Sprintf("[pzaudit@%s Actor=\"%s\" Action=\"%s\" Actee=\"%s\"]",
+	s := fmt.Sprintf("[pzaudit@%s actor=\"%s\" action=\"%s\" actee=\"%s\"]",
 		privateEnterpriseNumber, ae.Actor, ae.Action, ae.Actee)
 	return s
 }
@@ -281,7 +278,7 @@ func (me *MetricElement) validate() error {
 
 // String builds and returns the RFC5424-style textual representation of an Metric SDE
 func (me *MetricElement) String() string {
-	s := fmt.Sprintf("[pzmetric@%s Name=\"%s\" Value=\"%f\" Object=\"%s\"]",
+	s := fmt.Sprintf("[pzmetric@%s name=\"%s\" value=\"%f\" object=\"%s\"]",
 		privateEnterpriseNumber, me.Name, me.Value, me.Object)
 	return s
 }
@@ -337,7 +334,7 @@ func (se *SourceElement) validate() error {
 
 // String builds the text string of the SDE
 func (me *SourceElement) String() string {
-	s := fmt.Sprintf("[pzsource@%s File=\"%s\" Function=\"%s\" Line=\"%d\"]",
+	s := fmt.Sprintf("[pzsource@%s file=\"%s\" function=\"%s\" line=\"%d\"]",
 		privateEnterpriseNumber, me.File, me.Function, me.Line)
 	return s
 }
