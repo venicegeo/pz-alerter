@@ -223,9 +223,9 @@ func Test05Logger(t *testing.T) {
 	check(Warning, "bonk 3")
 	check(Error, "Bonk .1")
 	check(Fatal, "BONK 4.0")
-	check(Notice, "Actor=\"1\"")
+	check(Notice, "actor=\"1\"")
 	check(Notice, "brownfox")
-	check(Notice, "Value=\"5952567.0")
+	check(Notice, "value=\"5952567.0")
 	check(Notice, "lazydog")
 }
 

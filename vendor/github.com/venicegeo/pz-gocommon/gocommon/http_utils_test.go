@@ -92,12 +92,12 @@ func TestApiServer(t *testing.T) {
 
 	unsetenvT(t, "PZSERVER")
 
-	pzserver, err := GetApiServer()
+	_, err := GetApiServer()
 	assert.Error(err)
 
 	setenvT(t, "PZSERVER", "a.b.c.d")
 
-	pzserver, err = GetApiServer()
+	pzserver, err := GetApiServer()
 	assert.NoError(err)
 	assert.EqualValues("a.b.c.d", pzserver)
 

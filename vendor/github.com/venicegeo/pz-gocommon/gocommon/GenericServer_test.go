@@ -230,6 +230,7 @@ func Test07Server(t *testing.T) {
 		assert.EqualValues("thing", jresp.Type)
 
 		err = jresp.ExtractData(&output)
+		assert.NoError(err)
 		assert.EqualValues("1", output.ID)
 		assert.EqualValues("17", output.Value)
 
@@ -245,6 +246,7 @@ func Test07Server(t *testing.T) {
 		assert.EqualValues("thing", jresp.Type)
 
 		err = jresp.ExtractData(&output)
+		assert.NoError(err)
 		assert.EqualValues("2", output.ID)
 		assert.EqualValues("18", output.Value)
 
@@ -319,10 +321,10 @@ func Test07Server(t *testing.T) {
 	}
 
 	{
-		err := genericServer.Stop()
+		_ = genericServer.Stop()
 		//assert.NoError(err)
 
-		_, err = http.Get(h.BaseUrl)
+		_, err := http.Get(h.BaseUrl)
 		assert.Error(err)
 	}
 }

@@ -102,7 +102,7 @@ func (suite *EsTester) SetUpIndex() elasticsearch.IIndex {
 		esi, err = elasticsearch.NewIndex2(suite.url, "estest$"+uniq(), "")
 		assert.NoError(err)
 
-		err = esi.Delete()
+		_ = esi.Delete()
 		//assert.NoError(err)
 
 		ok, err = esi.IndexExists()
@@ -970,6 +970,7 @@ func (suite *EsTester) Test10GetAll() {
 		})
 
 		_, err := elasticsearch.PollFunction(pollingFn)
+		assert.NoError(err)
 		getResult, err := esi.FilterByMatchAll("", nil)
 		assert.NoError(err)
 		assert.NotNil(getResult)
@@ -1067,6 +1068,7 @@ func (suite *EsTester) Test11Pagination() {
 		})
 
 		_, err := elasticsearch.PollFunction(pollingFn)
+		assert.NoError(err)
 		getResult, err := esi.FilterByMatchAll("Obj3", realFormat)
 		assert.NoError(err)
 		assert.Len(*getResult.GetHits(), 4)

@@ -26,6 +26,7 @@ cd $GOPATH/src/github.com/venicegeo/pz-gocommon
 go test -v -coverprofile=$root/common.cov github.com/venicegeo/pz-gocommon/gocommon
 go test -v -coverprofile=$root/elastic.cov github.com/venicegeo/pz-gocommon/elasticsearch
 go test -v -coverprofile=$root/kafka.cov github.com/venicegeo/pz-gocommon/kafka
+go test -v -coverprofile=$root/syslog.cov github.com/venicegeo/pz-gocommon/syslog
 
 # lint
 sh ci/metalinter.sh | tee $root/lint.txt

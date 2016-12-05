@@ -93,7 +93,7 @@ func (suite *EsTester) SetUpIndex() IIndex {
 	esi, err := NewIndexInterface(sys, "estest$", "", true)
 	assert.NoError(err)
 
-	err = esi.Delete()
+	_ = esi.Delete()
 	//assert.NoError(err)
 
 	ok, err := esi.IndexExists()
@@ -495,6 +495,7 @@ func (suite *EsTester) Test10GetAll() {
 		spf := func() (*SearchResult, error) { return esi.FilterByMatchAll("", realFormat) }
 
 		_, err := PollFunction(searchPoller(spf, 2))
+		assert.NoError(err)
 		getResult, err := esi.FilterByMatchAll("", realFormat)
 		assert.NoError(err)
 		assert.NotNil(getResult)
@@ -602,6 +603,7 @@ func (suite *EsTester) Test11Pagination2() {
 		spf := func() (*SearchResult, error) { return esi.FilterByMatchAll("Obj3", realFormat) }
 
 		_, err := PollFunction(searchPoller(spf, 4))
+		assert.NoError(err)
 		getResult, err := esi.FilterByMatchAll("Obj3", realFormat)
 		assert.NoError(err)
 		assert.Len(*getResult.GetHits(), 4)

@@ -19,6 +19,7 @@ tar cvzf $APP.$EXT \
     common.cov \
     elastic.cov \
     kafka.cov \
+    syslog.cov \
     lint.txt \
     glide.lock \
     glide.yaml

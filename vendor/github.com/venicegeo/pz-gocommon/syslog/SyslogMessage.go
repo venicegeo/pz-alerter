@@ -333,8 +333,8 @@ func (se *SourceElement) validate() error {
 }
 
 // String builds the text string of the SDE
-func (me *SourceElement) String() string {
+func (se *SourceElement) String() string {
 	s := fmt.Sprintf("[pzsource@%s file=\"%s\" function=\"%s\" line=\"%d\"]",
-		privateEnterpriseNumber, me.File, me.Function, me.Line)
+		privateEnterpriseNumber, se.File, se.Function, se.Line)
 	return s
 }

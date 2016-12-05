@@ -42,10 +42,7 @@ func (w *Writer) Write(mssg *Message) error {
 
 	s := mssg.String()
 	_, err := io.WriteString(w.Writer, s)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 //---------------------------------------------------------------------
@@ -75,10 +72,7 @@ func (w *FileWriter) Write(mssg *Message) error {
 	s += "\n"
 
 	_, err = io.WriteString(w.file, s)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 // Close closes the file. The creator of the FileWriter must call this.
