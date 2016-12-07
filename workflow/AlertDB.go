@@ -37,14 +37,16 @@ func NewAlertDB(service *Service, esi elasticsearch.IIndex) (*AlertDB, error) {
 }
 
 func (db *AlertDB) PostData(obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
-	db.service.syslogger.Audit(actor, "create", string(id), "AlertDB.PostData")
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
+		db.service.syslogger.Audit(actor, "createAlert", string(id), "AlertDB.PostData: failed")
 		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
+		db.service.syslogger.Audit(actor, "createAlert", string(id), "AlertDB.PostData: failed")
 		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: not created")
 	}
+	db.service.syslogger.Audit(actor, "createAlert", string(id), "AlertDB.PostData: success")
 
 	return id, nil
 }
@@ -52,7 +54,7 @@ func (db *AlertDB) PostData(obj interface{}, id piazza.Ident, actor string) (pia
 func (db *AlertDB) GetAll(format *piazza.JsonPagination, actor string) ([]Alert, int64, error) {
 	alerts := []Alert{}
 
-	db.service.syslogger.Audit(actor, "read", db.mapping, "AlertDB.GetAll")
+	db.service.syslogger.Audit(actor, "readType", db.mapping, "AlertDB.GetAll: check type exists")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return alerts, 0, err
@@ -61,6 +63,7 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination, actor string) ([]Alert,
 		return alerts, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "readAlerts", db.mapping, "AlertDB.GetAll: get all query")
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("AlertDB.GetAll failed: %s", err)
@@ -86,7 +89,7 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination, actor string) ([]Alert,
 func (db *AlertDB) GetAlertsByDslQuery(dslString string, actor string) ([]Alert, int64, error) {
 	alerts := []Alert{}
 
-	db.service.syslogger.Audit(actor, "read", db.mapping, "AlertDB.GetAlertsByDslQuery")
+	db.service.syslogger.Audit(actor, "readType", db.mapping, "AlertDB.GetAlertsByDslQuery: check type exist")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return alerts, 0, err
@@ -95,6 +98,7 @@ func (db *AlertDB) GetAlertsByDslQuery(dslString string, actor string) ([]Alert,
 		return alerts, 0, nil
 	}
 
+	db.service.syslogger.Audit(actor, "readAlerts", db.mapping, "AlertDB.GetAlertsByDslQuery: alerts query")
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
 		return nil, 0, LoggedError("AlertDB.GetAlertsByDslQuery failed: %s", err)
@@ -121,7 +125,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 	alerts := []Alert{}
 	var count = int64(-1)
 
-	db.service.syslogger.Audit(actor, "read", db.mapping, "AlertDB.GetAllByTrigger")
+	db.service.syslogger.Audit(actor, "readType", db.mapping, "AlertDB.GetAllByTrigger: check type exists")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return alerts, 0, err
@@ -133,6 +137,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 	// This will be an Elasticsearch term query of roughly the following structure:
 	// { "term": { "_id": triggerId } }
 	// This matches the '_id' field of the Elasticsearch document exactly
+	db.service.syslogger.Audit(actor, "readAlerts", db.mapping, "AlertDB.GetAllByTrigger: query alerts by trigger [%s]", triggerID.String())
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerID)
 	if err != nil {
 		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
@@ -161,7 +166,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 }
 
 func (db *AlertDB) GetOne(id piazza.Ident, actor string) (*Alert, bool, error) {
-	db.service.syslogger.Audit(actor, "read", string(id), "AlertDB.GetOne")
+	db.service.syslogger.Audit(actor, "readAlert", string(id), "AlertDB.GetOne: query alerts")
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
 		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err)
@@ -181,9 +186,9 @@ func (db *AlertDB) GetOne(id piazza.Ident, actor string) (*Alert, bool, error) {
 }
 
 func (db *AlertDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
-	db.service.syslogger.Audit(actor, "delete", string(id), "AlertDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
+		db.service.syslogger.Audit(actor, "deleteAlert", string(id), "AlertDB.DeleteByID: failed")
 		return deleteResult.Found, fmt.Errorf("AlertDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
@@ -191,8 +196,11 @@ func (db *AlertDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
 	}
 
 	if !deleteResult.Found {
+		db.service.syslogger.Audit(actor, "deleteAlert", string(id), "AlertDB.DeleteByID: not found")
 		return false, fmt.Errorf("AlertDB.DeleteById failed: not found")
 	}
+
+	db.service.syslogger.Audit(actor, "deleteAlert", string(id), "AlertDB.DeleteByID: success")
 
 	return deleteResult.Found, nil
 }

@@ -39,13 +39,15 @@ func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 
 // PostData TODO
 func (db *CronDB) PostData(obj interface{}, id piazza.Ident, actor string) error {
-	db.service.syslogger.Audit(actor, "create", string(id), "CronDB.PostData")
 	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
 	if err != nil {
+		db.service.syslogger.Audit(actor, "createCron", string(id), "CronDB.PostData: failed")
 		return LoggedError("CronDB.PostData failed: %s", err)
 	} else if !indexResult.Created {
+		db.service.syslogger.Audit(actor, "createCron", string(id), "CronDB.PostData: failed")
 		return LoggedError("CronDB.PostData failed: not created")
 	}
+	db.service.syslogger.Audit(actor, "createCron", string(id), "CronDB.PostData: success")
 
 	return nil
 }
@@ -54,7 +56,7 @@ func (db *CronDB) PostData(obj interface{}, id piazza.Ident, actor string) error
 func (db *CronDB) GetAll(actor string) (*[]Event, error) {
 	var events []Event
 
-	db.service.syslogger.Audit(actor, "read", db.mapping, "CronDB.GetAll")
+	db.service.syslogger.Audit(actor, "readType", db.mapping, "CronDB.GetAll: check type exists")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return &events, err
@@ -63,7 +65,7 @@ func (db *CronDB) GetAll(actor string) (*[]Event, error) {
 		return nil, LoggedError("Type %s does not exist", db.mapping)
 	}
 
-	db.service.syslogger.Audit(actor, "read", db.mapping, "CronDB.GetAll")
+	db.service.syslogger.Audit(actor, "readCrons", db.mapping, "CronDB.GetAll: get all query")
 	searchResult, err := db.Esi.GetAllElements(db.mapping)
 	if err != nil {
 		return nil, LoggedError("CronDB.GetAll failed: %s", err)
@@ -87,13 +89,13 @@ func (db *CronDB) GetAll(actor string) (*[]Event, error) {
 
 // Exists checks to see if the database exists
 func (db *CronDB) Exists(actor string) (bool, error) {
-	db.service.syslogger.Audit(actor, "read", db.Esi.IndexName(), "CronDB.Exists")
+	db.service.syslogger.Audit(actor, "readIndex", db.Esi.IndexName(), "CronDB.Exists: check index exists")
 	exists, err := db.Esi.IndexExists()
 	if err != nil {
 		return false, err
 	}
 	if exists {
-		db.service.syslogger.Audit(actor, "read", db.mapping, "CronDB.Exists")
+		db.service.syslogger.Audit(actor, "readType", db.mapping, "CronDB.Exists: check type exists")
 		exists, err = db.Esi.TypeExists(db.mapping)
 		if err != nil {
 			return false, err
@@ -103,19 +105,21 @@ func (db *CronDB) Exists(actor string) (bool, error) {
 }
 
 func (db *CronDB) itemExists(id piazza.Ident, actor string) (bool, error) {
-	db.service.syslogger.Audit(actor, "read", string(id), "CronDB.itemExists")
+	db.service.syslogger.Audit(actor, "readCron", string(id), "CronDB.itemExists: check item exists")
 	return db.Esi.ItemExists(db.mapping, id.String())
 }
 
 func (db *CronDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
-	db.service.syslogger.Audit(actor, "delete", string(id), "CronDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
+		db.service.syslogger.Audit(actor, "deleteCron", string(id), "CronDB.DeleteByID: failed")
 		return deleteResult.Found, LoggedError("CronDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
+		db.service.syslogger.Audit(actor, "deleteCron", string(id), "CronDB.DeleteByID: failed")
 		return false, LoggedError("CronDB.DeleteById failed: no deleteResult")
 	}
+	db.service.syslogger.Audit(actor, "deleteCron", string(id), "CronDB.DeleteByID: sucess")
 
 	return deleteResult.Found, nil
 }

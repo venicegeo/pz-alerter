@@ -52,14 +52,16 @@ func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident, ac
 		return piazza.NoIdent, err
 	}
 
-	db.service.syslogger.Audit(actor, "create", string(id), "EventDB.PostData")
 	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
 	if err != nil {
+		db.service.syslogger.Audit(actor, "createEvent", string(id), "EventDB.PostData: failed")
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
+		db.service.syslogger.Audit(actor, "createEvent", string(id), "EventDB.PostData: failed")
 		return piazza.NoIdent, LoggedError("EventDB.PostData failed: not created")
 	}
+	db.service.syslogger.Audit(actor, "createEvent", string(id), "EventDB.PostData: success")
 
 	return id, nil
 }
@@ -113,7 +115,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination, actor s
 
 	exists := true
 	if mapping != "" {
-		db.service.syslogger.Audit(actor, "read", mapping, "EventDB.GetAll")
+		db.service.syslogger.Audit(actor, "readType", mapping, "EventDB.GetAll: check type exists")
 		exists, err = db.Esi.TypeExists(mapping)
 		if err != nil {
 			return events, 0, err
@@ -123,7 +125,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination, actor s
 		return nil, 0, fmt.Errorf("Type %s does not exist (1)", mapping)
 	}
 
-	db.service.syslogger.Audit(actor, "read", mapping, "EventDB.GetAll")
+	db.service.syslogger.Audit(actor, "readEvents", mapping, "EventDB.GetAll: match all query")
 	searchResult, err := db.Esi.FilterByMatchAll(mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("EventDB.GetAll failed: %s", err)
@@ -152,7 +154,7 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, actor s
 
 	exists := true
 	if mapping != "" {
-		db.service.syslogger.Audit(actor, "read", mapping, "EventDB.GetEventsByDslQuery")
+		db.service.syslogger.Audit(actor, "readType", mapping, "EventDB.GetEventsByDslQuery: check type exists")
 		exists, err = db.Esi.TypeExists(mapping)
 		if err != nil {
 			return events, 0, err
@@ -162,7 +164,7 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, actor s
 		return nil, 0, fmt.Errorf("Type %s does not exist (2)", mapping)
 	}
 
-	db.service.syslogger.Audit(actor, "read", mapping, "EventDB.GetEventsByDslQuery")
+	db.service.syslogger.Audit(actor, "readEvents", mapping, "EventDB.GetEventsByDslQuery: events query")
 	searchResult, err := db.Esi.SearchByJSON(mapping, jsnString)
 	if err != nil {
 		return nil, 0, LoggedError("EventDB.GetEventsByDslQuery failed: %s", err)
@@ -191,7 +193,7 @@ func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ide
 
 	exists := true
 	if mapping != "" {
-		db.service.syslogger.Audit(actor, "read", mapping, "EventDB.GetEventsByEventTypeID")
+		db.service.syslogger.Audit(actor, "readType", mapping, "EventDB.GetEventsByEventTypeID: check type exists")
 		exists, err = db.Esi.TypeExists(mapping)
 		if err != nil {
 			return events, 0, err
@@ -201,7 +203,7 @@ func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ide
 		return nil, 0, fmt.Errorf("Type %s does not exist (3)", mapping)
 	}
 
-	db.service.syslogger.Audit(actor, "read", mapping, "EventDB.GetEventsByEventTypeID")
+	db.service.syslogger.Audit(actor, "readEvents", mapping, "EventDB.GetEventsByEventTypeID: query events by eventType [%s]", eventTypeID.String())
 	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID)
 	if err != nil {
 		return nil, 0, LoggedError("EventDB.GetEventsByEventTypeId failed: %s", err)
@@ -227,13 +229,13 @@ func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ide
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident, actor string) (string, error) {
 	var mapping string
 
-	db.service.syslogger.Audit(actor, "read", db.Esi.IndexName(), "EventDB.lookupEventTypeNameByEventID")
+	db.service.syslogger.Audit(actor, "readTypes", db.Esi.IndexName(), "EventDB.lookupEventTypeNameByEventID: get elasticsearch types")
 	types, err := db.Esi.GetTypes()
 	if err != nil {
 		return "", err
 	}
 	for _, typ := range types {
-		db.service.syslogger.Audit(actor, "read", string(id), "EventDB.lookupEventTypeNameByEventID")
+		db.service.syslogger.Audit(actor, "readItem", string(id), "EventDB.lookupEventTypeNameByEventID: check item exists")
 		ok, err := db.Esi.ItemExists(typ, id.String())
 		if err != nil {
 			return "", err
@@ -253,12 +255,12 @@ func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident, actor string) (
 // NameExists checks if an EventType name exists.
 // This is easier to check in EventDB, as the mappings use the EventType.Name.
 func (db *EventDB) NameExists(name string, actor string) (bool, error) {
-	db.service.syslogger.Audit(actor, "read", name, "EventDB.NameExists")
+	db.service.syslogger.Audit(actor, "readType", name, "EventDB.NameExists: check type exists")
 	return db.Esi.TypeExists(name)
 }
 
 func (db *EventDB) GetOne(mapping string, id piazza.Ident, actor string) (*Event, bool, error) {
-	db.service.syslogger.Audit(actor, "read", string(id), "EventDB.GetOne")
+	db.service.syslogger.Audit(actor, "readItem", string(id), "EventDB.GetOne: query events")
 	getResult, err := db.Esi.GetByID(mapping, id.String())
 	if err != nil {
 		return nil, false, LoggedError("EventDB.GetOne failed: %s", err)
@@ -278,14 +280,16 @@ func (db *EventDB) GetOne(mapping string, id piazza.Ident, actor string) (*Event
 }
 
 func (db *EventDB) DeleteByID(mapping string, id piazza.Ident, actor string) (bool, error) {
-	db.service.syslogger.Audit(actor, "delete", string(id), "EventDB.DeleteByID")
 	deleteResult, err := db.Esi.DeleteByID(mapping, string(id))
 	if err != nil {
+		db.service.syslogger.Audit(actor, "deleteEvent", string(id), "EventDB.DeleteByID: failed")
 		return deleteResult.Found, LoggedError("EventDB.DeleteById failed: %s", err)
 	}
 	if deleteResult == nil {
+		db.service.syslogger.Audit(actor, "deleteEvent", string(id), "EventDB.DeleteByID: failed")
 		return false, LoggedError("EventDB.DeleteById failed: no deleteResult")
 	}
+	db.service.syslogger.Audit(actor, "deleteEvent", string(id), "EventDB.DeleteByID: success")
 
 	return deleteResult.Found, nil
 }
@@ -295,11 +299,12 @@ func (db *EventDB) AddMapping(name string, mapping map[string]interface{}, actor
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
-	db.service.syslogger.Audit(actor, "create", name, "EventDB.AddMapping")
 	err = db.Esi.SetMapping(name, jsn)
 	if err != nil {
+		db.service.syslogger.Audit(actor, "createType", name, "EventDB.AddMapping: failed")
 		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err)
 	}
+	db.service.syslogger.Audit(actor, "createType", name, "EventDB.AddMapping: success")
 
 	return nil
 }
