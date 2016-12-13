@@ -26,7 +26,7 @@ import (
 // Logger is the "helper" class that can (should) be used by services to send messages.
 // In most Piazza cases, the Writer field should be set to an ElkWriter.
 type Logger struct {
-	writer           WriterI
+	writer           Writer
 	MinimumSeverity  Severity // minimum severity level you want to record
 	UseSourceElement bool
 	application      string
@@ -34,12 +34,11 @@ type Logger struct {
 	processId        string
 }
 
-func NewLogger(writer WriterI, application string) *Logger {
+func NewLogger(writer Writer, application string) *Logger {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "UNKNOWN_HOSTNAME"
 	}
-	log.Printf("Hostname: %s", hostname)
 
 	processId := strconv.Itoa(os.Getpid())
 

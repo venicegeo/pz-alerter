@@ -1,5 +1,5 @@
 hash: 01ae7c5a37307646a7cd354c30cfe652e2560e4d024b11bfef8e6e664243781a
-updated: 2016-12-05T09:46:19.194829793-05:00
+updated: 2016-12-13T13:39:42.926665136-05:00
 imports:
 - name: github.com/fvbock/endless
   version: 67d0a784ad8ab10a69d12107f6de220db0c18002
@@ -17,15 +17,15 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/pborman/uuid
-  version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
+  version: 5007efa264d92316c43112bc573e754bc889b7b1
 - name: github.com/venicegeo/pz-gocommon
-  version: ef6ef0749476a33853ffe8b93ff6c1d36b96a647
+  version: d885308ee670a65bc3283e6ee2f30dea6946d196
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 401e6c1dde037f004ac8ae55730b395ce3ba66cb
+  version: 6911e894bc7937e7c260f5c0572ead49e28970c6
   subpackages:
   - logger
 - name: golang.org/x/net
@@ -34,7 +34,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: f5a6bd43051d3f1f5dd3e0dbd531721aa5e75d28
+  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8

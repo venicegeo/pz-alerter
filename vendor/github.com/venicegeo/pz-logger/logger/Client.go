@@ -103,7 +103,7 @@ func (c *Client) GetVersion() (*piazza.Version, error) {
 
 func (c *Client) GetMessages(
 	format *piazza.JsonPagination,
-	params *piazza.HttpQueryParams) ([]Message, int, error) {
+	params *piazza.HttpQueryParams) ([]syslog.Message, int, error) {
 
 	formatString := format.String()
 	paramString := params.String()
@@ -128,7 +128,7 @@ func (c *Client) GetMessages(
 		return nil, 0, jresp.ToError()
 	}
 
-	var mssgs []Message
+	var mssgs []syslog.Message
 	err := jresp.ExtractData(&mssgs)
 	if err != nil {
 		return nil, 0, err
@@ -179,38 +179,10 @@ func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
 			return jresp.ToError()
 		}
 	case *MockClient:
-		mOld := toOldStyle(mNew)
-		err := w.Client.(*MockClient).PostMessage(mOld)
+		err := w.Client.(*MockClient).PostMessage(mNew)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-func toOldStyle(mNew *syslog.Message) *Message {
-
-	severity := SeverityInfo
-	switch mNew.Severity {
-	case syslog.Debug:
-		severity = SeverityDebug
-	case syslog.Informational:
-		severity = SeverityInfo
-	case syslog.Warning:
-		severity = SeverityWarning
-	case syslog.Error:
-		severity = SeverityError
-	case syslog.Fatal:
-		severity = SeverityFatal
-	}
-
-	// translate syslog.Message to a logger.Message and the post it via the client
-	mOld := &Message{
-		Service:   piazza.ServiceName(mNew.Application),
-		Address:   mNew.HostName,
-		CreatedOn: mNew.TimeStamp,
-		Severity:  severity,
-		Message:   mNew.String(),
-	}
-	return mOld
 }
