@@ -210,7 +210,8 @@ func (service *Service) newIdent() (piazza.Ident, error) {
 	return piazza.Ident(uuid), nil
 }
 
-func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident) error {
+func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, actor string) error {
+	service.syslogger.Audit(actor, "createJob", "kafka", "User [%s] is sending job [%s] to kafka", actor, jobID.String())
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
 	if err != nil {
 		return LoggedError("Kafka-related failure (1): %s", err.Error())
@@ -768,7 +769,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				log.Printf("JOB ID: %s", jobID)
 				log.Printf("JOB STRING: %s", jobString)
 
-				err = service.sendToKafka(jobString, jobID)
+				err = service.sendToKafka(jobString, jobID, trigger.CreatedBy)
 				if err != nil {
 					results[triggerID] = service.statusInternalError(err)
 					return
