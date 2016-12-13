@@ -47,6 +47,7 @@ const (
 	PzsvcHello          ServiceName = "pzsvc-hello"
 	PzServiceController ServiceName = "pz-servicecontroller"
 	PzMetrics           ServiceName = "pz-metrics"
+	PzIdam              ServiceName = "pz-idam"
 )
 
 var LocalPortNumbers = map[ServiceName]string{
@@ -61,6 +62,7 @@ var LocalPortNumbers = map[ServiceName]string{
 	PzsvcHello:          "20008",
 	PzGoCommon:          "20009",
 	PzGoCommonTest:      "20010",
+	PzIdam:              "20011",
 }
 
 var EndpointPrefixes = map[ServiceName]string{
@@ -73,6 +75,7 @@ var EndpointPrefixes = map[ServiceName]string{
 	PzsvcHello:          "",
 	PzServiceController: "",
 	PzMetrics:           "",
+	PzIdam:              "",
 }
 
 var HealthcheckEndpoints = map[ServiceName]string{
@@ -85,6 +88,7 @@ var HealthcheckEndpoints = map[ServiceName]string{
 	PzsvcHello:          "/",
 	PzServiceController: "",
 	PzMetrics:           "/",
+	PzIdam:              "",
 }
 
 type ServicesMap map[ServiceName]string

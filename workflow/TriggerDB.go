@@ -46,7 +46,7 @@ func (db *TriggerDB) PostTrigger(trigger *Trigger, id piazza.Ident) (piazza.Iden
 		if !ok {
 			return piazza.NoIdent, LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
 		}
-		serviceControllerURL, err := db.service.sys.GetURL("pz-servicecontroller")
+		serviceControllerURL, err := db.service.sys.GetURL(piazza.PzServiceController)
 		if err == nil {
 			// TODO:
 			// if err is nil, we have a servicecontroller to talk to
