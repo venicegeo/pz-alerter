@@ -40,7 +40,7 @@ type Reader interface {
 
 //---------------------------------------------------------------------
 
-// FileWriter implements the WriterI, writing to a given file
+// FileWriter implements the Writer interface, writing to a given file
 type FileWriter struct {
 	FileName string
 	file     *os.File
@@ -48,6 +48,8 @@ type FileWriter struct {
 
 // Write writes the message to the supplied file.
 func (w *FileWriter) Write(mssg *Message) error {
+	var _ Writer = (*FileWriter)(nil)
+
 	var err error
 
 	if w == nil || w.FileName == "" {
@@ -83,6 +85,7 @@ type MessageWriter struct {
 
 // Write writes the message to the backing array
 func (w *MessageWriter) Write(mssg *Message) error {
+	var _ Writer = (*MessageWriter)(nil)
 
 	if w.messages == nil {
 		w.messages = make([]*Message, 0)
@@ -144,6 +147,8 @@ func (w *SyslogdWriter) init() error {
 
 // Write writes the message to the backing array
 func (w *SyslogdWriter) Write(mssg *Message) error {
+	var _ Writer = (*SyslogdWriter)(nil)
+
 	var err error
 
 	if w.writer == nil {
@@ -179,6 +184,8 @@ type ElasticWriter struct {
 
 //Write writes the message to the elasticsearch index, type, id
 func (w *ElasticWriter) Write(mssg *Message) error {
+	var _ Writer = (*ElasticWriter)(nil)
+
 	var err error
 
 	if w == nil || w.Esi == nil || w.typ == "" {

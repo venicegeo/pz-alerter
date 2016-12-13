@@ -63,8 +63,11 @@ func (suite *LoggerTester) setupFixture() {
 	assert.NoError(err)
 	suite.client = client
 
+	logWriters := []syslog.Writer{&syslog.MessageWriter{}}
+	auditWriters := []syslog.Writer{&syslog.MessageWriter{}}
+
 	service := &Service{}
-	err = service.Init(sys, esi)
+	err = service.Init(sys, logWriters, auditWriters, esi)
 	assert.NoError(err)
 
 	server := &Server{}
