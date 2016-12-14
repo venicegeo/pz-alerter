@@ -1,61 +1,63 @@
-hash: 01ae7c5a37307646a7cd354c30cfe652e2560e4d024b11bfef8e6e664243781a
-updated: 2016-12-13T12:02:04.610374239-05:00
+hash: fa131b6531b3d3802b1155bd00fe72793134474dae68c4518b88b59fe90249bb
+updated: 2016-12-14T11:12:44.240914073-05:00
 imports:
 - name: github.com/fvbock/endless
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: 67d0a784ad8ab10a69d12107f6de220db0c18002
 - name: github.com/gin-gonic/gin
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
   subpackages:
   - binding
   - render
 - name: github.com/golang/protobuf
-  version: ""
+  version: 2402d76f3d41f928c7902a765dfc872356dd3aad
   subpackages:
   - proto
 - name: github.com/manucorporat/sse
-  version: ""
+  version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-isatty
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/venicegeo/pz-gocommon
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: ad3394140f8e6a98df9d30af7305d44b63e3d923
   subpackages:
+  - elasticsearch
   - gocommon
   - syslog
-  - elasticsearch
 - name: github.com/venicegeo/pz-logger
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: 3a8e319c2ca96c133383ce5cf71d7f245092d918
   subpackages:
   - logger
 - name: golang.org/x/net
-  version: ""
+  version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
-  version: ""
+  version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: 060365a7e27c56c938b234824ef7f9a3a7834b99
   subpackages:
   - backoff
   - uritemplates
 - name: gopkg.in/yaml.v2
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
 testImports:
 - name: github.com/davecgh/go-spew
-  version: ""
+  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
   subpackages:
   - spew
+- name: github.com/pborman/uuid
+  version: 5007efa264d92316c43112bc573e754bc889b7b1
 - name: github.com/pmezard/go-difflib
-  version: ""
+  version: 792786c7400a136282c1664665ae0a8db921c6c2
   subpackages:
   - difflib
 - name: github.com/stretchr/testify
-  version: ""
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
   subpackages:
   - assert
-  - suite
   - require
+  - suite

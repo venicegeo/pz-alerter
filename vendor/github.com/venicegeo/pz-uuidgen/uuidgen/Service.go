@@ -105,6 +105,7 @@ func (service *Service) PostUuids(params *piazza.HttpQueryParams) *piazza.JsonRe
 	for i := 0; i < count; i++ {
 		uuids[i] = piazza.NewUuid().String()
 	}
+	// service.syslogger.Audit("pz-uuidgen", "createUUID", "", "UUIDGen created uuids: [%s]", uuids)
 
 	service.Lock()
 	service.stats.NumUUIDs += count
