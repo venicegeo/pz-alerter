@@ -1,5 +1,5 @@
 hash: f2eb300d41bbbd8362030cd4ddd475685a6e098bccdbb5c7c1cbe72fa8e00f6b
-updated: 2016-12-14T13:10:56.230117882-05:00
+updated: 2016-12-14T13:26:30.865748173-05:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -45,17 +45,17 @@ imports:
 - name: github.com/Shopify/sarama
   version: 9a9e66f928cbc9febba598484ab34dcef6f8f43e
 - name: github.com/venicegeo/pz-gocommon
-  version: eb87ddb071a359311a19812e3fb30440456fdc52
+  version: a23b2847b85454eabf01ae0c9667ca5cceda51c5
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 3a8e319c2ca96c133383ce5cf71d7f245092d918
+  version: 706c6f7c3b5be6d9709c3c84af99b6262a814191
   subpackages:
   - logger
 - name: github.com/venicegeo/pz-uuidgen
-  version: 93b7ccfbc358b318f66c806d82a5e6e51890fc05
+  version: 38cd8fe9dd333f19525f6b1ee9d7130e9f56cacc
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron

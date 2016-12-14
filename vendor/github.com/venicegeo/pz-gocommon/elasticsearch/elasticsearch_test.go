@@ -279,7 +279,7 @@ func (suite *EsTester) Test03Operations() {
 	//Coverage
 	_, err := esi.GetAllElements("")
 	assert.Error(err)
-	_, err = esi.FilterByMatchQuery("", "", "")
+	_, err = esi.FilterByMatchQuery("", "", "", nil)
 	assert.Error(err)
 	_, err = esi.SearchByJSON("", "")
 	assert.Error(err)
@@ -658,14 +658,14 @@ func (suite *EsTester) Test12TermMatch() {
 	assert.NoError(err)
 	assert.NotNil(indexResult)
 
-	searchResult, err := esi.FilterByTermQuery(mapping, "data", "lazy dog")
+	searchResult, err := esi.FilterByTermQuery(mapping, "data", "lazy dog", nil)
 	assert.NoError(err)
 	assert.NotNil(searchResult)
 	assert.True(searchResult.Found)
 	array := searchResult.GetHits()
 	assert.Len(*array, 1)
 
-	searchResult, err = esi.FilterByTermQuery(mapping, "data", "lazy sloth")
+	searchResult, err = esi.FilterByTermQuery(mapping, "data", "lazy sloth", nil)
 	assert.NoError(err)
 	assert.NotNil(searchResult)
 	assert.False(searchResult.Found)
