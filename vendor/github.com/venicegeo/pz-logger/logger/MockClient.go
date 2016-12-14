@@ -19,13 +19,14 @@ import (
 	"time"
 
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	syslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 // MockClient implements Logger
 type MockClient struct {
 	serviceName    piazza.ServiceName
 	serviceAddress string
-	messages       []Message
+	messages       []syslog.Message
 	stats          Stats
 }
 
@@ -46,7 +47,7 @@ func (c *MockClient) GetVersion() (*piazza.Version, error) {
 
 func (c *MockClient) GetMessages(
 	format *piazza.JsonPagination,
-	params *piazza.HttpQueryParams) ([]Message, int, error) {
+	params *piazza.HttpQueryParams) ([]syslog.Message, int, error) {
 
 	if params.String() != "" {
 		return nil, 0, fmt.Errorf("parameters are not supported in mock client")
@@ -61,7 +62,7 @@ func (c *MockClient) GetMessages(
 	}
 
 	if startIndex > totalCount {
-		return []Message{}, totalCount, nil
+		return []syslog.Message{}, totalCount, nil
 	}
 
 	if endIndex > totalCount {
@@ -74,13 +75,13 @@ func (c *MockClient) GetMessages(
 	// we return exactly one page
 	// first we get the right page, *then* we sort that subset
 
-	buf := make([]Message, resultCount)
+	buf := make([]syslog.Message, resultCount)
 	for i := 0; i < resultCount; i++ {
 		buf[i] = c.messages[startIndex+i]
 	}
 
 	if format.Order == piazza.SortOrderDescending {
-		buf2 := make([]Message, resultCount)
+		buf2 := make([]syslog.Message, resultCount)
 		for i := 0; i < resultCount; i++ {
 			buf2[i] = buf[resultCount-1-i]
 		}
@@ -94,7 +95,7 @@ func (c *MockClient) GetStats() (*Stats, error) {
 	return &c.stats, nil
 }
 
-func (c *MockClient) PostMessage(mssg *Message) error {
+func (c *MockClient) PostMessage(mssg *syslog.Message) error {
 	c.messages = append(c.messages, *mssg)
 	c.stats.NumMessages++
 	return nil

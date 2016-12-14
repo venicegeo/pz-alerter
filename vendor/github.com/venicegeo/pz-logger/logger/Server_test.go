@@ -63,8 +63,11 @@ func (suite *LoggerTester) setupFixture() {
 	assert.NoError(err)
 	suite.client = client
 
+	logWriters := []syslog.Writer{&syslog.MessageWriter{}}
+	auditWriters := []syslog.Writer{&syslog.MessageWriter{}}
+
 	service := &Service{}
-	err = service.Init(sys, esi)
+	err = service.Init(sys, logWriters, auditWriters, esi)
 	assert.NoError(err)
 
 	server := &Server{}
@@ -430,7 +433,7 @@ func (suite *LoggerTester) Test08Server() {
 	assert.Equal("yow", resp.Origin)
 }
 
-func (suite *LoggerTester) Test09GerMessagesErrors() {
+func (suite *LoggerTester) Test09GetMessagesErrors() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -457,7 +460,7 @@ func (suite *LoggerTester) Test09GerMessagesErrors() {
 	mssgs, count, err := client.GetMessages(&format, nil)
 	assert.NoError(err)
 	assert.Equal(0, count)
-	assert.EqualValues([]Message{}, mssgs)
+	assert.EqualValues([]syslog.Message{}, mssgs)
 }
 
 func (suite *LoggerTester) Test10Syslog() {

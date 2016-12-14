@@ -16,9 +16,11 @@ package main
 
 import (
 	"log"
+	"os"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 )
 
@@ -31,14 +33,26 @@ func main() {
 		log.Fatal(err)
 	}
 
-	idx, err := elasticsearch.NewIndex(sys, "pzlogger3", "")
+	var index string
+	if index = os.Getenv("LOGGER_INDEX"); index == "" {
+		log.Fatal("Elasticsearch index name not set")
+	}
+
+	idx, err := elasticsearch.NewIndex(sys, index, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 	var esi elasticsearch.IIndex = idx
+	pzlogger.SetupElastic(esi)
+
+	logWriter := syslogger.ElasticWriter{Esi: esi}
+	logWriter.SetType(pzlogger.LogSchema)
+	auditWriter := syslogger.ElasticWriter{Esi: esi}
+	auditWriter.SetType(pzlogger.SecuritySchema)
+	syslogWriter := syslogger.SyslogdWriter{}
 
 	service := &pzlogger.Service{}
-	err = service.Init(sys, esi)
+	err = service.Init(sys, []syslogger.Writer{&logWriter}, []syslogger.Writer{&auditWriter, &syslogWriter}, esi)
 	if err != nil {
 		log.Fatal(err)
 	}

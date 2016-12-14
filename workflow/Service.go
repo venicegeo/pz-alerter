@@ -760,7 +760,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 				authzURL, err := service.sys.GetURL(piazza.PzIdam)
 				if err == nil { //Mocking
-					// \/ Subject to change \/
+					//                         \/ Subject to change \/
 					req := fmt.Sprintf(`{
 											"username": "%s",
 											"action": {
@@ -771,22 +771,27 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					service.syslogger.Audit("pz-workflow", "requestAccess", "pz-idam", "User [%s] POSTed event [%s] requesting access to trigger [%s] created by [%s]", event.CreatedBy, event.EventID, trigger.TriggerID, trigger.CreatedBy)
 					code, body, _, err := piazza.HTTP(piazza.POST, authzURL+"/authz", piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader([]byte(req)))
 					if err != nil {
+						results[triggerID] = service.statusInternalError(err)
 						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					}
 					if code != 200 {
+						results[triggerID] = service.statusInternalError(errors.New("AuthZ response code not 200"))
 						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					}
 					var respon map[string]interface{}
 					json.Unmarshal(body, &respon)
 					if iAuth, ok := respon["isAuthSuccess"]; !ok {
+						results[triggerID] = service.statusInternalError(errors.New("AuthZ response doesn't contain isAuthSuccess field"))
 						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					} else if bAuth, ok := iAuth.(bool); !ok {
+						results[triggerID] = service.statusInternalError(errors.New("AuthZ isAuthSuccess is not type bool"))
 						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					} else if !bAuth {
+						results[triggerID] = service.statusForbidden(errors.New("Access to create job denied"))
 						service.syslogger.Info("Event [] firing trigger [] was denied access to create job", event.EventID, trigger.TriggerID)
 						return
 					}

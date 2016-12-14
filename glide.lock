@@ -1,5 +1,5 @@
 hash: f2eb300d41bbbd8362030cd4ddd475685a6e098bccdbb5c7c1cbe72fa8e00f6b
-updated: 2016-12-05T09:52:57.388217646-05:00
+updated: 2016-12-14T10:16:20.725299838-05:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -33,9 +33,9 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/pborman/uuid
-  version: 3d4f2ba23642d3cfd06bd4b54cf03d99d95c0f1b
+  version: 5007efa264d92316c43112bc573e754bc889b7b1
 - name: github.com/pierrec/lz4
-  version: ed384a0ef355ee01915875486e8c245ebd567527
+  version: 5c9560bfa9ace2bf86080bf40d46b34ae44604df
 - name: github.com/pierrec/xxHash
   version: 5a004441f897722c627870a981d02b29924215fa
   subpackages:
@@ -43,19 +43,19 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
-  version: 280cdbd7fed6e93a0d682d2984c8e8e5dc08a2a8
+  version: 9a9e66f928cbc9febba598484ab34dcef6f8f43e
 - name: github.com/venicegeo/pz-gocommon
-  version: ef6ef0749476a33853ffe8b93ff6c1d36b96a647
+  version: ad3394140f8e6a98df9d30af7305d44b63e3d923
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 401e6c1dde037f004ac8ae55730b395ce3ba66cb
+  version: 75afbc43ffb64271e27955859075b47fef093b21
   subpackages:
   - logger
 - name: github.com/venicegeo/pz-uuidgen
-  version: 2cb11c9cda26775a5c53aeb1ee996c76d02831d9
+  version: 50c46724daf5847ba68c5c45dbd11ed3230ea864
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron
@@ -66,7 +66,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: f5a6bd43051d3f1f5dd3e0dbd531721aa5e75d28
+  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8

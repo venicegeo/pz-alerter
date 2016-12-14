@@ -16,9 +16,10 @@ package logger
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 	"sync"
 	"time"
 
@@ -27,133 +28,26 @@ import (
 	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 )
 
-const schema = "LogData7"
-const securitySchema = "AuditData7"
-
 type Service struct {
 	sync.Mutex
 
 	stats  Stats
 	origin string
 
+	logWriters   []syslogger.Writer
+	auditWriters []syslogger.Writer
+
 	esIndex elasticsearch.IIndex
-	id      int
 }
 
-func (service *Service) Init(sys *piazza.SystemConfig, esIndex elasticsearch.IIndex) error {
-	var err error
+func (service *Service) Init(sys *piazza.SystemConfig, logWriters []syslogger.Writer, auditWriters []syslogger.Writer, esi elasticsearch.IIndex) error {
 
 	service.stats.CreatedOn = time.Now()
 
-	ok, err := esIndex.IndexExists()
-	if err != nil {
-		return err
-	}
-	if !ok {
-		log.Printf("Creating index: %s", esIndex.IndexName())
-		err = esIndex.Create("")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	service.logWriters = logWriters
+	service.auditWriters = auditWriters
 
-	ok, err = esIndex.TypeExists(schema)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		log.Printf("Creating type: %s", schema)
-
-		mapping :=
-			`{
-			"LogData7":{
-				"dynamic": "strict",
-				"properties": {
-					"service": {
-						"type": "string",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"address": {
-						"type": "string",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"createdOn": {
-						"type": "date",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"severity": {
-						"type": "string",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"message": {
-						"type": "string",
-						"store": true,
-						"index": "analyzed"
-					}
-				}
-			}
-		}`
-
-		err = esIndex.SetMapping(schema, piazza.JsonString(mapping))
-		if err != nil {
-			log.Printf("LoggerService.Init: %s", err.Error())
-			return err
-		}
-	}
-
-	ok, err = esIndex.TypeExists(securitySchema)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		log.Printf("Creating type: %s", schema)
-
-		mapping :=
-			`{
-			"AuditData7":{
-				"dynamic": "strict",
-				"properties": {
-					"service": {
-						"type": "string",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"address": {
-						"type": "string",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"createdOn": {
-						"type": "date",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"severity": {
-						"type": "string",
-						"store": true,
-						"index": "not_analyzed"
-					},
-					"message": {
-						"type": "string",
-						"store": true,
-						"index": "analyzed"
-					}
-				}
-			}
-		}`
-
-		err = esIndex.SetMapping(securitySchema, piazza.JsonString(mapping))
-		if err != nil {
-			log.Printf("LoggerService.Init: %s", err.Error())
-			return err
-		}
-	}
-
-	service.esIndex = esIndex
+	service.esIndex = esi
 
 	service.origin = string(sys.Name)
 
@@ -208,72 +102,6 @@ func (service *Service) GetStats() *piazza.JsonResponse {
 	return resp
 }
 
-func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	var err error
-
-	pagination, err := piazza.NewJsonPagination(params)
-	if err != nil {
-		return service.newBadRequestResponse(err)
-	}
-
-	dsl, err := createQueryDslAsString(pagination, params)
-	if err != nil {
-		return service.newBadRequestResponse(err)
-	}
-
-	var searchResult *elasticsearch.SearchResult
-
-	if dsl == "" {
-		searchResult, err = service.esIndex.FilterByMatchAll(schema, pagination)
-	} else {
-		searchResult, err = service.esIndex.SearchByJSON(schema, dsl)
-	}
-
-	if err != nil {
-		return service.newInternalErrorResponse(err)
-	}
-
-	var lines = make([]Message, 0)
-
-	if searchResult != nil && searchResult.GetHits() != nil {
-		for _, hit := range *searchResult.GetHits() {
-			if hit.Source == nil {
-				log.Printf("null source hit")
-				continue
-			}
-
-			var msg Message
-			err = json.Unmarshal(*hit.Source, &msg)
-			if err != nil {
-				log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))
-				return service.newInternalErrorResponse(err)
-			}
-
-			// just in case
-			err = msg.Validate()
-			if err != nil {
-				log.Printf("UNABLE TO VALIDATE: %s", string(*hit.Source))
-				continue
-			}
-
-			lines = append(lines, msg)
-		}
-	}
-
-	pagination.Count = int(searchResult.TotalHits())
-	resp := &piazza.JsonResponse{
-		StatusCode: http.StatusOK,
-		Data:       lines,
-		Pagination: pagination,
-	}
-
-	err = resp.SetType()
-	if err != nil {
-		return service.newInternalErrorResponse(err)
-	}
-	return resp
-}
-
 func createQueryDslAsString(
 	pagination *piazza.JsonPagination,
 	params *piazza.HttpQueryParams) (string, error) {
@@ -307,7 +135,6 @@ func createQueryDslAsString(
 			},
 		})
 	}
-
 	if contains != "" {
 		must = append(must, map[string]interface{}{
 			"multi_match": map[string]interface{}{
@@ -365,30 +192,16 @@ func createQueryDslAsString(
 	return string(output), nil
 }
 
-func convertToOldSeverity(newSeverity syslogger.Severity) Severity {
-	switch newSeverity {
-	case syslogger.Debug:
-		return SeverityDebug
-	case syslogger.Informational:
-		return SeverityInfo
-	case syslogger.Warning:
-		return SeverityWarning
-	case syslogger.Error:
-		return SeverityError
-	case syslogger.Fatal:
-		return SeverityFatal
-	}
-	log.Printf("bad severity value: %d", newSeverity)
-	return SeverityError
-}
-
 func (service *Service) PostSyslog(mNew *syslogger.Message) *piazza.JsonResponse {
 	err := mNew.Validate()
 	if err != nil {
 		return service.newBadRequestResponse(err)
 	}
 
-	go service.postSyslog(mNew)
+	err = service.postSyslog(mNew)
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
 
 	resp := &piazza.JsonResponse{
 		StatusCode: http.StatusOK,
@@ -396,40 +209,211 @@ func (service *Service) PostSyslog(mNew *syslogger.Message) *piazza.JsonResponse
 	return resp
 }
 
-// postSyslog does not return anything. Any errors go to the local log.
-func (service *Service) postSyslog(mNew *syslogger.Message) {
-	severity := convertToOldSeverity(mNew.Severity)
+func (service *Service) toOldStyle(mNew *syslogger.Message) (*Message, error) {
+	var severity Severity
+
+	switch mNew.Severity {
+	case syslogger.Debug:
+		severity = SeverityDebug
+	case syslogger.Informational:
+		severity = SeverityInfo
+	case syslogger.Warning:
+		severity = SeverityWarning
+	case syslogger.Error:
+		severity = SeverityError
+	case syslogger.Fatal:
+		severity = SeverityFatal
+	default:
+		severity = SeverityError
+	}
+
 	text := mNew.String()
 	application := piazza.ServiceName(mNew.Application)
 
-	mssgOld := Message{
+	mssgOld := &Message{
 		CreatedOn: time.Now(),
 		Service:   application,
 		Address:   mNew.HostName,
 		Severity:  severity,
 		Message:   text,
 	}
-	err := mssgOld.Validate()
-	if err != nil {
-		log.Printf("old message creation: %s", err.Error())
-		return
+	if err := mssgOld.Validate(); err != nil {
+		return mssgOld, err
 	}
+	return mssgOld, nil
+}
 
-	service.Lock()
-	idStr := strconv.Itoa(service.id)
-	service.id++
-	service.Unlock()
+func (service *Service) postSyslog(mssg *syslogger.Message) error {
+	var err error
+	isAudit := mssg.AuditData != nil
 
-	_, err = service.esIndex.PostData(schema, idStr, mssgOld)
-	if err != nil {
-		log.Printf("old message post: %s", err.Error())
-		// don't return yet, the audit post might still work
-	}
-
-	if mNew.AuditData != nil {
-		_, err = service.esIndex.PostData(securitySchema, idStr, mssgOld)
+	for _, writer := range service.logWriters {
+		err = writer.Write(mssg)
 		if err != nil {
-			log.Printf("old message audit post: %s", err.Error())
+			log.Printf("message post: %s", err.Error())
+			if !isAudit {
+				return errors.New(fmt.Sprintf("Service.postSyslog: %s", err.Error()))
+			}
 		}
 	}
+
+	if isAudit {
+		for _, writer := range service.auditWriters {
+			err = writer.Write(mssg)
+			if err != nil {
+				log.Printf("message audit post: %s", err.Error())
+				return errors.New(fmt.Sprintf("Service.postSyslog: %s", err.Error()))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (service *Service) getMessageCommon(params *piazza.HttpQueryParams) (*elasticsearch.SearchResult, *piazza.JsonPagination, *piazza.JsonResponse) {
+	pagination, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return nil, nil, service.newBadRequestResponse(err)
+	}
+
+	paginationCreatedOnToTimeStamp(pagination)
+
+	dsl, err := createQueryDslAsString(pagination, params)
+	if err != nil {
+		return nil, pagination, service.newBadRequestResponse(err)
+	}
+
+	var searchResult *elasticsearch.SearchResult
+
+	if dsl == "" {
+		searchResult, err = service.esIndex.FilterByMatchAll(LogSchema, pagination)
+	} else {
+		searchResult, err = service.esIndex.SearchByJSON(LogSchema, dsl)
+	}
+	if err != nil {
+		return nil, pagination, service.newInternalErrorResponse(err)
+	}
+	return searchResult, pagination, nil
+}
+
+func (service *Service) GetSyslog(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	var err error
+
+	format, err := params.GetAsString("format", "json")
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
+	searchResult, pagination, jErr := service.getMessageCommon(params)
+	if jErr != nil {
+		return jErr
+	}
+
+	var lines = make([]syslogger.Message, 0)
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
+			if hit.Source == nil {
+				log.Printf("null source hit")
+				continue
+			}
+
+			var msg syslogger.Message
+			err = json.Unmarshal(*hit.Source, &msg)
+			if err != nil {
+				log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))
+				return service.newInternalErrorResponse(err)
+			}
+
+			// just in case
+			err = msg.Validate()
+			if err != nil {
+				log.Printf("UNABLE TO VALIDATE: %s", string(*hit.Source))
+				continue
+			}
+
+			lines = append(lines, msg)
+		}
+	}
+
+	var data interface{}
+
+	switch format {
+	case "string":
+		temp := []string{}
+		for _, line := range lines {
+			temp = append(temp, line.String())
+		}
+		data = temp
+	default:
+		data = lines
+	}
+
+	pagination.Count = int(searchResult.TotalHits())
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Data:       data,
+		Pagination: pagination,
+	}
+
+	err = resp.SetType()
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+	return resp
+}
+func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	var err error
+
+	searchResult, pagination, jErr := service.getMessageCommon(params)
+	if jErr != nil {
+		return jErr
+	}
+	paginationTimeStampToCreateOn(pagination)
+
+	var lines = make([]Message, 0)
+
+	if searchResult != nil && searchResult.GetHits() != nil {
+		for _, hit := range *searchResult.GetHits() {
+			if hit.Source == nil {
+				log.Printf("null source hit")
+				continue
+			}
+
+			var sysMsg syslogger.Message
+			msg := &Message{}
+			err = json.Unmarshal(*hit.Source, &sysMsg)
+			if err != nil {
+				log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))
+				return service.newInternalErrorResponse(err)
+			}
+
+			msg, err = service.toOldStyle(&sysMsg)
+			if err != nil {
+				log.Printf("UNABLE TO CONVERT TO OLD TYPE: %s", string(*hit.Source))
+				continue
+			}
+			// just in case
+			err = msg.Validate()
+			if err != nil {
+				log.Printf("UNABLE TO VALIDATE: %s", string(*hit.Source))
+				continue
+			}
+
+			lines = append(lines, *msg)
+		}
+	}
+
+	pagination.Count = int(searchResult.TotalHits())
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Data:       lines,
+		Pagination: pagination,
+	}
+
+	err = resp.SetType()
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+	return resp
 }

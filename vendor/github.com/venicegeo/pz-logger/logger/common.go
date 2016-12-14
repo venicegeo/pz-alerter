@@ -17,10 +17,16 @@ package logger
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	syslog "github.com/venicegeo/pz-gocommon/syslog"
 )
+
+const LogSchema = "LogData"
+const SecuritySchema = "AuditData"
 
 // Message represents the contents of a message for the logger service.
 // All fields are required.
@@ -38,7 +44,7 @@ type IClient interface {
 	GetStats() (*Stats, error)
 
 	// read support
-	GetMessages(format *piazza.JsonPagination, params *piazza.HttpQueryParams) ([]Message, int, error)
+	GetMessages(format *piazza.JsonPagination, params *piazza.HttpQueryParams) ([]syslog.Message, int, error)
 
 	// config support
 	SetService(name piazza.ServiceName, address string)
@@ -111,6 +117,151 @@ func init() {
 	piazza.JsonResponseDataTypes["logger.Message"] = "logmessage"
 	piazza.JsonResponseDataTypes["*logger.Message"] = "logmessage"
 	piazza.JsonResponseDataTypes["[]logger.Message"] = "logmessage-list"
+	piazza.JsonResponseDataTypes["[]syslog.Message"] = "syslogMessage-list"
 	piazza.JsonResponseDataTypes["logger.Stats"] = "logstats"
 	piazza.JsonResponseDataTypes["*logger.Stats"] = "logstats"
+}
+
+func paginationTimeStampToCreateOn(pagination *piazza.JsonPagination) {
+	if pagination.SortBy == "timeStamp" {
+		pagination.SortBy = "createdOn"
+	}
+}
+
+func paginationCreatedOnToTimeStamp(pagination *piazza.JsonPagination) {
+	if pagination.SortBy == "createdOn" {
+		pagination.SortBy = "timeStamp"
+	}
+}
+
+func SetupElastic(esIndex elasticsearch.IIndex) error {
+	ok, err := esIndex.IndexExists()
+	if err != nil {
+		return err
+	}
+	if !ok {
+		log.Printf("Creating index: %s", esIndex.IndexName())
+		err = esIndex.Create("")
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	ok, err = esIndex.TypeExists(LogSchema)
+	if err != nil {
+		return err
+	}
+	mapping := `
+	{
+	    "dynamic": "strict",
+	    "properties": {
+	    	"facility": {
+        		"type": "integer"
+      		},
+      		"severity": {
+        		"type": "integer"
+      		},
+      		"version": {
+        		"type": "integer"
+      		},
+      		"timeStamp": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"hostName": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"application": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"process": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"messageId": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"auditData": {
+        		"dynamic": "strict",
+        		"properties": {
+          			"actor": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"action": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"actee": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			}
+        		}
+      		},
+     		"metricData": {
+        		"dynamic": "strict",
+        		"properties": {
+          			"name": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"value": {
+            			"type": "double"
+          			},
+          			"object": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			}
+        		}
+      		},
+      		"sourceData": {
+        		"dynamic": "strict",
+        		"properties": {
+          			"file": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"function": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"line": {
+            			"type": "integer"
+          			}
+        		}
+      		},
+      		"message": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		}
+    	}
+	}`
+
+	if !ok {
+		log.Printf("Creating type: %s", LogSchema)
+
+		err = esIndex.SetMapping(LogSchema, piazza.JsonString(mapping))
+		if err != nil {
+			log.Printf("LoggerService.Init: %s", err.Error())
+			return err
+		}
+	}
+
+	ok, err = esIndex.TypeExists(SecuritySchema)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		log.Printf("Creating type: %s", SecuritySchema)
+
+		err = esIndex.SetMapping(SecuritySchema, piazza.JsonString(mapping))
+		if err != nil {
+			log.Printf("LoggerService.Init: %s", err.Error())
+			return err
+		}
+	}
+	return nil
 }
