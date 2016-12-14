@@ -8,3 +8,5 @@ applications:
   timeout: 180
   services:
       - pz-elasticsearch
+  env:
+    LOGGER_INDEX: pzlogger4

@@ -15,6 +15,7 @@
 package syslog
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 //---------------------------------------------------------------------
@@ -300,4 +303,37 @@ func Test08Syslogd(t *testing.T) {
 	w := &SyslogdWriter{}
 	err := w.Write(m1)
 	assert.NoError(err)
+}
+
+func Test09ElasticsearchWriter(t *testing.T) {
+	assert := assert.New(t)
+	var err error
+
+	esi := elasticsearch.NewMockIndex("test09")
+	err = esi.Create("")
+	assert.NoError(err)
+
+	ew := &ElasticWriter{Esi: esi}
+	ew.SetType("Baz")
+	//ew.SetID("foobarbaz")
+
+	m := NewMessage()
+	m.Message = "Yow"
+	err = ew.Write(m)
+	assert.NoError(err)
+
+	params := &piazza.HttpQueryParams{}
+	format, err := piazza.NewJsonPagination(params)
+	assert.NoError(err)
+	x, err := esi.FilterByMatchAll("", format)
+	assert.NoError(err)
+
+	assert.Len(*x.GetHits(), 1)
+
+	src := x.GetHit(0).Source
+	assert.NotNil(src)
+	var tmp1 Message
+	err = json.Unmarshal(*src, &tmp1)
+	assert.NoError(err)
+	assert.EqualValues("Yow", tmp1.Message)
 }

@@ -80,6 +80,7 @@ func makeSystem() (
 		piazza.PzUuidgen,
 		piazza.PzKafka,
 		piazza.PzServiceController,
+		piazza.PzIdam,
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)
