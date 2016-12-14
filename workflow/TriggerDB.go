@@ -250,7 +250,7 @@ func (db *TriggerDB) GetOne(id piazza.Ident, actor string) (*Trigger, bool, erro
 	return &obj, getResult.Found, nil
 }
 
-func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident, actor string) ([]Trigger, int64, error) {
+func (db *TriggerDB) GetTriggersByEventTypeID(format *piazza.JsonPagination, id piazza.Ident, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
 	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetTriggersByEventTypeID")
@@ -263,7 +263,7 @@ func (db *TriggerDB) GetTriggersByEventTypeID(id piazza.Ident, actor string) ([]
 	}
 
 	db.service.syslogger.Audit(actor, "read", db.mapping, "TriggerDB.GetTriggersByEventTypeID")
-	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "eventTypeId", id)
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "eventTypeId", id, format)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err)
 	}

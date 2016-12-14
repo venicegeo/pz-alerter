@@ -159,10 +159,10 @@ func (db *EventTypeDB) GetOne(id piazza.Ident, actor string) (*EventType, bool, 
 	return &eventType, getResult.Found, nil
 }
 
-func (db *EventTypeDB) GetIDByName(name string, actor string) (*piazza.Ident, bool, error) {
+func (db *EventTypeDB) GetIDByName(format *piazza.JsonPagination, name string, actor string) (*piazza.Ident, bool, error) {
 
 	db.service.syslogger.Audit(actor, "readEventTypes", db.mapping, "EventTypeDB.GetIDByName: query eventtypes by name [%s]", name)
-	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name)
+	getResult, err := db.Esi.FilterByTermQuery(db.mapping, "name", name, format)
 	if err != nil {
 		return nil, getResult.Found, LoggedError("EventTypeDB.GetIDByName failed: %s", err.Error())
 	}

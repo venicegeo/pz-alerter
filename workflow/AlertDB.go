@@ -138,7 +138,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 	// { "term": { "_id": triggerId } }
 	// This matches the '_id' field of the Elasticsearch document exactly
 	db.service.syslogger.Audit(actor, "readAlerts", db.mapping, "AlertDB.GetAllByTrigger: query alerts by trigger [%s]", triggerID.String())
-	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerID)
+	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "triggerId", triggerID, format)
 	if err != nil {
 		return nil, 0, LoggedError("AlertDB.GetAllByTrigger failed: %s", err)
 	}

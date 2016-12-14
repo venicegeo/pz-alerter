@@ -323,7 +323,7 @@ func (esi *Index) GetAllElements(typ string) (*SearchResult, error) {
 // FilterByTermQuery creates an Elasticsearch term query and performs the query over the specified type.
 // For more information on term queries, see
 // https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-term-query.html
-func (esi *Index) FilterByTermQuery(typ string, name string, value interface{}) (*SearchResult, error) {
+func (esi *Index) FilterByTermQuery(typ string, name string, value interface{}, realFormat *piazza.JsonPagination) (*SearchResult, error) {
 	if typ == "" {
 		return nil, fmt.Errorf("Can't filter on type \"\"")
 	}
@@ -339,12 +339,19 @@ func (esi *Index) FilterByTermQuery(typ string, name string, value interface{}) 
 	// The value parameter is typically sent in as a string rather than an interface,
 	// but technically value can be an interface.
 	termQuery := elastic.NewTermQuery(name, value)
-	searchResult, err := esi.lib.Search().
+	f := esi.lib.Search().
 		Index(esi.index).
 		Type(typ).
-		Query(termQuery).
-		//Sort("id", true).
-		Do()
+		Query(termQuery)
+
+	if realFormat != nil {
+		format := NewQueryFormat(realFormat)
+		f = f.From(format.From)
+		f = f.Size(format.Size)
+		f = f.Sort(format.Key, format.Order)
+	}
+
+	searchResult, err := f.Do()
 
 	return NewSearchResult(searchResult), err
 }
@@ -352,7 +359,7 @@ func (esi *Index) FilterByTermQuery(typ string, name string, value interface{}) 
 // FilterByMatchQuery creates an Elasticsearch match query and performs the query over the specified type.
 // For more information on match queries, see
 // https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-match-query.html
-func (esi *Index) FilterByMatchQuery(typ string, name string, value interface{}) (*SearchResult, error) {
+func (esi *Index) FilterByMatchQuery(typ string, name string, value interface{}, realFormat *piazza.JsonPagination) (*SearchResult, error) {
 	if typ == "" {
 		return nil, fmt.Errorf("Can't filter on type \"\"")
 	}
@@ -365,11 +372,19 @@ func (esi *Index) FilterByMatchQuery(typ string, name string, value interface{})
 	}
 
 	matchQuery := elastic.NewMatchQuery(name, value)
-	searchResult, err := esi.lib.Search().
+	f := esi.lib.Search().
 		Index(esi.index).
 		Type(typ).
-		Query(matchQuery).
-		Do()
+		Query(matchQuery)
+
+	if realFormat != nil {
+		format := NewQueryFormat(realFormat)
+		f = f.From(format.From)
+		f = f.Size(format.Size)
+		f = f.Sort(format.Key, format.Order)
+	}
+
+	searchResult, err := f.Do()
 
 	return NewSearchResult(searchResult), err
 }
