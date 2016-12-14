@@ -18,7 +18,6 @@ import (
 	"errors"
 	"time"
 
-	"github.com/pborman/uuid"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -49,7 +48,8 @@ func (c *MockClient) PostUuids(count int) (*[]string, error) {
 
 	data := make([]string, count)
 	for i := 0; i < count; i++ {
-		data[i] = uuid.New()
+		data[i] = piazza.NewUuid().String()
+		//		data[i] = uuid.New()
 	}
 
 	c.stats.NumUUIDs += count

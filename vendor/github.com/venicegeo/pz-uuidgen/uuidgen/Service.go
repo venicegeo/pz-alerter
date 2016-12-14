@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pborman/uuid"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	syslogger "github.com/venicegeo/pz-gocommon/syslog"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
@@ -104,7 +103,7 @@ func (service *Service) PostUuids(params *piazza.HttpQueryParams) *piazza.JsonRe
 
 	uuids := make([]string, count)
 	for i := 0; i < count; i++ {
-		uuids[i] = uuid.New()
+		uuids[i] = piazza.NewUuid().String()
 	}
 
 	service.Lock()
