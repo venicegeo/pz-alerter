@@ -187,7 +187,7 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, actor s
 	return events, searchResult.TotalHits(), nil
 }
 
-func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ident, actor string) ([]Event, int64, error) {
+func (db *EventDB) GetEventsByEventTypeID(format *piazza.JsonPagination, mapping string, eventTypeID piazza.Ident, actor string) ([]Event, int64, error) {
 	events := []Event{}
 	var err error
 
@@ -204,7 +204,7 @@ func (db *EventDB) GetEventsByEventTypeID(mapping string, eventTypeID piazza.Ide
 	}
 
 	db.service.syslogger.Audit(actor, "readEvents", mapping, "EventDB.GetEventsByEventTypeID: query events by eventType [%s]", eventTypeID.String())
-	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID)
+	searchResult, err := db.Esi.FilterByTermQuery(mapping, "eventTypeId", eventTypeID, format)
 	if err != nil {
 		return nil, 0, LoggedError("EventDB.GetEventsByEventTypeId failed: %s", err)
 	}

@@ -349,7 +349,7 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 		nameParamValue := nameParam
 		var foundName bool
 		var eventtypeid *piazza.Ident
-		eventtypeid, foundName, err = service.eventTypeDB.GetIDByName(nameParamValue, "pz-workflow")
+		eventtypeid, foundName, err = service.eventTypeDB.GetIDByName(format, nameParamValue, "pz-workflow")
 		var foundType = false
 		var eventtype *EventType
 		if foundName && eventtypeid != nil {
@@ -431,7 +431,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 	if found {
 		return service.statusBadRequest(LoggedError("EventType Name already exists"))
 	}
-	id1, found, err := service.eventTypeDB.GetIDByName(name, eventType.CreatedBy)
+	id1, found, err := service.eventTypeDB.GetIDByName(nil, name, eventType.CreatedBy)
 	if err != nil {
 		return service.statusInternalError(err)
 	}
@@ -503,7 +503,7 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 
 		var triggers []Trigger
 		var hits int64
-		triggers, hits, err = service.triggerDB.GetTriggersByEventTypeID(id, "pz-workflow")
+		triggers, hits, err = service.triggerDB.GetTriggersByEventTypeID(nil, id, "pz-workflow")
 		if err != nil {
 			return service.statusBadRequest(err)
 		}
@@ -512,7 +512,7 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 		}
 
 		var events []Event
-		events, hits, err = service.eventDB.GetEventsByEventTypeID(eventType.Name, id, "pz-workflow")
+		events, hits, err = service.eventDB.GetEventsByEventTypeID(nil, eventType.Name, id, "pz-workflow")
 		if err != nil {
 			return service.statusBadRequest(err)
 		}
