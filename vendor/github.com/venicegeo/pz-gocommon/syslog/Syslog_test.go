@@ -337,3 +337,11 @@ func Test09ElasticsearchWriter(t *testing.T) {
 	assert.NoError(err)
 	assert.EqualValues("Yow", tmp1.Message)
 }
+
+func Test10Errors(t *testing.T) {
+	assert := assert.New(t)
+
+	logger := NewLogger(nil, "testapp")
+	err := logger.Warning("bonk")
+	assert.Error(err)
+}

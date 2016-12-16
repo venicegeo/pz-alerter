@@ -16,7 +16,6 @@ package syslog
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 )
@@ -84,72 +83,87 @@ func (logger *Logger) makeMessage(severity Severity, text string, v ...interface
 }
 
 // postMessage sends a log message
-func (logger *Logger) postMessage(mssg *Message) {
+func (logger *Logger) postMessage(mssg *Message) error {
+	if logger.writer == nil {
+		return fmt.Errorf("No writer set for logger")
+	}
+
 	if !logger.severityAllowed(mssg.Severity) {
-		return
+		return nil
 	}
 
 	err := logger.writer.Write(mssg)
 	if err != nil {
-		log.Printf("logger.postMessage: %s", err.Error())
-		log.Printf("logger.postMessage: mssg was %#v", mssg)
+		return fmt.Errorf("logger.postMessage: %s <<%#v>>", err.Error(), mssg)
 	}
+
+	return nil
 }
 
 // Debug sends a log message with severity "Debug".
-func (logger *Logger) Debug(text string, v ...interface{}) {
+func (logger *Logger) Debug(text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Debug, text, v...)
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
 }
 
-// Info sends a log message with severity "Informational".
-func (logger *Logger) Info(text string, v ...interface{}) {
+// Information sends a log message with severity "Informational".
+func (logger *Logger) Information(text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Informational, text, v...)
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
+}
+
+// Info is just an alternate name for Information
+func (logger *Logger) Info(text string, v ...interface{}) error {
+	return logger.Information(text, v...)
 }
 
 // Notice sends a log message with severity "Notice".
-func (logger *Logger) Notice(text string, v ...interface{}) {
+func (logger *Logger) Notice(text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Notice, text, v...)
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
 }
 
 // Warning sends a log message with severity "Warning".
-func (logger *Logger) Warning(text string, v ...interface{}) {
+func (logger *Logger) Warning(text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Warning, text, v...)
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
+}
+
+// Warn is just an alternate name for Warning
+func (logger *Logger) Warn(text string, v ...interface{}) error {
+	return logger.Warning(text, v...)
 }
 
 // Error sends a log message with severity "Error".
-func (logger *Logger) Error(text string, v ...interface{}) {
+func (logger *Logger) Error(text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Error, text, v...)
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
 }
 
 // Fatal sends a log message with severity "Fatal".
-func (logger *Logger) Fatal(text string, v ...interface{}) {
+func (logger *Logger) Fatal(text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Fatal, text, v...)
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
 }
 
 // Audit sends a log message with the audit SDE.
-func (logger *Logger) Audit(actor string, action string, actee string, text string, v ...interface{}) {
+func (logger *Logger) Audit(actor string, action string, actee string, text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Notice, text, v...)
 	mssg.AuditData = &AuditElement{
 		Actor:  actor,
 		Action: action,
 		Actee:  actee,
 	}
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
 }
 
 // Metric sends a log message with the metric SDE.
-func (logger *Logger) Metric(name string, value float64, object string, text string, v ...interface{}) {
+func (logger *Logger) Metric(name string, value float64, object string, text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Notice, text, v...)
 	mssg.MetricData = &MetricElement{
 		Name:   name,
 		Value:  value,
 		Object: object,
 	}
-	logger.postMessage(mssg)
+	return logger.postMessage(mssg)
 }

@@ -182,6 +182,14 @@ type ElasticWriter struct {
 	id  string
 }
 
+func NewElasticWriter(esi elasticsearch.IIndex, typ string) *ElasticWriter {
+	ew := &ElasticWriter{
+		Esi: esi,
+		typ: typ,
+	}
+	return ew
+}
+
 //Write writes the message to the elasticsearch index, type, id
 func (w *ElasticWriter) Write(mssg *Message) error {
 	var _ Writer = (*ElasticWriter)(nil)

@@ -17,12 +17,11 @@ package piazza
 import (
 	"errors"
 	"log"
-	"net"
 	"net/http"
+	"os"
 	"syscall"
 	"time"
 
-	"github.com/fvbock/endless"
 	"github.com/gin-gonic/gin"
 )
 
@@ -45,13 +44,16 @@ type RouteData struct {
 
 // Stop will request the server to shutdown. It will wait for the service to die before returning.
 func (server *GenericServer) Stop() error {
-	sys := server.Sys
-
-	err := syscall.Kill(server.pid, syscall.SIGINT)
+	kp, err := os.FindProcess(server.pid)
+	if err != nil {
+		return err
+	}
+	err = kp.Kill()
 	if err != nil {
 		return err
 	}
 
+	sys := server.Sys
 	err = sys.WaitForServiceToDieByAddress(sys.Name, sys.BindTo)
 	return err
 }
@@ -63,27 +65,17 @@ func (server *GenericServer) Start() (chan error, error) {
 
 	done := make(chan error)
 
-	ready := make(chan bool)
+	ginServer := http.Server{Addr: server.Sys.BindTo, Handler: server.router}
 
-	endless.DefaultHammerTime = ginHammerTime
-
-	ginServer := endless.NewServer(server.Sys.BindTo, server.router)
-
-	ginServer.BeforeBegin = func(_ string) {
-		server.pid = syscall.Getpid()
-		//log.Printf("Actual pid is %d", server.pid)
-
-		sys.BindTo = ginServer.EndlessListener.Addr().(*net.TCPAddr).String()
-
-		ready <- true
+	server.pid = syscall.Getpid()
+	if sys.BindTo == "" {
+		sys.BindTo = ":http"
 	}
 
 	go func() {
 		err := ginServer.ListenAndServe()
 		done <- err
 	}()
-
-	<-ready
 
 	err := sys.WaitForServiceByAddress(sys.Name, sys.BindTo)
 	if err != nil {
