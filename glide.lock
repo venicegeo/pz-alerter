@@ -1,5 +1,5 @@
-hash: f2eb300d41bbbd8362030cd4ddd475685a6e098bccdbb5c7c1cbe72fa8e00f6b
-updated: 2016-12-16T11:04:48.865735913-05:00
+hash: 7a7e66f64d4ba2ad8e6b14e61c99382a34705531f62bc6923ddb3773ab15508c
+updated: 2016-12-16T11:47:40.294347519-05:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -30,8 +30,6 @@ imports:
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
-- name: github.com/pborman/uuid
-  version: 5007efa264d92316c43112bc573e754bc889b7b1
 - name: github.com/pierrec/lz4
   version: 5c9560bfa9ace2bf86080bf40d46b34ae44604df
 - name: github.com/pierrec/xxHash
@@ -43,7 +41,7 @@ imports:
 - name: github.com/Shopify/sarama
   version: 9418d7c7189af6ea2df537692f9428efe1368368
 - name: github.com/venicegeo/pz-gocommon
-  version: 6440150993af94549018728bd109b09e3e95fefb
+  version: f9b9b4f6ce2205306d35a1c48eb9a25e8539f7ba
   subpackages:
   - elasticsearch
   - gocommon
@@ -53,7 +51,7 @@ imports:
   subpackages:
   - logger
 - name: github.com/venicegeo/pz-uuidgen
-  version: 0ac17d5351dd3d18582768aaab5ab7a90c9c9fbf
+  version: 025754b9dc5be4a3ecb86a15a69dce023f3431b5
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron

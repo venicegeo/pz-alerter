@@ -1151,7 +1151,7 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	var alerts []Alert
 	var totalHits int64
 
-	if triggerID != "" && isUUID(triggerID) {
+	if triggerID != "" && piazza.ValidUuid(triggerID.String()) {
 		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID, "pz-workflow")
 		if err != nil {
 			return service.statusInternalError(err)

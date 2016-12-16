@@ -71,3 +71,11 @@ func NewUuid() Uuid {
 	uuid[8] = (uuid[8] & 0x3f) | 0x80 // Variant is 10
 	return uuid
 }
+
+//TODO
+func ValidUuid(uuid string) bool {
+	if len(uuid) != 36 || uuid[8] != '-' || uuid[13] != '-' || uuid[18] != '-' || uuid[23] != '-' {
+		return false
+	}
+	return true
+}

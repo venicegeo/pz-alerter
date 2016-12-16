@@ -1,5 +1,5 @@
 hash: fa131b6531b3d3802b1155bd00fe72793134474dae68c4518b88b59fe90249bb
-updated: 2016-12-16T10:54:50.556140107-05:00
+updated: 2016-12-16T11:13:13.151155409-05:00
 imports:
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
@@ -21,7 +21,7 @@ imports:
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: c5ab2a794cc55803edd5e9e1579b73957e74a9bb
+  version: 7ad6ade0eca07034d7fe0536edb50f54744029b3
   subpackages:
   - logger
 - name: golang.org/x/net

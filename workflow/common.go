@@ -20,7 +20,6 @@ import (
 	"log"
 	"time"
 
-	uuidpkg "github.com/pborman/uuid"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -367,11 +366,6 @@ func LoggedError(mssg string, args ...interface{}) error {
 	str := fmt.Sprintf(mssg, args...)
 	log.Print(str)
 	return errors.New(str)
-}
-
-// isUUID checks to see if the UUID is valid
-func isUUID(uuid piazza.Ident) bool {
-	return uuidpkg.Parse(uuid.String()) != nil
 }
 
 //-INIT-------------------------------------------------------------------------
