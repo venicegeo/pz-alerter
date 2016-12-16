@@ -28,7 +28,7 @@ type Client struct {
 	syslogger *syslogger.Logger
 }
 
-func NewClient(sys *piazza.SystemConfig, logger loggerpkg.IClient) (*Client, error) {
+func NewClient(sys *piazza.SystemConfig, logger *loggerpkg.Client) (*Client, error) {
 
 	var err error
 

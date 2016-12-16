@@ -66,7 +66,7 @@ type Service struct {
 // Init TODO
 func (service *Service) Init(
 	sys *piazza.SystemConfig,
-	logger pzlogger.IClient,
+	logger *pzlogger.Client,
 	uuidgen pzuuidgen.IClient,
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
