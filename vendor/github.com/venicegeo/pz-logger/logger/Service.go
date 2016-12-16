@@ -157,7 +157,7 @@ func createQueryDslAsString(
 
 		must = append(must, map[string]interface{}{
 			"range": map[string]interface{}{
-				"createdOn": rangeParams,
+				"timeStamp": rangeParams,
 			},
 		})
 	}
@@ -244,6 +244,7 @@ func (service *Service) toOldStyle(mNew *syslogger.Message) (*Message, error) {
 }
 
 func (service *Service) postSyslog(mssg *syslogger.Message) error {
+
 	var err error
 	isAudit := mssg.AuditData != nil
 
@@ -266,6 +267,11 @@ func (service *Service) postSyslog(mssg *syslogger.Message) error {
 			}
 		}
 	}
+
+	service.Lock()
+	service.stats.NumMessages++
+
+	service.Unlock()
 
 	return nil
 }
@@ -293,6 +299,7 @@ func (service *Service) getMessageCommon(params *piazza.HttpQueryParams) (*elast
 	if err != nil {
 		return nil, pagination, service.newInternalErrorResponse(err)
 	}
+
 	return searchResult, pagination, nil
 }
 
@@ -360,8 +367,10 @@ func (service *Service) GetSyslog(params *piazza.HttpQueryParams) *piazza.JsonRe
 	if err != nil {
 		return service.newInternalErrorResponse(err)
 	}
+
 	return resp
 }
+
 func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonResponse {
 	var err error
 

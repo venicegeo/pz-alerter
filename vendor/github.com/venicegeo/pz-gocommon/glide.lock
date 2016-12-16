@@ -1,5 +1,5 @@
-hash: b07f75134252be705194d5e0bd42011e14bc1f5975db99df16cdc1ecdde3738e
-updated: 2016-12-13T15:48:20.441183795-05:00
+hash: cb9eaa747a5f3cd12bd4780d4abb189d719d9b189b77990eddda731a19f30a7a
+updated: 2016-12-16T10:48:22.895065882-05:00
 imports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
@@ -13,8 +13,6 @@ imports:
   version: bb955e01b9346ac19dc29eb16586c90ded99a98c
 - name: github.com/eapache/queue
   version: 44cc805cf13205b55f69e14bcb69867d1ae92f98
-- name: github.com/fvbock/endless
-  version: 67d0a784ad8ab10a69d12107f6de220db0c18002
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
   subpackages:
@@ -41,14 +39,14 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
-  version: 9a9e66f928cbc9febba598484ab34dcef6f8f43e
+  version: 9418d7c7189af6ea2df537692f9428efe1368368
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: 478fcf54317e52ab69f40bb4c7a1520288d7f7ea
+  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8

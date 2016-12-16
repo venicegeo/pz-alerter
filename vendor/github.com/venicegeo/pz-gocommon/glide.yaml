@@ -1,7 +1,6 @@
 package: github.com/venicegeo/pz-gocommon
 import:
 - package: github.com/Shopify/sarama
-- package: github.com/fvbock/endless
 - package: github.com/gin-gonic/gin
 - package: gopkg.in/olivere/elastic.v3
 testImport:

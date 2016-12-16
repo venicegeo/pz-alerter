@@ -22,7 +22,6 @@ import (
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
-	syslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 const LogSchema = "LogData"
@@ -36,18 +35,6 @@ type Message struct {
 	CreatedOn time.Time          `json:"createdOn"`
 	Severity  Severity           `json:"severity"`
 	Message   string             `json:"message"`
-}
-
-type IClient interface {
-	// admin interfaces
-	GetVersion() (*piazza.Version, error)
-	GetStats() (*Stats, error)
-
-	// read support
-	GetMessages(format *piazza.JsonPagination, params *piazza.HttpQueryParams) ([]syslog.Message, int, error)
-
-	// config support
-	SetService(name piazza.ServiceName, address string)
 }
 
 //---------------------------------------------------------------------------
