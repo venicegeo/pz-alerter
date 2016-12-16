@@ -37,8 +37,7 @@ type Service struct {
 
 //---------------------------------------------------------------------
 
-func (service *Service) Init(sys *piazza.SystemConfig, loggerClient pzlogger.IClient) error {
-	//service.logger = loggerClient
+func (service *Service) Init(sys *piazza.SystemConfig, loggerClient *pzlogger.Client) error {
 	service.stats.CreatedOn = time.Now()
 
 	service.origin = string(sys.Name)

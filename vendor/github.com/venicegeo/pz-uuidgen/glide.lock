@@ -1,5 +1,5 @@
 hash: fa131b6531b3d3802b1155bd00fe72793134474dae68c4518b88b59fe90249bb
-updated: 2016-12-16T10:48:40.489248978-05:00
+updated: 2016-12-16T10:54:50.556140107-05:00
 imports:
 - name: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
@@ -15,13 +15,13 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/venicegeo/pz-gocommon
-  version: e42269ab85c39f201a85f919ebb60ec3730d99d0
+  version: 6440150993af94549018728bd109b09e3e95fefb
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-logger
-  version: 4afb8f0d075421f1a8e45669f5a377967ce7f8bf
+  version: c5ab2a794cc55803edd5e9e1579b73957e74a9bb
   subpackages:
   - logger
 - name: golang.org/x/net
