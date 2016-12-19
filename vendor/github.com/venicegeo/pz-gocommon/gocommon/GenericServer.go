@@ -16,23 +16,18 @@ package piazza
 
 import (
 	"errors"
-	"log"
 	"net/http"
-	"os"
-	"syscall"
-	"time"
 
+	"github.com/braintree/manners"
 	"github.com/gin-gonic/gin"
 )
-
-const ginHammerTime = 3 * time.Second
 
 // GenericServer is the basic framework for standing up a gin-based server. It has methods
 // to Start and Stop as well as to define the routing paths.
 type GenericServer struct {
 	Sys    *SystemConfig
-	pid    int
 	router http.Handler
+	obj    *manners.GracefulServer
 }
 
 // RouteData describes one server route: which http verb, the path string, and the handler to use.
@@ -44,18 +39,8 @@ type RouteData struct {
 
 // Stop will request the server to shutdown. It will wait for the service to die before returning.
 func (server *GenericServer) Stop() error {
-	kp, err := os.FindProcess(server.pid)
-	if err != nil {
-		return err
-	}
-	err = kp.Kill()
-	if err != nil {
-		return err
-	}
-
-	sys := server.Sys
-	err = sys.WaitForServiceToDieByAddress(sys.Name, sys.BindTo)
-	return err
+	server.obj.Close()
+	return nil
 }
 
 // Start will start the service. You must call Configure first.
@@ -65,15 +50,17 @@ func (server *GenericServer) Start() (chan error, error) {
 
 	done := make(chan error)
 
-	ginServer := http.Server{Addr: server.Sys.BindTo, Handler: server.router}
-
-	server.pid = syscall.Getpid()
 	if sys.BindTo == "" {
 		sys.BindTo = ":http"
 	}
 
+	server.obj = manners.NewWithServer(&http.Server{
+		Addr:    server.Sys.BindTo,
+		Handler: server.router,
+	})
+
 	go func() {
-		err := ginServer.ListenAndServe()
+		err := server.obj.ListenAndServe()
 		done <- err
 	}()
 
@@ -82,7 +69,7 @@ func (server *GenericServer) Start() (chan error, error) {
 		return nil, err
 	}
 
-	log.Printf("Server %s started on %s (%s)", sys.Name, sys.Address, sys.BindTo)
+	//log.Printf("Server %s started on %s (%s)", sys.Name, sys.Address, sys.BindTo)
 
 	sys.AddService(sys.Name, sys.BindTo)
 

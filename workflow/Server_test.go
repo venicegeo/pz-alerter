@@ -69,7 +69,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	logger, err := pzlogger.NewMockClient()
+	logger, err := pzlogger.NewMockLoggerKit()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestRunSuite(t *testing.T) {
 	testElasticsearchIndex = elasticsearch.NewMockIndex("testElasticsearch")
 
 	workflowService := &Service{}
-	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex,
+	err = workflowService.Init(sys, logger.Client, uuidgen, eventtypesIndex,
 		eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex)
 	if err != nil {
 		log.Fatal(err)
@@ -113,7 +113,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	client, err := NewClient(sys, logger)
+	client, err := NewClient(sys, logger.Client)
 	if err != nil {
 		log.Fatal(err)
 	}

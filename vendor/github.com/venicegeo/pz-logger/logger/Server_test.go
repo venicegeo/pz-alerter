@@ -22,7 +22,6 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	"github.com/venicegeo/pz-gocommon/syslog"
 )
@@ -32,8 +31,7 @@ import (
 type LoggerTester struct {
 	suite.Suite
 
-	esi    elasticsearch.IIndex
-	server *piazza.GenericServer
+	mockLogger *MockLoggerKit
 
 	client    *Client
 	syslogger *syslog.Logger
@@ -45,76 +43,21 @@ func (suite *LoggerTester) setupFixture() {
 
 	var err error
 
-	// make ES index
-	{
-		suite.esi = elasticsearch.NewMockIndex("loggertest$")
-		err = suite.esi.Create("")
-		assert.NoError(err)
-	}
+	// make the server
+	suite.mockLogger, err = NewMockLoggerKit()
+	assert.NoError(err)
 
-	// make SystemConfig
-	var sys *piazza.SystemConfig
-	{
-		required := []piazza.ServiceName{}
-		sys, err = piazza.NewSystemConfig(piazza.PzLogger, required)
-		assert.NoError(err)
-	}
-
-	// make backend DB writer
-	backendWriter := syslog.NewElasticWriter(suite.esi, LogSchema)
-
-	// make service, server, and generic server
-	{
-		logWriters := []syslog.Writer{backendWriter}
-		auditWriters := []syslog.Writer{}
-
-		service := &Service{}
-		err = service.Init(sys, logWriters, auditWriters, suite.esi)
-		assert.NoError(err)
-
-		server := &Server{}
-		server.Init(service)
-
-		suite.server = &piazza.GenericServer{Sys: sys}
-
-		err = suite.server.Configure(server.Routes)
-		assert.NoError(err)
-
-		_, err = suite.server.Start()
-		assert.NoError(err)
-	}
-
-	// make the client
-	var client *Client
-	{
-		client, err = NewClient(sys)
-		assert.NoError(err)
-		suite.client = client
-	}
-
-	suite.syslogger = syslog.NewLogger(client, "loggertesterapp")
+	// make the client support
+	suite.client = suite.mockLogger.Client
+	suite.syslogger = suite.mockLogger.SysLogger
 }
 
 func (suite *LoggerTester) teardownFixture() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	var err error
-
-	// stop server
-	{
-		err = suite.server.Stop()
-		assert.NoError(err)
-	}
-
-	// close index
-	{
-		err = suite.esi.Close()
-		assert.NoError(err)
-
-		err = suite.esi.Delete()
-		assert.NoError(err)
-	}
+	err := suite.mockLogger.Close()
+	assert.NoError(err)
 }
 
 func TestRunSuite(t *testing.T) {

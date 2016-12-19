@@ -27,10 +27,10 @@ import (
 
 type ClientTester struct {
 	suite.Suite
-	logger  pzlogger.IClient
-	uuidgen pzuuidgen.IClient
-	client  *Client
-	sys     *piazza.SystemConfig
+	mockLogger *pzlogger.MockLoggerKit
+	uuidgen    pzuuidgen.IClient
+	client     *Client
+	sys        *piazza.SystemConfig
 }
 
 func (suite *ClientTester) SetupSuite() {

@@ -68,7 +68,7 @@ func (suite *WorkflowTester) setupFixture() {
 	i := strings.Index(suite.apiServer, ".")
 	assert.NotEqual(1, i)
 	host := "pz-workflow" + suite.apiServer[i:]
-	suite.url = "https://" + host
+	suite.url = "http://" + host
 
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
@@ -128,6 +128,7 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	}
 
 	url := strings.Replace(suite.url, "workflow", "gateway", 1)
+	fmt.Println("URL", url)
 	h := piazza.Http{
 		BaseUrl: url,
 		ApiKey:  suite.apiKey,

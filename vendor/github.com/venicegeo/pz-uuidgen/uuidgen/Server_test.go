@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pborman/uuid"
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
@@ -32,7 +31,8 @@ type UuidgenTester struct {
 	sys            *piazza.SystemConfig
 	totalRequested int
 	totalGenerated int
-	logger         pzlogger.IClient
+	mockLogger     *pzlogger.MockLoggerKit
+	loggerClient   *pzlogger.Client
 	client         IClient
 	genericServer  *piazza.GenericServer
 	server         *Server
@@ -50,10 +50,11 @@ func (suite *UuidgenTester) SetupSuite() {
 		log.Fatal(err)
 	}
 
-	suite.logger, err = pzlogger.NewMockClient()
+	suite.mockLogger, err = pzlogger.NewMockLoggerKit()
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	suite.client, err = NewMockClient()
 	if err != nil {
 		log.Fatal(err)
@@ -63,7 +64,7 @@ func (suite *UuidgenTester) SetupSuite() {
 	suite.totalGenerated = 0
 
 	suite.service = &Service{}
-	err = suite.service.Init(suite.sys, suite.logger)
+	err = suite.service.Init(suite.sys, suite.mockLogger.Client)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -87,6 +88,11 @@ func (suite *UuidgenTester) TearDownSuite() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = suite.mockLogger.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func TestRunSuite(t *testing.T) {
@@ -99,20 +105,6 @@ func (suite *UuidgenTester) checkValidStatsResponse(t *testing.T, stats *Stats) 
 
 	assert.Equal(t, suite.totalGenerated, stats.NumUUIDs)
 	assert.Equal(t, suite.totalRequested, stats.NumRequests)
-}
-
-func (suite *UuidgenTester) checkValidResponse(t *testing.T, data *[]string, count int) []uuid.UUID {
-	assert.Len(t, *data, count)
-
-	values := make([]uuid.UUID, count)
-	for i := 0; i < count; i++ {
-		values[i] = uuid.Parse((*data)[i])
-		if values[i] == nil {
-			t.Fatalf("returned uuid has invalid format: %v", values)
-		}
-	}
-
-	return values
 }
 
 func (suite *UuidgenTester) Test00Version() {
@@ -133,55 +125,52 @@ func (suite *UuidgenTester) Test01Okay() {
 	assert := assert.New(t)
 
 	var err error
-	var tmp []uuid.UUID
 
-	values := []uuid.UUID{}
+	values := make([]string, 0)
 
 	var client = suite.client
 
 	data, err := client.PostUuids(1)
 	assert.NoError(err, "PostToUuids")
-	tmp = suite.checkValidResponse(t, data, 1)
-	values = append(values, tmp...)
+	values = append(values, *data...)
 	suite.totalRequested++
 	suite.totalGenerated++
 
 	data, err = client.PostUuids(1)
 	assert.NoError(err, "PostToUuids")
-	tmp = suite.checkValidResponse(t, data, 1)
-	values = append(values, tmp...)
+	values = append(values, *data...)
 	suite.totalRequested++
 	suite.totalGenerated++
 
 	data, err = client.PostUuids(1)
 	assert.NoError(err, "PostToUuids")
-	tmp = suite.checkValidResponse(t, data, 1)
-	values = append(values, tmp...)
+	values = append(values, *data...)
 	suite.totalRequested++
 	suite.totalGenerated++
 
 	data, err = client.PostUuids(10)
 	assert.NoError(err, "PostToUuids")
-	tmp = suite.checkValidResponse(t, data, 10)
-	values = append(values, tmp...)
+	values = append(values, *data...)
 	suite.totalRequested++
 	suite.totalGenerated += 10
 
 	data, err = client.PostUuids(255)
 	assert.NoError(err, "PostToUuids")
-	tmp = suite.checkValidResponse(t, data, 255)
-	values = append(values, tmp...)
+	values = append(values, *data...)
 	suite.totalRequested++
 	suite.totalGenerated += 255
 
 	// uuids should be, umm, unique
 	for i := 0; i < len(values); i++ {
 		for j := i + 1; j < len(values); j++ {
-			if uuid.Equal(values[j], values[i]) {
+			p := values[j]
+			q := values[i]
+			if p == q {
 				t.Fatalf("returned uuids not unique")
 			}
 		}
 	}
+	(*data)[0] = (*data)[1] // make compiler think data is actually used
 
 	_, _, _, err = piazza.HTTP(piazza.POST, fmt.Sprintf("127.0.0.1:%s/uuids?count=0", piazza.LocalPortNumbers[piazza.PzUuidgen]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
