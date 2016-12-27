@@ -23,7 +23,7 @@ import (
 //---------------------------------------------------------------------
 
 // Logger is the "helper" class that can (should) be used by services to send messages.
-// In most Piazza cases, the Writer field should be set to an ElkWriter.
+// Client needs to supply the right kind of Writer.
 type Logger struct {
 	writer           Writer
 	MinimumSeverity  Severity // minimum severity level you want to record

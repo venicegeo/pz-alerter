@@ -17,10 +17,15 @@ package syslog
 import (
 	"fmt"
 	"io"
-	syslogd "log/syslog"
 	"os"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
+	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+)
+
+const (
+	SyslogdNetwork = ""
+	SyslogdRaddr   = ""
 )
 
 //---------------------------------------------------------------------
@@ -28,6 +33,7 @@ import (
 // Writer is an interface for writing a Message to some sort of output.
 type Writer interface {
 	Write(*Message) error
+	Close() error
 }
 
 // Reader is an interface for reading Messages from some sort of input.
@@ -79,13 +85,13 @@ func (w *FileWriter) Close() error {
 
 // MessageWriter implements Reader and Writer, using an array of Messages
 // as the backing store
-type MessageWriter struct {
+type LocalReaderWriter struct {
 	messages []*Message
 }
 
 // Write writes the message to the backing array
-func (w *MessageWriter) Write(mssg *Message) error {
-	var _ Writer = (*MessageWriter)(nil)
+func (w *LocalReaderWriter) Write(mssg *Message) error {
+	var _ Writer = (*LocalReaderWriter)(nil)
 
 	if w.messages == nil {
 		w.messages = make([]*Message, 0)
@@ -98,7 +104,7 @@ func (w *MessageWriter) Write(mssg *Message) error {
 
 // Read reads messages from the backing array. Will only return as many as are
 // available; asking for too many is not an error.
-func (w *MessageWriter) Read(count int) ([]*Message, error) {
+func (w *LocalReaderWriter) Read(count int) ([]*Message, error) {
 
 	if count < 0 {
 		return nil, fmt.Errorf("invalid count: %d", count)
@@ -118,64 +124,118 @@ func (w *MessageWriter) Read(count int) ([]*Message, error) {
 	return a, nil
 }
 
+func (w *LocalReaderWriter) Close() error {
+	return nil
+}
+
+//---------------------------------------------------------------------
+
+// HttpWriter implements Writer, by talking to the actual pz-logger service
+type HttpWriter struct {
+	sys *piazza.SystemConfig
+	url string
+	h   piazza.Http
+}
+
+func NewHttpWriter(sys *piazza.SystemConfig) (*HttpWriter, error) {
+	var err error
+
+	w := &HttpWriter{}
+
+	w.sys = sys
+
+	url, err := sys.GetURL(piazza.PzLogger)
+	if err != nil {
+		return nil, err
+	}
+
+	w.url = url
+	w.h = piazza.Http{
+		BaseUrl: url,
+		//ApiKey:  apiKey,
+		//Preflight:  piazza.SimplePreflight,
+		//Postflight: piazza.SimplePostflight,
+	}
+
+	err = sys.WaitForService(piazza.PzLogger)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, nil
+}
+
+func (w *HttpWriter) Write(mssg *Message) error {
+
+	jresp := w.h.PzPost("/syslog", mssg)
+	if jresp.IsError() {
+		return jresp.ToError()
+	}
+
+	return nil
+}
+
+func (w *HttpWriter) Close() error {
+	return nil
+}
+
 //---------------------------------------------------------------------
 
 // SyslogdWriter implements a Writer that writes to the syslogd system service.
 // This will almost certainly not work on Windows, but that is okay because Piazza
 // does not support Windows.
 type SyslogdWriter struct {
-	// one writer for each of the 8 severity levels
-	writer []*syslogd.Writer
+	writer *DaemonWriter
 }
 
-func (w *SyslogdWriter) init() error {
-	w.writer = make([]*syslogd.Writer, 8)
-
-	for p := 0; p < 8; p++ {
-
-		tag := "TTAAGG"
-		tw, err := syslogd.Dial("", "", syslogd.Priority(p), tag)
-		if err != nil {
-			return err
-		}
-
-		w.writer[p] = tw
+func (w *SyslogdWriter) initWriter() error {
+	if w.writer != nil {
+		return nil
 	}
+
+	tw, err := Dial(SyslogdNetwork, SyslogdRaddr)
+	if err != nil {
+		return err
+	}
+
+	w.writer = tw
 
 	return nil
 }
 
-// Write writes the message to the backing array
+// Write writes the message to the OS's syslogd system.
 func (w *SyslogdWriter) Write(mssg *Message) error {
+	// compile-time check if interface is implemented
 	var _ Writer = (*SyslogdWriter)(nil)
 
 	var err error
 
-	if w.writer == nil {
-		err = w.init()
-		if err != nil {
-			return err
-		}
+	err = w.initWriter()
+	if err != nil {
+		return err
 	}
 
 	s := mssg.String()
 
-	tw := w.writer[mssg.Severity]
-
-	cnt, err := tw.Write([]byte(s))
+	w.writer.Write(s)
 	if err != nil {
 		return err
-	}
-	if cnt < len(s) {
-		return fmt.Errorf("count was %d, expected at least %d", cnt, len(s))
 	}
 
 	return nil
 }
 
+// Close closes the underlying network connection.
+func (w *SyslogdWriter) Close() error {
+	if w.writer == nil {
+		return nil
+	}
+	return w.writer.Close()
+}
+
 //---------------------------------------------------------------------
 
-//ElasticWriter implements the Writer, writing to elasticsearch
+// ElasticWriter implements the Writer, writing to elasticsearch
 type ElasticWriter struct {
 	Esi elasticsearch.IIndex
 	typ string
@@ -190,7 +250,7 @@ func NewElasticWriter(esi elasticsearch.IIndex, typ string) *ElasticWriter {
 	return ew
 }
 
-//Write writes the message to the elasticsearch index, type, id
+// Write writes the message to the elasticsearch index, type, id
 func (w *ElasticWriter) Write(mssg *Message) error {
 	var _ Writer = (*ElasticWriter)(nil)
 
@@ -204,7 +264,7 @@ func (w *ElasticWriter) Write(mssg *Message) error {
 	return err
 }
 
-//SetType sets the type to write to
+// SetType sets the type to write to
 func (w *ElasticWriter) SetType(typ string) error {
 	if w == nil {
 		return fmt.Errorf("writer not set not set")
@@ -213,11 +273,16 @@ func (w *ElasticWriter) SetType(typ string) error {
 	return nil
 }
 
-//SetID sets the id to write to
+// SetID sets the id to write to
 func (w *ElasticWriter) SetID(id string) error {
 	if w == nil {
 		return fmt.Errorf("writer not set not set")
 	}
 	w.id = id
+	return nil
+}
+
+// Close does nothing but satisfy an interface.
+func (w *ElasticWriter) Close() error {
 	return nil
 }

@@ -25,8 +25,8 @@ import (
 //---------------------------------------------------------------------
 
 const privateEnterpriseNumber = "48851" // Flaxen's PEN
-const DefaultFacility = 1
-const DefaultVersion = 1
+const DefaultFacility = 1               // for "user-level" messages
+const DefaultVersion = 1                // as per RFC 5424
 
 type Severity int
 
@@ -68,7 +68,7 @@ func NewMessage() *Message {
 		Version:     DefaultVersion,
 		TimeStamp:   time.Now().Round(time.Millisecond),
 		HostName:    "",
-		Application: "",
+		Application: "", // Go's syslogd library calls this "tag"
 		Process:     "",
 		MessageID:   "",
 		AuditData:   nil,

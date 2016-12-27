@@ -64,7 +64,7 @@ func (suite *UuidgenTester) SetupSuite() {
 	suite.totalGenerated = 0
 
 	suite.service = &Service{}
-	err = suite.service.Init(suite.sys, suite.mockLogger.Client)
+	err = suite.service.Init(suite.sys, suite.mockLogger.SysLogger)
 	if err != nil {
 		log.Fatal(err)
 	}

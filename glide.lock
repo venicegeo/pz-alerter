@@ -1,5 +1,5 @@
-hash: 7a7e66f64d4ba2ad8e6b14e61c99382a34705531f62bc6923ddb3773ab15508c
-updated: 2016-12-19T09:34:47.025268731-05:00
+hash: 48c98f4550c621d0c4d23fa1fcc726e118693ce098fd59b7bbaa3c9055528aba
+updated: 2016-12-27T13:14:46.419669042-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -41,19 +41,15 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
-  version: 9418d7c7189af6ea2df537692f9428efe1368368
+  version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: e1249ae64a6c7d3cfa908ee0a74e5e461b720289
+  version: 05c256f1b9ca8b85acd9ae29275b2ef0eb374922
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
-- name: github.com/venicegeo/pz-logger
-  version: 57eb34ce86ae65f274ec315807cf13d5522a59d7
-  subpackages:
-  - logger
 - name: github.com/venicegeo/pz-uuidgen
-  version: 9218283caae5a520d1ae499f2b19e2d8c97de87a
+  version: 98acaf6a50f3f2f8de5470393ee332cefd804310
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron
@@ -87,3 +83,7 @@ testImports:
   - assert
   - require
   - suite
+- name: github.com/venicegeo/pz-logger
+  version: 8b36cf0e5213e9957409ea6a1e418272da469215
+  subpackages:
+  - logger

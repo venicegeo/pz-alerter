@@ -7,9 +7,6 @@ import:
   - elasticsearch
   - gocommon
   - syslog
-- package: github.com/venicegeo/pz-logger
-  subpackages:
-  - logger
 - package: github.com/venicegeo/pz-uuidgen
   subpackages:
   - uuidgen
@@ -19,3 +16,6 @@ testImport:
   subpackages:
   - assert
   - suite
+- package: github.com/venicegeo/pz-logger
+  subpackages:
+  - logger

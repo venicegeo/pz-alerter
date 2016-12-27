@@ -16,7 +16,6 @@ package logger
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	syslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -153,23 +152,6 @@ func (c *Client) Write(mssg *syslog.Message) error {
 	return nil
 }
 
-//---------------------------------------------------------------------
-
-// OLD MODEL
-
-type SyslogElkWriter struct {
-	Client *Client
-}
-
-func (w *SyslogElkWriter) Write(mNew *syslog.Message) error {
-	if w.Client == nil {
-		return fmt.Errorf("Log writer client not set")
-	}
-
-	h := w.Client.h
-	jresp := h.PzPost("/syslog", mNew)
-	if jresp.IsError() {
-		return jresp.ToError()
-	}
+func (c *Client) Close() error {
 	return nil
 }

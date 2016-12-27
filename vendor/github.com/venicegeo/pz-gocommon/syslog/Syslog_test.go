@@ -147,7 +147,7 @@ func Test03MessageWriter(t *testing.T) {
 	mssg1, _ := makeMessage(false)
 	mssg2, _ := makeMessage(false)
 
-	w := &MessageWriter{}
+	w := &LocalReaderWriter{}
 
 	actual, err := w.Read(1)
 	assert.NoError(err)
@@ -221,7 +221,7 @@ func Test04FileWriter(t *testing.T) {
 func Test05Logger(t *testing.T) {
 	assert := assert.New(t)
 
-	writer := &MessageWriter{}
+	writer := &LocalReaderWriter{}
 
 	// the following clause is what a developer would do
 	{
@@ -260,7 +260,7 @@ func Test05Logger(t *testing.T) {
 func Test06LogLevel(t *testing.T) {
 	assert := assert.New(t)
 
-	writer := &MessageWriter{}
+	writer := &LocalReaderWriter{}
 
 	{
 		logger := NewLogger(writer, "testapp")
@@ -284,7 +284,7 @@ func Test07StackFrame(t *testing.T) {
 
 	function, file, line := stackFrame(-1)
 	//log.Printf("%s\t%s\t%d", function, file, line)
-	assert.EqualValues(file, "SyslogMessage.go")
+	assert.EqualValues(file, "Message.go")
 	assert.True(line > 1 && line < 1000)
 	assert.EqualValues("syslog.stackFrame", function)
 
@@ -299,9 +299,21 @@ func Test08Syslogd(t *testing.T) {
 	assert := assert.New(t)
 
 	m1, _ := makeMessage(false)
+	m2, _ := makeMessage(true)
 
 	w := &SyslogdWriter{}
+
 	err := w.Write(m1)
+	assert.NoError(err)
+	assert.Equal(1, w.writer.numWritten)
+
+	err = w.Write(m2)
+	assert.NoError(err)
+	assert.Equal(2, w.writer.numWritten)
+
+	// TODO: how can we check the syslogd system got our messages?
+
+	err = w.Close()
 	assert.NoError(err)
 }
 

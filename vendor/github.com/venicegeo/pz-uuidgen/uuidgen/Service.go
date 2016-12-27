@@ -22,8 +22,7 @@ import (
 	"time"
 
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
-	syslogger "github.com/venicegeo/pz-gocommon/syslog"
-	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 //---------------------------------------------------------------------
@@ -31,22 +30,18 @@ import (
 type Service struct {
 	sync.Mutex
 	stats     Stats
-	syslogger *syslogger.Logger
+	syslogger *pzsyslog.Logger
 	origin    string
 }
 
 //---------------------------------------------------------------------
 
-func (service *Service) Init(sys *piazza.SystemConfig, loggerClient *pzlogger.Client) error {
+func (service *Service) Init(sys *piazza.SystemConfig, logger *pzsyslog.Logger) error {
 	service.stats.CreatedOn = time.Now()
 
 	service.origin = string(sys.Name)
 
-	writer := &pzlogger.SyslogElkWriter{
-		Client: loggerClient,
-	}
-
-	service.syslogger = syslogger.NewLogger(writer, "UuidGen")
+	service.syslogger = logger
 
 	service.syslogger.Info("uuidgen service started")
 

@@ -18,7 +18,7 @@ import (
 	"log"
 
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
-	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
@@ -34,10 +34,11 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger, err := pzlogger.NewClient(sys)
+	logWriter, err := pzsyslog.NewHttpWriter(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
+	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
 
 	service := &pzuuidgen.Service{}
 	err = service.Init(sys, logger)

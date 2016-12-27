@@ -1,5 +1,5 @@
 hash: a3ef1ed44c69b1f82632020fc6a02fb2bbc8b94d4ca1af324bbacb6ff5f5a5da
-updated: 2016-12-16T22:11:20.407908569-05:00
+updated: 2016-12-27T12:56:55.027599801-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -41,7 +41,7 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
-  version: 9418d7c7189af6ea2df537692f9428efe1368368
+  version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: golang.org/x/net
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
