@@ -16,19 +16,17 @@ package workflow
 
 import (
 	"net/http"
-	"strings"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	syslogger "github.com/venicegeo/pz-gocommon/syslog"
-	loggerpkg "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 type Client struct {
 	url       string
-	syslogger *syslogger.Logger
+	syslogger *pzsyslog.Logger
 }
 
-func NewClient(sys *piazza.SystemConfig, logger *loggerpkg.Client) (*Client, error) {
+func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, error) {
 
 	var err error
 
@@ -42,14 +40,9 @@ func NewClient(sys *piazza.SystemConfig, logger *loggerpkg.Client) (*Client, err
 		return nil, err
 	}
 
-	writer := &loggerpkg.SyslogElkWriter{
-		Client: logger,
-	}
-	slogger := syslogger.NewLogger(writer, "pz-workflow-client")
-
 	service := &Client{
 		url:       url,
-		syslogger: slogger,
+		syslogger: logger,
 	}
 
 	service.syslogger.Info("Client started")
@@ -57,21 +50,18 @@ func NewClient(sys *piazza.SystemConfig, logger *loggerpkg.Client) (*Client, err
 	return service, nil
 }
 
-func NewClient2(url string, apiKey string) (*Client, error) {
+/*func NewClient2(url string, apiKey string) (*Client, error) {
 
 	var err error
 
 	loggerURL := strings.Replace(url, "workflow", "logger", 1)
-	logger, err := loggerpkg.NewClient2(loggerURL, apiKey)
+
+
+	logWriter, err := pzsyslog.NewHttpWriter(sys)
 	if err != nil {
-		return nil, err
+		log.Fatal(err)
 	}
-
-	writer := &loggerpkg.SyslogElkWriter{
-		Client: logger,
-	}
-
-	slogger := syslogger.NewLogger(writer, "pz-workflow-client")
+	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
 
 	service := &Client{
 		url:       url,
@@ -79,7 +69,7 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 	}
 
 	return service, nil
-}
+}*/
 
 //------------------------------------------------------------------------------
 

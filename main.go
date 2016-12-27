@@ -19,7 +19,7 @@ import (
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
-	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
@@ -38,7 +38,7 @@ func main() {
 
 func makeWorkflow(sys *piazza.SystemConfig,
 	indices []*elasticsearch.Index,
-	logger *pzlogger.Client,
+	logger *pzsyslog.Logger,
 	uuidgen *pzuuidgen.Client) *pzworkflow.Server {
 	workflowService := &pzworkflow.Service{}
 	err := workflowService.Init(
@@ -71,7 +71,7 @@ func makeWorkflow(sys *piazza.SystemConfig,
 
 func makeSystem() (
 	*piazza.SystemConfig,
-	*pzlogger.Client,
+	*pzsyslog.Logger,
 	*pzuuidgen.Client) {
 
 	required := []piazza.ServiceName{
@@ -88,10 +88,11 @@ func makeSystem() (
 		log.Fatal(err)
 	}
 
-	logger, err := pzlogger.NewClient(sys)
+	logWriter, err := pzsyslog.NewHttpWriter(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
+	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
 
 	uuidgen, err := pzuuidgen.NewClient(sys)
 	if err != nil {

@@ -29,8 +29,7 @@ import (
 	"github.com/Shopify/sarama"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	syslogger "github.com/venicegeo/pz-gocommon/syslog"
-	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 	cron "github.com/venicegeo/vegertar-cron"
 )
@@ -51,7 +50,7 @@ type Service struct {
 	stats Stats
 	sync.Mutex
 
-	syslogger *syslogger.Logger
+	syslogger *pzsyslog.Logger
 	uuidgen   pzuuidgen.IClient
 
 	sys *piazza.SystemConfig
@@ -66,7 +65,7 @@ type Service struct {
 // Init TODO
 func (service *Service) Init(
 	sys *piazza.SystemConfig,
-	logger *pzlogger.Client,
+	logger *pzsyslog.Logger,
 	uuidgen pzuuidgen.IClient,
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
@@ -75,19 +74,13 @@ func (service *Service) Init(
 	cronIndex elasticsearch.IIndex,
 	testElasticsearchIndex elasticsearch.IIndex) error {
 
-	service.sys = sys
-
-	service.stats.CreatedOn = time.Now()
-
 	var err error
 
-	writer := &pzlogger.SyslogElkWriter{
-		Client: logger,
-	}
-
-	service.syslogger = syslogger.NewLogger(writer, "Workflow")
-
+	service.sys = sys
+	service.syslogger = logger
 	service.uuidgen = uuidgen
+
+	service.stats.CreatedOn = time.Now()
 
 	service.eventTypeDB, err = NewEventTypeDB(service, eventtypesIndex)
 	if err != nil {
