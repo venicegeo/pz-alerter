@@ -16,7 +16,6 @@ package logger
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -237,10 +236,8 @@ func (service *Service) toOldStyle(mNew *syslogger.Message) (*Message, error) {
 		Severity:  severity,
 		Message:   text,
 	}
-	if err := mssgOld.Validate(); err != nil {
-		return mssgOld, err
-	}
-	return mssgOld, nil
+	err := mssgOld.Validate()
+	return mssgOld, err
 }
 
 func (service *Service) postSyslog(mssg *syslogger.Message) error {
@@ -253,7 +250,7 @@ func (service *Service) postSyslog(mssg *syslogger.Message) error {
 		if err != nil {
 			log.Printf("message post: %s", err.Error())
 			if !isAudit {
-				return errors.New(fmt.Sprintf("Service.postSyslog: %s", err.Error()))
+				return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
 			}
 		}
 	}
@@ -263,7 +260,7 @@ func (service *Service) postSyslog(mssg *syslogger.Message) error {
 			err = writer.Write(mssg)
 			if err != nil {
 				log.Printf("message audit post: %s", err.Error())
-				return errors.New(fmt.Sprintf("Service.postSyslog: %s", err.Error()))
+				return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
 			}
 		}
 	}

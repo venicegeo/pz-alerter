@@ -43,10 +43,16 @@ func main() {
 		log.Fatal(err)
 	}
 	var esi elasticsearch.IIndex = idx
-	pzlogger.SetupElastic(esi)
+	err = pzlogger.SetupElastic(esi)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	logWriter := syslogger.ElasticWriter{Esi: esi}
-	logWriter.SetType(pzlogger.LogSchema)
+	err = logWriter.SetType(pzlogger.LogSchema)
+	if err != nil {
+		log.Fatal(err)
+	}
 	//auditWriter := syslogger.ElasticWriter{Esi: esi}
 	//auditWriter.SetType(pzlogger.SecuritySchema)
 	syslogWriter := syslogger.SyslogdWriter{}

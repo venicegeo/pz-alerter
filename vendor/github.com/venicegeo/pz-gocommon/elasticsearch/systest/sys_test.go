@@ -307,7 +307,7 @@ func (suite *EsTester) Test03Operations() {
 
 	{
 		// SEARCH for a specific one
-		searchResult, err := esi.FilterByTermQuery(objType, "id", "id1")
+		searchResult, err := esi.FilterByTermQuery(objType, "id", "id1", nil)
 		assert.NoError(err)
 		assert.NotNil(searchResult)
 		assert.EqualValues(1, searchResult.TotalHits())
@@ -322,7 +322,7 @@ func (suite *EsTester) Test03Operations() {
 
 	{
 		// SEARCH fuzzily
-		searchResult, err := esi.FilterByTermQuery(objType, "tags", "foo")
+		searchResult, err := esi.FilterByTermQuery(objType, "tags", "foo", nil)
 		assert.NoError(err)
 		assert.NotNil(searchResult)
 		assert.EqualValues(2, searchResult.TotalHits())

@@ -27,8 +27,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	syslogger "github.com/venicegeo/pz-gocommon/syslog"
-	"github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 func sleep() {
@@ -37,11 +36,12 @@ func sleep() {
 
 type LoggerTester struct {
 	suite.Suite
-	client    *logger.Client
-	writer    *logger.SyslogElkWriter
-	url       string
-	apiKey    string
-	apiServer string
+	writer     pzsyslog.Writer
+	httpWriter *pzsyslog.HttpWriter
+	logger     *pzsyslog.Logger
+	url        string
+	apiKey     string
+	apiServer  string
 }
 
 func (suite *LoggerTester) setupFixture() {
@@ -61,11 +61,10 @@ func (suite *LoggerTester) setupFixture() {
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
 
-	client, err := logger.NewClient2(suite.url, suite.apiKey)
+	suite.httpWriter, err = pzsyslog.NewHttpWriter(suite.url)
+	suite.writer = suite.httpWriter
 	assert.NoError(err)
-	suite.client = client
-
-	suite.writer = &logger.SyslogElkWriter{client}
+	suite.logger = pzsyslog.NewLogger(suite.writer, "loggersystesterapp")
 }
 
 func (suite *LoggerTester) teardownFixture() {
@@ -76,11 +75,9 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (suite *LoggerTester) verifyMessageExists(expected *syslogger.Message) bool {
+func (suite *LoggerTester) verifyMessageExists(expected *pzsyslog.Message) bool {
 	t := suite.T()
 	assert := assert.New(t)
-
-	client := suite.client
 
 	format := &piazza.JsonPagination{
 		PerPage: 100,
@@ -88,7 +85,7 @@ func (suite *LoggerTester) verifyMessageExists(expected *syslogger.Message) bool
 		Order:   piazza.SortOrderDescending,
 		SortBy:  "createdOn",
 	}
-	ms, _, err := client.GetMessages(format, nil)
+	ms, _, err := suite.httpWriter.GetMessages(format, nil)
 	fmt.Println("====\n", ms, "\n=====")
 	assert.NoError(err)
 	assert.Len(ms, format.PerPage)
@@ -101,6 +98,34 @@ func (suite *LoggerTester) verifyMessageExists(expected *syslogger.Message) bool
 	return false
 }
 
+func (suite *LoggerTester) getVersion() (*piazza.Version, error) {
+	h := &piazza.Http{BaseUrl: suite.url}
+
+	jresp := h.PzGet("/version")
+	if jresp.IsError() {
+		return nil, jresp.ToError()
+	}
+
+	var version piazza.Version
+	err := jresp.ExtractData(&version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &version, nil
+}
+
+func (suite *LoggerTester) getStats(output interface{}) error {
+	h := &piazza.Http{BaseUrl: suite.url}
+
+	jresp := h.PzGet("/admin/stats")
+	if jresp.IsError() {
+		return jresp.ToError()
+	}
+
+	return jresp.ExtractData(output)
+}
+
 func (suite *LoggerTester) Test00Version() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -108,9 +133,7 @@ func (suite *LoggerTester) Test00Version() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	version, err := client.GetVersion()
+	version, err := suite.getVersion()
 	assert.NoError(err)
 	assert.EqualValues("1.0.0", version.Version)
 }
@@ -187,15 +210,13 @@ func (suite *LoggerTester) Test03Get() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
 	format := &piazza.JsonPagination{
 		PerPage: 12,
 		Page:    0,
 		Order:   piazza.SortOrderAscending,
 		SortBy:  "createdOn",
 	}
-	ms, _, err := client.GetMessages(format, nil)
+	ms, _, err := suite.httpWriter.GetMessages(format, nil)
 	assert.NoError(err)
 	assert.Len(ms, format.PerPage)
 }
@@ -211,14 +232,14 @@ func (suite *LoggerTester) Test04Post() {
 
 	key := time.Now().String()
 
-	data := &syslogger.Message{
+	data := &pzsyslog.Message{
 		Facility:    1,
 		Version:     1,
 		Process:     "pid1",
 		Application: "log-tester",
 		HostName:    "128.1.2.3",
 		TimeStamp:   time.Now(),
-		Severity:    syslogger.Notice,
+		Severity:    pzsyslog.Notice,
 		Message:     key,
 	}
 
@@ -237,8 +258,6 @@ func (suite *LoggerTester) xTest05PostHelpers() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
 	uniq := time.Now().String()
 	//TODO client.Info(uniq)
 
@@ -251,7 +270,7 @@ func (suite *LoggerTester) xTest05PostHelpers() {
 			Order:   piazza.SortOrderDescending,
 			SortBy:  "createdOn",
 		}
-		ms, _, err := client.GetMessages(format, nil)
+		ms, _, err := suite.httpWriter.GetMessages(format, nil)
 		assert.NoError(err)
 		assert.True(len(ms) <= format.PerPage)
 
@@ -273,11 +292,10 @@ func (suite *LoggerTester) Test06Admin() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	stats, err := client.GetStats()
+	output := map[string]interface{}{}
+	err := suite.getStats(&output)
 	assert.NoError(err)
-	assert.NotZero(stats.NumMessages)
+	assert.NotZero(output["numMessages"])
 }
 
 func (suite *LoggerTester) Test07Pagination() {
@@ -286,8 +304,6 @@ func (suite *LoggerTester) Test07Pagination() {
 
 	suite.setupFixture()
 	defer suite.teardownFixture()
-
-	client := suite.client
 
 	format := &piazza.JsonPagination{
 		PerPage: 10,
@@ -300,7 +316,7 @@ func (suite *LoggerTester) Test07Pagination() {
 	// check per-page
 	{
 		format.PerPage = 17
-		ms, _, err := client.GetMessages(format, params)
+		ms, _, err := suite.httpWriter.GetMessages(format, params)
 		assert.NoError(err)
 		assert.Len(ms, 17)
 	}
@@ -309,7 +325,7 @@ func (suite *LoggerTester) Test07Pagination() {
 	{
 		format.PerPage = 10
 		format.Order = piazza.SortOrderAscending
-		ms, _, err := client.GetMessages(format, params)
+		ms, _, err := suite.httpWriter.GetMessages(format, params)
 		assert.NoError(err)
 		last := len(ms) - 1
 		assert.True(last <= 9)
@@ -320,7 +336,7 @@ func (suite *LoggerTester) Test07Pagination() {
 		assert.True(isBefore || isEqual)
 
 		format.Order = piazza.SortOrderDescending
-		ms, _, err = client.GetMessages(format, params)
+		ms, _, err = suite.httpWriter.GetMessages(format, params)
 		assert.NoError(err)
 		last = len(ms) - 1
 		assert.True(last <= 9)
@@ -336,7 +352,7 @@ func (suite *LoggerTester) Test07Pagination() {
 		format.SortBy = "severity"
 		format.PerPage = 100
 		format.Page = 0
-		ms, _, err := client.GetMessages(format, params)
+		ms, _, err := suite.httpWriter.GetMessages(format, params)
 		if err != nil {
 			panic(88)
 		}
@@ -358,14 +374,10 @@ func (suite *LoggerTester) xTest08Params() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
 	uniqService := strconv.Itoa(time.Now().Nanosecond())
 	uniqDebug := strconv.Itoa(time.Now().Nanosecond() * 3)
 	//uniqError := strconv.Itoa(time.Now().Nanosecond() * 5)
 	//uniqFatal := strconv.Itoa(time.Now().Nanosecond() * 7)
-
-	client.SetService(piazza.ServiceName(uniqService), "1.2.3.4")
 
 	now := time.Now()
 	sec3 := time.Second * 3
@@ -392,7 +404,7 @@ func (suite *LoggerTester) xTest08Params() {
 		params.AddTime("after", tstart)
 		params.AddTime("before", tend)
 
-		msgs, cnt, err := client.GetMessages(format, params)
+		msgs, cnt, err := suite.httpWriter.GetMessages(format, params)
 
 		assert.NoError(err)
 		assert.True(cnt >= 3)
@@ -404,7 +416,7 @@ func (suite *LoggerTester) xTest08Params() {
 		params := &piazza.HttpQueryParams{}
 		params.AddString("service", uniqService)
 
-		msgs, _, err := client.GetMessages(format, params)
+		msgs, _, err := suite.httpWriter.GetMessages(format, params)
 
 		assert.NoError(err)
 		assert.Len(msgs, 3)
@@ -415,7 +427,7 @@ func (suite *LoggerTester) xTest08Params() {
 		params := &piazza.HttpQueryParams{}
 		params.AddString("contains", uniqDebug)
 
-		msgs, _, err := client.GetMessages(format, params)
+		msgs, _, err := suite.httpWriter.GetMessages(format, params)
 
 		assert.NoError(err)
 		assert.True(len(msgs) == 1)

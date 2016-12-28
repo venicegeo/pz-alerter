@@ -409,7 +409,8 @@ func (suite *LoggerTester) Test08Syslog() {
 
 	{
 		s := "The lazy dog"
-		syslogger.Error(s)
+		err := syslogger.Error(s)
+		assert.NoError(err)
 		sleep()
 		actual := suite.getLastMessage()
 		assert.Contains(actual, s)
@@ -426,7 +427,8 @@ func (suite *LoggerTester) Test08Syslog() {
 	}
 
 	{
-		syslogger.Audit("123", "login", "456", "789")
+		err := syslogger.Audit("123", "login", "456", "789")
+		assert.NoError(err)
 		sleep()
 		actual := suite.getLastMessage()
 		assert.Contains(actual, "login")
