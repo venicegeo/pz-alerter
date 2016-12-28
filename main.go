@@ -88,14 +88,15 @@ func makeSystem() (
 		log.Fatal(err)
 	}
 
-	logUrl, err := sys.GetURL(piazza.PzLogger)
+	/*logUrl, err := sys.GetURL(piazza.PzLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
 	logWriter, err := pzsyslog.NewHttpWriter(logUrl)
 	if err != nil {
 		log.Fatal(err)
-	}
+	}*/
+	logWriter := &NilWriter{}
 	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
 
 	uuidgen, err := pzuuidgen.NewClient(sys)
@@ -157,4 +158,17 @@ func makeIndexes(sys *piazza.SystemConfig) []*elasticsearch.Index {
 		alertsIndex, cronIndex, testElasticsearchIndex,
 	}
 	return ret
+}
+
+//-------------------------------
+// NilWriter doesn't do anything
+type NilWriter struct {
+}
+
+func (*NilWriter) Write(*pzsyslog.Message) error {
+	return nil
+}
+
+func (*NilWriter) Close() error {
+	return nil
 }
