@@ -27,8 +27,8 @@ import (
 //----------------------------------------------------------
 
 type Http struct {
-	Preflight  func(verb string, url string, json string)
-	Postflight func(statusCode int, json string)
+	Preflight  func(verb string, url string, json string) error
+	Postflight func(statusCode int, json string) error
 	ApiKey     string
 	BaseUrl    string
 }
@@ -89,18 +89,20 @@ func (h *Http) toJsonString(obj interface{}) string {
 	return string(byts)
 }
 
-func (h *Http) doPreflight(verb string, url string, obj interface{}) {
-	if h.Preflight != nil {
-		jsn := h.toJsonString(obj)
-		h.Preflight(verb, url, jsn)
+func (h *Http) doPreflight(verb string, url string, obj interface{}) error {
+	if h.Preflight == nil {
+		return nil
 	}
+	jsn := h.toJsonString(obj)
+	return h.Preflight(verb, url, jsn)
 }
 
-func (h *Http) doPostflight(statusCode int, obj interface{}) {
-	if h.Postflight != nil {
-		jsn := h.toJsonString(obj)
-		h.Postflight(statusCode, jsn)
+func (h *Http) doPostflight(statusCode int, obj interface{}) error {
+	if h.Postflight == nil {
+		return nil
 	}
+	jsn := h.toJsonString(obj)
+	return h.Postflight(statusCode, jsn)
 }
 
 func (h *Http) doRequest(verb string, url string, reader io.Reader) (*http.Response, error) {
@@ -130,7 +132,10 @@ func (h *Http) doVerb(verb string, endpoint string, input interface{}, output in
 		return 0, err
 	}
 
-	h.doPreflight(verb, url, input)
+	err = h.doPreflight(verb, url, input)
+	if err != nil {
+		return 0, err
+	}
 
 	resp, err := h.doRequest(verb, url, reader)
 	if err != nil {
@@ -151,7 +156,10 @@ func (h *Http) doVerb(verb string, endpoint string, input interface{}, output in
 		h.doPostflight(resp.StatusCode, s)
 	}
 
-	h.doPostflight(resp.StatusCode, output)
+	err = h.doPostflight(resp.StatusCode, output)
+	if err != nil {
+		return 0, err
+	}
 
 	return resp.StatusCode, nil
 }

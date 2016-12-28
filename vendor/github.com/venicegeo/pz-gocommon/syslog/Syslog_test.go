@@ -18,10 +18,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
@@ -295,7 +297,7 @@ func Test07StackFrame(t *testing.T) {
 	assert.EqualValues("syslog.Test07StackFrame", function)
 }
 
-func Test08Syslogd(t *testing.T) {
+func Test08SyslogdWriter(t *testing.T) {
 	assert := assert.New(t)
 
 	m1, _ := makeMessage(false)
@@ -356,4 +358,178 @@ func Test10Errors(t *testing.T) {
 	logger := NewLogger(nil, "testapp")
 	err := logger.Warning("bonk")
 	assert.Error(err)
+}
+
+//---------------------------------------------------------------------
+
+type TThingServer struct {
+	routes   []piazza.RouteData
+	lastPost interface{}
+	lastUrl  string
+}
+
+func (server *TThingServer) Init() {
+	server.routes = []piazza.RouteData{
+		{Verb: "GET", Path: "/", Handler: server.handleGetRoot},
+		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
+		{Verb: "GET", Path: "/version", Handler: server.handleGetVersion},
+		{Verb: "GET", Path: "/syslog", Handler: server.handleGet},
+		{Verb: "POST", Path: "/syslog", Handler: server.handlePost},
+	}
+}
+
+func (server *TThingServer) handleGetRoot(c *gin.Context) {
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+	}
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *TThingServer) handleGetVersion(c *gin.Context) {
+	version := "1.2.3.4"
+
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Data:       piazza.Version{Version: version},
+	}
+	piazza.GinReturnJson(c, resp)
+}
+
+type TThingStats struct {
+	Count int
+}
+
+func (server *TThingServer) handleGetStats(c *gin.Context) {
+	stats := &TThingStats{Count: 19}
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Data:       stats,
+	}
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *TThingServer) handleGet(c *gin.Context) {
+	server.lastPost = nil
+	server.lastUrl = c.Request.URL.String()
+
+	m1, _ := makeMessage(false)
+	m2, _ := makeMessage(true)
+
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Pagination: &piazza.JsonPagination{Count: 17},
+		Data:       &[]Message{*m1, *m2},
+	}
+
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *TThingServer) handlePost(c *gin.Context) {
+	var thing interface{}
+	err := c.BindJSON(&thing)
+	if err != nil {
+		resp := &piazza.JsonResponse{StatusCode: http.StatusInternalServerError, Message: err.Error()}
+		piazza.GinReturnJson(c, resp)
+	}
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+	}
+	server.lastPost = thing
+	server.lastUrl = c.Request.URL.String()
+	piazza.GinReturnJson(c, resp)
+}
+
+func Test11HttpWriter(t *testing.T) {
+	assert := assert.New(t)
+
+	var err error
+	var ts *TThingServer
+	var gs *piazza.GenericServer
+	var w Writer
+
+	{
+		required := []piazza.ServiceName{}
+		sys, err := piazza.NewSystemConfig(piazza.PzGoCommon, required)
+		assert.NoError(err)
+
+		gs = &piazza.GenericServer{Sys: sys}
+
+		ts = &TThingServer{}
+		ts.Init()
+
+		err = gs.Configure(ts.routes)
+		assert.NoError(err)
+		_, err = gs.Start()
+		assert.NoError(err)
+
+		w, err = NewHttpWriter("http://" + sys.BindTo)
+		assert.NoError(err)
+	}
+
+	// test writing
+	{
+		m1, _ := makeMessage(false)
+		m2, _ := makeMessage(true)
+
+		err = w.Write(m1)
+		assert.NoError(err)
+		assert.EqualValues("/syslog", ts.lastUrl)
+		p1a := ts.lastPost.(map[string]interface{})
+		assert.EqualValues("Yow", p1a["message"])
+		p1b := ts.lastPost.(map[string]interface{})
+		assert.Nil(p1b["auditData"])
+
+		err = w.Write(m2)
+		assert.NoError(err)
+		assert.EqualValues("/syslog", ts.lastUrl)
+		p2a := ts.lastPost.(map[string]interface{})
+		assert.EqualValues("Yow", p2a["message"])
+		p2b := ts.lastPost.(map[string]interface{})
+		assert.NotNil(p2b["auditData"])
+	}
+
+	// test reading
+	{
+		jpage := &piazza.JsonPagination{
+			Page:    2,
+			PerPage: 4,
+			SortBy:  "frozz",
+			Order:   "desc",
+		}
+		params := &piazza.HttpQueryParams{}
+
+		ww := w.(*HttpWriter)
+		assert.NotNil(ww)
+
+		mssgs, count, err := ww.GetMessages(jpage, params)
+		assert.NoError(err)
+
+		assert.EqualValues("/syslog?perPage=4&page=2&sortBy=frozz&order=desc", ts.lastUrl)
+		assert.NotNil(mssgs)
+		assert.Len(mssgs, 2)
+		assert.Equal(17, count)
+	}
+
+	// test misc
+	{
+		ww := w.(*HttpWriter)
+		assert.NotNil(ww)
+
+		version, err := ww.GetVersion()
+		assert.NoError(err)
+		assert.EqualValues("1.2.3.4", version.Version)
+
+		output := &TThingStats{}
+		err = ww.GetStats(output)
+		assert.NoError(err)
+		assert.Equal(19, output.Count)
+	}
+
+	{
+		err = w.Close()
+		assert.NoError(err)
+
+		err = gs.Stop()
+		assert.NoError(err)
+	}
 }

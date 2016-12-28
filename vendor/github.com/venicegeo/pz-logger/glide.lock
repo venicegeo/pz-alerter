@@ -1,5 +1,5 @@
 hash: 2fc3bf436db0c442e46ecd0ebc3a32a523ce8eb57c1eae71763cfb31776c06e8
-updated: 2016-12-27T13:02:49.285297068-05:00
+updated: 2016-12-27T22:15:27.303146667-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -17,7 +17,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/venicegeo/pz-gocommon
-  version: 05c256f1b9ca8b85acd9ae29275b2ef0eb374922
+  version: bb2898ae4dadc90a8be70a44cd3cec7347c9d391
   subpackages:
   - elasticsearch
   - gocommon

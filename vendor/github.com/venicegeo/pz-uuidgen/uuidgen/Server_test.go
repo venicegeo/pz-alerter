@@ -32,7 +32,6 @@ type UuidgenTester struct {
 	totalRequested int
 	totalGenerated int
 	mockLogger     *pzlogger.MockLoggerKit
-	loggerClient   *pzlogger.Client
 	client         IClient
 	genericServer  *piazza.GenericServer
 	server         *Server

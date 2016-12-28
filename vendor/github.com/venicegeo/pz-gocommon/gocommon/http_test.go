@@ -44,12 +44,14 @@ func TestPreflight(t *testing.T) {
 
 	exampleurl := "http://www.example.com"
 
-	preflight := func(verb string, url string, obj string) {
+	preflight := func(verb string, url string, obj string) error {
 		assert.Equal(exampleurl+"/", url)
+		return nil
 	}
 
-	postflight := func(code int, obj string) {
+	postflight := func(code int, obj string) error {
 		assert.Equal(200, code)
+		return nil
 	}
 
 	h := Http{BaseUrl: exampleurl, Preflight: preflight, Postflight: postflight}

@@ -33,8 +33,8 @@ type LoggerTester struct {
 
 	mockLogger *MockLoggerKit
 
-	client    *Client
 	syslogger *syslog.Logger
+	writer    syslog.WriterReader
 }
 
 func (suite *LoggerTester) setupFixture() {
@@ -47,9 +47,8 @@ func (suite *LoggerTester) setupFixture() {
 	suite.mockLogger, err = NewMockLoggerKit()
 	assert.NoError(err)
 
-	// make the client support
-	suite.client = suite.mockLogger.Client
 	suite.syslogger = suite.mockLogger.SysLogger
+	suite.writer = suite.mockLogger.httpWriter
 }
 
 func (suite *LoggerTester) teardownFixture() {
@@ -67,6 +66,34 @@ func TestRunSuite(t *testing.T) {
 
 //---------------------------------------------------------------------
 
+func (suite *LoggerTester) getVersion() (*piazza.Version, error) {
+	h := &piazza.Http{BaseUrl: suite.mockLogger.url}
+
+	jresp := h.PzGet("/version")
+	if jresp.IsError() {
+		return nil, jresp.ToError()
+	}
+
+	var version piazza.Version
+	err := jresp.ExtractData(&version)
+	if err != nil {
+		return nil, err
+	}
+
+	return &version, nil
+}
+
+func (suite *LoggerTester) getStats(output interface{}) error {
+	h := &piazza.Http{BaseUrl: suite.mockLogger.url}
+
+	jresp := h.PzGet("/admin/stats")
+	if jresp.IsError() {
+		return jresp.ToError()
+	}
+
+	return jresp.ExtractData(output)
+}
+
 func sleep() {
 	time.Sleep(1 * time.Second)
 }
@@ -81,7 +108,7 @@ func (suite *LoggerTester) getLastMessage() string {
 		Order:   "", // ignored by MockClient
 		SortBy:  "", // ignored by MockClient
 	}
-	ms, count, err := suite.client.GetMessages(&format, nil)
+	ms, count, err := suite.writer.GetMessages(&format, nil)
 	assert.NoError(err)
 	assert.True(len(ms) > 0)
 	assert.True(count >= len(ms))
@@ -109,7 +136,7 @@ func (suite *LoggerTester) Test01Version() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	version, err := suite.client.GetVersion()
+	version, err := suite.getVersion()
 	assert.NoError(err)
 	assert.EqualValues("1.0.0", version.Version)
 	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/version", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
@@ -123,9 +150,10 @@ func (suite *LoggerTester) Test02Admin() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	stats, err := suite.client.GetStats()
+	output := &map[string]interface{}{}
+	err := suite.getStats(output)
 	assert.NoError(err, "GetFromAdminStats")
-	assert.NotNil(stats)
+	assert.NotNil(output)
 
 	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/admin/stats", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
@@ -163,7 +191,7 @@ func (suite *LoggerTester) Test03Pagination() {
 		SortBy:  "", // ignored by MockClient
 		Order:   "", // ignored by MockClient
 	}
-	ms, count, err := suite.client.GetMessages(&format, nil)
+	ms, count, err := suite.writer.GetMessages(&format, nil)
 	assert.NoError(err)
 	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/syslog?page=0", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
@@ -178,7 +206,7 @@ func (suite *LoggerTester) Test03Pagination() {
 		SortBy:  "", // ignored by MockClient
 		Order:   "", // ignored by MockClient
 	}
-	ms, count, err = suite.client.GetMessages(&format, nil)
+	ms, count, err = suite.writer.GetMessages(&format, nil)
 	assert.NoError(err)
 	assert.Len(ms, 5)
 	assert.EqualValues(syslog.Debug, ms[0].Severity)
@@ -191,7 +219,7 @@ func (suite *LoggerTester) Test03Pagination() {
 		SortBy:  "", // ignored by MockClient
 		Order:   "", // ignored by MockClient
 	}
-	ms, count, err = suite.client.GetMessages(&format, nil)
+	ms, count, err = suite.writer.GetMessages(&format, nil)
 	assert.NoError(err)
 	assert.Len(ms, 2)
 
@@ -339,7 +367,7 @@ func (suite *LoggerTester) Test07GetMessagesErrors() {
 		SortBy:  "d",
 		Order:   "asc",
 	}
-	mssgs, count, err := suite.client.GetMessages(&format, nil)
+	mssgs, count, err := suite.writer.GetMessages(&format, nil)
 	assert.NoError(err)
 	assert.Equal(0, count)
 	assert.EqualValues([]syslog.Message{}, mssgs)
@@ -350,7 +378,7 @@ func (suite *LoggerTester) Test07GetMessagesErrors() {
 		SortBy:  "",
 		Order:   "",
 	}
-	mssgs, count, err = suite.client.GetMessages(&format, nil)
+	mssgs, count, err = suite.writer.GetMessages(&format, nil)
 	assert.NoError(err)
 	assert.Equal(0, count)
 	assert.EqualValues([]syslog.Message{}, mssgs)
@@ -391,9 +419,10 @@ func (suite *LoggerTester) Test08Syslog() {
 	}
 
 	{
-		stats, err := suite.client.GetStats()
+		output := map[string]interface{}{}
+		err := suite.getStats(&output)
 		assert.NoError(err)
-		assert.EqualValues(2, stats.NumMessages)
+		assert.EqualValues(2, output["numMessages"])
 	}
 
 	{

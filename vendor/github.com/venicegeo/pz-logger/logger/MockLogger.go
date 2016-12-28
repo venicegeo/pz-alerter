@@ -25,8 +25,11 @@ type MockLoggerKit struct {
 	esi    elasticsearch.IIndex
 	server *piazza.GenericServer
 
-	Client    *Client
-	SysLogger *syslog.Logger
+	url string
+
+	SysLogger  *syslog.Logger
+	esWriter   syslog.WriterReader
+	httpWriter *syslog.HttpWriter
 }
 
 // MakeMockLogger starts a logger.Server, using a mocked ES backend.
@@ -55,11 +58,11 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 	}
 
 	// make backend DB writer
-	backendWriter := syslog.NewElasticWriter(mock.esi, LogSchema)
+	mock.esWriter = syslog.NewElasticWriter(mock.esi, LogSchema)
 
 	// make service, server, and generic server
 	{
-		logWriters := []syslog.Writer{backendWriter}
+		logWriters := []syslog.Writer{mock.esWriter}
 		auditWriters := []syslog.Writer{}
 
 		service := &Service{}
@@ -84,25 +87,37 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 		}
 	}
 
-	// make Client
-	{
-		mock.Client, err = NewClient(mock.sys)
-		if err != nil {
-			return nil, err
-		}
+	mock.url = "http://" + mock.sys.BindTo
+
+	// make the client's writer
+	mock.httpWriter, err = syslog.NewHttpWriter(mock.url)
+	if err != nil {
+		return nil, err
 	}
 
 	// make syslog.Logger
 	{
-		mock.SysLogger = syslog.NewLogger(mock.Client, "loggertesterapp")
+		mock.SysLogger = syslog.NewLogger(mock.httpWriter, "loggertesterapp")
 	}
 
 	return mock, nil
 }
 
 func (mock *MockLoggerKit) Close() error {
+	var err error
+
+	err = mock.httpWriter.Close()
+	if err != nil {
+		return err
+	}
+
 	// stop server
-	err := mock.server.Stop()
+	err = mock.server.Stop()
+	if err != nil {
+		return err
+	}
+
+	err = mock.esWriter.Close()
 	if err != nil {
 		return err
 	}

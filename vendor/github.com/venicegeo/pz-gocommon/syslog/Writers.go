@@ -15,6 +15,7 @@
 package syslog
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -42,6 +43,12 @@ type Writer interface {
 // of the array.
 type Reader interface {
 	Read(count int) ([]*Message, error)
+	GetMessages(*piazza.JsonPagination, *piazza.HttpQueryParams) ([]Message, int, error)
+}
+
+type WriterReader interface {
+	Reader
+	Writer
 }
 
 //---------------------------------------------------------------------
@@ -105,6 +112,7 @@ func (w *LocalReaderWriter) Write(mssg *Message) error {
 // Read reads messages from the backing array. Will only return as many as are
 // available; asking for too many is not an error.
 func (w *LocalReaderWriter) Read(count int) ([]*Message, error) {
+	var _ Reader = (*LocalReaderWriter)(nil)
 
 	if count < 0 {
 		return nil, fmt.Errorf("invalid count: %d", count)
@@ -124,6 +132,10 @@ func (w *LocalReaderWriter) Read(count int) ([]*Message, error) {
 	return a, nil
 }
 
+func (w *LocalReaderWriter) GetMessages(*piazza.JsonPagination, *piazza.HttpQueryParams) ([]Message, int, error) {
+	return nil, 0, fmt.Errorf("LocalReaderWriter.GetMessages() not supported")
+}
+
 func (w *LocalReaderWriter) Close() error {
 	return nil
 }
@@ -132,51 +144,72 @@ func (w *LocalReaderWriter) Close() error {
 
 // HttpWriter implements Writer, by talking to the actual pz-logger service
 type HttpWriter struct {
-	sys *piazza.SystemConfig
 	url string
 	h   piazza.Http
 }
 
-func NewHttpWriter(sys *piazza.SystemConfig) (*HttpWriter, error) {
-	var err error
-
+func NewHttpWriter(url string) (*HttpWriter, error) {
 	w := &HttpWriter{}
-
-	w.sys = sys
-
-	url, err := sys.GetURL(piazza.PzLogger)
-	if err != nil {
-		return nil, err
-	}
-
 	w.url = url
-	w.h = piazza.Http{
-		BaseUrl: url,
-		//ApiKey:  apiKey,
-		//Preflight:  piazza.SimplePreflight,
-		//Postflight: piazza.SimplePostflight,
-	}
-
-	err = sys.WaitForService(piazza.PzLogger)
-	if err != nil {
-		return nil, err
-	}
-
+	w.h = piazza.Http{BaseUrl: url}
 	return w, nil
 }
 
 func (w *HttpWriter) Write(mssg *Message) error {
+	var _ Writer = (*HttpWriter)(nil)
 
 	jresp := w.h.PzPost("/syslog", mssg)
 	if jresp.IsError() {
 		return jresp.ToError()
 	}
-
 	return nil
 }
 
 func (w *HttpWriter) Close() error {
 	return nil
+}
+
+func (w *HttpWriter) Read(count int) ([]*Message, error) {
+	var _ Reader = (*HttpWriter)(nil)
+
+	return nil, fmt.Errorf("HttpWriter.Read() not supported")
+}
+
+// GetMessages is only implemented for HttpWriter as it is most likely the only
+// Writer to be used for reading back data.
+func (w *HttpWriter) GetMessages(
+	format *piazza.JsonPagination,
+	params *piazza.HttpQueryParams) ([]Message, int, error) {
+	var _ Reader = (*HttpWriter)(nil)
+
+	formatString := format.String()
+	paramString := params.String()
+
+	var ext string
+	if formatString != "" && paramString != "" {
+		ext = "?" + formatString + "&" + paramString
+	} else if formatString == "" && paramString != "" {
+		ext = "?" + paramString
+	} else if formatString != "" && paramString == "" {
+		ext = "?" + formatString
+	} else if formatString == "" && paramString == "" {
+		ext = ""
+	} else {
+		return nil, 0, errors.New("Internal error: failed to parse query params")
+	}
+
+	endpoint := "/syslog" + ext
+	jresp := w.h.PzGet(endpoint)
+	if jresp.IsError() {
+		return nil, 0, jresp.ToError()
+	}
+	var mssgs []Message
+	err := jresp.ExtractData(&mssgs)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	return mssgs, jresp.Pagination.Count, nil
 }
 
 //---------------------------------------------------------------------
@@ -285,4 +318,11 @@ func (w *ElasticWriter) SetID(id string) error {
 // Close does nothing but satisfy an interface.
 func (w *ElasticWriter) Close() error {
 	return nil
+}
+
+func (w *ElasticWriter) GetMessages(*piazza.JsonPagination, *piazza.HttpQueryParams) ([]Message, int, error) {
+	return nil, 0, fmt.Errorf("ElasticWriter.GetMessages not supported")
+}
+func (w *ElasticWriter) Read(count int) ([]*Message, error) {
+	return nil, fmt.Errorf("ElasticWriter.Read not supported")
 }

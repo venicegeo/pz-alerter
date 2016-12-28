@@ -125,6 +125,5 @@ func (resp *JsonResponse) ExtractData(output interface{}) error {
 		return err
 	}
 
-	err = json.Unmarshal(raw, output)
-	return err
+	return json.Unmarshal(raw, output)
 }

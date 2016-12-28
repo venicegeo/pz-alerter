@@ -16,7 +16,6 @@ package uuidgen
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"sync"
 	"time"
@@ -49,7 +48,7 @@ func (service *Service) Init(sys *piazza.SystemConfig, logger *pzsyslog.Logger) 
 }
 
 func (service *Service) GetStats() *piazza.JsonResponse {
-	log.Printf("uuidgen stats service called (1)")
+	//log.Printf("uuidgen stats service called (1)")
 	service.syslogger.Info("uuidgen stats service called (2)")
 
 	service.Lock()
