@@ -700,9 +700,9 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	{
 		// Find triggers associated with event
-		triggerIDs, err := service.eventDB.PercolateEventData(eventTypeName, event.Data, eventID, event.CreatedBy)
-		if err != nil {
-			return service.statusBadRequest(err)
+		triggerIDs, err1 := service.eventDB.PercolateEventData(eventTypeName, event.Data, eventID, event.CreatedBy)
+		if err1 != nil {
+			return service.statusBadRequest(err1)
 		}
 
 		// For each trigger,  apply the event data and submit job
@@ -715,14 +715,14 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 			go func(triggerID piazza.Ident) {
 				defer waitGroup.Done()
 
-				trigger, found, err := service.triggerDB.GetOne(triggerID, event.CreatedBy)
+				trigger, found, err2 := service.triggerDB.GetOne(triggerID, event.CreatedBy)
 				if !found {
 					// Don't fail for this, just log something and continue to the next trigger id
 					service.syslogger.Warning("Percolation error: Trigger %s does not exist", string(triggerID))
 					return
 				}
-				if err != nil {
-					results[triggerID] = service.statusBadRequest(err)
+				if err2 != nil {
+					results[triggerID] = service.statusBadRequest(err2)
 					return
 				}
 				if !trigger.Enabled {
@@ -739,21 +739,21 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 				// jobID gets sent through Kafka as the key
 				job := trigger.Job
-				jobID, err := service.newIdent()
-				if err != nil {
-					results[triggerID] = service.statusInternalError(err)
+				jobID, err3 := service.newIdent()
+				if err3 != nil {
+					results[triggerID] = service.statusInternalError(err3)
 					return
 				}
 
-				jobInstance, err := json.Marshal(job)
-				if err != nil {
-					results[triggerID] = service.statusInternalError(err)
+				jobInstance, err4 := json.Marshal(job)
+				if err4 != nil {
+					results[triggerID] = service.statusInternalError(err4)
 					return
 				}
 				jobString := string(jobInstance)
 
-				authzURL, err := service.sys.GetURL(piazza.PzIdam)
-				if err == nil { //Mocking
+				authzURL, err5 := service.sys.GetURL(piazza.PzIdam)
+				if err5 == nil { //Mocking
 					//                         \/ Subject to change \/
 					req := fmt.Sprintf(`{
 											"username": "%s",
@@ -763,9 +763,9 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 											}
 										}`, trigger.CreatedBy)
 					service.syslogger.Audit("pz-workflow", "requestAccess", "pz-idam", "User [%s] POSTed event [%s] requesting access to trigger [%s] created by [%s]", event.CreatedBy, event.EventID, trigger.TriggerID, trigger.CreatedBy)
-					code, body, _, err := piazza.HTTP(piazza.POST, authzURL+"/authz", piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader([]byte(req)))
-					if err != nil {
-						results[triggerID] = service.statusInternalError(err)
+					code, body, _, err6 := piazza.HTTP(piazza.POST, authzURL+"/authz", piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader([]byte(req)))
+					if err6 != nil {
+						results[triggerID] = service.statusInternalError(err6)
 						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					}
@@ -775,7 +775,12 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 						return
 					}
 					var respon map[string]interface{}
-					json.Unmarshal(body, &respon)
+					err8 := json.Unmarshal(body, &respon)
+					if err8 != nil {
+						results[triggerID] = service.statusInternalError(err8)
+						service.syslogger.Info("could not unmarshall: %s", err8.Error())
+						return
+					}
 					if iAuth, ok := respon["isAuthSuccess"]; !ok {
 						results[triggerID] = service.statusInternalError(errors.New("AuthZ response doesn't contain isAuthSuccess field"))
 						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
@@ -802,9 +807,9 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				log.Printf("JOB ID: %s", jobID)
 				log.Printf("JOB STRING: %s", jobString)
 
-				err = service.sendToKafka(jobString, jobID, trigger.CreatedBy)
-				if err != nil {
-					results[triggerID] = service.statusInternalError(err)
+				err7 := service.sendToKafka(jobString, jobID, trigger.CreatedBy)
+				if err7 != nil {
+					results[triggerID] = service.statusInternalError(err7)
 					return
 				}
 

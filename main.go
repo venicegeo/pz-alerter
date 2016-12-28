@@ -39,7 +39,7 @@ func main() {
 func makeWorkflow(sys *piazza.SystemConfig,
 	indices []*elasticsearch.Index,
 	logger *pzsyslog.Logger,
-	uuidgen *pzuuidgen.Client) *pzworkflow.Server {
+	uuidgen pzuuidgen.IClient) *pzworkflow.Server {
 	workflowService := &pzworkflow.Service{}
 	err := workflowService.Init(
 		sys,
@@ -96,7 +96,7 @@ func makeSystem() (
 	if err != nil {
 		log.Fatal(err)
 	}*/
-	logWriter := &NilWriter{}
+	logWriter := &pzsyslog.NilWriter{}
 	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
 
 	uuidgen, err := pzuuidgen.NewClient(sys)
@@ -158,17 +158,4 @@ func makeIndexes(sys *piazza.SystemConfig) []*elasticsearch.Index {
 		alertsIndex, cronIndex, testElasticsearchIndex,
 	}
 	return ret
-}
-
-//-------------------------------
-// NilWriter doesn't do anything
-type NilWriter struct {
-}
-
-func (*NilWriter) Write(*pzsyslog.Message) error {
-	return nil
-}
-
-func (*NilWriter) Close() error {
-	return nil
 }
