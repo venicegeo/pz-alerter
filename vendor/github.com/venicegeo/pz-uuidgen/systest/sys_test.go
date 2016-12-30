@@ -68,7 +68,7 @@ func TestRunSuite(t *testing.T) {
 }
 
 func isValid(uuid string) bool {
-	return uuidpkg.Parse(uuid) != nil
+	return piazza.ValidUuid(uuid)
 }
 
 func (suite *UuidgenTester) Test00Version() {

@@ -15,15 +15,17 @@
 package workflow
 
 import (
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 type Client struct {
-	url       string
-	syslogger *pzsyslog.Logger
+	url    string
+	logger *pzsyslog.Logger
 }
 
 func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, error) {
@@ -41,35 +43,34 @@ func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, erro
 	}
 
 	service := &Client{
-		url:       url,
-		syslogger: logger,
+		url:    url,
+		logger: logger,
 	}
 
-	service.syslogger.Info("Client started")
+	service.logger.Info("Client started")
 
 	return service, nil
 }
 
-/*func NewClient2(url string, apiKey string) (*Client, error) {
+func NewClient2(url string, apiKey string) (*Client, error) {
 
 	var err error
 
 	loggerURL := strings.Replace(url, "workflow", "logger", 1)
 
-
-	logWriter, err := pzsyslog.NewHttpWriter(sys)
+	logWriter, err := pzsyslog.NewHttpWriter(loggerURL)
 	if err != nil {
 		log.Fatal(err)
 	}
 	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
 
 	service := &Client{
-		url:       url,
-		syslogger: slogger,
+		url:    url,
+		logger: logger,
 	}
 
 	return service, nil
-}*/
+}
 
 //------------------------------------------------------------------------------
 

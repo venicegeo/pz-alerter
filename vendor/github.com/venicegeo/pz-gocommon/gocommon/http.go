@@ -17,7 +17,6 @@ package piazza
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -39,15 +38,6 @@ type Http struct {
 func (h *Http) convertResponseBodyToObject(resp *http.Response, output interface{}) error {
 	if output == nil {
 		return nil
-	}
-
-	if resp.ContentLength < 0 {
-		////		return errors.New(fmt.Sprintf("ContentLength is %d", resp.ContentLength))
-	}
-
-	// no content is perfectly valid, not an error
-	if resp.ContentLength == 0 {
-		//////	return nil
 	}
 
 	defer func() {
@@ -129,17 +119,17 @@ func (h *Http) doVerb(verb string, endpoint string, input interface{}, output in
 
 	reader, err := h.convertObjectToReader(input)
 	if err != nil {
-		return 0, err
+		return http.StatusInternalServerError, err
 	}
 
 	err = h.doPreflight(verb, url, input)
 	if err != nil {
-		return 0, err
+		return http.StatusInternalServerError, err
 	}
 
 	resp, err := h.doRequest(verb, url, reader)
 	if err != nil {
-		return 0, err
+		return http.StatusInternalServerError, err
 	}
 
 	defer func() {
@@ -152,13 +142,12 @@ func (h *Http) doVerb(verb string, endpoint string, input interface{}, output in
 
 	err = h.convertResponseBodyToObject(resp, output)
 	if err != nil {
-		s := fmt.Sprintf("FAILED/1: %#v\nFAILED/2: %#v\nFAILED/3: %#v\n", err, resp, output)
-		h.doPostflight(resp.StatusCode, s)
+		return http.StatusInternalServerError, err
 	}
 
 	err = h.doPostflight(resp.StatusCode, output)
 	if err != nil {
-		return 0, err
+		return http.StatusInternalServerError, err
 	}
 
 	return resp.StatusCode, nil

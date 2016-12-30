@@ -181,7 +181,7 @@ func Test03MessageWriter(t *testing.T) {
 	assert.EqualValues(mssg1, actual[0])
 	assert.EqualValues(mssg2, actual[1])
 
-	actual, err = w.Read(-9)
+	_, err = w.Read(-9)
 	assert.Error(err)
 }
 
@@ -222,6 +222,7 @@ func Test04FileWriter(t *testing.T) {
 
 func Test05Logger(t *testing.T) {
 	assert := assert.New(t)
+	var err error
 
 	writer := &LocalReaderWriter{}
 
@@ -229,14 +230,22 @@ func Test05Logger(t *testing.T) {
 	{
 		logger := NewLogger(writer, "testapp")
 		logger.UseSourceElement = false
-		logger.Debug("debug %d", 999)
-		logger.Info("info %d", 123)
-		logger.Notice("notice %d", 321)
-		logger.Warning("bonk %d", 3)
-		logger.Error("Bonk %s", ".1")
-		logger.Fatal("BONK %f", 4.0)
-		logger.Audit("1", "2", "3", "brown%s", "fox")
-		logger.Metric("i", 5952567, "k", "lazy%s", "dog")
+		err = logger.Debug("debug %d", 999)
+		assert.NoError(err)
+		err = logger.Info("info %d", 123)
+		assert.NoError(err)
+		err = logger.Notice("notice %d", 321)
+		assert.NoError(err)
+		err = logger.Warning("bonk %d", 3)
+		assert.NoError(err)
+		err = logger.Error("Bonk %s", ".1")
+		assert.NoError(err)
+		err = logger.Fatal("BONK %f", 4.0)
+		assert.NoError(err)
+		err = logger.Audit("1", "2", "3", "brown%s", "fox")
+		assert.NoError(err)
+		err = logger.Metric("i", 5952567, "k", "lazy%s", "dog")
+		assert.NoError(err)
 	}
 
 	mssgs, err := writer.Read(100)
@@ -261,6 +270,7 @@ func Test05Logger(t *testing.T) {
 
 func Test06LogLevel(t *testing.T) {
 	assert := assert.New(t)
+	var err error
 
 	writer := &LocalReaderWriter{}
 
@@ -268,9 +278,12 @@ func Test06LogLevel(t *testing.T) {
 		logger := NewLogger(writer, "testapp")
 		logger.UseSourceElement = false
 		logger.MinimumSeverity = Error
-		logger.Warning("bonk")
-		logger.Error("Bonk")
-		logger.Fatal("BONK")
+		err = logger.Warning("bonk")
+		assert.NoError(err)
+		err = logger.Error("Bonk")
+		assert.NoError(err)
+		err = logger.Fatal("BONK")
+		assert.NoError(err)
 	}
 
 	mssgs, err := writer.Read(10)
@@ -328,7 +341,8 @@ func Test09ElasticsearchWriter(t *testing.T) {
 	assert.NoError(err)
 
 	ew := &ElasticWriter{Esi: esi}
-	ew.SetType("Baz")
+	err = ew.SetType("Baz")
+	assert.NoError(err)
 	//ew.SetID("foobarbaz")
 
 	m := NewMessage()
@@ -442,7 +456,6 @@ func (server *TThingServer) handlePost(c *gin.Context) {
 func Test11HttpWriter(t *testing.T) {
 	assert := assert.New(t)
 
-	var err error
 	var ts *TThingServer
 	var gs *piazza.GenericServer
 	var w Writer
@@ -471,7 +484,7 @@ func Test11HttpWriter(t *testing.T) {
 		m1, _ := makeMessage(false)
 		m2, _ := makeMessage(true)
 
-		err = w.Write(m1)
+		err := w.Write(m1)
 		assert.NoError(err)
 		assert.EqualValues("/syslog", ts.lastUrl)
 		p1a := ts.lastPost.(map[string]interface{})
@@ -510,26 +523,21 @@ func Test11HttpWriter(t *testing.T) {
 		assert.Equal(17, count)
 	}
 
-	// test misc
 	{
-		ww := w.(*HttpWriter)
-		assert.NotNil(ww)
-
-		version, err := ww.GetVersion()
-		assert.NoError(err)
-		assert.EqualValues("1.2.3.4", version.Version)
-
-		output := &TThingStats{}
-		err = ww.GetStats(output)
-		assert.NoError(err)
-		assert.Equal(19, output.Count)
-	}
-
-	{
-		err = w.Close()
+		err := w.Close()
 		assert.NoError(err)
 
 		err = gs.Stop()
 		assert.NoError(err)
 	}
+}
+
+func Test12NilWriter(t *testing.T) {
+	assert := assert.New(t)
+	w := NilWriter{}
+	m1, _ := makeMessage(false)
+	err := w.Write(m1)
+	assert.NoError(err)
+	err = w.Close()
+	assert.NoError(err)
 }

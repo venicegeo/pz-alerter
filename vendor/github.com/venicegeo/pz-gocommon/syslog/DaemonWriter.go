@@ -76,7 +76,7 @@ func Dial(network, raddr string) (*DaemonWriter, error) {
 func (w *DaemonWriter) connect() (err error) {
 	if w.conn != nil {
 		// ignore err from close, it makes sense to continue anyway
-		w.conn.close()
+		_ = w.conn.close()
 		w.conn = nil
 	}
 

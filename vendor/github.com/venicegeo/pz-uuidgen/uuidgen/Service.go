@@ -42,14 +42,14 @@ func (service *Service) Init(sys *piazza.SystemConfig, logger *pzsyslog.Logger) 
 
 	service.syslogger = logger
 
-	service.syslogger.Info("uuidgen service started")
+	_ = service.syslogger.Info("uuidgen service started")
 
 	return nil
 }
 
 func (service *Service) GetStats() *piazza.JsonResponse {
 	//log.Printf("uuidgen stats service called (1)")
-	service.syslogger.Info("uuidgen stats service called (2)")
+	_ = service.syslogger.Info("uuidgen stats service called (2)")
 
 	service.Lock()
 	data := service.stats

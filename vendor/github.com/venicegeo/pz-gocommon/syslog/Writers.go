@@ -250,12 +250,7 @@ func (w *SyslogdWriter) Write(mssg *Message) error {
 
 	s := mssg.String()
 
-	w.writer.Write(s)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return w.writer.Write(s)
 }
 
 // Close closes the underlying network connection.
@@ -325,4 +320,17 @@ func (w *ElasticWriter) GetMessages(*piazza.JsonPagination, *piazza.HttpQueryPar
 }
 func (w *ElasticWriter) Read(count int) ([]*Message, error) {
 	return nil, fmt.Errorf("ElasticWriter.Read not supported")
+}
+
+//-------------------------------
+// NilWriter doesn't do anything
+type NilWriter struct {
+}
+
+func (*NilWriter) Write(*Message) error {
+	return nil
+}
+
+func (*NilWriter) Close() error {
+	return nil
 }

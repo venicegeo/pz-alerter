@@ -151,7 +151,7 @@ func (esi *Index) Create(settings string) error {
 	}
 
 	if !createIndex.Acknowledged {
-		return fmt.Errorf("Elasticsearch: create index not acknowledged!")
+		return fmt.Errorf("elasticsearch.Index.Create: create index not acknowledged")
 	}
 
 	return nil
@@ -188,7 +188,7 @@ func (esi *Index) Delete() error {
 	}
 
 	if !deleteIndex.Acknowledged {
-		return fmt.Errorf("Elasticsearch: delete index not acknowledged!")
+		return fmt.Errorf("elasticsearch.Index.Delete: delete index not acknowledged")
 	}
 	return nil
 }
@@ -295,7 +295,7 @@ func (esi *Index) FilterByMatchAll(typ string, realFormat *piazza.JsonPagination
 // GetAllElements returns all documents of a specified type.
 func (esi *Index) GetAllElements(typ string) (*SearchResult, error) {
 	if typ == "" {
-		return nil, fmt.Errorf("Empty type!")
+		return nil, fmt.Errorf("elasticsearch.Index.GetAllElements: empty type")
 	}
 
 	ok, err := esi.TypeExists(typ)
@@ -303,7 +303,7 @@ func (esi *Index) GetAllElements(typ string) (*SearchResult, error) {
 		return nil, err
 	}
 	if !ok {
-		return nil, fmt.Errorf("Type %s in index %s does not exist", typ, esi.index)
+		return nil, fmt.Errorf("elasticsearch.Index.GetAllElements: type %s in index %s does not exist", typ, esi.index)
 	}
 
 	q := elastic.NewMatchAllQuery()
