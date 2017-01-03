@@ -15,7 +15,6 @@
 package piazza
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -169,37 +168,24 @@ func (sys *SystemConfig) checkRequirements(requirements []ServiceName) error {
 	for _, name := range requirements {
 
 		if name == sys.Name {
-			//log.Printf("check requirements for %s: case 1", name)
 			sys.AddService(name, sys.Address)
 
 		} else {
 			if addr, ok := sys.vcapServices.Services[name]; !ok {
 				// the service we want is not in VCAP, so fake it
-				//log.Printf("check requirements for %s: case 2", name)
 				sys.AddService(name, string(name)+sys.domain)
 
 			} else {
 				// the service we want is in VCAP, with a full and valid address
-				//log.Printf("check requirements for %s: case 3", name)
 				sys.AddService(name, addr)
 			}
 		}
-
-		/*
-			newaddr, err := sys.GetAddress(name)
-			if err != nil {
-				log.Printf("Required service: %s missing!", name)
-				return err
-			}
-			log.Printf("Required service: %s at %s", name, newaddr)
-		*/
 	}
 
 	return nil
 }
 
 func (sys *SystemConfig) runHealthChecks() error {
-	//log.Printf("SystemConfig.runHealthChecks: start")
 	for name, addr := range sys.endpoints {
 		if name == sys.Name || name == PzKafka {
 			continue
@@ -207,12 +193,9 @@ func (sys *SystemConfig) runHealthChecks() error {
 
 		url := fmt.Sprintf("%s://%s%s", DefaultProtocol, addr, HealthcheckEndpoints[name])
 
-		//log.Printf("Service healthy? %s at %s (%s)", name, addr, url)
 		resp, err := http.Get(url)
 		if err != nil {
-			s := fmt.Sprintf("Health check errored for service: %s at %s <%#v>", name, url, resp)
-			//log.Printf(s)
-			return errors.New(s)
+			return fmt.Errorf("Health check errored for service: %s at %s <%#v>", name, url, resp)
 		}
 
 		err = resp.Body.Close()
@@ -221,15 +204,10 @@ func (sys *SystemConfig) runHealthChecks() error {
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			s := fmt.Sprintf("Health check failed for service: %s at %s <%#v>", name, url, resp)
-			//log.Printf(s)
-			return errors.New(s)
+			return fmt.Errorf("Health check failed for service: %s at %s <%#v>", name, url, resp)
 		}
-
-		//log.Printf("Service healthy: %s at %s", name, url)
 	}
 
-	//log.Printf("SystemConfig.runHealthChecks: end")
 	return nil
 }
 

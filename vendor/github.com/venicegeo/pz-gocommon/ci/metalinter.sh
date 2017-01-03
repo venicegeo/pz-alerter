@@ -14,4 +14,9 @@ gometalinter \
 --exclude="Json.* should be .*JSON" \
 --exclude="Url.* should be .*URL" \
 --exclude="Uuid.* should be .*UUID" \
+--exclude="duplicate of" \
+--exclude="can be fmt\.Stringer" \
+--exclude="error return value not checked \(.*\.Audit" \
+--exclude="error return value not checked \(.*\.Info" \
+--exclude="error return value not checked \(.*\.Warning" \
 ./...

@@ -313,44 +313,19 @@ func (service *Service) GetSyslog(params *piazza.HttpQueryParams) *piazza.JsonRe
 		return jErr
 	}
 
-	var lines = make([]syslogger.Message, 0)
-
-	if searchResult != nil && searchResult.GetHits() != nil {
-		for _, hit := range *searchResult.GetHits() {
-			if hit.Source == nil {
-				log.Printf("null source hit")
-				continue
-			}
-
-			var msg syslogger.Message
-			err = json.Unmarshal(*hit.Source, &msg)
-			if err != nil {
-				log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))
-				return service.newInternalErrorResponse(err)
-			}
-
-			// just in case
-			err = msg.Validate()
-			if err != nil {
-				log.Printf("UNABLE TO VALIDATE: %s", string(*hit.Source))
-				continue
-			}
-
-			lines = append(lines, msg)
-		}
+	lines, err := extractFromSearchResult(searchResult)
+	if err != nil {
+		return service.newInternalErrorResponse(err)
 	}
 
-	var data interface{}
+	var data interface{} = lines
 
-	switch format {
-	case "string":
-		temp := []string{}
-		for _, line := range lines {
-			temp = append(temp, line.String())
+	if format == "string" {
+		t := make([]string, len(lines))
+		for i := 0; i < len(lines); i++ {
+			t[i] = lines[i].String()
 		}
-		data = temp
-	default:
-		data = lines
+		data = t
 	}
 
 	pagination.Count = int(searchResult.TotalHits())
@@ -369,45 +344,26 @@ func (service *Service) GetSyslog(params *piazza.HttpQueryParams) *piazza.JsonRe
 }
 
 func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	var err error
 
 	searchResult, pagination, jErr := service.getMessageCommon(params)
 	if jErr != nil {
 		return jErr
 	}
-	paginationTimeStampToCreateOn(pagination)
 
-	var lines = make([]Message, 0)
+	lines, err := extractFromSearchResult(searchResult)
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
 
-	if searchResult != nil && searchResult.GetHits() != nil {
-		for _, hit := range *searchResult.GetHits() {
-			if hit.Source == nil {
-				log.Printf("null source hit")
-				continue
-			}
-
-			var sysMsg syslogger.Message
-			msg := &Message{}
-			err = json.Unmarshal(*hit.Source, &sysMsg)
-			if err != nil {
-				log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))
-				return service.newInternalErrorResponse(err)
-			}
-
-			msg, err = service.toOldStyle(&sysMsg)
-			if err != nil {
-				log.Printf("UNABLE TO CONVERT TO OLD TYPE: %s", string(*hit.Source))
-				continue
-			}
-			// just in case
-			err = msg.Validate()
-			if err != nil {
-				log.Printf("UNABLE TO VALIDATE: %s", string(*hit.Source))
-				continue
-			}
-
-			lines = append(lines, *msg)
+	// we want the result in the old-style format
+	oldLines := make([]Message, len(lines))
+	for i := 0; i < len(lines); i++ {
+		newMssg := &lines[i]
+		oldMssg, err := service.toOldStyle(newMssg)
+		if err != nil {
+			return service.newInternalErrorResponse(err)
 		}
+		oldLines[i] = *oldMssg
 	}
 
 	pagination.Count = int(searchResult.TotalHits())
@@ -421,5 +377,71 @@ func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonR
 	if err != nil {
 		return service.newInternalErrorResponse(err)
 	}
+	return resp
+}
+
+func extractFromSearchResult(searchResult *elasticsearch.SearchResult) ([]syslogger.Message, error) {
+
+	var lines = make([]syslogger.Message, 0, len(*searchResult.GetHits()))
+
+	if searchResult == nil || searchResult.GetHits() == nil {
+		return lines, nil
+	}
+
+	for _, hit := range *searchResult.GetHits() {
+		if hit.Source == nil {
+			log.Printf("null source hit")
+			continue
+		}
+
+		msg := syslogger.Message{}
+		err := json.Unmarshal(*hit.Source, &msg)
+		if err != nil {
+			log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))
+			continue
+		}
+
+		// just in case
+		/*err = msg.Validate()
+		if err != nil {
+			log.Printf("UNABLE TO VALIDATE: %s", string(*hit.Source))
+			continue
+		}*/
+
+		lines = append(lines, msg)
+	}
+
+	return lines, nil
+}
+
+func (service *Service) PostQuery(params *piazza.HttpQueryParams, jsnQuery string) *piazza.JsonResponse {
+
+	pagination, err := piazza.NewJsonPagination(params)
+	if err != nil {
+		return service.newBadRequestResponse(err)
+	}
+
+	searchResult, err := service.esIndex.SearchByJSON(LogSchema, jsnQuery)
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
+	lines, err := extractFromSearchResult(searchResult)
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
+	pagination.Count = int(searchResult.TotalHits())
+	resp := &piazza.JsonResponse{
+		StatusCode: http.StatusOK,
+		Data:       lines,
+		Pagination: pagination,
+	}
+
+	err = resp.SetType()
+	if err != nil {
+		return service.newInternalErrorResponse(err)
+	}
+
 	return resp
 }

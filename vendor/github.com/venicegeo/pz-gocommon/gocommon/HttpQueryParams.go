@@ -15,7 +15,6 @@
 package piazza
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -122,9 +121,8 @@ func (params *HttpQueryParams) GetAsSortOrder(key string, defalt SortOrder) (Sor
 	case "asc":
 		order = SortOrderAscending
 	default:
-		s := fmt.Sprintf("query argument for '?%s' must be \"asc\" or \"desc\"", value)
-		err := errors.New(s)
-		return SortOrderAscending, err
+		return "",
+			fmt.Errorf("query argument for \"%s\" must be \"asc\" or \"desc\"", value)
 	}
 
 	return order, nil

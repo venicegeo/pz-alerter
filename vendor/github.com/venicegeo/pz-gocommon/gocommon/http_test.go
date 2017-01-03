@@ -39,22 +39,29 @@ func TestToJsonString(t *testing.T) {
 	assert.Equal(`{"k":"v"}`, RemoveWhitespace(s))
 }
 
+type fcType struct {
+	assert *assert.Assertions
+	url    string
+}
+
+func (fc *fcType) Preflight(verb string, url string, obj string) error {
+	fc.assert.Equal(fc.url+"/", url)
+	return nil
+}
+func (fc *fcType) Postflight(code int, obj string) error {
+	fc.assert.Equal(200, code)
+	return nil
+}
+
 func TestPreflight(t *testing.T) {
 	assert := assert.New(t)
 
 	exampleurl := "http://www.example.com"
 
-	preflight := func(verb string, url string, obj string) error {
-		assert.Equal(exampleurl+"/", url)
-		return nil
+	h := Http{
+		BaseUrl:     exampleurl,
+		FlightCheck: &fcType{assert: assert, url: exampleurl},
 	}
-
-	postflight := func(code int, obj string) error {
-		assert.Equal(200, code)
-		return nil
-	}
-
-	h := Http{BaseUrl: exampleurl, Preflight: preflight, Postflight: postflight}
 
 	var s string
 	code, err := h.Get("/", s)
@@ -69,7 +76,11 @@ func TestPreflight(t *testing.T) {
 	assert.Error(err)
 	assert.Contains(err.Error(), "invalid character '<'")
 	assert.NotEqual(200, code)
+
+	fc := &SimpleFlightCheck{}
+	h.FlightCheck = fc
+	h.BaseUrl = "http://api.stackexchange.com/2.2"
 	assert.NotNil(h.PzGet2("/", nil))
-	SimplePreflight("", "", "")
-	SimplePostflight(9000, "")
+	assert.Equal(1, fc.NumPreflights)
+	assert.Equal(1, fc.NumPostflights)
 }

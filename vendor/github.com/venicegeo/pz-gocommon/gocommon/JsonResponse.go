@@ -109,8 +109,7 @@ func (resp *JsonResponse) SetType() error {
 	goName := reflect.TypeOf(resp.Data).String()
 	modelName, ok := JsonResponseDataTypes[goName]
 	if !ok {
-		s := fmt.Sprintf("Type %s is not a valid response type", goName)
-		return errors.New(s)
+		return fmt.Errorf("Type %s is not a valid response type", goName)
 	}
 	resp.Type = modelName
 	return nil

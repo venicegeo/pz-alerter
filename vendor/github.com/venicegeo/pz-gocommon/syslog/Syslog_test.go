@@ -111,6 +111,12 @@ func simpleChecker(t *testing.T, m *Message, severity Severity, text string) {
 	assert.EqualValues(pid, m.Process)
 	assert.EqualValues(host, m.HostName)
 	assert.EqualValues(text, m.Message)
+
+	err = m.Validate()
+	assert.NoError(err)
+
+	s := m.String()
+	assert.NotEmpty(s)
 }
 
 //---------------------------------------------------------------------
@@ -122,6 +128,9 @@ func Test01Message(t *testing.T) {
 
 	s := m.String()
 	assert.EqualValues(expected, s)
+
+	err := m.Validate()
+	assert.NoError(err)
 
 	//	mm, err := ParseMessageString(expected)
 	//	assert.NoError(err)
@@ -137,13 +146,16 @@ func Test02MessageSDE(t *testing.T) {
 	s := m.String()
 	assert.EqualValues(expected, s)
 
+	err := m.Validate()
+	assert.NoError(err)
+
 	// TODO: this won't work until we make the parser understand SDEs
 	//mm, err := ParseMessageString(expected)
 	//assert.NoError(err)
 	//assert.EqualValues(m, mm)
 }
 
-func Test03MessageWriter(t *testing.T) {
+func Test03LocalWriter(t *testing.T) {
 	assert := assert.New(t)
 
 	mssg1, _ := makeMessage(false)
@@ -183,6 +195,11 @@ func Test03MessageWriter(t *testing.T) {
 
 	_, err = w.Read(-9)
 	assert.Error(err)
+
+	_, _, err = w.GetMessages(nil, nil)
+	assert.Error(err)
+	err = w.Close()
+	assert.NoError(err)
 }
 
 func Test04FileWriter(t *testing.T) {
@@ -236,7 +253,7 @@ func Test05Logger(t *testing.T) {
 		assert.NoError(err)
 		err = logger.Notice("notice %d", 321)
 		assert.NoError(err)
-		err = logger.Warning("bonk %d", 3)
+		err = logger.Warn("bonk %d", 3)
 		assert.NoError(err)
 		err = logger.Error("Bonk %s", ".1")
 		assert.NoError(err)
@@ -246,11 +263,16 @@ func Test05Logger(t *testing.T) {
 		assert.NoError(err)
 		err = logger.Metric("i", 5952567, "k", "lazy%s", "dog")
 		assert.NoError(err)
+
+		err = logger.Information("Info/Information")
+		assert.NoError(err)
+		err = logger.Warning("Warn/Warning")
+		assert.NoError(err)
 	}
 
 	mssgs, err := writer.Read(100)
 	assert.NoError(err)
-	assert.Len(mssgs, 8)
+	assert.Len(mssgs, 10)
 
 	simpleChecker(t, mssgs[0], Debug, "debug 999")
 	simpleChecker(t, mssgs[1], Informational, "info 123")
@@ -266,6 +288,9 @@ func Test05Logger(t *testing.T) {
 	assert.EqualValues("i", mssgs[7].MetricData.Name)
 	assert.EqualValues(5952567, mssgs[7].MetricData.Value)
 	assert.EqualValues("k", mssgs[7].MetricData.Object)
+
+	simpleChecker(t, mssgs[8], Informational, "Info/Information")
+	simpleChecker(t, mssgs[9], Warning, "Warn/Warning")
 }
 
 func Test06LogLevel(t *testing.T) {
@@ -276,7 +301,7 @@ func Test06LogLevel(t *testing.T) {
 
 	{
 		logger := NewLogger(writer, "testapp")
-		logger.UseSourceElement = false
+		logger.UseSourceElement = true
 		logger.MinimumSeverity = Error
 		err = logger.Warning("bonk")
 		assert.NoError(err)
@@ -341,9 +366,19 @@ func Test09ElasticsearchWriter(t *testing.T) {
 	assert.NoError(err)
 
 	ew := &ElasticWriter{Esi: esi}
+	assert.NotNil(ew)
 	err = ew.SetType("Baz")
 	assert.NoError(err)
-	//ew.SetID("foobarbaz")
+
+	ew2 := NewElasticWriter(esi, "Baz")
+	assert.NotNil(ew2)
+	assert.EqualValues(ew, ew2)
+	err = ew2.SetID("foobarbaz")
+	assert.NoError(err)
+	_, err = ew2.Read(1)
+	assert.Error(err)
+	err = ew2.Close()
+	assert.NoError(err)
 
 	m := NewMessage()
 	m.Message = "Yow"
@@ -521,6 +556,9 @@ func Test11HttpWriter(t *testing.T) {
 		assert.NotNil(mssgs)
 		assert.Len(mssgs, 2)
 		assert.Equal(17, count)
+
+		_, err = ww.Read(1)
+		assert.Error(err)
 	}
 
 	{

@@ -109,12 +109,6 @@ func init() {
 	piazza.JsonResponseDataTypes["*logger.Stats"] = "logstats"
 }
 
-func paginationTimeStampToCreateOn(pagination *piazza.JsonPagination) {
-	if pagination.SortBy == "timeStamp" {
-		pagination.SortBy = "createdOn"
-	}
-}
-
 func paginationCreatedOnToTimeStamp(pagination *piazza.JsonPagination) {
 	if pagination.SortBy == "createdOn" {
 		pagination.SortBy = "timeStamp"

@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"regexp"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -102,4 +103,11 @@ func TestApiServer(t *testing.T) {
 	assert.EqualValues("a.b.c.d", pzserver)
 
 	unsetenvT(t, "PZSERVER")
+}
+
+func TestGetIP(t *testing.T) {
+	assert := assert.New(t)
+	ip, err := GetExternalIP()
+	assert.NoError(err)
+	assert.Regexp(regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$`), ip)
 }

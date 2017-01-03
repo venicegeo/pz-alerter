@@ -25,11 +25,15 @@ import (
 
 //----------------------------------------------------------
 
+type FlightCheck interface {
+	Preflight(verb string, url string, obj string) error
+	Postflight(code int, obj string) error
+}
+
 type Http struct {
-	Preflight  func(verb string, url string, json string) error
-	Postflight func(statusCode int, json string) error
-	ApiKey     string
-	BaseUrl    string
+	FlightCheck FlightCheck
+	ApiKey      string
+	BaseUrl     string
 }
 
 //----------------------------------------------------------
@@ -80,19 +84,19 @@ func (h *Http) toJsonString(obj interface{}) string {
 }
 
 func (h *Http) doPreflight(verb string, url string, obj interface{}) error {
-	if h.Preflight == nil {
+	if h.FlightCheck == nil {
 		return nil
 	}
 	jsn := h.toJsonString(obj)
-	return h.Preflight(verb, url, jsn)
+	return h.FlightCheck.Preflight(verb, url, jsn)
 }
 
 func (h *Http) doPostflight(statusCode int, obj interface{}) error {
-	if h.Postflight == nil {
+	if h.FlightCheck == nil {
 		return nil
 	}
 	jsn := h.toJsonString(obj)
-	return h.Postflight(statusCode, jsn)
+	return h.FlightCheck.Postflight(statusCode, jsn)
 }
 
 func (h *Http) doRequest(verb string, url string, reader io.Reader) (*http.Response, error) {
@@ -257,13 +261,22 @@ func (h *Http) PzDelete(endpoint string) *JsonResponse {
 
 //---------------------------------------------------------------------
 
-func SimplePreflight(verb string, url string, obj string) {
+type SimpleFlightCheck struct {
+	NumPreflights  int
+	NumPostflights int
+}
+
+func (fc *SimpleFlightCheck) Preflight(verb string, url string, obj string) error {
 	log.Printf("PREFLIGHT.verb: %s", verb)
 	log.Printf("PREFLIGHT.url: %s", url)
 	log.Printf("PREFLIGHT.obj: %s", obj)
+	fc.NumPreflights++
+	return nil
 }
 
-func SimplePostflight(code int, obj string) {
+func (fc *SimpleFlightCheck) Postflight(code int, obj string) error {
 	log.Printf("POSTFLIGHT.code: %d", code)
 	log.Printf("POSTFLIGHT.obj: %s", obj)
+	fc.NumPostflights++
+	return nil
 }

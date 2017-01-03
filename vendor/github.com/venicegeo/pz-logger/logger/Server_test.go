@@ -437,3 +437,22 @@ func (suite *LoggerTester) Test08Syslog() {
 		assert.Contains(actual, pri)
 	}
 }
+
+func (suite *LoggerTester) Test09PostQuery() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	h := &piazza.Http{BaseUrl: suite.mockLogger.url}
+
+	jsn := `
+{
+	"Foo": "bar"
+}`
+	resp := h.PzPost("/query", jsn)
+	assert.True(resp.IsError())
+	assert.Error(resp.ToError())
+	assert.Contains(resp.ToError().Error(), "not supported under mocking")
+}

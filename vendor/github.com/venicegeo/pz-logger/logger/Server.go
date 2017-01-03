@@ -40,6 +40,7 @@ func (server *Server) Init(service *Service) {
 
 		{Verb: "POST", Path: "/syslog", Handler: server.handlePostSyslog},
 		{Verb: "GET", Path: "/syslog", Handler: server.handleGetSyslog},
+		{Verb: "POST", Path: "/query", Handler: server.handlePostQuery},
 	}
 }
 
@@ -85,5 +86,33 @@ func (server *Server) handlePostSyslog(c *gin.Context) {
 		return
 	}
 	resp := server.service.PostSyslog(sysM)
+	piazza.GinReturnJson(c, resp)
+}
+
+func (server *Server) handlePostQuery(c *gin.Context) {
+	params := piazza.NewQueryParams(c.Request)
+
+	var dslObj interface{}
+	err := c.BindJSON(&dslObj)
+	if err != nil {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    err.Error(),
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	s, ok := dslObj.(string)
+	if !ok {
+		resp := &piazza.JsonResponse{
+			StatusCode: http.StatusBadRequest,
+			Message:    "handlePostQuery: bad string format",
+		}
+		piazza.GinReturnJson(c, resp)
+		return
+	}
+
+	resp := server.service.PostQuery(params, s)
 	piazza.GinReturnJson(c, resp)
 }

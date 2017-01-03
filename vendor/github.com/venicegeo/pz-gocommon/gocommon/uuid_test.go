@@ -28,10 +28,13 @@ func TestUuid(t *testing.T) {
 
 	u := NewUuid()
 	assert.NotNil(u)
+	assert.True(u.Valid())
 
 	s := fmt.Sprintf("%s", u.String())
 
 	x := "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
 	assert.Len(x, 36)
 	assert.Len(s, 36)
+
+	assert.False(ValidUuid(x[1:34]))
 }
