@@ -205,9 +205,10 @@ func (service *Service) newIdent() (piazza.Ident, error) {
 }
 
 func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, actor string) error {
-	service.syslogger.Audit(actor, "createJob", "kafka", "User [%s] is sending job [%s] to kafka", actor, jobID.String())
+	service.syslogger.Audit(actor, "creatingJob", "kafka", "User [%s] is sending job [%s] to kafka", actor, jobID.String())
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
 	if err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed", actor, jobID.String())
 		return LoggedError("Kafka-related failure (1): %s", err.Error())
 	}
 
@@ -218,10 +219,12 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 
 	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
 	if err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed", actor, jobID.String())
 		return LoggedError("Kafka-related failure (2): %s", err.Error())
 	}
 	defer func() {
 		if err2 := producer.Close(); err2 != nil {
+			service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed", actor, jobID.String())
 			log.Fatalf("Kafka-related failure (3): " + err2.Error())
 		}
 	}()
@@ -232,8 +235,10 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 		Key:   sarama.StringEncoder(jobID)}
 	_, _, err = producer.SendMessage(msg)
 	if err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka", actor, jobID.String())
 		return LoggedError("Kafka-related failure (4): %s", err.Error())
 	}
+	service.syslogger.Audit(actor, "createdJob", "kafka", "User [%s] sent job [%s] to kafka", actor, jobID.String())
 
 	return nil
 }
