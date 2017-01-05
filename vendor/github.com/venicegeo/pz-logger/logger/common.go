@@ -17,10 +17,8 @@ package logger
 import (
 	"errors"
 	"fmt"
-	"log"
 	"time"
 
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 )
 
@@ -115,24 +113,7 @@ func paginationCreatedOnToTimeStamp(pagination *piazza.JsonPagination) {
 	}
 }
 
-func SetupElastic(esIndex elasticsearch.IIndex) error {
-	ok, err := esIndex.IndexExists()
-	if err != nil {
-		return err
-	}
-	if !ok {
-		log.Printf("Creating index: %s", esIndex.IndexName())
-		err = esIndex.Create("")
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	ok, err = esIndex.TypeExists(LogSchema)
-	if err != nil {
-		return err
-	}
-	mapping := `
+var LogMapping = `
 	{
 	    "dynamic": "strict",
 	    "properties": {
@@ -220,29 +201,3 @@ func SetupElastic(esIndex elasticsearch.IIndex) error {
       		}
     	}
 	}`
-
-	if !ok {
-		log.Printf("Creating type: %s", LogSchema)
-
-		err = esIndex.SetMapping(LogSchema, piazza.JsonString(mapping))
-		if err != nil {
-			log.Printf("LoggerService.Init: %s", err.Error())
-			return err
-		}
-	}
-
-	ok, err = esIndex.TypeExists(SecuritySchema)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		log.Printf("Creating type: %s", SecuritySchema)
-
-		err = esIndex.SetMapping(SecuritySchema, piazza.JsonString(mapping))
-		if err != nil {
-			log.Printf("LoggerService.Init: %s", err.Error())
-			return err
-		}
-	}
-	return nil
-}

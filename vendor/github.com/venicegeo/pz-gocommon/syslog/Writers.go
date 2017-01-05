@@ -319,6 +319,34 @@ func (w *ElasticWriter) SetType(typ string) error {
 	return nil
 }
 
+func (w *ElasticWriter) CreateIndex() (bool, error) {
+	if w == nil || w.Esi == nil {
+		return false, fmt.Errorf("writer not set not set")
+	}
+	exists, err := w.Esi.IndexExists()
+	if err != nil {
+		return exists, err
+	}
+	if !exists {
+		return exists, w.Esi.Create("")
+	}
+	return exists, nil
+}
+
+func (w *ElasticWriter) CreateType(mapping string) (bool, error) {
+	if w == nil || w.Esi == nil || w.typ == "" {
+		return false, fmt.Errorf("writer not set not set")
+	}
+	exists, err := w.Esi.TypeExists(w.typ)
+	if err != nil {
+		return exists, err
+	}
+	if !exists {
+		return exists, w.Esi.SetMapping(w.typ, piazza.JsonString(mapping))
+	}
+	return exists, nil
+}
+
 // SetID sets the id to write to
 func (w *ElasticWriter) SetID(id string) error {
 	if w == nil {
