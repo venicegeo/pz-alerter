@@ -88,15 +88,15 @@ func makeSystem() (
 		log.Fatal(err)
 	}
 
-	/*logUrl, err := sys.GetURL(piazza.PzLogger)
+	logUrl, err := sys.GetURL(piazza.PzLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
 	logWriter, err := pzsyslog.NewHttpWriter(logUrl)
 	if err != nil {
 		log.Fatal(err)
-	}*/
-	logWriter := &pzsyslog.NilWriter{}
+	}
+	//logWriter := &pzsyslog.NilWriter{}
 	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
 
 	uuidgen, err := pzuuidgen.NewClient(sys)
