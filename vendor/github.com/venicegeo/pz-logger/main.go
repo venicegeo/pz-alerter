@@ -53,12 +53,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//auditWriter := syslogger.ElasticWriter{Esi: esi}
-	//auditWriter.SetType(pzlogger.SecuritySchema)
-	syslogWriter := syslogger.SyslogdWriter{}
+
+	stdOutWriter := syslogger.STDOUTWriter{}
 
 	service := &pzlogger.Service{}
-	err = service.Init(sys, []syslogger.Writer{&logWriter}, []syslogger.Writer{&syslogWriter}, esi)
+	err = service.Init(sys, []syslogger.Writer{&logWriter}, []syslogger.Writer{&stdOutWriter}, esi)
 	if err != nil {
 		log.Fatal(err)
 	}

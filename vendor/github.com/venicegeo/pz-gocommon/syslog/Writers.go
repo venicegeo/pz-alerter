@@ -103,7 +103,7 @@ func (w *STDOUTWriter) Write(mssg *Message) error {
 }
 
 //Nothing to close for this writer
-func Close() error {
+func (w *STDOUTWriter) Close() error {
 	return nil
 }
 
