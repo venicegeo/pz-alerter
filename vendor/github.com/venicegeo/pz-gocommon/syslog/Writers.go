@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -86,6 +87,24 @@ func (w *FileWriter) Write(mssg *Message) error {
 // Close closes the file. The creator of the FileWriter must call this.
 func (w *FileWriter) Close() error {
 	return w.file.Close()
+}
+
+//---------------------------------------------------------------------
+
+//STDOUTWriter writes messages to STDOUT
+type STDOUTWriter struct {
+}
+
+//Writes message to STDOUT
+func (w *STDOUTWriter) Write(mssg *Message) error {
+	var _ Writer = (*FileWriter)(nil)
+	log.Println(mssg.String())
+	return nil
+}
+
+//Nothing to close for this writer
+func Close() error {
+	return nil
 }
 
 //---------------------------------------------------------------------

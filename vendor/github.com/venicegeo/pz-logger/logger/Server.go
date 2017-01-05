@@ -38,8 +38,9 @@ func (server *Server) Init(service *Service) {
 		{Verb: "GET", Path: "/message", Handler: server.handleGetMessage},
 		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
 
-		{Verb: "POST", Path: "/syslog", Handler: server.handlePostSyslog},
 		{Verb: "GET", Path: "/syslog", Handler: server.handleGetSyslog},
+		{Verb: "POST", Path: "/syslog", Handler: server.handlePostSyslog},
+
 		{Verb: "POST", Path: "/query", Handler: server.handlePostQuery},
 	}
 }

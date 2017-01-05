@@ -369,7 +369,7 @@ func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonR
 	pagination.Count = int(searchResult.TotalHits())
 	resp := &piazza.JsonResponse{
 		StatusCode: http.StatusOK,
-		Data:       lines,
+		Data:       oldLines,
 		Pagination: pagination,
 	}
 
