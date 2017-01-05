@@ -1,5 +1,5 @@
 hash: 80efde83e66c401d8db5fc2e5758c7aa62fa437c6506404b842f148f5fb22ca5
-updated: 2017-01-03T09:54:05.65200003-05:00
+updated: 2017-01-05T09:50:13.402162269-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -17,7 +17,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 30a891c33c7cde7b02a981314b4228ec99380cca
 - name: github.com/venicegeo/pz-gocommon
-  version: b36e8b8e842fa77cf30235ef12b39965555956ed
+  version: 5e3364e56add77cc9d719e3b214fb7e9b0f4ee9d
   subpackages:
   - elasticsearch
   - gocommon
@@ -56,6 +56,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 4ee7bcd41dd3981a1fc0530e1b51272ab4adda1f
+  version: aad92dacf69bbaad34539a61ccad57e20bc7f6cf
   subpackages:
   - logger
