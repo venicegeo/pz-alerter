@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"os"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -98,7 +97,7 @@ type STDOUTWriter struct {
 //Writes message to STDOUT
 func (w *STDOUTWriter) Write(mssg *Message) error {
 	var _ Writer = (*FileWriter)(nil)
-	log.Println(mssg.String())
+	fmt.Println(mssg.String())
 	return nil
 }
 
