@@ -157,6 +157,18 @@ func (logger *Logger) Audit(actor string, action string, actee string, text stri
 	return logger.postMessage(mssg)
 }
 
+// Creates an audit message but does not send the message
+func (logger *Logger) DebugAudit(actor string, action string, actee string, text string, v ...interface{}) error {
+	mssg := logger.makeMessage(Notice, text, v...)
+	mssg.AuditData = &AuditElement{
+		Actor:  actor,
+		Action: action,
+		Actee:  actee,
+	}
+	return nil
+	//return logger.postMessage(mssg)
+}
+
 // Metric sends a log message with the metric SDE.
 func (logger *Logger) Metric(name string, value float64, object string, text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Notice, text, v...)
