@@ -314,13 +314,18 @@ func (service *Service) GetStats() *piazza.JsonResponse {
 
 // GetEventType TODO
 func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.JsonResponse {
+	service.syslogger.Audit(actor, "gettingEventType", id.String(), "Service.GetEventType: User is getting eventType")
 	eventType, found, err := service.eventTypeDB.GetOne(id, actor)
 	if !found {
+		service.syslogger.Audit(actor, "gettingEventTypeFailure", id.String(), "Service.GetEventType: User failed to get eventType")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit(actor, "gettingEventTypeFailure", id.String(), "Service.GetEventType: User failed to get eventType")
 		return service.statusBadRequest(err)
 	}
+	service.syslogger.Audit(actor, "gotEventType", id.String(), "Service.GetEventType: User successfully got eventType")
+
 	eventType.Mapping = service.removeUniqueParams(eventType.Name, eventType.Mapping)
 	return service.statusOK(eventType)
 }
@@ -338,6 +343,9 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "gettingAllEventTypes", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User is getting all eventTypes")
+
 	if nameParam != "" {
 		nameParamValue := nameParam
 		var foundName bool
@@ -347,10 +355,12 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 		var eventtype *EventType
 		if foundName && eventtypeid != nil {
 			if err != nil {
+				service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
 				return service.statusBadRequest(err)
 			}
 			eventtype, foundType, err = service.eventTypeDB.GetOne(piazza.Ident(eventtypeid.String()), "pz-workflow")
 			if err != nil {
+				service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
 				return service.statusInternalError(err)
 			}
 		}
@@ -362,16 +372,20 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 	} else {
 		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format, "pz-workflow")
 		if err != nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
 			return service.statusInternalError(err)
 		}
 	}
 	if eventtypes == nil {
+		service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
 		return service.statusInternalError(errors.New("getalleventtypes returned nil"))
 	}
 	for i := 0; i < len(eventtypes); i++ {
 		eventtypes[i].Mapping = service.removeUniqueParams(eventtypes[i].Name, eventtypes[i].Mapping)
 	}
 	resp := service.statusOK(eventtypes)
+
+	service.syslogger.Audit("pz-workflow", "gotAllEventTypes", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User successfully got all eventTypes")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -393,17 +407,24 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "queryingEventTypes", service.eventTypeDB.mapping, "Service.QueryEventTypes: User is querying eventTypes")
+
 	eventtypes, totalHits, err = service.eventTypeDB.GetEventTypesByDslQuery(dslString, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "queryingEventTypesFailure", service.eventTypeDB.mapping, "Service.QueryEventTypes: User failed to query eventTypes")
 		return service.statusBadRequest(err)
 	}
 	if eventtypes == nil {
+		service.syslogger.Audit("pz-workflow", "queryingEventTypesFailure", service.eventTypeDB.mapping, "Service.QueryEventTypes: User failed to query eventTypes")
 		return service.statusInternalError(errors.New("queryeventtypes returned nil"))
 	}
 	for i := 0; i < len(eventtypes); i++ {
 		eventtypes[i].Mapping = service.removeUniqueParams(eventtypes[i].Name, eventtypes[i].Mapping)
 	}
 	resp := service.statusOK(eventtypes)
+
+	service.syslogger.Audit("pz-workflow", "queriedEventTypes", service.eventTypeDB.mapping, "Service.QueryEventTypes: User successfully queried eventTypes")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -455,8 +476,11 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	eventType.Mapping = service.addUniqueParams(eventType.Name, eventType.Mapping)
 
+	service.syslogger.Audit(eventType.CreatedBy, "creatingEventType", eventTypeID.String(), "Service.PostEventType: User is creating eventType")
+
 	id, err := service.eventTypeDB.PostData(eventType, eventTypeID, eventType.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(eventType.CreatedBy, "creatingEventTypeFailure", eventTypeID.String(), "Service.PostEventType: User failed to create eventType")
 		if strings.HasSuffix(err.Error(), "was not recognized as a valid mapping type") {
 			return service.statusBadRequest(err)
 		}
@@ -465,9 +489,12 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	err = service.eventDB.AddMapping(name, eventType.Mapping, eventType.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(eventType.CreatedBy, "creatingEventTypeFailure", eventTypeID.String(), "Service.PostEventType: User failed to create eventType")
 		_, _ = service.eventTypeDB.DeleteByID(id, eventType.CreatedBy)
 		return service.statusInternalError(err)
 	}
+
+	service.syslogger.Audit(eventType.CreatedBy, "createdEventType", eventTypeID.String(), "Service.PostEventType: User successfully created eventType")
 
 	go func() {
 		service.syslogger.Info("User %s created EventType %s", eventType.CreatedBy, eventTypeID)
@@ -513,13 +540,20 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 			return service.statusForbidden(errors.New("Deleting eventTypes that are in use is prohibited"))
 		}
 	}
+
+	service.syslogger.Audit("pz-workflow", "deletingEventType", id.String(), "Service.DeleteEventType: User is deleting eventType")
+
 	ok, err := service.eventTypeDB.DeleteByID(id, "pz-workflow")
 	if !ok {
+		service.syslogger.Audit("pz-workflow", "deletingEventTypeFailure", id.String(), "Service.DeleteEventType: User failed to delete eventType")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "deletingEventTypeFailure", id.String(), "Service.DeleteEventType: User failed to delete eventType")
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "deletedEventType", id.String(), "Service.DeleteEventType: User successfully deleted eventType")
 
 	service.syslogger.Info("Deleted EventType %s", id)
 
@@ -538,14 +572,17 @@ func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 
+	service.syslogger.Audit("pz-workflow", "gettingEvent", id.String(), "Service.GetEvent: User is getting event")
 	event, found, err := service.eventDB.GetOne(mapping, id, "pz-workflow")
-
 	if !found {
+		service.syslogger.Audit("pz-workflow", "gettingEventFailure", id.String(), "Service.GetEvent: User failed to get event")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "gettingEventFailure", id.String(), "Service.GetEvent: User failed to get event")
 		return service.statusBadRequest(err)
 	}
+	service.syslogger.Audit("pz-workflow", "gotEvent", id.String(), "Service.GetEvent: User successfully got event")
 
 	event.Data = service.removeUniqueParams(mapping, event.Data)
 	return service.statusOK(event)
@@ -589,18 +626,24 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 		query = ""
 	}
 
+	service.syslogger.Audit("pz-workflow", "gettingAllEvents", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User is getting all events")
+
 	events, totalHits, err := service.eventDB.GetAll(query, format, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "gettingAllEventsFailure", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User failed to get all events")
 		return service.statusInternalError(err)
 	}
 	for i := 0; i < len(events); i++ {
 		eventType, found, err := service.eventTypeDB.GetOne(events[i].EventTypeID, "pz-workflow")
 		if !found || err != nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllEventsFailure", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User failed to get all events")
 			return service.statusInternalError(err)
 		}
 		events[i].Data = service.removeUniqueParams(eventType.Name, events[i].Data)
 	}
 	resp := service.statusOK(events)
+
+	service.syslogger.Audit("pz-workflow", "gotAllEvents", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User successfully got all events")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -643,18 +686,23 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
+	service.syslogger.Audit(event.CreatedBy, "creatingCronEvent", event.EventID.String(), "Service.PostRepeatingEvent: User is creating cron event")
+
 	err = service.cron.AddJob(event.CronSchedule, cronEvent{event, eventTypeName, service})
 	if err != nil {
+		service.syslogger.Audit(event.CreatedBy, "creatingCronEventFailure", event.EventID.String(), "Service.PostRepeatingEvent: User failed to create cron event")
 		return service.statusInternalError(err)
 	}
 
 	err = service.cronDB.PostData(event, eventID, event.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(event.CreatedBy, "creatingCronEventFailure", event.EventID.String(), "Service.PostRepeatingEvent: User failed to create cron event")
 		return service.statusInternalError(err)
 	}
 
 	_, err = service.eventDB.PostData(eventTypeName, event, eventID, event.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(event.CreatedBy, "creatingCronEventFailure", event.EventID.String(), "Service.PostRepeatingEvent: User failed to create cron event")
 		// If we fail, need to also remove from cronDB
 		// We don't check for errors here because if we've reached this point,
 		// the eventID will be in the cronDB
@@ -662,6 +710,8 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 		service.cron.Remove(eventID.String())
 		return service.statusInternalError(err)
 	}
+
+	service.syslogger.Audit(event.CreatedBy, "createdCronEvent", event.EventID.String(), "Service.PostRepeatingEvent: User created cron event")
 
 	service.stats.IncrEvents()
 
@@ -691,10 +741,15 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	event.Data = service.addUniqueParams(eventTypeName, event.Data)
 
+	service.syslogger.Audit(event.CreatedBy, "creatingEvent", eventID.String(), "Service.PostEvent: User is creating event")
+
 	_, err = service.eventDB.PostData(eventTypeName, event, eventID, event.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(event.CreatedBy, "creatingEventFailure", eventID.String(), "Service.PostEvent: User failed to create event")
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit(event.CreatedBy, "createdEvent", eventID.String(), "Service.PostEvent: User successfully created event")
 
 	service.syslogger.Info("User %s created Event %s", event.CreatedBy, eventID)
 
@@ -766,12 +821,12 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					code, body, _, err6 := piazza.HTTP(piazza.POST, authzURL+"/authz", piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader([]byte(req)))
 					if err6 != nil {
 						results[triggerID] = service.statusInternalError(err6)
-						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
+						service.syslogger.Info("Event [%s] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					}
 					if code != 200 {
 						results[triggerID] = service.statusInternalError(errors.New("AuthZ response code not 200"))
-						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
+						service.syslogger.Info("Event [%s] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					}
 					var respon map[string]interface{}
@@ -783,15 +838,15 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 					}
 					if iAuth, ok := respon["isAuthSuccess"]; !ok {
 						results[triggerID] = service.statusInternalError(errors.New("AuthZ response doesn't contain isAuthSuccess field"))
-						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
+						service.syslogger.Info("Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					} else if bAuth, ok := iAuth.(bool); !ok {
 						results[triggerID] = service.statusInternalError(errors.New("AuthZ isAuthSuccess is not type bool"))
-						service.syslogger.Info("Event [] firing trigger [] could not get access to create job", event.EventID, trigger.TriggerID)
+						service.syslogger.Info("Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
 					} else if !bAuth {
 						results[triggerID] = service.statusForbidden(errors.New("Access to create job denied"))
-						service.syslogger.Info("Event [] firing trigger [] was denied access to create job", event.EventID, trigger.TriggerID)
+						service.syslogger.Info("Event [%s] firing trigger [%s] was denied access to create job", event.EventID, trigger.TriggerID)
 						return
 					}
 				}
@@ -881,12 +936,17 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "queryingEvents", service.eventDB.Esi.IndexName(), "Service.QueryEvents: User is querying events")
+
 	events, totalHits, err := service.eventDB.GetEventsByDslQuery(query, jsonString, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "queryingEventsFailure", service.eventDB.Esi.IndexName(), "Service.QueryEvents: User failed to query events")
 		return service.statusBadRequest(err)
 	}
-
 	resp := service.statusOK(events)
+
+	service.syslogger.Audit("pz-workflow", "queriedEvents", service.eventDB.Esi.IndexName(), "Service.QueryEvents: User successfully queried events")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -940,11 +1000,15 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(errors.New("Deleting system events is prohibited"))
 	}
 
+	service.syslogger.Audit("pz-workflow", "deletingEvent", id.String(), "Service.DeleteEvent: User is deleteing event")
+
 	ok, err := service.eventDB.DeleteByID(mapping, id, "pz-workflow")
 	if !ok {
+		service.syslogger.Audit("pz-workflow", "deletingEventFailure", id.String(), "Service.DeleteEvent: User failed to delete event")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "deletingEventFailure", id.String(), "Service.DeleteEvent: User failed to delete event")
 		return service.statusBadRequest(err)
 	}
 
@@ -954,13 +1018,17 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 		return service.statusBadRequest(err)
 	}
 	if ok {
+		service.syslogger.Audit("pz-workflow", "deletingCronEvent", id.String(), "Service.DeleteEvent: User is deleting cron event")
 		ok, err := service.cronDB.DeleteByID(id, "pz-workflow")
 		if !ok {
+			service.syslogger.Audit("pz-workflow", "deletingCronEventFailure", id.String(), "Service.DeleteEvent: User failed to delete cron event")
 			return service.statusNotFound(err)
 		}
 		if err != nil {
+			service.syslogger.Audit("pz-workflow", "deletingCronEventFailure", id.String(), "Service.DeleteEvent: User failed to delete cron event")
 			return service.statusBadRequest(err)
 		}
+		service.syslogger.Audit("pz-workflow", "deletedCronEvent", id.String(), "Service.DeleteEvent: User successfully deleted cron event")
 		service.cron.Remove(id.String())
 	}
 
@@ -972,17 +1040,22 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 //------------------------------------------------------------------------------
 
 func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
+	service.syslogger.Audit("pz-workflow", "gettingTrigger", id.String(), "Service.GetTrigger: User is getting trigger")
 	trigger, found, err := service.triggerDB.GetOne(id, "pz-workflow")
 	if !found {
+		service.syslogger.Audit("pz-workflow", "gettingTriggerFailure", id.String(), "Service.GetTrigger: User failed to get trigger")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "gettingTriggerFailure", id.String(), "Service.GetTrigger: User failed to get trigger")
 		return service.statusBadRequest(err)
 	}
 	eventType, found, err := service.eventTypeDB.GetOne(trigger.EventTypeID, "pz-workflow")
 	if err != nil || !found {
+		service.syslogger.Audit("pz-workflow", "gettingTriggerFailure", id.String(), "Service.GetTrigger: User failed to get trigger")
 		return service.statusBadRequest(err)
 	}
+	service.syslogger.Audit("pz-workflow", "gotTrigger", id.String(), "Service.GetTrigger: User successfully got trigger")
 
 	trigger.Condition = service.removeUniqueParams(eventType.Name, trigger.Condition)
 	return service.statusOK(trigger)
@@ -994,10 +1067,14 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 		return service.statusBadRequest(err)
 	}
 
+	service.syslogger.Audit("pz-workflow", "gettingAllTriggers", service.triggerDB.mapping, "Service.GetAllTriggers: User is getting all triggers")
+
 	triggers, totalHits, err := service.triggerDB.GetAll(format, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "gettingAllTriggersFailure", service.triggerDB.mapping, "Service.GetAllTriggers: User failed to get all triggers")
 		return service.statusInternalError(err)
 	} else if triggers == nil {
+		service.syslogger.Audit("pz-workflow", "gettingAllTriggersFailure", service.triggerDB.mapping, "Service.GetAllTriggers: User failed to get all triggers")
 		return service.statusInternalError(errors.New("GetAllTriggers returned nil"))
 	}
 	for i := 0; i < len(triggers); i++ {
@@ -1008,8 +1085,9 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 		}
 		triggers[i].Condition = service.removeUniqueParams(eventType.Name, triggers[i].Condition)
 	}
-
 	resp := service.statusOK(triggers)
+
+	service.syslogger.Audit("pz-workflow", "gotAllTriggers", service.triggerDB.mapping, "Service.GetAllTriggers: User successfully got all triggers")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -1025,22 +1103,28 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 		return service.statusBadRequest(err)
 	}
 
+	service.syslogger.Audit("pz-workflow", "queryingTriggers", service.triggerDB.mapping, "Service.QueryTriggers: User is querying triggers")
+
 	dslString, err = syncPagination(dslString, *format)
 	triggers, totalHits, err := service.triggerDB.GetTriggersByDslQuery(dslString, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "queryingTriggersFailure", service.triggerDB.mapping, "Service.QueryTriggers: User failed to query triggers")
 		return service.statusBadRequest(err)
 	} else if triggers == nil {
+		service.syslogger.Audit("pz-workflow", "queryingTriggersFailure", service.triggerDB.mapping, "Service.QueryTriggers: User failed to query triggers")
 		return service.statusInternalError(errors.New("QueryTriggers returned nil"))
 	}
 	for i := 0; i < len(triggers); i++ {
 		eventType, found, err := service.eventTypeDB.GetOne(triggers[i].EventTypeID, "pz-workflow")
 		if err != nil || !found {
+			service.syslogger.Audit("pz-workflow", "queryingTriggersFailure", service.triggerDB.mapping, "Service.QueryTriggers: User failed to query triggers")
 			return service.statusBadRequest(err)
 		}
 		triggers[i].Condition = service.removeUniqueParams(eventType.Name, triggers[i].Condition)
 	}
-
 	resp := service.statusOK(triggers)
+
+	service.syslogger.Audit("pz-workflow", "queriedTriggers", service.triggerDB.mapping, "Service.QueryTriggers: User successfully queried triggers")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -1078,10 +1162,15 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	response := *trigger
 	trigger.Condition = fixedQuery
 
+	service.syslogger.Audit(trigger.CreatedBy, "creatingTrigger", triggerID.String(), "Service.PostTrigger: User is creating trigger")
+
 	_, err = service.triggerDB.PostTrigger(trigger, triggerID, trigger.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(trigger.CreatedBy, "creatingTriggerFailure", triggerID.String(), "Service.PostTrigger: User failed to create trigger")
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit(trigger.CreatedBy, "createdTrigger", triggerID.String(), "Service.PostTrigger: User successfully created trigger")
 
 	service.syslogger.Info("User %s created Trigger %s", trigger.CreatedBy, triggerID)
 
@@ -1098,23 +1187,36 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "updatingTrigger", id.String(), "Service.PutTrigger: User is updating trigger")
+
 	_, err = service.triggerDB.PutTrigger(id, trigger, update, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "updatingTriggerFailure", id.String(), "Service.PutTrigger: User failed to update trigger")
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "updatedTrigger", id.String(), "Service.PutTrigger: User successfully updated trigger")
+
 	service.syslogger.Info("Updated Trigger %s with enabled=%v", id, update.Enabled)
 
 	return service.statusPutOK("Updated trigger")
 }
 
 func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
+	service.syslogger.Audit("pz-workflow", "deletingTrigger", id.String(), "Service.DeleteTrigger: User is deleting trigger")
+
 	ok, err := service.triggerDB.DeleteTrigger(id, "pz-workflow")
 	if !ok {
+		service.syslogger.Audit("pz-workflow", "deletingTriggerFailure", id.String(), "Service.DeleteTrigger: User failed to delete trigger")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "deletingTriggerFailure", id.String(), "Service.DeleteTrigger: User failed to delete trigger")
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "deletedTrigger", id.String(), "Service.DeleteTrigger: User successfully deleted trigger")
 
 	service.syslogger.Info("Deleted Trigger with TriggerId %s", id)
 
@@ -1124,13 +1226,17 @@ func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 //---------------------------------------------------------------------
 
 func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
+	service.syslogger.Audit("pz-workflow", "gettingAlert", id.String(), "Service.GetAlert: User is getting alert")
 	alert, found, err := service.alertDB.GetOne(id, "pz-workflow")
 	if !found {
+		service.syslogger.Audit("pz-workflow", "gettingAlertFailure", id.String(), "Service.GetAlert: User failed to get alert")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "gettingAlertFailure", id.String(), "Service.GetAlert: User failed to get alert")
 		return service.statusBadRequest(err)
 	}
+	service.syslogger.Audit("pz-workflow", "gotAlert", id.String(), "Service.GetAlert: User successfully got alert")
 
 	return service.statusOK(alert)
 }
@@ -1149,21 +1255,28 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	var alerts []Alert
 	var totalHits int64
 
+	service.syslogger.Audit("pz-workflow", "gettingAllAlerts", service.alertDB.mapping, "Service.GetAllAlerts: User is getting all alerts")
+
 	if triggerID != "" && piazza.ValidUuid(triggerID.String()) {
 		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID, "pz-workflow")
 		if err != nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 			return service.statusInternalError(err)
 		} else if alerts == nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
 	} else if triggerID == "" {
 		alerts, totalHits, err = service.alertDB.GetAll(format, "pz-workflow")
 		if err != nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 			return service.statusInternalError(err)
 		} else if alerts == nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 		}
 	} else {
+		service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 		return service.statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
 
@@ -1173,12 +1286,15 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	if inflate {
 		alertExts, err := service.inflateAlerts(alerts)
 		if err != nil {
+			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 			return service.statusInternalError(err)
 		}
 		resp = service.statusOK(*alertExts)
 	} else {
 		resp = service.statusOK(alerts)
 	}
+
+	service.syslogger.Audit("pz-workflow", "gotAllAlerts", service.alertDB.mapping, "Service.GetAllAlerts: User successfully got all alerts")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -1197,11 +1313,15 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	var alerts []Alert
 	var totalHits int64
 
+	service.syslogger.Audit("pz-workflow", "queryingAlerts", service.alertDB.mapping, "Service.QueryAlerts: User is querying alerts")
+
 	dslString, err = syncPagination(dslString, *format)
 	alerts, totalHits, err = service.alertDB.GetAlertsByDslQuery(dslString, "pz-workflow")
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "queryingAlertsFailure", service.alertDB.mapping, "Service.QueryAlerts: User failed to query alerts")
 		return service.statusBadRequest(err)
 	} else if alerts == nil {
+		service.syslogger.Audit("pz-workflow", "queryingAlertsFailure", service.alertDB.mapping, "Service.QueryAlerts: User failed to query alerts")
 		return service.statusInternalError(errors.New("QueryAlerts returned nil"))
 	}
 
@@ -1211,12 +1331,15 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	if inflate {
 		alertExts, err := service.inflateAlerts(alerts)
 		if err != nil {
+			service.syslogger.Audit("pz-workflow", "queryingAlertsFailure", service.alertDB.mapping, "Service.QueryAlerts: User failed to query alerts")
 			return service.statusInternalError(err)
 		}
 		resp = service.statusOK(*alertExts)
 	} else {
 		resp = service.statusOK(alerts)
 	}
+
+	service.syslogger.Audit("pz-workflow", "queriedAlerts", service.alertDB.mapping, "Service.QueryAlerts: User successfully queried alerts")
 
 	if totalHits > 0 {
 		format.Count = int(totalHits)
@@ -1286,10 +1409,15 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 
 	alert.CreatedOn = time.Now()
 
+	service.syslogger.Audit(alert.CreatedBy, "creatingAlert", alert.AlertID.String(), "Service.PostAlert: User is creating alert")
+
 	_, err = service.alertDB.PostData(&alert, alertID, alert.CreatedBy)
 	if err != nil {
+		service.syslogger.Audit(alert.CreatedBy, "creatingAlertFailure", alert.AlertID.String(), "Service.PostAlert: User failed to create alert")
 		return service.statusInternalError(err)
 	}
+
+	service.syslogger.Audit(alert.CreatedBy, "createdAlert", alert.AlertID.String(), "Service.PostAlert: User successfully created alert")
 
 	service.syslogger.Info("User %s created Alert %s", alert.CreatedBy, alertID)
 
@@ -1300,13 +1428,19 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 
 // DeleteAlert TODO
 func (service *Service) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
+	service.syslogger.Audit("pz-workflow", "deletingAlert", id.String(), "Service.DeleteAlert: User is deleteing alert")
+
 	ok, err := service.alertDB.DeleteByID(id, "pz-workflow")
 	if !ok {
+		service.syslogger.Audit("pz-workflow", "deletingAlertFailure", id.String(), "Service.DeleteAlert: User failed to delete alert")
 		return service.statusNotFound(err)
 	}
 	if err != nil {
+		service.syslogger.Audit("pz-workflow", "deletingAlertFailure", id.String(), "Service.DeleteAlert: User failed to delete alert")
 		return service.statusBadRequest(err)
 	}
+
+	service.syslogger.Audit("pz-workflow", "deletedAlert", id.String(), "Service.DeleteAlert: User successfully deleted alert")
 
 	service.syslogger.Info("Deleted Alert with AlertId %s", id)
 
