@@ -16,13 +16,14 @@ package systest
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
+
+	"encoding/json"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -61,7 +62,7 @@ func (suite *LoggerTester) setupFixture() {
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
 
-	suite.httpWriter, err = pzsyslog.NewHttpWriter(suite.url)
+	suite.httpWriter, err = pzsyslog.NewHttpWriter(suite.url, suite.apiKey)
 	suite.writer = suite.httpWriter
 	assert.NoError(err)
 	suite.logger = pzsyslog.NewLogger(suite.writer, "loggersystesterapp")
@@ -75,7 +76,7 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (suite *LoggerTester) verifyMessageExists(expected *pzsyslog.Message) bool {
+func (suite *LoggerTester) verifyMessageExists(expected string) bool {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -83,18 +84,18 @@ func (suite *LoggerTester) verifyMessageExists(expected *pzsyslog.Message) bool 
 		PerPage: 100,
 		Page:    0,
 		Order:   piazza.SortOrderDescending,
-		SortBy:  "createdOn",
+		SortBy:  "timeStamp",
 	}
 	ms, _, err := suite.httpWriter.GetMessages(format, nil)
-	fmt.Println("====\n", ms, "\n=====")
 	assert.NoError(err)
 	assert.Len(ms, format.PerPage)
 
 	for _, m := range ms {
-		if m.String() == expected.String() {
+		if m.Message == expected {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -126,7 +127,7 @@ func (suite *LoggerTester) getStats(output interface{}) error {
 	return jresp.ExtractData(output)
 }
 
-func (suite *LoggerTester) Test00Version() {
+func (suite *LoggerTester) xTest00Version() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -138,14 +139,14 @@ func (suite *LoggerTester) Test00Version() {
 	assert.EqualValues("1.0.0", version.Version)
 }
 
-func (suite *LoggerTester) Test01RawGet() {
+func (suite *LoggerTester) yTest01RawGet() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	resp, err := http.Get(suite.url + "/message?perPage=13&page=&0")
+	resp, err := http.Get(suite.url + "/syslog")
 	assert.NoError(err)
 	assert.True(resp.ContentLength >= 0)
 	if resp.ContentLength == -1 {
@@ -166,24 +167,22 @@ func (suite *LoggerTester) Test01RawGet() {
 	assert.Equal(200, resp.StatusCode)
 }
 
-func (suite *LoggerTester) Test02RawPost() {
+func (suite *LoggerTester) yTest02RawPost() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	jsn := `
-	{
-		"address":"XXX",
-		"createdOn":"2016-07-22T16:44:58.065583138-04:00",
-		"message":"XXX",
-		"service":"XXX",
-		"severity":"XXX"
-	}`
-	reader := bytes.NewReader([]byte(jsn))
+	mssg := pzsyslog.NewMessage()
+	mssg.Severity = pzsyslog.Warning
+	mssg.HostName = "example.com"
+	mssg.Application = "testapp"
+	mssg.Process = "0x0000"
+	jsn, err := json.Marshal(mssg)
+	reader := bytes.NewReader(jsn)
 
-	resp, err := http.Post(suite.url+"/message",
+	resp, err := http.Post(suite.url+"/syslog",
 		piazza.ContentTypeJSON, reader)
 	assert.NoError(err)
 
@@ -197,13 +196,10 @@ func (suite *LoggerTester) Test02RawPost() {
 		assert.NoError(err)
 	}
 
-	//err = json.Unmarshal(raw, output)
-	//assett.NoError(err)
-
 	assert.Equal(200, resp.StatusCode)
 }
 
-func (suite *LoggerTester) Test03Get() {
+func (suite *LoggerTester) yTest03Get() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -214,7 +210,7 @@ func (suite *LoggerTester) Test03Get() {
 		PerPage: 12,
 		Page:    0,
 		Order:   piazza.SortOrderAscending,
-		SortBy:  "createdOn",
+		SortBy:  "timeStamp",
 	}
 	ms, _, err := suite.httpWriter.GetMessages(format, nil)
 	assert.NoError(err)
@@ -230,25 +226,25 @@ func (suite *LoggerTester) Test04Post() {
 
 	var err error
 
-	key := time.Now().String()
+	key := "KEY KEY KEY " + time.Now().String()
 
-	data := &pzsyslog.Message{
+	mssg := &pzsyslog.Message{
 		Facility:    1,
 		Version:     1,
 		Process:     "pid1",
 		Application: "log-tester",
 		HostName:    "128.1.2.3",
 		TimeStamp:   time.Now(),
-		Severity:    pzsyslog.Notice,
+		Severity:    pzsyslog.Error,
 		Message:     key,
 	}
 
-	err = suite.writer.Write(data)
-	assert.NoError(err, "PostToMessages")
+	err = suite.httpWriter.Write(mssg)
+	//err = suite.logger.Error(key)
+	assert.NoError(err, "Test04Post")
 
-	sleep()
-
-	assert.True(suite.verifyMessageExists(data))
+	ok := suite.verifyMessageExists(key)
+	assert.True(ok)
 }
 
 func (suite *LoggerTester) xTest05PostHelpers() {
@@ -259,8 +255,11 @@ func (suite *LoggerTester) xTest05PostHelpers() {
 	defer suite.teardownFixture()
 
 	uniq := time.Now().String()
-	//TODO client.Info(uniq)
 
+	suite.logger.Info(uniq)
+
+	sleep()
+	sleep()
 	sleep()
 
 	{
@@ -268,7 +267,7 @@ func (suite *LoggerTester) xTest05PostHelpers() {
 			PerPage: 100,
 			Page:    0,
 			Order:   piazza.SortOrderDescending,
-			SortBy:  "createdOn",
+			SortBy:  "timeStamp",
 		}
 		ms, _, err := suite.httpWriter.GetMessages(format, nil)
 		assert.NoError(err)
@@ -285,7 +284,7 @@ func (suite *LoggerTester) xTest05PostHelpers() {
 	}
 }
 
-func (suite *LoggerTester) Test06Admin() {
+func (suite *LoggerTester) yTest06Admin() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -298,7 +297,7 @@ func (suite *LoggerTester) Test06Admin() {
 	assert.NotZero(output["numMessages"])
 }
 
-func (suite *LoggerTester) Test07Pagination() {
+func (suite *LoggerTester) yTest07Pagination() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -308,7 +307,7 @@ func (suite *LoggerTester) Test07Pagination() {
 	format := &piazza.JsonPagination{
 		PerPage: 10,
 		Page:    0,
-		SortBy:  "createdOn",
+		SortBy:  "timeStamp",
 		Order:   piazza.SortOrderAscending,
 	}
 	params := &piazza.HttpQueryParams{}
@@ -330,7 +329,7 @@ func (suite *LoggerTester) Test07Pagination() {
 		last := len(ms) - 1
 		assert.True(last <= 9)
 
-		// we can't check "before", because two createdOn's might be the same
+		// we can't check "before", because two timeStamp's might be the same
 		isBefore := ms[0].TimeStamp.Before(ms[last].TimeStamp)
 		isEqual := ms[0].TimeStamp.Equal(ms[last].TimeStamp)
 		assert.True(isBefore || isEqual)
@@ -393,7 +392,7 @@ func (suite *LoggerTester) xTest08Params() {
 		PerPage: 256,
 		Page:    0,
 		Order:   piazza.SortOrderDescending,
-		SortBy:  "createdOn",
+		SortBy:  "timeStamp",
 	}
 
 	// test date range params
