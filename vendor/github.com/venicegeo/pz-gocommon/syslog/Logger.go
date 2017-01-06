@@ -147,12 +147,12 @@ func (logger *Logger) Fatal(text string, v ...interface{}) error {
 }
 
 // Audit sends a log message with the audit SDE.
-func (logger *Logger) Audit(actor string, action string, actee string, text string, v ...interface{}) error {
+func (logger *Logger) Audit(actor interface{}, action interface{}, actee interface{}, text string, v ...interface{}) error {
 	mssg := logger.makeMessage(Notice, text, v...)
 	mssg.AuditData = &AuditElement{
-		Actor:  actor,
-		Action: action,
-		Actee:  actee,
+		Actor:  fmt.Sprint(actor),
+		Action: fmt.Sprint(action),
+		Actee:  fmt.Sprint(actee),
 	}
 	return logger.postMessage(mssg)
 }
