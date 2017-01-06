@@ -97,7 +97,7 @@ func makeSystem() (
 		log.Fatal(err)
 	}
 	//logWriter := &pzsyslog.NilWriter{}
-	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
+	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
 
 	uuidgen, err := pzuuidgen.NewClient(sys)
 	if err != nil {
