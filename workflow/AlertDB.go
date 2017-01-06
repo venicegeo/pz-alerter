@@ -36,19 +36,19 @@ func NewAlertDB(service *Service, esi elasticsearch.IIndex) (*AlertDB, error) {
 	return &ardb, nil
 }
 
-func (db *AlertDB) PostData(obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
-	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
+func (db *AlertDB) PostData(alert *Alert) error {
+	indexResult, err := db.Esi.PostData(db.mapping, alert.AlertID.String(), alert)
 	if err != nil {
-		db.service.syslogger.DebugAudit(actor, "createAlert", string(id), "AlertDB.PostData: failed")
-		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: %s", err)
+		db.service.syslogger.DebugAudit(alert.CreatedBy, "createAlert", alert.AlertID.String(), "AlertDB.PostData: failed")
+		return LoggedError("AlertDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		db.service.syslogger.DebugAudit(actor, "createAlert", string(id), "AlertDB.PostData: failed")
-		return piazza.NoIdent, LoggedError("AlertDB.PostData failed: not created")
+		db.service.syslogger.DebugAudit(alert.CreatedBy, "createAlert", alert.AlertID.String(), "AlertDB.PostData: failed")
+		return LoggedError("AlertDB.PostData failed: not created")
 	}
-	db.service.syslogger.DebugAudit(actor, "createAlert", string(id), "AlertDB.PostData: success")
+	db.service.syslogger.DebugAudit(alert.CreatedBy, "createAlert", alert.AlertID.String(), "AlertDB.PostData: success")
 
-	return id, nil
+	return nil
 }
 
 func (db *AlertDB) GetAll(format *piazza.JsonPagination, actor string) ([]Alert, int64, error) {
@@ -75,8 +75,7 @@ func (db *AlertDB) GetAll(format *piazza.JsonPagination, actor string) ([]Alert,
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
-			err := json.Unmarshal(*hit.Source, &alert)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &alert); err != nil {
 				return nil, 0, err
 			}
 			alerts = append(alerts, alert)
@@ -110,8 +109,7 @@ func (db *AlertDB) GetAlertsByDslQuery(dslString string, actor string) ([]Alert,
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
-			err := json.Unmarshal(*hit.Source, &alert)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &alert); err != nil {
 				return nil, 0, err
 			}
 			alerts = append(alerts, alert)
@@ -154,8 +152,7 @@ func (db *AlertDB) GetAllByTrigger(format *piazza.JsonPagination, triggerID piaz
 		}
 		for _, hit := range *searchResult.GetHits() {
 			var alert Alert
-			err := json.Unmarshal(*hit.Source, &alert)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &alert); err != nil {
 				return nil, 0, err
 			}
 			alerts = append(alerts, alert)
@@ -177,8 +174,7 @@ func (db *AlertDB) GetOne(id piazza.Ident, actor string) (*Alert, bool, error) {
 
 	src := getResult.Source
 	var alert Alert
-	err = json.Unmarshal(*src, &alert)
-	if err != nil {
+	if err = json.Unmarshal(*src, &alert); err != nil {
 		return nil, getResult.Found, err
 	}
 

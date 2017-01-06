@@ -38,16 +38,16 @@ func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 }
 
 // PostData TODO
-func (db *CronDB) PostData(obj interface{}, id piazza.Ident, actor string) error {
-	indexResult, err := db.Esi.PostData(db.mapping, id.String(), obj)
+func (db *CronDB) PostData(event *Event) error {
+	indexResult, err := db.Esi.PostData(db.mapping, event.EventID.String(), event)
 	if err != nil {
-		db.service.syslogger.DebugAudit(actor, "createCron", string(id), "CronDB.PostData: failed")
+		db.service.syslogger.DebugAudit(event.CreatedBy, "createCron", event.EventID.String(), "CronDB.PostData: failed")
 		return LoggedError("CronDB.PostData failed: %s", err)
 	} else if !indexResult.Created {
-		db.service.syslogger.DebugAudit(actor, "createCron", string(id), "CronDB.PostData: failed")
+		db.service.syslogger.DebugAudit(event.CreatedBy, "createCron", event.EventID.String(), "CronDB.PostData: failed")
 		return LoggedError("CronDB.PostData failed: not created")
 	}
-	db.service.syslogger.DebugAudit(actor, "createCron", string(id), "CronDB.PostData: success")
+	db.service.syslogger.DebugAudit(event.CreatedBy, "createCron", event.EventID.String(), "CronDB.PostData: success")
 
 	return nil
 }
@@ -76,8 +76,7 @@ func (db *CronDB) GetAll(actor string) (*[]Event, error) {
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var event Event
-			err := json.Unmarshal(*hit.Source, &event)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &event); err != nil {
 				return nil, LoggedError("CronDB.GetAll failed: %s", err)
 			}
 			events = append(events, event)
@@ -96,8 +95,7 @@ func (db *CronDB) Exists(actor string) (bool, error) {
 	}
 	if exists {
 		db.service.syslogger.DebugAudit(actor, "readType", db.mapping, "CronDB.Exists: check type exists")
-		exists, err = db.Esi.TypeExists(db.mapping)
-		if err != nil {
+		if exists, err = db.Esi.TypeExists(db.mapping); err != nil {
 			return false, err
 		}
 	}

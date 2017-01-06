@@ -450,8 +450,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	service.syslogger.Audit(eventType.CreatedBy, "creatingEventType", eventType.EventTypeID, "Service.PostEventType: User [%s] is creating eventType [%s]", eventType.CreatedBy, eventType.EventTypeID)
 
-	id, err := service.eventTypeDB.PostData(eventType, eventType.EventTypeID, eventType.CreatedBy)
-	if err != nil {
+	if err := service.eventTypeDB.PostData(eventType); err != nil {
 		service.syslogger.Audit(eventType.CreatedBy, "creatingEventTypeFailure", eventType.EventTypeID, "Service.PostEventType: User [%s] failed to create eventType [%s]", eventType.CreatedBy, eventType.EventTypeID)
 		if strings.HasSuffix(err.Error(), "was not recognized as a valid mapping type") {
 			return service.statusBadRequest(err)
@@ -461,7 +460,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	if err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping, eventType.CreatedBy); err != nil {
 		service.syslogger.Audit(eventType.CreatedBy, "creatingEventTypeFailure", eventType.EventTypeID, "Service.PostEventType: User [%s] failed to create eventType [%s]", eventType.CreatedBy, eventType.EventTypeID)
-		_, _ = service.eventTypeDB.DeleteByID(id, eventType.CreatedBy)
+		_, _ = service.eventTypeDB.DeleteByID(eventType.EventTypeID, eventType.CreatedBy)
 		return service.statusInternalError(err)
 	}
 
@@ -649,12 +648,12 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 		return service.statusInternalError(err)
 	}
 
-	if err = service.cronDB.PostData(event, event.EventID, event.CreatedBy); err != nil {
+	if err = service.cronDB.PostData(event); err != nil {
 		service.syslogger.Audit(event.CreatedBy, "creatingCronEventFailure", event.EventID, "Service.PostRepeatingEvent: User [%s] failed to create cron event [%s]", event.CreatedBy, event.EventID)
 		return service.statusInternalError(err)
 	}
 
-	if _, err = service.eventDB.PostData(eventType.Name, event, event.EventID, event.CreatedBy); err != nil {
+	if err = service.eventDB.PostData(event, eventType.Name); err != nil {
 		service.syslogger.Audit(event.CreatedBy, "creatingCronEventFailure", event.EventID, "Service.PostRepeatingEvent: User [%s] failed to create cron event [%s]", event.CreatedBy, event.EventID)
 		// If we fail, need to also remove from cronDB
 		// We don't check for errors here because if we've reached this point,
@@ -687,7 +686,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	service.syslogger.Audit(event.CreatedBy, "creatingEvent", event.EventID, "Service.PostEvent: User [%s] is creating event [%s]", event.CreatedBy, event.EventID)
 
-	if _, err = service.eventDB.PostData(eventType.Name, event, event.EventID, event.CreatedBy); err != nil {
+	if err = service.eventDB.PostData(event, eventType.Name); err != nil {
 		service.syslogger.Audit(event.CreatedBy, "creatingEventFailure", event.EventID, "Service.PostEvent: User [%s] failed to create event [%s]", event.CreatedBy, event.EventID)
 		return service.statusBadRequest(err)
 	}
@@ -1091,7 +1090,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 
 	service.syslogger.Audit(trigger.CreatedBy, "creatingTrigger", trigger.TriggerID, "Service.PostTrigger: User [%s] is creating trigger [%s]", trigger.CreatedBy, trigger.TriggerID)
 
-	if _, err = service.triggerDB.PostTrigger(trigger, trigger.TriggerID, trigger.CreatedBy); err != nil {
+	if err = service.triggerDB.PostData(trigger); err != nil {
 		service.syslogger.Audit(trigger.CreatedBy, "creatingTriggerFailure", trigger.TriggerID, "Service.PostTrigger: User [%s] failed to create trigger [%s]", trigger.CreatedBy, trigger.TriggerID)
 		return service.statusBadRequest(err)
 	}
@@ -1114,7 +1113,7 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 
 	service.syslogger.Audit("pz-workflow", "updatingTrigger", id, "Service.PutTrigger: User is updating trigger [%s]", id)
 
-	if _, err = service.triggerDB.PutTrigger(id, trigger, update, "pz-workflow"); err != nil {
+	if _, err = service.triggerDB.PutTrigger(trigger, update, "pz-workflow"); err != nil {
 		service.syslogger.Audit("pz-workflow", "updatingTriggerFailure", id, "Service.PutTrigger: User failed to update trigger [%s]", id)
 		return service.statusBadRequest(err)
 	}
@@ -1325,7 +1324,7 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 
 	service.syslogger.Audit(alert.CreatedBy, "creatingAlert", alert.AlertID, "Service.PostAlert: User [%s] is creating alert [%s]", alert.CreatedBy, alert.AlertID)
 
-	if _, err := service.alertDB.PostData(&alert, alert.AlertID, alert.CreatedBy); err != nil {
+	if err := service.alertDB.PostData(alert); err != nil {
 		service.syslogger.Audit(alert.CreatedBy, "creatingAlertFailure", alert.AlertID, "Service.PostAlert: User [%s] failed to create alert [%s]", alert.CreatedBy, alert.AlertID)
 		return service.statusInternalError(err)
 	}

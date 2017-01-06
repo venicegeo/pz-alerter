@@ -35,39 +35,27 @@ func NewEventDB(service *Service, esi elasticsearch.IIndex) (*EventDB, error) {
 	return &erdb, nil
 }
 
-func (db *EventDB) PostData(mapping string, obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
-	var event Event
-	ok1 := false
-	event, ok1 = obj.(Event)
-	if !ok1 {
-		temp, ok2 := obj.(*Event)
-		if !ok2 {
-			return piazza.NoIdent, LoggedError("EventDB.PostData failed: was not given an Event")
-		}
-		event = *temp
+func (db *EventDB) PostData(event *Event, typ string) error {
+	if err := db.verifyEventReadyToPost(event); err != nil {
+		return err
 	}
 
-	err := db.verifyEventReadyToPost(&event, actor)
+	indexResult, err := db.Esi.PostData(typ, event.EventID.String(), event)
 	if err != nil {
-		return piazza.NoIdent, err
-	}
-
-	indexResult, err := db.Esi.PostData(mapping, id.String(), obj)
-	if err != nil {
-		db.service.syslogger.DebugAudit(actor, "createEvent", string(id), "EventDB.PostData: failed")
-		return piazza.NoIdent, LoggedError("EventDB.PostData failed: %s", err)
+		db.service.syslogger.DebugAudit(event.CreatedBy, "createEvent", event.EventID.String(), "EventDB.PostData: failed")
+		return LoggedError("EventDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		db.service.syslogger.DebugAudit(actor, "createEvent", string(id), "EventDB.PostData: failed")
-		return piazza.NoIdent, LoggedError("EventDB.PostData failed: not created")
+		db.service.syslogger.DebugAudit(event.CreatedBy, "createEvent", event.EventID.String(), "EventDB.PostData: failed")
+		return LoggedError("EventDB.PostData failed: not created")
 	}
-	db.service.syslogger.DebugAudit(actor, "createEvent", string(id), "EventDB.PostData: success")
+	db.service.syslogger.DebugAudit(event.CreatedBy, "createEvent", event.EventID.String(), "EventDB.PostData: success")
 
-	return id, nil
+	return nil
 }
 
-func (db *EventDB) verifyEventReadyToPost(event *Event, actor string) error {
-	eventTypeJson := db.service.GetEventType(event.EventTypeID, actor)
+func (db *EventDB) verifyEventReadyToPost(event *Event) error {
+	eventTypeJson := db.service.GetEventType(event.EventTypeID, event.CreatedBy)
 	eventTypeObj := eventTypeJson.Data
 	eventType, ok := eventTypeObj.(*EventType)
 	if !ok {
@@ -116,8 +104,7 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination, actor s
 	exists := true
 	if mapping != "" {
 		db.service.syslogger.DebugAudit(actor, "readType", mapping, "EventDB.GetAll: check type exists")
-		exists, err = db.Esi.TypeExists(mapping)
-		if err != nil {
+		if exists, err = db.Esi.TypeExists(mapping); err != nil {
 			return events, 0, err
 		}
 	}
@@ -155,8 +142,7 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, actor s
 	exists := true
 	if mapping != "" {
 		db.service.syslogger.DebugAudit(actor, "readType", mapping, "EventDB.GetEventsByDslQuery: check type exists")
-		exists, err = db.Esi.TypeExists(mapping)
-		if err != nil {
+		if exists, err = db.Esi.TypeExists(mapping); err != nil {
 			return events, 0, err
 		}
 	}
@@ -176,8 +162,7 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, actor s
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var event Event
-			err := json.Unmarshal(*hit.Source, &event)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &event); err != nil {
 				return nil, 0, err
 			}
 			events = append(events, event)
@@ -194,8 +179,7 @@ func (db *EventDB) GetEventsByEventTypeID(format *piazza.JsonPagination, mapping
 	exists := true
 	if mapping != "" {
 		db.service.syslogger.DebugAudit(actor, "readType", mapping, "EventDB.GetEventsByEventTypeID: check type exists")
-		exists, err = db.Esi.TypeExists(mapping)
-		if err != nil {
+		if exists, err = db.Esi.TypeExists(mapping); err != nil {
 			return events, 0, err
 		}
 	}
@@ -215,8 +199,7 @@ func (db *EventDB) GetEventsByEventTypeID(format *piazza.JsonPagination, mapping
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var event Event
-			err := json.Unmarshal(*hit.Source, &event)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &event); err != nil {
 				return nil, 0, err
 			}
 			events = append(events, event)
@@ -271,8 +254,7 @@ func (db *EventDB) GetOne(mapping string, id piazza.Ident, actor string) (*Event
 
 	src := getResult.Source
 	var event Event
-	err = json.Unmarshal(*src, &event)
-	if err != nil {
+	if err = json.Unmarshal(*src, &event); err != nil {
 		return nil, getResult.Found, err
 	}
 
@@ -299,8 +281,7 @@ func (db *EventDB) AddMapping(name string, mapping map[string]interface{}, actor
 	if err != nil {
 		return LoggedError("EventDB.AddMapping failed: %s", err)
 	}
-	err = db.Esi.SetMapping(name, jsn)
-	if err != nil {
+	if err = db.Esi.SetMapping(name, jsn); err != nil {
 		db.service.syslogger.DebugAudit(actor, "createType", name, "EventDB.AddMapping: failed")
 		return LoggedError("EventDB.AddMapping SetMapping failed: %s", err)
 	}
