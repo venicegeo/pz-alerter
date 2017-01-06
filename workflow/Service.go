@@ -673,7 +673,7 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	}
 	eventTypeName := eventType.Name
 
-	log.Println("Posted Repeating Event")
+	//log.Println("Posted Repeating Event")
 	_, err = cron.Parse(event.CronSchedule)
 	if err != nil {
 		return service.statusBadRequest(err)
