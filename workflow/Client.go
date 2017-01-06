@@ -58,7 +58,7 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 
 	loggerURL := strings.Replace(url, "workflow", "logger", 1)
 
-	logWriter, err := pzsyslog.NewHttpWriter(loggerURL)
+	logWriter, err := pzsyslog.NewHttpWriter(loggerURL, "")
 	if err != nil {
 		log.Fatal(err)
 	}
