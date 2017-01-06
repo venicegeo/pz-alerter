@@ -143,13 +143,10 @@ func (server *Server) handleEventTypeQuery(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
-
 	jsonString := buf.String()
 	params := piazza.NewQueryParams(c.Request)
 
-	var resp *piazza.JsonResponse
-
-	resp = server.service.QueryEventTypes(jsonString, params)
+	resp := server.service.QueryEventTypes(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
@@ -187,7 +184,6 @@ func (server *Server) handlePostEvent(c *gin.Context) {
 	}
 
 	var resp *piazza.JsonResponse
-
 	if event.CronSchedule != "" {
 		resp = server.service.PostRepeatingEvent(event)
 	} else {
@@ -208,13 +204,10 @@ func (server *Server) handleEventQuery(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
-
 	jsonString := buf.String()
 	params := piazza.NewQueryParams(c.Request)
 
-	var resp *piazza.JsonResponse
-
-	resp = server.service.QueryEvents(jsonString, params)
+	resp := server.service.QueryEvents(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
@@ -266,13 +259,10 @@ func (server *Server) handleTriggerQuery(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
-
 	jsonString := buf.String()
 	params := piazza.NewQueryParams(c.Request)
 
-	var resp *piazza.JsonResponse
-
-	resp = server.service.QueryTriggers(jsonString, params)
+	resp := server.service.QueryTriggers(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
@@ -325,13 +315,10 @@ func (server *Server) handleAlertQuery(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
-
 	jsonString := buf.String()
 	params := piazza.NewQueryParams(c.Request)
 
-	var resp *piazza.JsonResponse
-
-	resp = server.service.QueryAlerts(jsonString, params)
+	resp := server.service.QueryAlerts(jsonString, params)
 	piazza.GinReturnJson(c, resp)
 }
 
@@ -382,8 +369,6 @@ func (server *Server) handleTestElasticsearchPost(c *gin.Context) {
 		piazza.GinReturnJson(c, resp)
 		return
 	}
-
 	resp := server.service.TestElasticsearchPost(body)
-
 	piazza.GinReturnJson(c, resp)
 }

@@ -92,12 +92,13 @@ func makeSystem() (
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	logWriter, err := pzsyslog.NewHttpWriter(logUrl)
 	if err != nil {
 		log.Fatal(err)
 	}
 	//logWriter := &pzsyslog.NilWriter{}
-	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
+	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
 
 	uuidgen, err := pzuuidgen.NewClient(sys)
 	if err != nil {
@@ -111,45 +112,42 @@ func serverLoop(sys *piazza.SystemConfig,
 	workflowServer *pzworkflow.Server) {
 	genericServer := piazza.GenericServer{Sys: sys}
 
-	err := genericServer.Configure(workflowServer.Routes)
-	if err != nil {
+	var err error
+	var done chan error
+
+	if err := genericServer.Configure(workflowServer.Routes); err != nil {
 		log.Fatal(err)
 	}
 
-	done, err := genericServer.Start()
-	if err != nil {
+	if done, err = genericServer.Start(); err != nil {
 		log.Fatal(err)
 	}
 
-	err = <-done
-	if err != nil {
+	if err = <-done; err != nil {
 		log.Fatal(err)
 	}
 }
 
 func makeIndexes(sys *piazza.SystemConfig) []*elasticsearch.Index {
-	eventtypesIndex, err := elasticsearch.NewIndex(sys, "eventtypes003", pzworkflow.EventTypeIndexSettings)
-	if err != nil {
+	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex *elasticsearch.Index
+	var err error
+
+	if eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes003", pzworkflow.EventTypeIndexSettings); err != nil {
 		log.Fatal(err)
 	}
-	eventsIndex, err := elasticsearch.NewIndex(sys, "events004", pzworkflow.EventIndexSettings)
-	if err != nil {
+	if eventsIndex, err = elasticsearch.NewIndex(sys, "events004", pzworkflow.EventIndexSettings); err != nil {
 		log.Fatal(err)
 	}
-	triggersIndex, err := elasticsearch.NewIndex(sys, "triggers003", pzworkflow.TriggerIndexSettings)
-	if err != nil {
+	if triggersIndex, err = elasticsearch.NewIndex(sys, "triggers003", pzworkflow.TriggerIndexSettings); err != nil {
 		log.Fatal(err)
 	}
-	alertsIndex, err := elasticsearch.NewIndex(sys, "alerts003", pzworkflow.AlertIndexSettings)
-	if err != nil {
+	if alertsIndex, err = elasticsearch.NewIndex(sys, "alerts003", pzworkflow.AlertIndexSettings); err != nil {
 		log.Fatal(err)
 	}
-	cronIndex, err := elasticsearch.NewIndex(sys, "crons003", pzworkflow.CronIndexSettings)
-	if err != nil {
+	if cronIndex, err = elasticsearch.NewIndex(sys, "crons003", pzworkflow.CronIndexSettings); err != nil {
 		log.Fatal(err)
 	}
-	testElasticsearchIndex, err := elasticsearch.NewIndex(sys, "testelasticsearch003", pzworkflow.TestElasticsearchSettings)
-	if err != nil {
+	if testElasticsearchIndex, err = elasticsearch.NewIndex(sys, "testelasticsearch003", pzworkflow.TestElasticsearchSettings); err != nil {
 		log.Fatal(err)
 	}
 

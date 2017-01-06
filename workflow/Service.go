@@ -76,43 +76,36 @@ func (service *Service) Init(
 
 	var err error
 
-	service.sys = sys
-	service.syslogger = logger
-	service.uuidgen = uuidgen
+	service.sys, service.syslogger, service.uuidgen = sys, logger, uuidgen
 
 	service.stats.CreatedOn = time.Now()
 
-	service.eventTypeDB, err = NewEventTypeDB(service, eventtypesIndex)
-	if err != nil {
+	if service.eventTypeDB, err = NewEventTypeDB(service, eventtypesIndex); err != nil {
 		return err
 	}
 
-	service.eventDB, err = NewEventDB(service, eventsIndex)
-	if err != nil {
+	if service.eventDB, err = NewEventDB(service, eventsIndex); err != nil {
 		return err
 	}
 
-	service.triggerDB, err = NewTriggerDB(service, triggersIndex)
-	if err != nil {
+	if service.triggerDB, err = NewTriggerDB(service, triggersIndex); err != nil {
 		return err
 	}
 
-	service.alertDB, err = NewAlertDB(service, alertsIndex)
-	if err != nil {
+	if service.alertDB, err = NewAlertDB(service, alertsIndex); err != nil {
 		return err
 	}
 
-	service.cronDB, err = NewCronDB(service, cronIndex)
-	if err != nil {
+	if service.cronDB, err = NewCronDB(service, cronIndex); err != nil {
 		return err
 	}
 
-	service.testElasticsearchDB, err = NewTestElasticsearchDB(service, testElasticsearchIndex)
-	if err != nil {
+	if service.testElasticsearchDB, err = NewTestElasticsearchDB(service, testElasticsearchIndex); err != nil {
 		return err
 	}
 
 	service.cron = cron.New()
+	service.origin = string(sys.Name)
 
 	// allow the database time to settle
 	//time.Sleep(time.Second * 5)
@@ -140,16 +133,14 @@ func (service *Service) Init(
 		return exists, nil
 	})
 
-	_, err = elasticsearch.PollFunction(pollingFn)
-	if err != nil {
+	if _, err = elasticsearch.PollFunction(pollingFn); err != nil {
 		//log.Printf("ERROR: %#v", err)
 		return err
 	}
 	//log.Printf("SETUP INDEX: %t", ok)
 
 	// Ingest event type
-	ingestEventType := &EventType{}
-	ingestEventType.Name = ingestTypeName
+	ingestEventType := &EventType{Name: ingestTypeName}
 	ingestEventTypeMapping := map[string]interface{}{
 		"dataId":   "string",
 		"dataType": "string",
@@ -164,17 +155,14 @@ func (service *Service) Init(
 	//log.Println("  Creating piazza:ingest eventtype")
 	postedIngestEventType := service.PostEventType(ingestEventType)
 	//log.Printf("  Created piazza:ingest eventtype: %d", postedIngestEventType.StatusCode)
-	if postedIngestEventType.StatusCode == 201 {
-		// everything is ok
+	if postedIngestEventType.StatusCode == 201 { // everything is ok
 		service.syslogger.Info("  SUCCESS Created piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
-	} else {
-		// something is wrong
+	} else { // something is wrong
 		service.syslogger.Info("  ERROR creating piazza:ingest eventtype: %s", postedIngestEventType.StatusCode)
 	}
 
 	// Execution Completed event type
-	executionCompletedType := &EventType{}
-	executionCompletedType.Name = executeTypeName
+	executionCompletedType := &EventType{Name: executeTypeName}
 	executionCompletedTypeMapping := map[string]interface{}{
 		"jobId":  "string",
 		"status": "string",
@@ -182,50 +170,39 @@ func (service *Service) Init(
 	}
 	executionCompletedType.Mapping = executionCompletedTypeMapping
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
-	if postedExecutionCompletedType.StatusCode == 201 {
-		// everything is ok
+	if postedExecutionCompletedType.StatusCode == 201 { // everything is ok
 		service.syslogger.Info("  SUCCESS Created piazza:executionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
-	} else {
-		// something is wrong or it was already there
+	} else { // something is wrong or it was already there
 		service.syslogger.Info("  ERROR creating piazza:excutionComplete eventtype: %s", postedExecutionCompletedType.StatusCode)
 	}
-
-	service.origin = string(sys.Name)
 
 	return nil
 }
 
-func (service *Service) newIdent() (piazza.Ident, error) {
-	uuid, err := service.uuidgen.GetUUID()
-	if err != nil {
-		return piazza.NoIdent, err
-	}
-
-	return piazza.Ident(uuid), nil
+func (service *Service) newIdent() piazza.Ident {
+	return piazza.Ident(piazza.NewUuid().String())
 }
 
 func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, actor string) error {
 	service.syslogger.Audit(actor, "creatingJob", "kafka", "User [%s] is sending job [%s] to kafka", actor, jobID.String())
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
 	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed", actor, jobID.String())
+		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (1)", actor, jobID.String())
 		return LoggedError("Kafka-related failure (1): %s", err.Error())
 	}
 
-	space := service.sys.Space
-
-	topic := fmt.Sprintf("Request-Job-%s", space)
+	topic := fmt.Sprintf("Request-Job-%s", service.sys.Space)
 	message := jobInstance
 
 	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
 	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed", actor, jobID.String())
+		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (2)", actor, jobID.String())
 		return LoggedError("Kafka-related failure (2): %s", err.Error())
 	}
 	defer func() {
-		if err2 := producer.Close(); err2 != nil {
-			service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed", actor, jobID.String())
-			log.Fatalf("Kafka-related failure (3): " + err2.Error())
+		if errC := producer.Close(); errC != nil {
+			service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (3)", actor, jobID.String())
+			log.Fatalf("Kafka-related failure (3): " + errC.Error())
 		}
 	}()
 
@@ -233,9 +210,8 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 		Topic: topic,
 		Value: sarama.StringEncoder(message),
 		Key:   sarama.StringEncoder(jobID)}
-	_, _, err = producer.SendMessage(msg)
-	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka", actor, jobID.String())
+	if _, _, err = producer.SendMessage(msg); err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka (4)", actor, jobID.String())
 		return LoggedError("Kafka-related failure (4): %s", err.Error())
 	}
 	service.syslogger.Audit(actor, "createdJob", "kafka", "User [%s] sent job [%s] to kafka", actor, jobID.String())
@@ -247,8 +223,7 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 
 func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
 	resp := &piazza.JsonResponse{StatusCode: http.StatusOK, Data: obj}
-	err := resp.SetType()
-	if err != nil {
+	if err := resp.SetType(); err != nil {
 		return service.statusInternalError(err)
 	}
 	return resp
@@ -266,8 +241,7 @@ func (service *Service) statusPutOK(message string) *piazza.JsonResponse {
 
 func (service *Service) statusCreated(obj interface{}) *piazza.JsonResponse {
 	resp := &piazza.JsonResponse{StatusCode: http.StatusCreated, Data: obj}
-	err := resp.SetType()
-	if err != nil {
+	if err := resp.SetType(); err != nil {
 		return service.statusInternalError(err)
 	}
 	return resp
@@ -322,14 +296,14 @@ func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.Json
 	service.syslogger.Audit(actor, "gettingEventType", id.String(), "Service.GetEventType: User is getting eventType")
 	eventType, found, err := service.eventTypeDB.GetOne(id, actor)
 	if !found {
-		service.syslogger.Audit(actor, "gettingEventTypeFailure", id.String(), "Service.GetEventType: User failed to get eventType")
+		service.syslogger.Audit(actor, "gettingEventTypeFailure", id.String(), "Service.GetEventType: User [%s] failed to get eventType [%s]", actor, id)
 		return service.statusNotFound(err)
 	}
 	if err != nil {
-		service.syslogger.Audit(actor, "gettingEventTypeFailure", id.String(), "Service.GetEventType: User failed to get eventType")
+		service.syslogger.Audit(actor, "gettingEventTypeFailure", id.String(), "Service.GetEventType: User [%s] failed to get eventType [%s]", actor, id)
 		return service.statusBadRequest(err)
 	}
-	service.syslogger.Audit(actor, "gotEventType", id.String(), "Service.GetEventType: User successfully got eventType")
+	service.syslogger.Audit(actor, "gotEventType", id.String(), "Service.GetEventType: User successfully got eventType", actor, id)
 
 	eventType.Mapping = service.removeUniqueParams(eventType.Name, eventType.Mapping)
 	return service.statusOK(eventType)
@@ -408,8 +382,7 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 
 	var totalHits int64
 	var eventtypes []EventType
-	dslString, err = syncPagination(dslString, *format)
-	if err != nil {
+	if dslString, err = syncPagination(dslString, *format); err != nil {
 		return service.statusBadRequest(err)
 	}
 
@@ -442,15 +415,14 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 // PostEventType TODO
 func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse {
 	// Check if our EventType.Name already exists
-	name := eventType.Name
-	found, err := service.eventDB.NameExists(name, eventType.CreatedBy)
+	found, err := service.eventDB.NameExists(eventType.Name, eventType.CreatedBy)
 	if err != nil {
 		return service.statusInternalError(err)
 	}
 	if found {
 		return service.statusBadRequest(LoggedError("EventType Name already exists"))
 	}
-	id1, found, err := service.eventTypeDB.GetIDByName(nil, name, eventType.CreatedBy)
+	id1, found, err := service.eventTypeDB.GetIDByName(nil, eventType.Name, eventType.CreatedBy)
 	if err != nil {
 		return service.statusInternalError(err)
 	}
@@ -459,12 +431,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 			LoggedError("EventType Name already exists under EventTypeId %s", id1))
 	}
 
-	eventTypeID, err := service.newIdent()
-	if err != nil {
-		return service.statusInternalError(err)
-	}
-	eventType.EventTypeID = eventTypeID
-
+	eventType.EventTypeID = service.newIdent()
 	eventType.CreatedOn = time.Now()
 
 	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
@@ -492,7 +459,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 		return service.statusInternalError(err)
 	}
 
-	err = service.eventDB.AddMapping(name, eventType.Mapping, eventType.CreatedBy)
+	err = service.eventDB.AddMapping(eventType.Name, eventType.Mapping, eventType.CreatedBy)
 	if err != nil {
 		service.syslogger.Audit(eventType.CreatedBy, "creatingEventTypeFailure", eventTypeID.String(), "Service.PostEventType: User failed to create eventType")
 		_, _ = service.eventTypeDB.DeleteByID(id, eventType.CreatedBy)
