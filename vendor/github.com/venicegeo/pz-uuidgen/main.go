@@ -38,7 +38,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	logWriter, err := pzsyslog.NewHttpWriter(logUrl)
+	logWriter, err := pzsyslog.NewHttpWriter(logUrl, "")
 	if err != nil {
 		log.Fatal(err)
 	}

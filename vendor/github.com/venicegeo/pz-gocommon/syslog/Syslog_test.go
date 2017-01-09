@@ -73,11 +73,13 @@ func makeMessage(sde bool) (*Message, string) {
 	m.MessageID = "msg1of2"
 	m.AuditData = nil
 	m.MetricData = nil
-	m.Message = "Yow"
+	m.Message = "AlphaYow"
 
-	expected := "<10>1 " + m.TimeStamp.Format(time.RFC3339) + " HOST APPLICATION 1234 msg1of2 - Yow"
+	expected := "<10>1 " + m.TimeStamp.Format(time.RFC3339) + " HOST APPLICATION 1234 msg1of2 - AlphaYow"
 
 	if sde {
+		m.Message = "BetaYow"
+
 		m.AuditData = &AuditElement{
 			Actor:  "=actor=",
 			Action: "-action-",
@@ -92,7 +94,7 @@ func makeMessage(sde bool) (*Message, string) {
 		expected = "<10>1 " + m.TimeStamp.Format(time.RFC3339) + " HOST APPLICATION 1234 msg1of2 " +
 			"[pzaudit@48851 actor=\"=actor=\" action=\"-action-\" actee=\"_actee_\"] " +
 			"[pzmetric@48851 name=\"=name=\" value=\"-3.140000\" object=\"_object_\"] " +
-			"Yow"
+			"BetaYow"
 	}
 
 	return m, expected
@@ -177,12 +179,12 @@ func Test03LocalWriter(t *testing.T) {
 	actual, err = w.Read(1)
 	assert.NoError(err)
 	assert.Len(actual, 1)
-	assert.EqualValues(mssg1, actual[0])
+	assert.EqualValues(*mssg1, actual[0])
 
 	actual, err = w.Read(2)
 	assert.NoError(err)
 	assert.Len(actual, 1)
-	assert.EqualValues(mssg1, actual[0])
+	assert.EqualValues(*mssg1, actual[0])
 
 	err = w.Write(mssg2)
 	assert.NoError(err)
@@ -190,8 +192,8 @@ func Test03LocalWriter(t *testing.T) {
 	actual, err = w.Read(2)
 	assert.NoError(err)
 	assert.Len(actual, 2)
-	assert.EqualValues(mssg1, actual[0])
-	assert.EqualValues(mssg2, actual[1])
+	assert.EqualValues(*mssg1, actual[0])
+	assert.EqualValues(*mssg2, actual[1])
 
 	_, err = w.Read(-9)
 	assert.Error(err)
@@ -274,23 +276,23 @@ func Test05Logger(t *testing.T) {
 	assert.NoError(err)
 	assert.Len(mssgs, 10)
 
-	simpleChecker(t, mssgs[0], Debug, "debug 999")
-	simpleChecker(t, mssgs[1], Informational, "info 123")
-	simpleChecker(t, mssgs[2], Notice, "notice 321")
-	simpleChecker(t, mssgs[3], Warning, "bonk 3")
-	simpleChecker(t, mssgs[4], Error, "Bonk .1")
-	simpleChecker(t, mssgs[5], Fatal, "BONK 4.000000")
-	simpleChecker(t, mssgs[6], Notice, "brownfox")
+	simpleChecker(t, &mssgs[0], Debug, "debug 999")
+	simpleChecker(t, &mssgs[1], Informational, "info 123")
+	simpleChecker(t, &mssgs[2], Notice, "notice 321")
+	simpleChecker(t, &mssgs[3], Warning, "bonk 3")
+	simpleChecker(t, &mssgs[4], Error, "Bonk .1")
+	simpleChecker(t, &mssgs[5], Fatal, "BONK 4.000000")
+	simpleChecker(t, &mssgs[6], Notice, "brownfox")
 	assert.EqualValues("1", mssgs[6].AuditData.Actor)
 	assert.EqualValues("2", mssgs[6].AuditData.Action)
 	assert.EqualValues("3", mssgs[6].AuditData.Actee)
-	simpleChecker(t, mssgs[7], Notice, "lazydog")
+	simpleChecker(t, &mssgs[7], Notice, "lazydog")
 	assert.EqualValues("i", mssgs[7].MetricData.Name)
 	assert.EqualValues(5952567, mssgs[7].MetricData.Value)
 	assert.EqualValues("k", mssgs[7].MetricData.Object)
 
-	simpleChecker(t, mssgs[8], Informational, "Info/Information")
-	simpleChecker(t, mssgs[9], Warning, "Warn/Warning")
+	simpleChecker(t, &mssgs[8], Informational, "Info/Information")
+	simpleChecker(t, &mssgs[9], Warning, "Warn/Warning")
 }
 
 func Test06LogLevel(t *testing.T) {
@@ -315,8 +317,8 @@ func Test06LogLevel(t *testing.T) {
 	assert.NoError(err)
 	assert.Len(mssgs, 2)
 
-	simpleChecker(t, mssgs[0], Error, "Bonk")
-	simpleChecker(t, mssgs[1], Fatal, "BONK")
+	simpleChecker(t, &mssgs[0], Error, "Bonk")
+	simpleChecker(t, &mssgs[1], Fatal, "BONK")
 }
 
 func Test07StackFrame(t *testing.T) {
@@ -495,6 +497,8 @@ func Test11HttpWriter(t *testing.T) {
 	var gs *piazza.GenericServer
 	var w Writer
 
+	//w.h.FlightCheck = &piazza.SimpleFlightCheck{}
+
 	{
 		required := []piazza.ServiceName{}
 		sys, err := piazza.NewSystemConfig(piazza.PzGoCommon, required)
@@ -510,7 +514,12 @@ func Test11HttpWriter(t *testing.T) {
 		_, err = gs.Start()
 		assert.NoError(err)
 
-		w, err = NewHttpWriter("http://" + sys.BindTo)
+		//apiServer, err := piazza.GetApiServer()
+		//assert.NoError(err)
+		//apiKey, err := piazza.GetApiKey(apiServer)
+		//assert.NoError(err)
+
+		w, err = NewHttpWriter("http://"+sys.BindTo, "")
 		assert.NoError(err)
 	}
 
@@ -523,7 +532,7 @@ func Test11HttpWriter(t *testing.T) {
 		assert.NoError(err)
 		assert.EqualValues("/syslog", ts.lastUrl)
 		p1a := ts.lastPost.(map[string]interface{})
-		assert.EqualValues("Yow", p1a["message"])
+		assert.EqualValues("AlphaYow", p1a["message"])
 		p1b := ts.lastPost.(map[string]interface{})
 		assert.Nil(p1b["auditData"])
 
@@ -531,7 +540,7 @@ func Test11HttpWriter(t *testing.T) {
 		assert.NoError(err)
 		assert.EqualValues("/syslog", ts.lastUrl)
 		p2a := ts.lastPost.(map[string]interface{})
-		assert.EqualValues("Yow", p2a["message"])
+		assert.EqualValues("BetaYow", p2a["message"])
 		p2b := ts.lastPost.(map[string]interface{})
 		assert.NotNil(p2b["auditData"])
 	}
@@ -549,16 +558,23 @@ func Test11HttpWriter(t *testing.T) {
 		ww := w.(*HttpWriter)
 		assert.NotNil(ww)
 
-		mssgs, count, err := ww.GetMessages(jpage, params)
-		assert.NoError(err)
+		{
+			mssgs, count, err := ww.GetMessages(jpage, params)
+			assert.NoError(err)
+			assert.EqualValues("AlphaYow", mssgs[0].Message)
+			assert.EqualValues("BetaYow", mssgs[1].Message)
 
-		assert.EqualValues("/syslog?perPage=4&page=2&sortBy=frozz&order=desc", ts.lastUrl)
-		assert.NotNil(mssgs)
-		assert.Len(mssgs, 2)
-		assert.Equal(17, count)
-
-		_, err = ww.Read(1)
-		assert.Error(err)
+			assert.EqualValues("/syslog?perPage=4&page=2&sortBy=frozz&order=desc", ts.lastUrl)
+			assert.NotNil(mssgs)
+			assert.Len(mssgs, 2)
+			assert.Equal(17, count)
+		}
+		{
+			ms, err := ww.Read(2)
+			assert.NoError(err)
+			assert.EqualValues("AlphaYow", ms[0].Message)
+			assert.EqualValues("BetaYow", ms[1].Message)
+		}
 	}
 
 	{

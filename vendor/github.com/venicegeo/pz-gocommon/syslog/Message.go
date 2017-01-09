@@ -60,7 +60,9 @@ type Message struct {
 	Message     string         `json:"message"`
 }
 
-// NewMessage returns a Message with the defaults filled in for you.
+// NewMessage returns a Message with some of the defaults filled in for you.
+// The returned Message is not valid. To make it pass Message.Validate, you must
+// set Severity, HostName, Application, and Process.
 func NewMessage() *Message {
 	m := &Message{
 		Facility:    DefaultFacility,
@@ -178,7 +180,7 @@ func (m *Message) validate() error {
 	}
 	// nothing to check for m.TimeStamp
 	if m.HostName == "" {
-		return fmt.Errorf("Message.HostnName not set")
+		return fmt.Errorf("Message.HostName not set")
 	}
 
 	if m.Application == "" {

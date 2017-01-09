@@ -90,7 +90,7 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 	mock.url = "http://" + mock.sys.BindTo
 
 	// make the client's writer
-	mock.httpWriter, err = syslog.NewHttpWriter(mock.url)
+	mock.httpWriter, err = syslog.NewHttpWriter(mock.url, "")
 	if err != nil {
 		return nil, err
 	}
