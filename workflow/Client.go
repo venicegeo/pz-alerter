@@ -90,9 +90,12 @@ func (c *Client) getObjectCount(endpoint string) (int, error) {
 	if resp.IsError() {
 		return 0, resp.ToError()
 	}
-
 	if resp.StatusCode != http.StatusOK {
 		return 0, resp.ToError()
+	}
+
+	if resp.Pagination == nil {
+		return 0, nil
 	}
 
 	raw, err := json.Marshal(resp.Pagination.Count)
