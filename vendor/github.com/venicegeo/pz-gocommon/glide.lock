@@ -1,5 +1,5 @@
 hash: a3ef1ed44c69b1f82632020fc6a02fb2bbc8b94d4ca1af324bbacb6ff5f5a5da
-updated: 2017-01-09T19:11:40.80344381-05:00
+updated: 2017-01-10T12:02:05.376805588-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -54,7 +54,7 @@ imports:
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: de85d1686ca8e5fc9b12afca12f022804513b933
+  version: 96b262cf1d25006d71bd495fd99b590493cff29e
   subpackages:
   - backoff
   - uritemplates
