@@ -12,6 +12,7 @@ import (
 var client *workflow.Client
 
 const pageSize = 1000
+const maxThreads = 10
 
 type GetNumObjectsF func() (int, error)
 type DeletePageOfObjectsF func(int, int) error
@@ -37,44 +38,46 @@ func main() {
 	}
 
 	log.Printf("*** EVENTS ***")
-	err = deleteAllEvents(client.GetNumEvents, deletePageOfEvents)
+	err = deleteAllObjects(client.GetNumEvents, deletePageOfEvents)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	log.Printf("*** EVENT TYPES ***")
-	err = deleteAllEventTypes(client.GetNumEventTypes, deletePageOfEventTypes)
+	err = deleteAllObjects(client.GetNumEventTypes, deletePageOfEventTypes)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func deleteAllObjects(getNumObjectsF GetNumObjectsF, deletePageOfObjectsF DeletePageOfObjectsF) error {
-	for {
-		count, err := getNumObjectsF()
-		if err != nil {
-			return err
-		}
-		log.Printf("Num objects: %d", count)
-		if count < pageSize {
-			break
-		}
+	count, err := getNumObjectsF()
+	if err != nil {
+		return err
+	}
+	log.Printf("Num objects: %d", count)
 
-		// let's keep a few around, just for kicks
-		count -= pageSize
+	if count == 0 {
+		return nil
+	}
 
-		numThreads := int(math.Ceil(float64(count / pageSize)))
+	numPages := int(math.Ceil(float64(count) / float64(pageSize)))
+	log.Printf("Num pages: %d", numPages)
 
+	delPage := func(wg *sync.WaitGroup, id int) {
+		defer wg.Done()
+		log.Printf("[%d] started", id)
+		err = deletePageOfObjectsF(pageSize, id)
+		log.Printf("[%d] ended: %#v", id, err)
+	}
+
+	for i := 0; i < numPages; i += maxThreads {
 		var wg sync.WaitGroup
-		wg.Add(numThreads)
-
-		for id := 0; id < numThreads; id++ {
-			go func(id int) {
-				defer wg.Done()
-				_ = deletePageOfObjectsF(pageSize, id)
-			}(id)
+		wg.Add(maxThreads)
+		for j := 0; j < maxThreads; j++ {
+			id := i + j
+			go delPage(&wg, id)
 		}
-
 		wg.Wait()
 	}
 
@@ -115,23 +118,20 @@ func deletePageOfAlerts(perPage int, page int) error {
 	}
 
 	tot := len(*alerts)
-	//log.Printf("Got %d alerts", tot)
-	if tot != perPage {
-		return nil
-	}
+	log.Printf("[%d] got %d alerts", id, tot)
 
 	for i, alert := range *alerts {
 		if i > 0 && i%100 == 0 {
-			log.Printf("[%d] Deleted %d alerts", id, i)
+			log.Printf("[%d] deleted %d alerts", id, i)
 		}
 
 		err = client.DeleteAlert(alert.AlertID)
 		if err != nil {
-			// ignore err cases for now
-			//log.Printf("error %#v", err)
+			log.Printf("[%d] error %#v", id, err)
+			return err
 		}
 	}
-	log.Printf("[%d] Deleted all %d alerts", id, tot)
+	log.Printf("[%d] deleted all %d alerts", id, tot)
 
 	return nil
 }
@@ -145,10 +145,7 @@ func deletePageOfEvents(perPage int, page int) error {
 	}
 
 	tot := len(*events)
-	//log.Printf("Got %d events", tot)
-	if tot != perPage {
-		return nil
-	}
+	log.Printf("Got %d events", tot)
 
 	for i, event := range *events {
 		if i > 0 && i%100 == 0 {
@@ -175,10 +172,7 @@ func deletePageOfEventTypes(perPage int, page int) error {
 	}
 
 	tot := len(*eventtypes)
-	//log.Printf("Got %d eventtypes", tot)
-	if tot != perPage {
-		return nil
-	}
+	log.Printf("Got %d eventtypes", tot)
 
 	for i, eventtype := range *eventtypes {
 		if i > 0 && i%100 == 0 {
@@ -188,7 +182,7 @@ func deletePageOfEventTypes(perPage int, page int) error {
 		err = client.DeleteEventType(eventtype.EventTypeID)
 		if err != nil {
 			// ignore err cases for now
-			//log.Printf("error %#v", err)
+			log.Printf("error %#v", err)
 		}
 	}
 	log.Printf("[%d] Deleted all %d eventtypes", id, tot)
@@ -205,10 +199,7 @@ func deletePageOfTriggers(perPage int, page int) error {
 	}
 
 	tot := len(*triggers)
-	//log.Printf("Got %d triggers", tot)
-	if tot != perPage {
-		return nil
-	}
+	log.Printf("[%d] got %d of %d triggers", id, tot, perPage)
 
 	for i, trigger := range *triggers {
 		if i > 0 && i%100 == 0 {
@@ -218,7 +209,9 @@ func deletePageOfTriggers(perPage int, page int) error {
 		err = client.DeleteTrigger(trigger.TriggerID)
 		if err != nil {
 			// ignore err cases for now
-			//log.Printf("error %#v", err)
+			log.Printf("[%d] error %#v", id, err)
+		} else {
+			log.Printf("[%d] deleted trigger %d", id, i)
 		}
 	}
 	log.Printf("[%d] Deleted all %d triggers", id, tot)
