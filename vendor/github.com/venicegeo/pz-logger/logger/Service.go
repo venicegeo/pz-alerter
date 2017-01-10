@@ -248,10 +248,7 @@ func (service *Service) postSyslog(mssg *syslogger.Message) error {
 	for _, writer := range service.logWriters {
 		err = writer.Write(mssg)
 		if err != nil {
-			log.Printf("message post: %s", err.Error())
-			if !isAudit {
-				return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
-			}
+			return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
 		}
 	}
 
@@ -259,15 +256,13 @@ func (service *Service) postSyslog(mssg *syslogger.Message) error {
 		for _, writer := range service.auditWriters {
 			err = writer.Write(mssg)
 			if err != nil {
-				log.Printf("message audit post: %s", err.Error())
-				return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
+				return fmt.Errorf("syslog.Service.postSyslog (audit): %s", err.Error())
 			}
 		}
 	}
 
 	service.Lock()
 	service.stats.NumMessages++
-
 	service.Unlock()
 
 	return nil

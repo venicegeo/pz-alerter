@@ -15,9 +15,12 @@
 package workflow
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
 	"strings"
+
+	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -26,6 +29,7 @@ import (
 type Client struct {
 	url    string
 	logger *pzsyslog.Logger
+	h      piazza.Http
 }
 
 func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, error) {
@@ -42,9 +46,12 @@ func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, erro
 		return nil, err
 	}
 
+	h := piazza.Http{BaseUrl: url, ApiKey: ""}
+
 	service := &Client{
 		url:    url,
 		logger: logger,
+		h:      h,
 	}
 
 	service.logger.Info("Client started")
@@ -56,9 +63,11 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 
 	var err error
 
-	loggerURL := strings.Replace(url, "workflow", "logger", 1)
+	h := piazza.Http{BaseUrl: url, ApiKey: apiKey}
 
-	logWriter, err := pzsyslog.NewHttpWriter(loggerURL)
+	loggerURL := strings.Replace(url, "piazza", "logger", 1)
+	loggerURL = strings.Replace(loggerURL, "pz-workflow", "logger", 1)
+	logWriter, err := pzsyslog.NewHttpWriter(loggerURL, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,6 +76,7 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 	service := &Client{
 		url:    url,
 		logger: logger,
+		h:      h,
 	}
 
 	return service, nil
@@ -74,10 +84,34 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 
 //------------------------------------------------------------------------------
 
+func (c *Client) getObjectCount(endpoint string) (int, error) {
+
+	resp := c.h.PzGet(endpoint)
+	if resp.IsError() {
+		return 0, resp.ToError()
+	}
+	if resp.StatusCode != http.StatusOK {
+		return 0, resp.ToError()
+	}
+
+	if resp.Pagination == nil {
+		return 0, nil
+	}
+
+	raw, err := json.Marshal(resp.Pagination.Count)
+	if err != nil {
+		return 0, err
+	}
+
+	var count int
+	err = json.Unmarshal(raw, &count)
+
+	return count, err
+}
+
 func (c *Client) getObject(endpoint string, out interface{}) error {
 
-	h := piazza.Http{BaseUrl: c.url}
-	resp := h.PzGet(endpoint)
+	resp := c.h.PzGet(endpoint)
 	if resp.IsError() {
 		return resp.ToError()
 	}
@@ -91,9 +125,7 @@ func (c *Client) getObject(endpoint string, out interface{}) error {
 }
 
 func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) error {
-	h := piazza.Http{BaseUrl: c.url}
-
-	resp := h.PzPost(endpoint, obj)
+	resp := c.h.PzPost(endpoint, obj)
 	if resp.IsError() {
 		return resp.ToError()
 	}
@@ -108,9 +140,7 @@ func (c *Client) postObject(obj interface{}, endpoint string, out interface{}) e
 }
 
 func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) error {
-	h := piazza.Http{BaseUrl: c.url}
-
-	resp := h.PzPut(endpoint, obj)
+	resp := c.h.PzPut(endpoint, obj)
 	if resp.IsError() {
 		return resp.ToError()
 	}
@@ -124,8 +154,7 @@ func (c *Client) putObject(obj interface{}, endpoint string, out interface{}) er
 }
 
 func (c *Client) deleteObject(endpoint string) error {
-	h := piazza.Http{BaseUrl: c.url}
-	resp := h.PzDelete(endpoint)
+	resp := c.h.PzDelete(endpoint)
 	if resp.IsError() {
 		return resp.ToError()
 	}
@@ -158,9 +187,15 @@ func (c *Client) GetEventTypeByName(name string) (*EventType, error) {
 	return out, err
 }
 
-func (c *Client) GetAllEventTypes() (*[]EventType, error) {
+func (c *Client) GetNumEventTypes() (int, error) {
+	path := fmt.Sprintf("/eventType")
+	return c.getObjectCount(path)
+}
+
+func (c *Client) GetAllEventTypes(perPage, page int) (*[]EventType, error) {
 	out := &[]EventType{}
-	err := c.getObject("/eventType", out)
+	path := fmt.Sprintf("/eventType?perPage=%d&page=%d", perPage, page)
+	err := c.getObject(path, out)
 	return out, err
 }
 
@@ -195,10 +230,15 @@ func (c *Client) GetEvent(id piazza.Ident) (*Event, error) {
 	return out, err
 }
 
-func (c *Client) GetAllEvents() (*[]Event, error) {
+func (c *Client) GetAllEvents(perPage, page int) (*[]Event, error) {
 	out := &[]Event{}
-	err := c.getObject("/event", out)
+	path := fmt.Sprintf("/event?perPage=%d&page=%d", perPage, page)
+	err := c.getObject(path, out)
 	return out, err
+}
+
+func (c *Client) GetNumEvents() (int, error) {
+	return c.getObjectCount("/event")
 }
 
 func (c *Client) GetAllEventsByEventType(eventTypeID piazza.Ident) (*[]Event, error) {
@@ -238,9 +278,15 @@ func (c *Client) GetTrigger(id piazza.Ident) (*Trigger, error) {
 	return out, err
 }
 
-func (c *Client) GetAllTriggers() (*[]Trigger, error) {
+func (c *Client) GetNumTriggers() (int, error) {
+	path := fmt.Sprintf("/trigger")
+	return c.getObjectCount(path)
+}
+
+func (c *Client) GetAllTriggers(perPage int, page int) (*[]Trigger, error) {
 	out := &[]Trigger{}
-	err := c.getObject("/trigger", &out)
+	path := fmt.Sprintf("/trigger?perPage=%d&page=%d", perPage, page)
+	err := c.getObject(path, &out)
 	return out, err
 }
 
@@ -281,9 +327,15 @@ func (c *Client) GetAlertByTrigger(id piazza.Ident) (*[]Alert, error) {
 	return out, err
 }
 
-func (c *Client) GetAllAlerts() (*[]Alert, error) {
+func (c *Client) GetNumAlerts() (int, error) {
+	path := fmt.Sprintf("/alert")
+	return c.getObjectCount(path)
+}
+
+func (c *Client) GetAllAlerts(perPage int, page int) (*[]Alert, error) {
 	out := &[]Alert{}
-	err := c.getObject("/alert", out)
+	path := fmt.Sprintf("/alert?perPage=%d&page=%d", perPage, page)
+	err := c.getObject(path, out)
 	return out, err
 }
 
@@ -306,8 +358,7 @@ func (c *Client) PutAlert(alert *Alert) (*Alert, error) {
 }
 
 func (c *Client) DeleteAlert(id piazza.Ident) error {
-	err := c.deleteObject("/alert/" + id.String())
-	return err
+	return c.deleteObject("/alert/" + id.String())
 }
 
 //------------------------------------------------------------------------------

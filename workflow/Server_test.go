@@ -41,7 +41,7 @@ func assertNoData(t *testing.T, client *Client) {
 
 	var err error
 
-	ts, err := client.GetAllEventTypes()
+	ts, err := client.GetAllEventTypes(100, 0)
 	assert.NoError(err)
 	assert.Len(*ts, 2)
 
@@ -50,11 +50,11 @@ func assertNoData(t *testing.T, client *Client) {
 	//	assert.Len(*es, 0)
 	//}
 
-	as, err := client.GetAllAlerts()
+	as, err := client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.Len(*as, 0)
 
-	xs, err := client.GetAllTriggers()
+	xs, err := client.GetAllTriggers(100, 0)
 	assert.NoError(err)
 	assert.Len(*xs, 0)
 }
@@ -233,7 +233,7 @@ func (suite *ServerTester) Test01EventType() {
 	defer assertNoData(suite.T(), suite.client)
 
 	//log.Printf("Getting list of event types:")
-	typs, err := client.GetAllEventTypes()
+	typs, err := client.GetAllEventTypes(100, 0)
 	assert.NoError(err)
 	assert.Len(*typs, 2)
 	//printJSON("EventTypes", typs)
@@ -250,7 +250,7 @@ func (suite *ServerTester) Test01EventType() {
 	//log.Printf("New event: %#v", respEventType)
 
 	//log.Printf("Getting list of event types:")
-	typs, err = client.GetAllEventTypes()
+	typs, err = client.GetAllEventTypes(100, 0)
 	assert.NoError(err)
 	assert.Len(*typs, 3)
 
@@ -268,7 +268,7 @@ func (suite *ServerTester) Test01EventType() {
 	assert.NoError(err)
 
 	//log.Printf("Getting list of event types:")
-	typs, err = client.GetAllEventTypes()
+	typs, err = client.GetAllEventTypes(100, 0)
 	assert.NoError(err)
 	assert.Len(*typs, 2)
 
@@ -288,7 +288,7 @@ func (suite *ServerTester) Test02Event() {
 	defer assertNoData(suite.T(), suite.client)
 
 	//log.Printf("Getting list of events (type=\"\"):")
-	events, err := client.GetAllEvents()
+	events, err := client.GetAllEvents(100, 0)
 	assert.NoError(err)
 	assert.Len(*events, 0)
 	//printJSON("Events", events)
@@ -324,7 +324,7 @@ func (suite *ServerTester) Test02Event() {
 	//printJSON("Events", events)
 
 	//log.Printf("Getting ALL events (type=\"\"):")
-	events, err = client.GetAllEvents()
+	events, err = client.GetAllEvents(100, 0)
 	assert.NoError(err)
 	assert.Len(*events, 1)
 	//printJSON("Events", events)
@@ -346,7 +346,7 @@ func (suite *ServerTester) Test02Event() {
 	//printJSON("Events", events)
 
 	//log.Printf("Getting list of events (type=\"\"):")
-	events, err = client.GetAllEvents()
+	events, err = client.GetAllEvents(100, 0)
 	assert.NoError(err)
 	assert.Len(*events, 0)
 	//printJSON("Events", events)
@@ -368,7 +368,7 @@ func (suite *ServerTester) Test03Trigger() {
 	defer assertNoData(suite.T(), suite.client)
 
 	//log.Printf("Getting list of triggers:")
-	triggers, err := client.GetAllTriggers()
+	triggers, err := client.GetAllTriggers(100, 0)
 	assert.NoError(err)
 	assert.Len(*triggers, 0)
 
@@ -391,7 +391,7 @@ func (suite *ServerTester) Test03Trigger() {
 	//printJSON("trigger id", id)
 
 	//log.Printf("Getting list of triggers:")
-	triggers, err = client.GetAllTriggers()
+	triggers, err = client.GetAllTriggers(100, 0)
 	assert.NoError(err)
 	//printJSON("triggers", triggers)
 
@@ -409,7 +409,7 @@ func (suite *ServerTester) Test03Trigger() {
 	assert.NoError(err)
 
 	//log.Printf("Getting list of triggers:")
-	triggers, err = client.GetAllTriggers()
+	triggers, err = client.GetAllTriggers(100, 0)
 	assert.NoError(err)
 	assert.Len(*triggers, 0)
 	//printJSON("triggers", triggers)
@@ -431,7 +431,7 @@ func (suite *ServerTester) Test04Alert() {
 	defer assertNoData(suite.T(), suite.client)
 
 	//log.Printf("Getting list of alerts:")
-	alerts, err := client.GetAllAlerts()
+	alerts, err := client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.Len(*alerts, 0)
 	//printJSON("alerts", alerts)
@@ -476,7 +476,7 @@ func (suite *ServerTester) Test04Alert() {
 	//printJSON("alert id", id)
 
 	//log.Printf("Getting list of alerts:")
-	alerts, err = client.GetAllAlerts()
+	alerts, err = client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
 	//printJSON("alerts", alerts)
@@ -492,7 +492,7 @@ func (suite *ServerTester) Test04Alert() {
 	assert.NoError(err)
 
 	//log.Printf("Getting list of alerts:")
-	alerts, err = client.GetAllAlerts()
+	alerts, err = client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.Len(*alerts, 0)
 	//printJSON("alerts", alerts)
@@ -577,14 +577,14 @@ func (suite *ServerTester) Test05EventMapping() {
 	et2Id := createEventType(eventTypeName2)
 
 	{
-		x, err := client.GetAllEventTypes()
+		x, err := client.GetAllEventTypes(100, 0)
 		assert.NoError(err)
 		assert.Len(*x, 4)
 	}
 
 	{
 		// no events yet!
-		x, err := client.GetAllEvents()
+		x, err := client.GetAllEvents(100, 0)
 		assert.NoError(err)
 		assert.Len(*x, 0)
 

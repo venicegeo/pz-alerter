@@ -42,7 +42,7 @@ type Writer interface {
 // 2 means the two latest messages, etc. The newest message is at the end
 // of the array.
 type Reader interface {
-	Read(count int) ([]*Message, error)
+	Read(count int) ([]Message, error)
 	GetMessages(*piazza.JsonPagination, *piazza.HttpQueryParams) ([]Message, int, error)
 }
 
@@ -111,7 +111,7 @@ func (w *STDOUTWriter) Close() error {
 // MessageWriter implements Reader and Writer, using an array of Messages
 // as the backing store
 type LocalReaderWriter struct {
-	messages []*Message
+	messages []Message
 }
 
 // Write writes the message to the backing array
@@ -119,17 +119,17 @@ func (w *LocalReaderWriter) Write(mssg *Message) error {
 	var _ Writer = (*LocalReaderWriter)(nil)
 
 	if w.messages == nil {
-		w.messages = make([]*Message, 0)
+		w.messages = make([]Message, 0)
 	}
 
-	w.messages = append(w.messages, mssg)
+	w.messages = append(w.messages, *mssg)
 
 	return nil
 }
 
 // Read reads messages from the backing array. Will only return as many as are
 // available; asking for too many is not an error.
-func (w *LocalReaderWriter) Read(count int) ([]*Message, error) {
+func (w *LocalReaderWriter) Read(count int) ([]Message, error) {
 	var _ Reader = (*LocalReaderWriter)(nil)
 
 	if count < 0 {
@@ -137,7 +137,7 @@ func (w *LocalReaderWriter) Read(count int) ([]*Message, error) {
 	}
 
 	if w.messages == nil || count == 0 {
-		return make([]*Message, 0), nil
+		return make([]Message, 0), nil
 	}
 
 	if count > len(w.messages) {
@@ -166,10 +166,14 @@ type HttpWriter struct {
 	h   piazza.Http
 }
 
-func NewHttpWriter(url string) (*HttpWriter, error) {
-	w := &HttpWriter{}
-	w.url = url
-	w.h = piazza.Http{BaseUrl: url}
+func NewHttpWriter(url string, apiKey string) (*HttpWriter, error) {
+	w := &HttpWriter{url: url}
+	w.h = piazza.Http{
+		BaseUrl: url,
+		ApiKey:  apiKey,
+		//FlightCheck: &piazza.SimpleFlightCheck{},
+	}
+
 	return w, nil
 }
 
@@ -187,10 +191,20 @@ func (w *HttpWriter) Close() error {
 	return nil
 }
 
-func (w *HttpWriter) Read(count int) ([]*Message, error) {
+func (w *HttpWriter) Read(count int) ([]Message, error) {
 	var _ Reader = (*HttpWriter)(nil)
 
-	return nil, fmt.Errorf("HttpWriter.Read() not supported")
+	format := &piazza.JsonPagination{
+		Page:    0,
+		PerPage: count,
+		SortBy:  "timeStamp",
+		Order:   "desc",
+	}
+	params := &piazza.HttpQueryParams{}
+
+	mssgs, _, err := w.GetMessages(format, params)
+	return mssgs, err
+
 }
 
 // GetMessages is only implemented for HttpWriter as it is most likely the only
@@ -364,7 +378,7 @@ func (w *ElasticWriter) Close() error {
 func (w *ElasticWriter) GetMessages(*piazza.JsonPagination, *piazza.HttpQueryParams) ([]Message, int, error) {
 	return nil, 0, fmt.Errorf("ElasticWriter.GetMessages not supported")
 }
-func (w *ElasticWriter) Read(count int) ([]*Message, error) {
+func (w *ElasticWriter) Read(count int) ([]Message, error) {
 	return nil, fmt.Errorf("ElasticWriter.Read not supported")
 }
 

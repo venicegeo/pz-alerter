@@ -85,7 +85,7 @@ func (resp *JsonResponse) String() string {
 }
 
 func (resp *JsonResponse) IsError() bool {
-	return resp.StatusCode >= 400 && resp.StatusCode <= 599
+	return resp.StatusCode < 200 || resp.StatusCode > 299
 }
 
 func (resp *JsonResponse) ToError() error {

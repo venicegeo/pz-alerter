@@ -183,8 +183,8 @@ func (h *Http) Put(endpoint string, input interface{}, output interface{}) (int,
 }
 
 // expects endpoint to return nothing
-func (h *Http) Delete(endpoint string) (int, error) {
-	return h.doVerb("DELETE", endpoint, nil, nil)
+func (h *Http) Delete(endpoint string, output interface{}) (int, error) {
+	return h.doVerb("DELETE", endpoint, nil, output)
 }
 
 // expects endpoint to take in and return JSON
@@ -251,12 +251,13 @@ func (h *Http) PzPut(endpoint string, input interface{}) *JsonResponse {
 }
 
 func (h *Http) PzDelete(endpoint string) *JsonResponse {
-	code, err := h.Delete(endpoint)
+	output := &JsonResponse{}
+	code, err := h.Delete(endpoint, output)
 	if err != nil {
 		return newJsonResponse500(err)
 	}
-
-	return &JsonResponse{StatusCode: code}
+	output.StatusCode = code
+	return output
 }
 
 //---------------------------------------------------------------------

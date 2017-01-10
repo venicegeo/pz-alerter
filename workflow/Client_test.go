@@ -64,7 +64,7 @@ func (suite *ClientTester) Test12AlertResource() {
 	id := respAlert.AlertID
 	assert.NoError(err)
 
-	alerts, err := client.GetAllAlerts()
+	alerts, err := client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.Len(*alerts, 1)
 	assert.EqualValues(id, (*alerts)[0].AlertID)
@@ -87,7 +87,7 @@ func (suite *ClientTester) Test12AlertResource() {
 	alert, err = client.GetAlert(id)
 	assert.Error(err)
 
-	alerts, err = client.GetAllAlerts()
+	alerts, err = client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.Len(*alerts, 0)
 }
@@ -166,7 +166,7 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	}()
 	_, _ = client.GetEventTypeByName("typnam")
 
-	eventTypes, err := client.GetAllEventTypes()
+	eventTypes, err := client.GetAllEventTypes(100, 0)
 	assert.NoError(err)
 	assert.Len(*eventTypes, 3)
 
@@ -351,7 +351,7 @@ func (suite *ClientTester) Test16TriggerResource() {
 	assert.NoError(err)
 	assert.EqualValues(t1ID, tmp.TriggerID)
 
-	triggers, err := client.GetAllTriggers()
+	triggers, err := client.GetAllTriggers(100, 0)
 	assert.NoError(err)
 	assert.Len(*triggers, 1)
 	assert.EqualValues(t1ID, (*triggers)[0].TriggerID)
@@ -387,7 +387,7 @@ func (suite *ClientTester) Test17Triggering() {
 		etE = respEventTypeE.EventTypeID
 		assert.NoError(err)
 
-		eventTypes, err := client.GetAllEventTypes()
+		eventTypes, err := client.GetAllEventTypes(100, 0)
 		assert.NoError(err)
 		assert.Len(*eventTypes, 5)
 	}
@@ -465,7 +465,7 @@ func (suite *ClientTester) Test17Triggering() {
 			assert.NoError(err)
 		}()
 
-		triggers, err := client.GetAllTriggers()
+		triggers, err := client.GetAllTriggers(100, 0)
 		assert.NoError(err)
 		assert.Len(*triggers, 2)
 	}

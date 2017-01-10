@@ -2,7 +2,7 @@
 
 DOMAIN=int.geointservices.io
 
-url="https://pz-uuidgen.$PZDOMAIN/admin/stats"
+url="https://pz-uuidgen.$DOMAIN/admin/stats"
 echo
 echo GET $url
 echo "$json"

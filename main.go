@@ -92,9 +92,8 @@ func makeSystem() (
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	logWriter, err := pzsyslog.NewHttpWriter(logUrl)
-	if err != nil {
+	logWriter, err := pzsyslog.NewHttpWriter(logUrl, "")
+  if err != nil {
 		log.Fatal(err)
 	}
 	//logWriter := &pzsyslog.NilWriter{}

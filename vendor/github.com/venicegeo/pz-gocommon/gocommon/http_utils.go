@@ -67,15 +67,17 @@ func HTTPDelete(url string) (*http.Response, error) {
 //---------------------------------------------------------------------
 
 func GinReturnJson(c *gin.Context, resp *JsonResponse) {
-	raw, err := json.MarshalIndent(resp, "", "  ")
+	// this just for error checking
+	_, err := json.MarshalIndent(resp, "", "  ")
 	if err != nil {
 		log.Fatalf("Internal Error: marshalling of %#v", resp)
 	}
-	c.Data(resp.StatusCode, ContentTypeJSON, raw)
+
+	c.JSON(resp.StatusCode, resp)
 
 	// If things get worse, try this:
 	//    c.Writer.Header().Set("Content-Type", "application/json; charset=utf-8")
-	//    c.Writer.Header().Set("Content-Length", str(len(raw))
+	//    c.Writer.Header().Set("Content-Length", fmt.Sprintf("%d", len(raw)))
 }
 
 // GetApiKey retrieves the Pz API key for the given server, in this order:
