@@ -25,29 +25,45 @@ func main() {
 		log.Fatal(err)
 	}
 
-	log.Printf("*** ALERTS ***")
-	err = deleteAllObjects(client.GetNumAlerts, deletePageOfAlerts)
-	if err != nil {
-		log.Fatal(err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(4)
+	go func() {
+		defer wg.Done()
+		log.Printf("*** ALERTS ***")
+		err = deleteAllObjects(client.GetNumAlerts, deletePageOfAlerts)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	log.Printf("*** TRIGGERS ***")
-	err = deleteAllObjects(client.GetNumTriggers, deletePageOfTriggers)
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		defer wg.Done()
+		log.Printf("*** TRIGGERS ***")
+		err = deleteAllObjects(client.GetNumTriggers, deletePageOfTriggers)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	log.Printf("*** EVENTS ***")
-	err = deleteAllObjects(client.GetNumEvents, deletePageOfEvents)
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		defer wg.Done()
+		log.Printf("*** EVENTS ***")
+		err = deleteAllObjects(client.GetNumEvents, deletePageOfEvents)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 
-	log.Printf("*** EVENT TYPES ***")
-	err = deleteAllObjects(client.GetNumEventTypes, deletePageOfEventTypes)
-	if err != nil {
-		log.Fatal(err)
-	}
+	go func() {
+		defer wg.Done()
+		log.Printf("*** EVENT TYPES ***")
+		err = deleteAllObjects(client.GetNumEventTypes, deletePageOfEventTypes)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	wg.Wait()
 }
 
 func deleteAllObjects(getNumObjectsF GetNumObjectsF, deletePageOfObjectsF DeletePageOfObjectsF) error {
@@ -68,7 +84,7 @@ func deleteAllObjects(getNumObjectsF GetNumObjectsF, deletePageOfObjectsF Delete
 		defer wg.Done()
 		log.Printf("[%d] started", id)
 		err = deletePageOfObjectsF(pageSize, id)
-		log.Printf("[%d] ended: %#v", id, err)
+		log.Printf("[%d] ended: %s", id, err)
 	}
 
 	for i := 0; i < numPages; i += maxThreads {
@@ -76,6 +92,9 @@ func deleteAllObjects(getNumObjectsF GetNumObjectsF, deletePageOfObjectsF Delete
 		wg.Add(maxThreads)
 		for j := 0; j < maxThreads; j++ {
 			id := i + j
+			if id > numPages {
+				break
+			}
 			go delPage(&wg, id)
 		}
 		wg.Wait()
@@ -99,7 +118,7 @@ func makeClient() (*workflow.Client, error) {
 	url = "https://pz-workflow.int.geointservices.io"
 
 	log.Printf("Url: %s", url)
-	log.Printf("Key: %s", apiKey)
+	//log.Printf("Key: %s", apiKey)
 
 	client, err := workflow.NewClient2(url, apiKey)
 	if err != nil {
@@ -127,7 +146,7 @@ func deletePageOfAlerts(perPage int, page int) error {
 
 		err = client.DeleteAlert(alert.AlertID)
 		if err != nil {
-			log.Printf("[%d] error %#v", id, err)
+			log.Printf("[%d] error: %s", id, err)
 			return err
 		}
 	}
@@ -155,7 +174,7 @@ func deletePageOfEvents(perPage int, page int) error {
 		err = client.DeleteEvent(event.EventID)
 		if err != nil {
 			// ignore err cases for now
-			//log.Printf("error %#v", err)
+			log.Printf("[%d] error: %s", id, err)
 		}
 	}
 	log.Printf("[%d] Deleted all %d events", id, tot)
@@ -182,7 +201,7 @@ func deletePageOfEventTypes(perPage int, page int) error {
 		err = client.DeleteEventType(eventtype.EventTypeID)
 		if err != nil {
 			// ignore err cases for now
-			log.Printf("error %#v", err)
+			log.Printf("[%d] error: %s", id, err)
 		}
 	}
 	log.Printf("[%d] Deleted all %d eventtypes", id, tot)
@@ -209,7 +228,7 @@ func deletePageOfTriggers(perPage int, page int) error {
 		err = client.DeleteTrigger(trigger.TriggerID)
 		if err != nil {
 			// ignore err cases for now
-			log.Printf("[%d] error %#v", id, err)
+			log.Printf("[%d] error: %s", id, err)
 		} else {
 			log.Printf("[%d] deleted trigger %d", id, i)
 		}
