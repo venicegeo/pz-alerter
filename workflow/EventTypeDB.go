@@ -35,38 +35,28 @@ func NewEventTypeDB(service *Service, esi elasticsearch.IIndex) (*EventTypeDB, e
 	return &etrdb, nil
 }
 
-func (db *EventTypeDB) PostData(obj interface{}, id piazza.Ident, actor string) (piazza.Ident, error) {
-	var eventType EventType
-	ok1 := false
-	eventType, ok1 = obj.(EventType)
-	if !ok1 {
-		temp, ok2 := obj.(*EventType)
-		if !ok2 {
-			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: was not given an EventType to post")
-		}
-		eventType = *temp
-	}
+func (db *EventTypeDB) PostData(eventType *EventType) error {
 	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
 	if err != nil {
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+		return LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
 	for _, v := range vars {
 		if !elasticsearch.IsValidMappingType(v) {
-			return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
+			return LoggedError("EventTypeDB.PostData failed: %v was not recognized as a valid mapping type", v)
 		}
 	}
-	indexResult, err := db.Esi.PostData(db.mapping, id.String(), eventType)
+	indexResult, err := db.Esi.PostData(db.mapping, eventType.EventTypeID.String(), eventType)
 	if err != nil {
-		db.service.syslogger.DebugAudit(actor, "createEventType", string(id), "EventTypeDB.PostData: failed")
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: %s", err)
+		db.service.syslogger.DebugAudit(eventType.CreatedBy, "createEventType", eventType.EventTypeID.String(), "EventTypeDB.PostData: failed")
+		return LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		db.service.syslogger.DebugAudit(actor, "createEventType", string(id), "EventTypeDB.PostData: failed")
-		return piazza.NoIdent, LoggedError("EventTypeDB.PostData failed: not created")
+		db.service.syslogger.DebugAudit(eventType.CreatedBy, "createEventType", eventType.EventTypeID.String(), "EventTypeDB.PostData: failed")
+		return LoggedError("EventTypeDB.PostData failed: not created")
 	}
-	db.service.syslogger.DebugAudit(actor, "createEventType", string(id), "EventTypeDB.PostData: success")
+	db.service.syslogger.DebugAudit(eventType.CreatedBy, "createEventType", eventType.EventTypeID.String(), "EventTypeDB.PostData: success")
 
-	return id, nil
+	return nil
 }
 
 func (db *EventTypeDB) GetAll(format *piazza.JsonPagination, actor string) ([]EventType, int64, error) {
@@ -93,8 +83,7 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination, actor string) ([]Ev
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var eventType EventType
-			err := json.Unmarshal(*hit.Source, &eventType)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &eventType); err != nil {
 				return nil, 0, err
 			}
 			eventTypes = append(eventTypes, eventType)
@@ -128,8 +117,7 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string, actor string) (
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
 			var eventType EventType
-			err := json.Unmarshal(*hit.Source, &eventType)
-			if err != nil {
+			if err := json.Unmarshal(*hit.Source, &eventType); err != nil {
 				return nil, 0, err
 			}
 			eventTypes = append(eventTypes, eventType)
@@ -151,8 +139,7 @@ func (db *EventTypeDB) GetOne(id piazza.Ident, actor string) (*EventType, bool, 
 
 	src := getResult.Source
 	var eventType EventType
-	err = json.Unmarshal(*src, &eventType)
-	if err != nil {
+	if err = json.Unmarshal(*src, &eventType); err != nil {
 		return nil, getResult.Found, err
 	}
 
@@ -181,8 +168,7 @@ func (db *EventTypeDB) GetIDByName(format *piazza.JsonPagination, name string, a
 
 	src := getResult.GetHit(0).Source
 	var eventType EventType
-	err = json.Unmarshal(*src, &eventType)
-	if err != nil {
+	if err = json.Unmarshal(*src, &eventType); err != nil {
 		return nil, getResult.Found, err
 	}
 
