@@ -93,7 +93,7 @@ func makeSystem() (
 		log.Fatal(err)
 	}
 	logWriter, err := pzsyslog.NewHttpWriter(logUrl, "")
-  if err != nil {
+	if err != nil {
 		log.Fatal(err)
 	}
 	//logWriter := &pzsyslog.NilWriter{}
@@ -114,7 +114,7 @@ func serverLoop(sys *piazza.SystemConfig,
 	var err error
 	var done chan error
 
-	if err := genericServer.Configure(workflowServer.Routes); err != nil {
+	if err = genericServer.Configure(workflowServer.Routes); err != nil {
 		log.Fatal(err)
 	}
 
