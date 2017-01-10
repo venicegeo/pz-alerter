@@ -180,7 +180,7 @@ func (service *Service) Init(
 }
 
 func (service *Service) newIdent() piazza.Ident {
-	return piazza.Ident(piazza.NewUuid())
+	return piazza.Ident(piazza.NewUuid().String())
 }
 
 func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, actor string) error {
