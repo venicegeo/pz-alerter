@@ -1,5 +1,5 @@
 hash: a3ef1ed44c69b1f82632020fc6a02fb2bbc8b94d4ca1af324bbacb6ff5f5a5da
-updated: 2017-01-06T15:26:48.427661371-05:00
+updated: 2017-01-09T19:11:40.80344381-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -43,7 +43,7 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: golang.org/x/net
-  version: 905989bd20b7c354fd28a61074eed1c8f49ebc89
+  version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
   - context/ctxhttp
@@ -54,7 +54,7 @@ imports:
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: 060365a7e27c56c938b234824ef7f9a3a7834b99
+  version: de85d1686ca8e5fc9b12afca12f022804513b933
   subpackages:
   - backoff
   - uritemplates

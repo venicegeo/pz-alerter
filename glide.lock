@@ -1,5 +1,5 @@
 hash: 48c98f4550c621d0c4d23fa1fcc726e118693ce098fd59b7bbaa3c9055528aba
-updated: 2017-01-06T15:42:29.934713001-05:00
+updated: 2017-01-09T19:18:52.031083088-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -43,13 +43,13 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: 7a37d234b558dedb39743e3e64590fc0e92aaca3
+  version: 43bbaf4d34acb8864ade99609d0c284ab6bd5a3e
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-uuidgen
-  version: 83557ca70afdb3369f8e0cb673e5b78d1f54db1f
+  version: c394b707f5c069145f2839ed2758ca63a59a9cda
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron
@@ -66,7 +66,7 @@ imports:
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: 060365a7e27c56c938b234824ef7f9a3a7834b99
+  version: de85d1686ca8e5fc9b12afca12f022804513b933
   subpackages:
   - backoff
   - uritemplates
@@ -84,6 +84,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: dbcbff7099da0acf35500f98ac68446960bcbca9
+  version: f7cc3dc8e8df944a4a35edeb4e7e3672a78606e1
   subpackages:
   - logger

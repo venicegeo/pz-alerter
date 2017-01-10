@@ -2,7 +2,7 @@
 
 DOMAIN=int.geointservices.io
 
-url="https://pz-uuidgen.$PZDOMAIN/uuids?count=3"
+url="https://pz-uuidgen.$DOMAIN/uuids?count=3"
 echo
 echo POST $url
 echo "$json"
