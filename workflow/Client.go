@@ -234,8 +234,8 @@ func (c *Client) GetAllEvents(perPage, page int) (*[]Event, error) {
 	return out, err
 }
 
-func (c *Client) GetNumEvents(perPage, page int) (int, error) {
-	return c.getObjectCount("/events")
+func (c *Client) GetNumEvents() (int, error) {
+	return c.getObjectCount("/event")
 }
 
 func (c *Client) GetAllEventsByEventType(eventTypeID piazza.Ident) (*[]Event, error) {
