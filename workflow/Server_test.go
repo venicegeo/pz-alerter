@@ -26,7 +26,7 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
@@ -69,11 +69,8 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	kit, err := pzlogger.NewMockLoggerKit()
-	if err != nil {
-		log.Fatal(err)
-	}
-	logger := kit.SysLogger
+	logWriter := &pzsyslog.LocalReaderWriter{}
+	auditWriter := &pzsyslog.LocalReaderWriter{}
 
 	var uuidgen pzuuidgen.IClient
 
@@ -91,7 +88,7 @@ func TestRunSuite(t *testing.T) {
 	testElasticsearchIndex = elasticsearch.NewMockIndex("testElasticsearch")
 
 	workflowService := &Service{}
-	err = workflowService.Init(sys, logger, uuidgen, eventtypesIndex,
+	err = workflowService.Init(sys, logWriter, auditWriter, uuidgen, eventtypesIndex,
 		eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex)
 	if err != nil {
 		log.Fatal(err)
@@ -114,7 +111,9 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	client, err := NewClient(sys, logger)
+	clientLogWriter := &pzsyslog.NilWriter{}
+	clientLogger := pzsyslog.NewLogger(clientLogWriter, "pz-workflow-unittest")
+	client, err := NewClient(sys, clientLogger)
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -25,25 +25,27 @@ import (
 )
 
 func main() {
-	sys, logger, uuidgen := makeSystem()
+	sys, logWriter, auditWriter, uuidgen := makeSystem()
 
 	log.Printf("pz-workflow starting...")
 
 	indices := makeIndexes(sys)
 
-	workflowServer := makeWorkflow(sys, indices, logger, uuidgen)
+	workflowServer := makeWorkflow(sys, indices, logWriter, auditWriter, uuidgen)
 
 	serverLoop(sys, workflowServer)
 }
 
 func makeWorkflow(sys *piazza.SystemConfig,
 	indices []*elasticsearch.Index,
-	logger *pzsyslog.Logger,
+	logWriter pzsyslog.Writer,
+	auditWriter pzsyslog.Writer,
 	uuidgen pzuuidgen.IClient) *pzworkflow.Server {
 	workflowService := &pzworkflow.Service{}
 	err := workflowService.Init(
 		sys,
-		logger,
+		logWriter,
+		auditWriter,
 		uuidgen,
 		indices[0],
 		indices[1],
@@ -71,7 +73,8 @@ func makeWorkflow(sys *piazza.SystemConfig,
 
 func makeSystem() (
 	*piazza.SystemConfig,
-	*pzsyslog.Logger,
+	pzsyslog.Writer,
+	pzsyslog.Writer,
 	*pzuuidgen.Client) {
 
 	required := []piazza.ServiceName{
@@ -96,15 +99,18 @@ func makeSystem() (
 	if err != nil {
 		log.Fatal(err)
 	}
-	//logWriter := &pzsyslog.NilWriter{}
-	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
+	auditWriter := &pzsyslog.NilWriter{}
 
-	uuidgen, err := pzuuidgen.NewClient(sys)
+	url, err := sys.GetURL(piazza.PzUuidgen)
+	if err != nil {
+		log.Fatal(err)
+	}
+	uuidgen, err := pzuuidgen.NewClient(url, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	return sys, logger, uuidgen
+	return sys, logWriter, auditWriter, uuidgen
 }
 
 func serverLoop(sys *piazza.SystemConfig,

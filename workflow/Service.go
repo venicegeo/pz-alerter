@@ -50,8 +50,11 @@ type Service struct {
 	stats Stats
 	sync.Mutex
 
-	syslogger *pzsyslog.Logger
-	uuidgen   pzuuidgen.IClient
+	logger    *pzsyslog.Logger
+	syslogger *pzsyslog.Logger // TODO just for now
+	auditor   *pzsyslog.Logger
+
+	uuidgen pzuuidgen.IClient
 
 	sys *piazza.SystemConfig
 
@@ -65,7 +68,8 @@ type Service struct {
 // Init TODO
 func (service *Service) Init(
 	sys *piazza.SystemConfig,
-	logger *pzsyslog.Logger,
+	logWriter pzsyslog.Writer,
+	auditWriter pzsyslog.Writer,
 	uuidgen pzuuidgen.IClient,
 	eventtypesIndex elasticsearch.IIndex,
 	eventsIndex elasticsearch.IIndex,
@@ -76,7 +80,12 @@ func (service *Service) Init(
 
 	var err error
 
-	service.sys, service.syslogger, service.uuidgen = sys, logger, uuidgen
+	service.logger = pzsyslog.NewLogger(logWriter, string(piazza.PzWorkflow))
+	service.auditor = pzsyslog.NewLogger(auditWriter, string(piazza.PzWorkflow))
+
+	service.syslogger = service.logger // TODO just for now
+
+	service.sys, service.uuidgen = sys, uuidgen
 
 	service.stats.CreatedOn = time.Now()
 

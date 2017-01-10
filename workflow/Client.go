@@ -22,7 +22,7 @@ import (
 
 	"fmt"
 
-	"github.com/venicegeo/pz-gocommon/gocommon"
+	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
@@ -54,6 +54,7 @@ func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, erro
 		h:      h,
 	}
 
+	service.logger = logger
 	service.logger.Info("Client started")
 
 	return service, nil
