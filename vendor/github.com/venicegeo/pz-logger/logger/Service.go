@@ -208,38 +208,6 @@ func (service *Service) PostSyslog(mNew *syslogger.Message) *piazza.JsonResponse
 	return resp
 }
 
-func (service *Service) toOldStyle(mNew *syslogger.Message) (*Message, error) {
-	var severity Severity
-
-	switch mNew.Severity {
-	case syslogger.Debug:
-		severity = SeverityDebug
-	case syslogger.Informational:
-		severity = SeverityInfo
-	case syslogger.Warning:
-		severity = SeverityWarning
-	case syslogger.Error:
-		severity = SeverityError
-	case syslogger.Fatal:
-		severity = SeverityFatal
-	default:
-		severity = SeverityError
-	}
-
-	text := mNew.String()
-	application := piazza.ServiceName(mNew.Application)
-
-	mssgOld := &Message{
-		CreatedOn: time.Now(),
-		Service:   application,
-		Address:   mNew.HostName,
-		Severity:  severity,
-		Message:   text,
-	}
-	err := mssgOld.Validate()
-	return mssgOld, err
-}
-
 func (service *Service) postSyslog(mssg *syslogger.Message) error {
 
 	var err error
@@ -335,43 +303,6 @@ func (service *Service) GetSyslog(params *piazza.HttpQueryParams) *piazza.JsonRe
 		return service.newInternalErrorResponse(err)
 	}
 
-	return resp
-}
-
-func (service *Service) GetMessage(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-
-	searchResult, pagination, jErr := service.getMessageCommon(params)
-	if jErr != nil {
-		return jErr
-	}
-
-	lines, err := extractFromSearchResult(searchResult)
-	if err != nil {
-		return service.newInternalErrorResponse(err)
-	}
-
-	// we want the result in the old-style format
-	oldLines := make([]Message, len(lines))
-	for i := 0; i < len(lines); i++ {
-		newMssg := &lines[i]
-		oldMssg, err := service.toOldStyle(newMssg)
-		if err != nil {
-			return service.newInternalErrorResponse(err)
-		}
-		oldLines[i] = *oldMssg
-	}
-
-	pagination.Count = int(searchResult.TotalHits())
-	resp := &piazza.JsonResponse{
-		StatusCode: http.StatusOK,
-		Data:       oldLines,
-		Pagination: pagination,
-	}
-
-	err = resp.SetType()
-	if err != nil {
-		return service.newInternalErrorResponse(err)
-	}
 	return resp
 }
 

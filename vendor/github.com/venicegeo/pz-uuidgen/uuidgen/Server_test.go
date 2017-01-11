@@ -23,7 +23,7 @@ import (
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
-	pzlogger "github.com/venicegeo/pz-logger/logger"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 type UuidgenTester struct {
@@ -31,39 +31,19 @@ type UuidgenTester struct {
 	sys            *piazza.SystemConfig
 	totalRequested int
 	totalGenerated int
-	mockLogger     *pzlogger.MockLoggerKit
+	logWriter      pzsyslog.Writer
+	auditWriter    pzsyslog.Writer
 	client         IClient
 	genericServer  *piazza.GenericServer
 	server         *Server
 	service        *Service
 }
 
-func (suite *UuidgenTester) SetupSuite() {
+func (suite *UuidgenTester) startServer() {
 	var err error
 
-	var required []piazza.ServiceName
-	required = []piazza.ServiceName{}
-
-	suite.sys, err = piazza.NewSystemConfig(piazza.PzUuidgen, required)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	suite.mockLogger, err = pzlogger.NewMockLoggerKit()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	suite.client, err = NewMockClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	suite.totalRequested = 0
-	suite.totalGenerated = 0
-
 	suite.service = &Service{}
-	err = suite.service.Init(suite.sys, suite.mockLogger.SysLogger)
+	err = suite.service.Init(suite.sys, suite.logWriter, suite.auditWriter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -82,13 +62,43 @@ func (suite *UuidgenTester) SetupSuite() {
 	}
 }
 
+func (suite *UuidgenTester) SetupSuite() {
+	var err error
+
+	var required []piazza.ServiceName
+	required = []piazza.ServiceName{}
+
+	suite.sys, err = piazza.NewSystemConfig(piazza.PzUuidgen, required)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	suite.logWriter = &pzsyslog.LocalReaderWriter{}
+	suite.auditWriter = &pzsyslog.NilWriter{}
+
+	suite.totalRequested = 0
+	suite.totalGenerated = 0
+
+	suite.startServer()
+
+	url := piazza.DefaultProtocol + "://" + suite.genericServer.Sys.BindTo
+	suite.client, err = NewClient(url, "")
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
 func (suite *UuidgenTester) TearDownSuite() {
 	err := suite.genericServer.Stop()
 	if err != nil {
 		panic(err)
 	}
 
-	err = suite.mockLogger.Close()
+	err = suite.logWriter.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = suite.auditWriter.Close()
 	if err != nil {
 		panic(err)
 	}
@@ -173,6 +183,7 @@ func (suite *UuidgenTester) Test01Okay() {
 
 	_, _, _, err = piazza.HTTP(piazza.POST, fmt.Sprintf("127.0.0.1:%s/uuids?count=0", piazza.LocalPortNumbers[piazza.PzUuidgen]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
+	suite.totalRequested++
 
 	stats, err := client.GetStats()
 	assert.NoError(err, "GetStats")
@@ -181,8 +192,8 @@ func (suite *UuidgenTester) Test01Okay() {
 	assert.NoError(err)
 
 	s, err := client.GetUUID()
-	assert.NoError(err, "pzService.GetUuid")
-	assert.NotEmpty(s, "GetUuid failed - returned empty string")
+	assert.NoError(err)
+	assert.NotEmpty(s)
 	suite.totalRequested++
 	suite.totalGenerated++
 }

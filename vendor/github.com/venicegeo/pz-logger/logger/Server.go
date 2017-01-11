@@ -35,7 +35,6 @@ func (server *Server) Init(service *Service) {
 	server.Routes = []piazza.RouteData{
 		{Verb: "GET", Path: "/", Handler: server.handleGetRoot},
 		{Verb: "GET", Path: "/version", Handler: server.handleGetVersion},
-		{Verb: "GET", Path: "/message", Handler: server.handleGetMessage},
 		{Verb: "GET", Path: "/admin/stats", Handler: server.handleGetStats},
 
 		{Verb: "GET", Path: "/syslog", Handler: server.handleGetSyslog},
@@ -58,13 +57,6 @@ func (server *Server) handleGetVersion(c *gin.Context) {
 
 func (server *Server) handleGetStats(c *gin.Context) {
 	resp := server.service.GetStats()
-	piazza.GinReturnJson(c, resp)
-}
-
-func (server *Server) handleGetMessage(c *gin.Context) {
-	params := piazza.NewQueryParams(c.Request)
-	resp := server.service.GetMessage(params)
-
 	piazza.GinReturnJson(c, resp)
 }
 

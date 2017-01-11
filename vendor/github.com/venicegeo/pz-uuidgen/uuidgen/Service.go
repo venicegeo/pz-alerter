@@ -28,28 +28,30 @@ import (
 
 type Service struct {
 	sync.Mutex
-	stats     Stats
-	syslogger *pzsyslog.Logger
-	origin    string
+	stats   Stats
+	logger  *pzsyslog.Logger
+	auditor *pzsyslog.Logger
+	origin  string
 }
 
 //---------------------------------------------------------------------
 
-func (service *Service) Init(sys *piazza.SystemConfig, logger *pzsyslog.Logger) error {
+func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer) error {
 	service.stats.CreatedOn = time.Now()
 
 	service.origin = string(sys.Name)
 
-	service.syslogger = logger
+	service.logger = pzsyslog.NewLogger(logWriter, string(piazza.PzUuidgen))
+	service.auditor = pzsyslog.NewLogger(auditWriter, string(piazza.PzUuidgen))
 
-	_ = service.syslogger.Info("uuidgen service started")
+	_ = service.logger.Info("uuidgen service started")
 
 	return nil
 }
 
 func (service *Service) GetStats() *piazza.JsonResponse {
 	//log.Printf("uuidgen stats service called (1)")
-	_ = service.syslogger.Info("uuidgen stats service called (2)")
+	_ = service.logger.Info("uuidgen stats service called")
 
 	service.Lock()
 	data := service.stats
@@ -99,7 +101,6 @@ func (service *Service) PostUuids(params *piazza.HttpQueryParams) *piazza.JsonRe
 		uuids[i] = piazza.NewUuid().String()
 	}
 	// service.syslogger.Audit("pz-uuidgen", "createUUID", "", "UUIDGen created uuids: [%s]", uuids)
-
 	service.Lock()
 	service.stats.NumUUIDs += count
 	service.stats.NumRequests++

@@ -383,6 +383,7 @@ func (w *ElasticWriter) Read(count int) ([]Message, error) {
 }
 
 //-------------------------------
+
 // NilWriter doesn't do anything
 type NilWriter struct {
 }
@@ -393,4 +394,48 @@ func (*NilWriter) Write(*Message) error {
 
 func (*NilWriter) Close() error {
 	return nil
+}
+
+//---------------------------------------------------------------------
+
+// MultiWriter will write to N different Writers at once. When doing a
+// Write or a Close, we call the function on all of them. If any have failed,
+// we return the error from the first one that failed.
+type MultiWriter struct {
+	writers []Writer
+}
+
+func NewMultiWriter(ws []Writer) *MultiWriter {
+	mw := &MultiWriter{}
+	mw.writers = make([]Writer, len(ws))
+	for i, w := range ws {
+		mw.writers[i] = w
+	}
+	return mw
+}
+
+func (mw *MultiWriter) Write(m *Message) error {
+	var err error
+
+	for _, w := range mw.writers {
+		e := w.Write(m)
+		if e != nil && err != nil {
+			err = e
+		}
+	}
+
+	return err
+}
+
+func (mw *MultiWriter) Close() error {
+	var err error
+
+	for _, w := range mw.writers {
+		e := w.Close()
+		if e != nil && err != nil {
+			err = e
+		}
+	}
+
+	return err
 }

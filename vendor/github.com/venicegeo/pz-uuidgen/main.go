@@ -42,10 +42,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	logger := pzsyslog.NewLogger(logWriter, "pz-uuidgen")
+	auditWriter, err := pzsyslog.NewHttpWriter(logUrl, "")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	service := &pzuuidgen.Service{}
-	err = service.Init(sys, logger)
+	err = service.Init(sys, logWriter, auditWriter)
 	if err != nil {
 		log.Fatal(err)
 	}

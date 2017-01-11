@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -177,4 +178,58 @@ func GetExternalIP() (string, error) {
 		}
 	}
 	return "", errors.New("are you connected to the network?")
+}
+
+//---------------------------------------------------------------------
+
+func WaitForService(name ServiceName, url string) error {
+	msTime := 0
+
+	for {
+		resp, err := http.Get(url)
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+
+		if err == nil && resp.StatusCode == http.StatusOK {
+			break
+		}
+
+		if msTime >= waitTimeoutMs {
+			return fmt.Errorf("timed out waiting for service: %s at %s", name, url)
+		}
+
+		time.Sleep(waitSleepMs * time.Millisecond)
+		msTime += waitSleepMs
+	}
+
+	return nil
+}
+
+func WaitForServiceToDie(name ServiceName, url string) error {
+	msTime := 0
+
+	for {
+		resp, err := http.Get(url)
+		defer func() {
+			if resp != nil && resp.Body != nil {
+				_ = resp.Body.Close()
+			}
+		}()
+
+		// we'll accept any error as evidence the service is down
+		if err != nil {
+			break
+		}
+
+		if msTime >= waitTimeoutMs {
+			return fmt.Errorf("timed out waiting for service to die: %s at %s", name, url)
+		}
+		time.Sleep(waitSleepMs * time.Millisecond)
+		msTime += waitSleepMs
+	}
+
+	return nil
 }

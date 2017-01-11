@@ -21,35 +21,26 @@ import (
 )
 
 type Client struct {
-	url    string
-	apiKey string
+	h *piazza.Http
 }
 
 //---------------------------------------------------------------------
 
-func NewClient(sys *piazza.SystemConfig) (*Client, error) {
-	var _ IClient = new(Client)
-
+func NewClient(url string, apiKey string) (*Client, error) {
 	var err error
 
-	err = sys.WaitForService(piazza.PzUuidgen)
+	err = piazza.WaitForService(piazza.PzUuidgen, url)
 	if err != nil {
 		return nil, err
 	}
 
-	url, err := sys.GetURL(piazza.PzUuidgen)
-	if err != nil {
-		return nil, err
+	h := &piazza.Http{
+		BaseUrl: url,
+		ApiKey:  apiKey,
 	}
 
-	service := &Client{url: url}
-	return service, nil
-}
-
-func NewClient2(url string, apiKey string) (*Client, error) {
 	service := &Client{
-		url:    url,
-		apiKey: apiKey,
+		h: h,
 	}
 	return service, nil
 }
@@ -57,8 +48,7 @@ func NewClient2(url string, apiKey string) (*Client, error) {
 //---------------------------------------------------------------------
 
 func (c *Client) GetVersion() (*piazza.Version, error) {
-	h := piazza.Http{BaseUrl: c.url}
-	resp := h.PzGet("/version")
+	resp := c.h.PzGet("/version")
 	if resp.IsError() {
 		return nil, resp.ToError()
 	}
@@ -78,8 +68,7 @@ func (c *Client) PostUuids(count int) (*[]string, error) {
 
 	endpoint := fmt.Sprintf("/uuids?count=%d", count)
 
-	h := piazza.Http{BaseUrl: c.url}
-	resp := h.PzPost(endpoint, nil)
+	resp := c.h.PzPost(endpoint, nil)
 	if resp.IsError() {
 		return nil, resp.ToError()
 	}
@@ -96,8 +85,7 @@ func (c *Client) PostUuids(count int) (*[]string, error) {
 }
 
 func (c *Client) GetStats() (*Stats, error) {
-	h := piazza.Http{BaseUrl: c.url}
-	resp := h.PzGet("/admin/stats")
+	resp := c.h.PzGet("/admin/stats")
 	if resp.IsError() {
 		return nil, resp.ToError()
 	}

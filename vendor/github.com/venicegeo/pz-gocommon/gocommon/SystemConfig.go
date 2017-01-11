@@ -19,7 +19,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
 )
 
 const DefaultElasticsearchAddress = "localhost:9200"
@@ -246,33 +245,8 @@ func (sys *SystemConfig) WaitForService(name ServiceName) error {
 		return err
 	}
 
-	err = sys.WaitForServiceByAddress(name, addr)
-	return err
-}
-
-func (sys *SystemConfig) WaitForServiceByAddress(name ServiceName, address string) error {
-	url := fmt.Sprintf("%s://%s", DefaultProtocol, address)
-
-	msTime := 0
-
-	for {
-		resp, err := http.Get(url)
-		if err == nil && resp.StatusCode == http.StatusOK {
-			//log.Printf("found service %s", name)
-			err = resp.Body.Close()
-			return err
-		}
-		if msTime >= waitTimeoutMs {
-			err = resp.Body.Close()
-			if err != nil {
-				return err
-			}
-			return fmt.Errorf("timed out waiting for service: %s at %s", name, url)
-		}
-		time.Sleep(waitSleepMs * time.Millisecond)
-		msTime += waitSleepMs
-	}
-	/* notreached */
+	url := fmt.Sprintf("%s://%s", DefaultProtocol, addr)
+	return WaitForService(name, url)
 }
 
 func (sys *SystemConfig) WaitForServiceToDie(name ServiceName) error {
@@ -281,31 +255,6 @@ func (sys *SystemConfig) WaitForServiceToDie(name ServiceName) error {
 		return err
 	}
 
-	err = sys.WaitForServiceToDieByAddress(name, addr)
-	return err
-}
-
-func (sys *SystemConfig) WaitForServiceToDieByAddress(name ServiceName, address string) error {
-	url := fmt.Sprintf("%s://%s", DefaultProtocol, address)
-
-	msTime := 0
-
-	for {
-		resp, err := http.Get(url)
-		if err != nil {
-			return nil
-		}
-
-		err = resp.Body.Close()
-		if err != nil {
-			return err
-		}
-
-		if msTime >= waitTimeoutMs {
-			return fmt.Errorf("timed out waiting for service to die: %s at %s", name, url)
-		}
-		time.Sleep(waitSleepMs * time.Millisecond)
-		msTime += waitSleepMs
-	}
-	/* notreached */
+	url := fmt.Sprintf("%s://%s", DefaultProtocol, addr)
+	return WaitForServiceToDie(name, url)
 }

@@ -595,3 +595,40 @@ func Test12NilWriter(t *testing.T) {
 	err = w.Close()
 	assert.NoError(err)
 }
+
+func Test13MultiWriter(t *testing.T) {
+	assert := assert.New(t)
+
+	var err error
+
+	m1, _ := makeMessage(false)
+	m2, _ := makeMessage(true)
+
+	w1 := &LocalReaderWriter{}
+	w2 := &LocalReaderWriter{}
+	ws := []Writer{w1, w2}
+
+	mw := NewMultiWriter(ws)
+
+	err = mw.Write(m1)
+	assert.NoError(err)
+
+	err = mw.Write(m2)
+	assert.NoError(err)
+
+	{
+		ms, err := w1.Read(2)
+		assert.NoError(err)
+		assert.EqualValues("AlphaYow", ms[0].Message)
+		assert.EqualValues("BetaYow", ms[1].Message)
+	}
+	{
+		ms, err := w2.Read(2)
+		assert.NoError(err)
+		assert.EqualValues("AlphaYow", ms[0].Message)
+		assert.EqualValues("BetaYow", ms[1].Message)
+	}
+
+	err = mw.Close()
+	assert.NoError(err)
+}
