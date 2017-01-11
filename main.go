@@ -17,6 +17,7 @@ package main
 import (
 	"log"
 
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
@@ -64,15 +65,22 @@ func makeClients() (
 		log.Fatal(err)
 	}
 
-	logUrl, err := sys.GetURL(piazza.PzLogger)
+	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
 	if err != nil {
 		log.Fatal(err)
 	}
-	logWriter, err := pzsyslog.NewHttpWriter(logUrl, "")
+
+	idx, err := elasticsearch.NewIndex(sys, loggerIndex, "")
 	if err != nil {
 		log.Fatal(err)
 	}
-	auditWriter := &pzsyslog.NilWriter{}
+
+	logWriter, auditWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stdOutWriter := pzsyslog.STDOUTWriter{}
 
 	url, err := sys.GetURL(piazza.PzUuidgen)
 	if err != nil {
@@ -83,5 +91,5 @@ func makeClients() (
 		log.Fatal(err)
 	}
 
-	return sys, logWriter, auditWriter, uuidgen
+	return sys, logWriter, pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditWriter, &stdOutWriter}), uuidgen
 }

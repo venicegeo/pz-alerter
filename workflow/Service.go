@@ -57,9 +57,8 @@ type Service struct {
 	stats Stats
 	sync.Mutex
 
-	logger    *pzsyslog.Logger
-	syslogger *pzsyslog.Logger // TODO just for now
-	auditor   *pzsyslog.Logger
+	logger  *pzsyslog.Logger
+	auditor *pzsyslog.Logger
 
 	uuidgen pzuuidgen.IClient
 

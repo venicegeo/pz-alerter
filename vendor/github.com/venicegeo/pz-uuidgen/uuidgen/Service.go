@@ -28,10 +28,9 @@ import (
 
 type Service struct {
 	sync.Mutex
-	stats   Stats
-	logger  *pzsyslog.Logger
-	auditor *pzsyslog.Logger
-	origin  string
+	stats     Stats
+	syslogger *pzsyslog.Logger
+	origin    string
 }
 
 //---------------------------------------------------------------------
@@ -41,17 +40,16 @@ func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer
 
 	service.origin = string(sys.Name)
 
-	service.logger = pzsyslog.NewLogger(logWriter, string(piazza.PzUuidgen))
-	service.auditor = pzsyslog.NewLogger(auditWriter, string(piazza.PzUuidgen))
+	service.syslogger = pzsyslog.NewLogger(logWriter, auditWriter, string(piazza.PzUuidgen))
 
-	_ = service.logger.Info("uuidgen service started")
+	_ = service.syslogger.Info("uuidgen service started")
 
 	return nil
 }
 
 func (service *Service) GetStats() *piazza.JsonResponse {
 	//log.Printf("uuidgen stats service called (1)")
-	_ = service.logger.Info("uuidgen stats service called")
+	_ = service.syslogger.Info("uuidgen stats service called")
 
 	service.Lock()
 	data := service.stats

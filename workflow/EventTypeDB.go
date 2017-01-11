@@ -47,14 +47,11 @@ func (db *EventTypeDB) PostData(eventType *EventType) error {
 	}
 	indexResult, err := db.Esi.PostData(db.mapping, eventType.EventTypeID.String(), eventType)
 	if err != nil {
-		db.service.syslogger.DebugAudit(eventType.CreatedBy, "createEventType", eventType.EventTypeID.String(), "EventTypeDB.PostData: failed")
 		return LoggedError("EventTypeDB.PostData failed: %s", err)
 	}
 	if !indexResult.Created {
-		db.service.syslogger.DebugAudit(eventType.CreatedBy, "createEventType", eventType.EventTypeID.String(), "EventTypeDB.PostData: failed")
 		return LoggedError("EventTypeDB.PostData failed: not created")
 	}
-	db.service.syslogger.DebugAudit(eventType.CreatedBy, "createEventType", eventType.EventTypeID.String(), "EventTypeDB.PostData: success")
 
 	return nil
 }
@@ -62,7 +59,6 @@ func (db *EventTypeDB) PostData(eventType *EventType) error {
 func (db *EventTypeDB) GetAll(format *piazza.JsonPagination, actor string) ([]EventType, int64, error) {
 	eventTypes := []EventType{}
 
-	db.service.syslogger.DebugAudit(actor, "readType", db.mapping, "EventTypeDB.GetAll: check type exists")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return eventTypes, 0, err
@@ -71,7 +67,6 @@ func (db *EventTypeDB) GetAll(format *piazza.JsonPagination, actor string) ([]Ev
 		return eventTypes, 0, nil
 	}
 
-	db.service.syslogger.DebugAudit(actor, "readEventTypes", db.mapping, "EventTypeDB.GetAll: match all query")
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("EventTypeDB.GetAll failed: %s", err)
