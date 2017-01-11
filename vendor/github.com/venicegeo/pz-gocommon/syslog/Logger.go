@@ -120,6 +120,9 @@ func (logger *Logger) postAudit(mssg *Message) error {
 	if err != nil {
 		return fmt.Errorf("logger.postMessage: %s <<%#v>>", err.Error(), mssg)
 	}
+	if logger.logWriter != nil {
+		_ = logger.logWriter.Write(mssg)
+	}
 
 	return nil
 }

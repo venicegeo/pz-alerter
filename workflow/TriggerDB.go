@@ -75,7 +75,6 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 	}
 
 	//log.Printf("Posting percolation query: %s", body)
-	db.service.syslogger.DebugAudit(trigger.CreatedBy, "create", trigger.TriggerID.String(), "TriggerDB.PostTrigger")
 	indexResult, err := db.service.eventDB.Esi.AddPercolationQuery(trigger.TriggerID.String(), piazza.JsonString(body))
 	if err != nil {
 		var errMessage string
@@ -104,27 +103,22 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 	}
 	intTrigger, err := piazza.StructStringToInterface(strTrigger)
 	if err != nil {
-		db.service.syslogger.DebugAudit(trigger.CreatedBy, "delete", trigger.TriggerID.String(), "TriggerDB.PostTrigger")
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	mapTrigger, ok := intTrigger.(map[string]interface{})
 	if !ok {
-		db.service.syslogger.DebugAudit(trigger.CreatedBy, "delete", trigger.TriggerID.String(), "TriggerDB.PostTrigger")
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return LoggedError("TriggerDB.PostData failed: bad trigger")
 	}
 	fixedTrigger := replaceDot(mapTrigger)
 
-	db.service.syslogger.DebugAudit(trigger.CreatedBy, "create", trigger.TriggerID.String(), "TriggerDB.PostTrigger")
 	indexResult2, err := db.Esi.PostData(db.mapping, trigger.TriggerID.String(), fixedTrigger)
 	if err != nil {
-		db.service.syslogger.DebugAudit(trigger.CreatedBy, "delete", trigger.TriggerID.String(), "TriggerDB.PostTrigger")
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
-		db.service.syslogger.DebugAudit(trigger.CreatedBy, "delete", trigger.TriggerID.String(), "TriggerDB.PostTrigger")
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return LoggedError("TriggerDB.PostData failed: not created")
 	}
@@ -148,7 +142,6 @@ func (db *TriggerDB) PutTrigger(trigger *Trigger, update *TriggerUpdate, actor s
 	}
 	fixedTrigger := replaceDot(mapTrigger)
 
-	db.service.syslogger.DebugAudit(actor, "update", trigger.TriggerID.String(), "TriggerDB.PutTrigger")
 	_, err = db.Esi.PutData(db.mapping, trigger.TriggerID.String(), fixedTrigger)
 	if err != nil {
 		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
@@ -159,7 +152,6 @@ func (db *TriggerDB) PutTrigger(trigger *Trigger, update *TriggerUpdate, actor s
 func (db *TriggerDB) GetAll(format *piazza.JsonPagination, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
-	db.service.syslogger.DebugAudit(actor, "read", db.mapping, "TriggerDB.GetAll")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return triggers, 0, err
@@ -168,7 +160,6 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination, actor string) ([]Trig
 		return triggers, 0, nil
 	}
 
-	db.service.syslogger.DebugAudit(actor, "read", db.mapping, "TriggerDB.GetAll")
 	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetAll failed: %s", err)
@@ -192,7 +183,6 @@ func (db *TriggerDB) GetAll(format *piazza.JsonPagination, actor string) ([]Trig
 func (db *TriggerDB) GetTriggersByDslQuery(dslString string, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
-	db.service.syslogger.DebugAudit(actor, "read", db.mapping, "TriggerDB.GetTriggersByDslQuery")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return triggers, 0, err
@@ -201,7 +191,6 @@ func (db *TriggerDB) GetTriggersByDslQuery(dslString string, actor string) ([]Tr
 		return triggers, 0, nil
 	}
 
-	db.service.syslogger.DebugAudit(actor, "read", db.mapping, "TriggerDB.GetTriggersByDslQuery")
 	searchResult, err := db.Esi.SearchByJSON(db.mapping, dslString)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetTriggersByDslQuery failed: %s", err)
@@ -223,7 +212,6 @@ func (db *TriggerDB) GetTriggersByDslQuery(dslString string, actor string) ([]Tr
 }
 
 func (db *TriggerDB) GetOne(id piazza.Ident, actor string) (*Trigger, bool, error) {
-	db.service.syslogger.DebugAudit(actor, "read", string(id), "TriggerDB.GetOne")
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
 		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
@@ -247,7 +235,6 @@ func (db *TriggerDB) GetOne(id piazza.Ident, actor string) (*Trigger, bool, erro
 func (db *TriggerDB) GetTriggersByEventTypeID(format *piazza.JsonPagination, id piazza.Ident, actor string) ([]Trigger, int64, error) {
 	triggers := []Trigger{}
 
-	db.service.syslogger.DebugAudit(actor, "read", db.mapping, "TriggerDB.GetTriggersByEventTypeID")
 	exists, err := db.Esi.TypeExists(db.mapping)
 	if err != nil {
 		return triggers, 0, err
@@ -256,7 +243,6 @@ func (db *TriggerDB) GetTriggersByEventTypeID(format *piazza.JsonPagination, id 
 		return triggers, 0, nil
 	}
 
-	db.service.syslogger.DebugAudit(actor, "read", db.mapping, "TriggerDB.GetTriggersByEventTypeID")
 	searchResult, err := db.Esi.FilterByTermQuery(db.mapping, "eventTypeId", id, format)
 	if err != nil {
 		return nil, 0, LoggedError("TriggerDB.GetTriggersByEventTypeId failed: %s", err)
@@ -286,7 +272,6 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident, actor string) (bool, error) 
 		return false, nil
 	}
 
-	db.service.syslogger.DebugAudit(actor, "delete", string(id), "TriggerDB.DeleteTrigger")
 	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
 	if err != nil {
 		return deleteResult.Found, LoggedError("TriggerDB.DeleteById failed: %s", err)
@@ -298,7 +283,6 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident, actor string) (bool, error) 
 		return false, nil
 	}
 
-	db.service.syslogger.DebugAudit(actor, "delete", string(trigger.PercolationID), "TriggerDB.DeleteTrigger")
 	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
 	if err != nil {
 		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
