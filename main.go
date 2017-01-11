@@ -17,7 +17,6 @@ package main
 import (
 	"log"
 
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
@@ -25,53 +24,27 @@ import (
 )
 
 func main() {
-	sys, logWriter, auditWriter, uuidgen := makeSystem()
-
 	log.Printf("pz-workflow starting...")
 
-	indices := makeIndexes(sys)
+	sys, logWriter, auditWriter, uuidgen := makeClients()
 
-	workflowServer := makeWorkflow(sys, indices, logWriter, auditWriter, uuidgen)
+	kit, err := pzworkflow.NewKit(sys, logWriter, auditWriter, uuidgen, false)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	serverLoop(sys, workflowServer)
+	err = kit.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = kit.Wait()
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
-func makeWorkflow(sys *piazza.SystemConfig,
-	indices []*elasticsearch.Index,
-	logWriter pzsyslog.Writer,
-	auditWriter pzsyslog.Writer,
-	uuidgen pzuuidgen.IClient) *pzworkflow.Server {
-	workflowService := &pzworkflow.Service{}
-	err := workflowService.Init(
-		sys,
-		logWriter,
-		auditWriter,
-		uuidgen,
-		indices[0],
-		indices[1],
-		indices[2],
-		indices[3],
-		indices[4],
-		indices[5])
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = workflowService.InitCron()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	workflowServer := &pzworkflow.Server{}
-	err = workflowServer.Init(workflowService)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return workflowServer
-}
-
-func makeSystem() (
+func makeClients() (
 	*piazza.SystemConfig,
 	pzsyslog.Writer,
 	pzsyslog.Writer,
@@ -111,54 +84,4 @@ func makeSystem() (
 	}
 
 	return sys, logWriter, auditWriter, uuidgen
-}
-
-func serverLoop(sys *piazza.SystemConfig,
-	workflowServer *pzworkflow.Server) {
-	genericServer := piazza.GenericServer{Sys: sys}
-
-	var err error
-	var done chan error
-
-	if err = genericServer.Configure(workflowServer.Routes); err != nil {
-		log.Fatal(err)
-	}
-
-	if done, err = genericServer.Start(); err != nil {
-		log.Fatal(err)
-	}
-
-	if err = <-done; err != nil {
-		log.Fatal(err)
-	}
-}
-
-func makeIndexes(sys *piazza.SystemConfig) []*elasticsearch.Index {
-	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex *elasticsearch.Index
-	var err error
-
-	if eventtypesIndex, err = elasticsearch.NewIndex(sys, "eventtypes003", pzworkflow.EventTypeIndexSettings); err != nil {
-		log.Fatal(err)
-	}
-	if eventsIndex, err = elasticsearch.NewIndex(sys, "events004", pzworkflow.EventIndexSettings); err != nil {
-		log.Fatal(err)
-	}
-	if triggersIndex, err = elasticsearch.NewIndex(sys, "triggers003", pzworkflow.TriggerIndexSettings); err != nil {
-		log.Fatal(err)
-	}
-	if alertsIndex, err = elasticsearch.NewIndex(sys, "alerts003", pzworkflow.AlertIndexSettings); err != nil {
-		log.Fatal(err)
-	}
-	if cronIndex, err = elasticsearch.NewIndex(sys, "crons003", pzworkflow.CronIndexSettings); err != nil {
-		log.Fatal(err)
-	}
-	if testElasticsearchIndex, err = elasticsearch.NewIndex(sys, "testelasticsearch003", pzworkflow.TestElasticsearchSettings); err != nil {
-		log.Fatal(err)
-	}
-
-	ret := []*elasticsearch.Index{
-		eventtypesIndex, eventsIndex, triggersIndex,
-		alertsIndex, cronIndex, testElasticsearchIndex,
-	}
-	return ret
 }

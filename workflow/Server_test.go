@@ -73,40 +73,17 @@ func TestRunSuite(t *testing.T) {
 	auditWriter := &pzsyslog.LocalReaderWriter{}
 
 	var uuidgen pzuuidgen.IClient
-
 	uuidgen, err = pzuuidgen.NewMockClient()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	var eventtypesIndex, eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex elasticsearch.IIndex
-	eventtypesIndex = elasticsearch.NewMockIndex("eventtypes")
-	eventsIndex = elasticsearch.NewMockIndex("events")
-	triggersIndex = elasticsearch.NewMockIndex("triggers")
-	alertsIndex = elasticsearch.NewMockIndex("alerts")
-	cronIndex = elasticsearch.NewMockIndex("crons")
-	testElasticsearchIndex = elasticsearch.NewMockIndex("testElasticsearch")
-
-	workflowService := &Service{}
-	err = workflowService.Init(sys, logWriter, auditWriter, uuidgen, eventtypesIndex,
-		eventsIndex, triggersIndex, alertsIndex, cronIndex, testElasticsearchIndex)
-	if err != nil {
-		log.Fatal(err)
-	}
-	workflowServer := &Server{}
-	err = workflowServer.Init(workflowService)
+	kit, err := NewKit(sys, logWriter, auditWriter, uuidgen, true)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	genericServer := piazza.GenericServer{Sys: sys}
-
-	err = genericServer.Configure(workflowServer.Routes)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	_, err = genericServer.Start()
+	err = kit.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -127,26 +104,10 @@ func TestRunSuite(t *testing.T) {
 	clientTester := &ClientTester{client: client, sys: sys}
 	suite.Run(t, clientTester)
 
-	err = eventtypesIndex.Delete()
+	err = kit.Stop()
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	err = eventsIndex.Delete()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = triggersIndex.Delete()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = alertsIndex.Delete()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 }
 
 //---------------------------------------------------------------------------

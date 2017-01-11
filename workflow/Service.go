@@ -39,6 +39,13 @@ import (
 const ingestTypeName = "piazza:ingest"
 const executeTypeName = "piazza:executionComplete"
 
+const keyEventTypes = "eventtypes"
+const keyEvents = "events"
+const keyTriggers = "triggers"
+const keyAlerts = "alerts"
+const keyCrons = "crons"
+const keyTestElasticsearch = "testElasticsearch"
+
 type Service struct {
 	eventTypeDB         *EventTypeDB
 	eventDB             *EventDB
@@ -71,12 +78,15 @@ func (service *Service) Init(
 	logWriter pzsyslog.Writer,
 	auditWriter pzsyslog.Writer,
 	uuidgen pzuuidgen.IClient,
-	eventtypesIndex elasticsearch.IIndex,
-	eventsIndex elasticsearch.IIndex,
-	triggersIndex elasticsearch.IIndex,
-	alertsIndex elasticsearch.IIndex,
-	cronIndex elasticsearch.IIndex,
-	testElasticsearchIndex elasticsearch.IIndex) error {
+	indices *map[string]elasticsearch.IIndex,
+) error {
+
+	eventtypesIndex := (*indices)[keyEventTypes]
+	eventsIndex := (*indices)[keyEvents]
+	triggersIndex := (*indices)[keyTriggers]
+	alertsIndex := (*indices)[keyAlerts]
+	cronIndex := (*indices)[keyCrons]
+	testElasticsearchIndex := (*indices)[keyTestElasticsearch]
 
 	var err error
 
