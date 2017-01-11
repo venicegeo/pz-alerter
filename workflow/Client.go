@@ -16,9 +16,7 @@ package workflow
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
-	"strings"
 
 	"fmt"
 
@@ -60,28 +58,28 @@ func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, erro
 	return service, nil
 }
 
-func NewClient2(url string, apiKey string) (*Client, error) {
+//func NewClient2(url string, apiKey string) (*Client, error) {
 
-	var err error
+//	var err error
 
-	h := piazza.Http{BaseUrl: url, ApiKey: apiKey}
+//	h := piazza.Http{BaseUrl: url, ApiKey: apiKey}
 
-	loggerURL := strings.Replace(url, "piazza", "logger", 1)
-	loggerURL = strings.Replace(loggerURL, "pz-workflow", "logger", 1)
-	logWriter, err := pzsyslog.NewHttpWriter(loggerURL, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
+//	loggerURL := strings.Replace(url, "piazza", "logger", 1)
+//	loggerURL = strings.Replace(loggerURL, "pz-workflow", "logger", 1)
+//	logWriter, err := pzsyslog.NewHttpWriter(loggerURL, "")
+//	if err != nil {
+//		log.Fatal(err)
+//	}
+//	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
 
-	service := &Client{
-		url:    url,
-		logger: logger,
-		h:      h,
-	}
+//	service := &Client{
+//		url:    url,
+//		logger: logger,
+//		h:      h,
+//	}
 
-	return service, nil
-}
+//	return service, nil
+//}
 
 //------------------------------------------------------------------------------
 

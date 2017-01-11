@@ -57,9 +57,7 @@ type Service struct {
 	stats Stats
 	sync.Mutex
 
-	logger    *pzsyslog.Logger
-	syslogger *pzsyslog.Logger // TODO just for now
-	auditor   *pzsyslog.Logger
+	syslogger *pzsyslog.Logger
 
 	uuidgen pzuuidgen.IClient
 
@@ -90,10 +88,7 @@ func (service *Service) Init(
 
 	var err error
 
-	service.logger = pzsyslog.NewLogger(logWriter, string(piazza.PzWorkflow))
-	service.auditor = pzsyslog.NewLogger(auditWriter, string(piazza.PzWorkflow))
-
-	service.syslogger = service.logger // TODO just for now
+	service.syslogger = pzsyslog.NewLogger(logWriter, auditWriter, string(piazza.PzWorkflow))
 
 	service.sys, service.uuidgen = sys, uuidgen
 

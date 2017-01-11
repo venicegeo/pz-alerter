@@ -25,7 +25,8 @@ import (
 // Logger is the "helper" class that can (should) be used by services to send messages.
 // Client needs to supply the right kind of Writer.
 type Logger struct {
-	writer           Writer
+	logWriter        Writer
+	auditWriter      Writer
 	MinimumSeverity  Severity // minimum severity level you want to record
 	UseSourceElement bool
 	application      string
@@ -33,7 +34,7 @@ type Logger struct {
 	processId        string
 }
 
-func NewLogger(writer Writer, application string) *Logger {
+func NewLogger(logWriter Writer, auditWriter Writer, application string) *Logger {
 	hostname, err := os.Hostname()
 	if err != nil {
 		hostname = "UNKNOWN_HOSTNAME"
@@ -42,7 +43,8 @@ func NewLogger(writer Writer, application string) *Logger {
 	processId := strconv.Itoa(os.Getpid())
 
 	logger := &Logger{
-		writer:           writer,
+		logWriter:        logWriter,
+		auditWriter:      auditWriter,
 		MinimumSeverity:  Debug,
 		UseSourceElement: true,
 		application:      application,
@@ -84,7 +86,7 @@ func (logger *Logger) makeMessage(severity Severity, text string, v ...interface
 
 // postMessage sends a log message
 func (logger *Logger) postMessage(mssg *Message) error {
-	if logger.writer == nil {
+	if logger.logWriter == nil {
 		return fmt.Errorf("No writer set for logger")
 	}
 
@@ -92,9 +94,34 @@ func (logger *Logger) postMessage(mssg *Message) error {
 		return nil
 	}
 
-	err := logger.writer.Write(mssg)
+	err := logger.logWriter.Write(mssg)
 	if err != nil {
 		return fmt.Errorf("logger.postMessage: %s <<%#v>>", err.Error(), mssg)
+	}
+
+	return nil
+}
+
+// postAudit sends an audit message
+func (logger *Logger) postAudit(mssg *Message) error {
+	if logger.auditWriter == nil {
+		return fmt.Errorf("No writer set for logger")
+	}
+
+	if !logger.severityAllowed(mssg.Severity) {
+		return nil
+	}
+
+	if !mssg.IsSecurityAudit() {
+		return fmt.Errorf("Logger trying to audit a log")
+	}
+
+	err := logger.auditWriter.Write(mssg)
+	if err != nil {
+		return fmt.Errorf("logger.postMessage: %s <<%#v>>", err.Error(), mssg)
+	}
+	if logger.logWriter != nil {
+		_ = logger.logWriter.Write(mssg)
 	}
 
 	return nil
@@ -154,19 +181,7 @@ func (logger *Logger) Audit(actor interface{}, action interface{}, actee interfa
 		Action: fmt.Sprint(action),
 		Actee:  fmt.Sprint(actee),
 	}
-	return logger.postMessage(mssg)
-}
-
-// Creates an audit message but does not send the message
-func (logger *Logger) DebugAudit(actor string, action string, actee string, text string, v ...interface{}) error {
-	mssg := logger.makeMessage(Notice, text, v...)
-	mssg.AuditData = &AuditElement{
-		Actor:  actor,
-		Action: action,
-		Actee:  actee,
-	}
-	return nil
-	//return logger.postMessage(mssg)
+	return logger.postAudit(mssg)
 }
 
 // Metric sends a log message with the metric SDE.
