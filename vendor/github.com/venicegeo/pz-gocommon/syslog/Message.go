@@ -340,3 +340,92 @@ func (se *SourceElement) String() string {
 		privateEnterpriseNumber, se.File, se.Function, se.Line)
 	return s
 }
+
+const LogMapping = `
+	{
+	    "dynamic": "strict",
+	    "properties": {
+	    	"facility": {
+        		"type": "integer"
+      		},
+      		"severity": {
+        		"type": "integer"
+      		},
+      		"version": {
+        		"type": "integer"
+      		},
+      		"timeStamp": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"hostName": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"application": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"process": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"messageId": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		},
+      		"auditData": {
+        		"dynamic": "strict",
+        		"properties": {
+          			"actor": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"action": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"actee": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			}
+        		}
+      		},
+     		"metricData": {
+        		"dynamic": "strict",
+        		"properties": {
+          			"name": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"value": {
+            			"type": "double"
+          			},
+          			"object": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			}
+        		}
+      		},
+      		"sourceData": {
+        		"dynamic": "strict",
+        		"properties": {
+          			"file": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"function": {
+            			"type": "string",
+            			"index": "not_analyzed"
+          			},
+          			"line": {
+            			"type": "integer"
+          			}
+        		}
+      		},
+      		"message": {
+        		"type": "string",
+        		"index": "not_analyzed"
+      		}
+    	}
+	}`

@@ -33,12 +33,16 @@ func main() {
 		log.Fatal(err)
 	}
 
-	var index string
-	if index = os.Getenv("LOGGER_INDEX"); index == "" {
+	var loggerIndex, loggerType string
+	if loggerIndex = os.Getenv("LOGGER_INDEX"); loggerIndex == "" {
 		log.Fatal("Elasticsearch index name not set")
 	}
+	if loggerType = os.Getenv("LOGGER_TYPE"); loggerType == "" {
+		log.Fatal("Elasticsearch type name not set")
+	}
+	pzlogger.SetLogSchema(loggerType)
 
-	idx, err := elasticsearch.NewIndex(sys, index, "")
+	idx, err := elasticsearch.NewIndex(sys, loggerIndex, "")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -47,7 +51,7 @@ func main() {
 	var existed bool
 
 	logWriter := syslogger.ElasticWriter{Esi: esi}
-	if err = logWriter.SetType(pzlogger.LogSchema); err != nil {
+	if err = logWriter.SetType(loggerType); err != nil {
 		log.Fatal(err)
 	}
 	if existed, err = logWriter.CreateIndex(); err != nil {
@@ -60,7 +64,7 @@ func main() {
 		log.Fatal(err)
 	}
 	if !existed {
-		log.Printf("Created type: %s", pzlogger.LogSchema)
+		log.Printf("Created type: %s", loggerType)
 	}
 
 	stdOutWriter := syslogger.STDOUTWriter{}

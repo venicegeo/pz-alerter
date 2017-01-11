@@ -10,3 +10,4 @@ applications:
       - pz-elasticsearch
   env:
     LOGGER_INDEX: pzlogger4
+    LOGGER_TYPE: LogData

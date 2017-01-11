@@ -34,32 +34,7 @@ type UuidgenTester struct {
 	logWriter      pzsyslog.Writer
 	auditWriter    pzsyslog.Writer
 	client         IClient
-	genericServer  *piazza.GenericServer
-	server         *Server
-	service        *Service
-}
-
-func (suite *UuidgenTester) startServer() {
-	var err error
-
-	suite.service = &Service{}
-	err = suite.service.Init(suite.sys, suite.logWriter, suite.auditWriter)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	suite.server = &Server{}
-	suite.server.Init(suite.service)
-
-	suite.genericServer = &piazza.GenericServer{Sys: suite.sys}
-	err = suite.genericServer.Configure(suite.server.Routes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err = suite.genericServer.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
+	kit            *Kit
 }
 
 func (suite *UuidgenTester) SetupSuite() {
@@ -79,17 +54,24 @@ func (suite *UuidgenTester) SetupSuite() {
 	suite.totalRequested = 0
 	suite.totalGenerated = 0
 
-	suite.startServer()
+	suite.kit, err = NewKit(suite.sys, suite.logWriter, suite.auditWriter)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	url := piazza.DefaultProtocol + "://" + suite.genericServer.Sys.BindTo
-	suite.client, err = NewClient(url, "")
+	err = suite.kit.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	suite.client, err = NewClient(suite.kit.Url, "")
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 func (suite *UuidgenTester) TearDownSuite() {
-	err := suite.genericServer.Stop()
+	err := suite.kit.Stop()
 	if err != nil {
 		panic(err)
 	}

@@ -47,26 +47,17 @@ func main() {
 		log.Fatal(err)
 	}
 
-	service := &pzuuidgen.Service{}
-	err = service.Init(sys, logWriter, auditWriter)
+	kit, err := pzuuidgen.NewKit(sys, logWriter, auditWriter)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	server := &pzuuidgen.Server{}
-	server.Init(service)
-
-	genericServer := &piazza.GenericServer{Sys: sys}
-	err = genericServer.Configure(server.Routes)
-	if err != nil {
-		log.Fatal(err)
-	}
-	done, err := genericServer.Start()
+	err = kit.Start()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = <-done
+	err = kit.Wait()
 	if err != nil {
 		log.Fatal(err)
 	}

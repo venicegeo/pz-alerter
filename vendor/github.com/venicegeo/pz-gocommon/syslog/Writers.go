@@ -29,6 +29,53 @@ const (
 	SyslogdRaddr   = ""
 )
 
+func GetRequiredEnvVars() (string, string, string, error) {
+	var loggerIndex, loggerType, auditType string
+	if loggerIndex = os.Getenv("LOGGER_INDEX"); loggerIndex == "" {
+		return "", "", "", errors.New("Elasticsearch index name not set")
+	}
+	if loggerType = os.Getenv("LOGGER_TYPE"); loggerType == "" {
+		return "", "", "", errors.New("Elasticsearch type name not set")
+	}
+	if auditType = os.Getenv("AUDIT_TYPE"); auditType == "" {
+		return "", "", "", errors.New("Elasticsearch audit type name not set")
+	}
+	return loggerIndex, loggerType, auditType, nil
+}
+
+func GetRequiredESIWriters(esi elasticsearch.IIndex, loggerType string, auditType string) (*ElasticWriter, *ElasticWriter, error) {
+	var logWriter, auditWriter ElasticWriter
+	var indexExisted, typeExisted, auditTypeExisted bool
+	var err error
+	logWriter = ElasticWriter{Esi: esi}
+	if err = logWriter.SetType(loggerType); err != nil {
+		return nil, nil, err
+	}
+	if indexExisted, err = logWriter.CreateIndex(); err != nil {
+		return nil, nil, err
+	}
+	if !indexExisted {
+		fmt.Println("Created index:", esi.IndexName())
+	}
+	if typeExisted, err = logWriter.CreateType(LogMapping); err != nil {
+		return nil, nil, err
+	}
+	if !typeExisted {
+		fmt.Println("Created type:", loggerType)
+	}
+	auditWriter = ElasticWriter{Esi: esi}
+	if err = auditWriter.SetType(auditType); err != nil {
+		return &logWriter, nil, err
+	}
+	if auditTypeExisted, err = auditWriter.CreateType(LogMapping); err != nil {
+		return &logWriter, nil, err
+	}
+	if !auditTypeExisted {
+		fmt.Println("Created type:", auditType)
+	}
+	return &logWriter, &auditWriter, err
+}
+
 //---------------------------------------------------------------------
 
 // Writer is an interface for writing a Message to some sort of output.

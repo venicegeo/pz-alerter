@@ -58,7 +58,7 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 	}
 
 	// make backend DB writer
-	mock.esWriter = syslog.NewElasticWriter(mock.esi, LogSchema)
+	mock.esWriter = syslog.NewElasticWriter(mock.esi, logSchema)
 
 	// make service, server, and generic server
 	{
