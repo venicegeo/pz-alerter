@@ -4,8 +4,8 @@ sudo apt-get upgrade
 
 # get golang
 cd /usr/local
-sudo wget https://storage.googleapis.com/golang/go1.6.2.linux-amd64.tar.gz
-sudo tar -C /usr/local -xzf go1.6.2.linux-amd64.tar.gz
+sudo wget https://storage.googleapis.com/golang/go1.7.4.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.7.4.linux-amd64.tar.gz
 
 # add go to path
 echo 'export PATH=$PATH:/usr/local/go/bin' >>/home/vagrant/.bash_profile
