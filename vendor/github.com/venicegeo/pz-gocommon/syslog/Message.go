@@ -19,7 +19,8 @@ import (
 	"path"
 	"runtime"
 	"strings"
-	"time"
+
+	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 )
 
 //---------------------------------------------------------------------
@@ -45,19 +46,20 @@ const (
 
 // Message represents all the fields of a native RFC5424 object, plus
 // our own SDEs.
+//
 type Message struct {
-	Facility    int            `json:"facility"`
-	Severity    Severity       `json:"severity"`
-	Version     int            `json:"version"`
-	TimeStamp   time.Time      `json:"timeStamp"`
-	HostName    string         `json:"hostName"`
-	Application string         `json:"application"`
-	Process     string         `json:"process"`
-	MessageID   string         `json:"messageId"`
-	AuditData   *AuditElement  `json:"auditData"`
-	MetricData  *MetricElement `json:"metricData"`
-	SourceData  *SourceElement `json:"sourceData"`
-	Message     string         `json:"message"`
+	Facility    int              `json:"facility"`
+	Severity    Severity         `json:"severity"`
+	Version     int              `json:"version"`
+	TimeStamp   piazza.TimeStamp `json:"timeStamp"` // see note above
+	HostName    string           `json:"hostName"`
+	Application string           `json:"application"`
+	Process     string           `json:"process"`
+	MessageID   string           `json:"messageId"`
+	AuditData   *AuditElement    `json:"auditData"`
+	MetricData  *MetricElement   `json:"metricData"`
+	SourceData  *SourceElement   `json:"sourceData"`
+	Message     string           `json:"message"`
 }
 
 // NewMessage returns a Message with some of the defaults filled in for you.
@@ -68,7 +70,7 @@ func NewMessage() *Message {
 		Facility:    DefaultFacility,
 		Severity:    -1,
 		Version:     DefaultVersion,
-		TimeStamp:   time.Now().Round(time.Millisecond),
+		TimeStamp:   piazza.NewTimeStamp(),
 		HostName:    "",
 		Application: "", // Go's syslogd library calls this "tag"
 		Process:     "",
@@ -86,7 +88,7 @@ func NewMessage() *Message {
 func (m *Message) String() string {
 	pri := m.Facility*8 + m.Severity.Value()
 
-	timestamp := m.TimeStamp.Format(time.RFC3339)
+	timestamp := m.TimeStamp.String()
 
 	host := m.HostName
 	if host == "" {
@@ -178,7 +180,9 @@ func (m *Message) validate() error {
 	if m.Version != DefaultVersion {
 		return fmt.Errorf("Invalid Message.Version: %d", m.Version)
 	}
-	// nothing to check for m.TimeStamp
+	if err := m.TimeStamp.Validate(); err != nil {
+		return err
+	}
 	if m.HostName == "" {
 		return fmt.Errorf("Message.HostName not set")
 	}

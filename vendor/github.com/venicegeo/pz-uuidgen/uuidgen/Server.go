@@ -32,7 +32,7 @@ const Version = "1.0.0"
 
 //--------------------------------------------------
 
-func (server *Server) Init(service *Service) {
+func (server *Server) Init(service *Service) error {
 	server.Routes = []piazza.RouteData{
 		{Verb: "GET", Path: "/", Handler: server.handleGetRoot},
 		{Verb: "GET", Path: "/version", Handler: server.handleGetVersion},
@@ -40,6 +40,7 @@ func (server *Server) Init(service *Service) {
 		{Verb: "POST", Path: "/uuids", Handler: server.handlePostUuids},
 	}
 	server.service = service
+	return nil
 }
 
 func (server *Server) handleGetRoot(c *gin.Context) {

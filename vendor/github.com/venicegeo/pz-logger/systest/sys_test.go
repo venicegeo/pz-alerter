@@ -17,7 +17,6 @@ package systest
 import (
 	"bytes"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -39,8 +38,9 @@ func sleep(n int) {
 type LoggerTester struct {
 	suite.Suite
 
-	writer     pzsyslog.Writer
-	httpWriter *pzsyslog.HttpWriter // just a typed copy of writer
+	logWriter   pzsyslog.Writer
+	httpWriter  *pzsyslog.HttpWriter // just a typed copy of logWriter
+	auditWriter pzsyslog.Writer
 
 	logger    *pzsyslog.Logger
 	apiKey    string
@@ -72,8 +72,10 @@ func (suite *LoggerTester) setupFixture() {
 	assert.NoError(err)
 
 	suite.httpWriter, err = pzsyslog.NewHttpWriter(suite.loggerUrl, suite.apiKey)
-	suite.writer = suite.httpWriter
+	suite.logWriter = suite.httpWriter
 	assert.NoError(err)
+
+	suite.auditWriter, err = pzsyslog.NewHttpWriter(suite.loggerUrl, suite.apiKey)
 
 	uniq := strconv.FormatInt(time.Now().Unix(), 10)
 
@@ -83,14 +85,14 @@ func (suite *LoggerTester) setupFixture() {
 	suite.mssgProcess = strconv.Itoa(os.Getpid())
 	suite.mmsgSeverity = pzsyslog.Informational
 
-	suite.logger = pzsyslog.NewLogger(suite.writer, suite.mssgApplication)
+	suite.logger = pzsyslog.NewLogger(suite.logWriter, suite.auditWriter, suite.mssgApplication)
 }
 
 func (suite *LoggerTester) teardownFixture() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	err := suite.writer.Close()
+	err := suite.logWriter.Close()
 	assert.NoError(err)
 }
 
@@ -270,18 +272,12 @@ func (suite *LoggerTester) Test04Post() {
 
 	var err error
 
-	nowl := time.Now()
-	nowz := time.Now().UTC()
-	keyl := "KEYL KEYL KEYL " + nowl.String()
+	nowz := piazza.NewTimeStamp()
 	keyz := "KEYZ KEYZ KEYZ " + nowz.String()
 
-	mssgl := suite.makeMessage(keyl)
 	mssgz := suite.makeMessage(keyz)
-	mssgl.TimeStamp = nowl
 	mssgz.TimeStamp = nowz
 
-	err = suite.httpWriter.Write(mssgl)
-	assert.NoError(err)
 	err = suite.httpWriter.Write(mssgz)
 	assert.NoError(err)
 
@@ -289,9 +285,6 @@ func (suite *LoggerTester) Test04Post() {
 	sleep(2)
 
 	suite.verifyMessage(keyz)
-
-	log.Printf("*** *** *** SKIPPED TEST (post using local time) *** *** ***")
-	////suite.verifyMessage(keyl)
 }
 
 func (suite *LoggerTester) Test05Logger() {
@@ -308,8 +301,7 @@ func (suite *LoggerTester) Test05Logger() {
 
 	sleep(2)
 
-	log.Printf("*** *** *** SKIPPED TEST (post using local time) *** *** ***")
-	////suite.verifyMessage(uniq)
+	suite.verifyMessage(uniq)
 }
 
 func (suite *LoggerTester) Test06Admin() {
@@ -358,8 +350,10 @@ func (suite *LoggerTester) Test07Pagination() {
 		assert.True(last <= 9)
 
 		// we can't check "strictly before", because two timeStamps might be the same
-		isBefore := ms[0].TimeStamp.Before(ms[last].TimeStamp)
-		isEqual := ms[0].TimeStamp.Equal(ms[last].TimeStamp)
+		t0 := time.Time(ms[0].TimeStamp)
+		tlast := time.Time(ms[last].TimeStamp)
+		isBefore := t0.Before(tlast)
+		isEqual := t0.Equal(tlast)
 		assert.True(isBefore || isEqual)
 
 		format.Order = piazza.SortOrderDescending
@@ -368,8 +362,10 @@ func (suite *LoggerTester) Test07Pagination() {
 		last = len(ms) - 1
 		assert.True(last <= 9)
 
-		isAfter := ms[0].TimeStamp.After(ms[last].TimeStamp)
-		isEqual = ms[0].TimeStamp.Equal(ms[last].TimeStamp)
+		t0 = time.Time(ms[0].TimeStamp)
+		tlast = time.Time(ms[last].TimeStamp)
+		isAfter := t0.After(tlast)
+		isEqual = t0.Equal(tlast)
 		assert.True(isAfter || isEqual)
 	}
 
@@ -401,16 +397,12 @@ func (suite *LoggerTester) Test08Params() {
 	uniq := "Test08/" + strconv.Itoa(time.Now().Nanosecond())
 
 	delta := time.Duration(10 * time.Second)
-	tstart := time.Now().Add(-delta)
+	tstart := time.Now().Add(-delta).UTC()
 
-	log.Printf("*** *** *** FUDGED TEST (post using local time) *** *** ***")
-	//suite.logger.Information(uniq)
-	mssg := suite.makeMessage(uniq)
-	mssg.TimeStamp = mssg.TimeStamp.UTC()
-	err := suite.httpWriter.Write(mssg)
+	err := suite.logger.Information(uniq)
 	assert.NoError(err)
 
-	tend := time.Now().Add(delta)
+	tend := time.Now().Add(delta).UTC()
 
 	sleep(1)
 
@@ -443,8 +435,7 @@ func (suite *LoggerTester) Test08Params() {
 		msgs, _, err := suite.httpWriter.GetMessages(format, params)
 		assert.NoError(err)
 
-		log.Printf("*** *** *** SKIPPED TEST (service= not correct yet) *** *** ***")
-		assert.Len(msgs, 0) // should be 1
+		assert.Len(msgs, 1)
 	}
 
 	// test contains param
@@ -452,10 +443,9 @@ func (suite *LoggerTester) Test08Params() {
 		params := &piazza.HttpQueryParams{}
 		params.AddString("contains", suite.mssgHostName)
 
-		log.Printf("*** *** *** SKIPPED TEST (contains= not correct yet) *** *** ***")
-		//msgs, _, err := suite.httpWriter.GetMessages(format, params)
-		//assert.NoError(err)
+		msgs, _, err := suite.httpWriter.GetMessages(format, params)
+		assert.NoError(err)
 
-		//assert.True(len(msgs) >= 1)
+		assert.True(len(msgs) >= 1)
 	}
 }

@@ -47,7 +47,10 @@ func NewKit(sys *piazza.SystemConfig, logWriter pzsyslog.Writer, auditWriter pzs
 	}
 
 	kit.Server = &Server{}
-	kit.Server.Init(kit.Service)
+	err = kit.Server.Init(kit.Service)
+	if err != nil {
+		return nil, err
+	}
 
 	kit.GenericServer = &piazza.GenericServer{Sys: kit.Sys}
 	err = kit.GenericServer.Configure(kit.Server.Routes)

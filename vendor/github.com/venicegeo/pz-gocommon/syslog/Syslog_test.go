@@ -21,7 +21,6 @@ import (
 	"net/http"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -60,13 +59,10 @@ func safeRemove(s string) error {
 func makeMessage(sde bool) (*Message, string) {
 	m := NewMessage()
 
-	// because ParseMessageString isn't as accurate as we could be
-	now := time.Now().Round(time.Second)
-
 	m.Facility = DefaultFacility
 	m.Severity = Fatal // pri = 1*8 + 2 = 10
 	m.Version = DefaultVersion
-	m.TimeStamp = now
+	m.TimeStamp = piazza.NewTimeStamp()
 	m.HostName = "HOST"
 	m.Application = "APPLICATION"
 	m.Process = "1234"
@@ -75,7 +71,7 @@ func makeMessage(sde bool) (*Message, string) {
 	m.MetricData = nil
 	m.Message = "AlphaYow"
 
-	expected := "<10>1 " + m.TimeStamp.Format(time.RFC3339) + " HOST APPLICATION 1234 msg1of2 - AlphaYow"
+	expected := "<10>1 " + m.TimeStamp.String() + " HOST APPLICATION 1234 msg1of2 - AlphaYow"
 
 	if sde {
 		m.Message = "BetaYow"
@@ -91,7 +87,7 @@ func makeMessage(sde bool) (*Message, string) {
 			Object: "_object_",
 		}
 
-		expected = "<10>1 " + m.TimeStamp.Format(time.RFC3339) + " HOST APPLICATION 1234 msg1of2 " +
+		expected = "<10>1 " + m.TimeStamp.String() + " HOST APPLICATION 1234 msg1of2 " +
 			"[pzaudit@48851 actor=\"=actor=\" action=\"-action-\" actee=\"_actee_\"] " +
 			"[pzmetric@48851 name=\"=name=\" value=\"-3.140000\" object=\"_object_\"] " +
 			"BetaYow"

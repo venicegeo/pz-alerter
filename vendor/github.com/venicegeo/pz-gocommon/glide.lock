@@ -1,5 +1,5 @@
 hash: a3ef1ed44c69b1f82632020fc6a02fb2bbc8b94d4ca1af324bbacb6ff5f5a5da
-updated: 2017-01-12T11:55:38.144454509-05:00
+updated: 2017-01-12T12:03:50.408347693-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -43,7 +43,7 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: golang.org/x/net
-  version: 60c41d1de8da134c05b7b40154a9a82bf5b7edb9
+  version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
   - context/ctxhttp

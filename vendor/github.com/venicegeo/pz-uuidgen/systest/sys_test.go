@@ -54,7 +54,7 @@ func (suite *UuidgenTester) setupFixture() {
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
 
-	client, err := uuidgen.NewClient2(suite.url, suite.apiKey)
+	client, err := uuidgen.NewClient(suite.url, suite.apiKey)
 	assert.NoError(err)
 	suite.client = client
 }
