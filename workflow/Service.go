@@ -15,7 +15,6 @@
 package workflow
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -757,43 +756,15 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				}
 				jobString := string(jobInstance)
 
-				authzURL, err5 := service.sys.GetURL(piazza.PzIdam)
+				idamURL, err5 := service.sys.GetURL(piazza.PzIdam)
 				if err5 == nil { //Mocking
-					//                         \/ Subject to change \/
-					req := fmt.Sprintf(`{
-											"username": "%s",
-											"action": {
-												"requestMethod": "POST",
-												"uri": "job" 
-											}
-										}`, trigger.CreatedBy)
 					service.syslogger.Audit("pz-workflow", "createJobRequestAccess", "pz-idam", "User [%s] POSTed event [%s] requesting access to trigger [%s] created by [%s]", event.CreatedBy, event.EventID, trigger.TriggerID, trigger.CreatedBy)
-					code, body, _, err6 := piazza.HTTP(piazza.POST, authzURL+"/authz", piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), bytes.NewReader([]byte(req)))
+					auth, err6 := piazza.RequestAuthZAccess(idamURL, eventType.CreatedBy)
 					if err6 != nil {
 						results[triggerID] = service.statusInternalError(err6)
 						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
 						return
-					}
-					if code != 200 {
-						results[triggerID] = service.statusInternalError(errors.New("AuthZ response code not 200"))
-						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
-						return
-					}
-					var respon map[string]interface{}
-					if err8 := json.Unmarshal(body, &respon); err8 != nil {
-						results[triggerID] = service.statusInternalError(err8)
-						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "could not unmarshall: %s", err8.Error())
-						return
-					}
-					if iAuth, ok := respon["isAuthSuccess"]; !ok {
-						results[triggerID] = service.statusInternalError(errors.New("AuthZ response doesn't contain isAuthSuccess field"))
-						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
-						return
-					} else if bAuth, ok := iAuth.(bool); !ok {
-						results[triggerID] = service.statusInternalError(errors.New("AuthZ isAuthSuccess is not type bool"))
-						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
-						return
-					} else if !bAuth {
+					} else if !auth {
 						results[triggerID] = service.statusForbidden(errors.New("Access to create job denied"))
 						service.syslogger.Audit("pz-workflow", "createJobRequestAccessDenied", "pz-idam", "Event [%s] firing trigger [%s] was denied access to create job", event.EventID, trigger.TriggerID)
 						return
