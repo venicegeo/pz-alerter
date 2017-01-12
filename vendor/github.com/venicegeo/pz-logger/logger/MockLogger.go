@@ -27,9 +27,10 @@ type MockLoggerKit struct {
 
 	url string
 
-	SysLogger  *syslog.Logger
-	esWriter   syslog.WriterReader
-	httpWriter *syslog.HttpWriter
+	SysLogger   *syslog.Logger
+	esWriter    syslog.WriterReader
+	logWriter   *syslog.HttpWriter
+	auditWriter *syslog.HttpWriter
 }
 
 // MakeMockLogger starts a logger.Server, using a mocked ES backend.
@@ -62,11 +63,11 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 
 	// make service, server, and generic server
 	{
-		logWriters := []syslog.Writer{mock.esWriter}
-		auditWriters := []syslog.Writer{}
+		logWriter := mock.esWriter
+		auditWriter := &syslog.NilWriter{}
 
 		service := &Service{}
-		err = service.Init(mock.sys, logWriters, auditWriters, mock.esi)
+		err = service.Init(mock.sys, logWriter, auditWriter, mock.esi)
 		if err != nil {
 			return nil, err
 		}
@@ -89,15 +90,19 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 
 	mock.url = "http://" + mock.sys.BindTo
 
-	// make the client's writer
-	mock.httpWriter, err = syslog.NewHttpWriter(mock.url, "")
+	// make the client's writers
+	mock.logWriter, err = syslog.NewHttpWriter(mock.url, "")
+	if err != nil {
+		return nil, err
+	}
+	mock.auditWriter, err = syslog.NewHttpWriter(mock.url, "")
 	if err != nil {
 		return nil, err
 	}
 
 	// make syslog.Logger
 	{
-		mock.SysLogger = syslog.NewLogger(mock.httpWriter, "loggertesterapp")
+		mock.SysLogger = syslog.NewLogger(mock.logWriter, mock.auditWriter, "loggertesterapp")
 	}
 
 	return mock, nil
@@ -106,7 +111,12 @@ func NewMockLoggerKit() (*MockLoggerKit, error) {
 func (mock *MockLoggerKit) Close() error {
 	var err error
 
-	err = mock.httpWriter.Close()
+	err = mock.logWriter.Close()
+	if err != nil {
+		return err
+	}
+
+	err = mock.auditWriter.Close()
 	if err != nil {
 		return err
 	}

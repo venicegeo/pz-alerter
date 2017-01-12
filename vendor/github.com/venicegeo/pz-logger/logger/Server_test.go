@@ -48,7 +48,7 @@ func (suite *LoggerTester) setupFixture() {
 	assert.NoError(err)
 
 	suite.syslogger = suite.mockLogger.SysLogger
-	suite.writer = suite.mockLogger.httpWriter
+	suite.writer = suite.mockLogger.logWriter
 }
 
 func (suite *LoggerTester) teardownFixture() {
@@ -310,11 +310,11 @@ func (suite *LoggerTester) Test05ConstructDsl() {
 						"must":
 						[
 							{
-								"match":{"service":"myservice"}
+								"match":{"application":"myservice"}
 							},
 							{
 								"multi_match":{
-									"fields":["address", "message", "service", "severity"],
+									"fields":["hostName", "application", "process", "messageId", "message"],
 									"query":"mycontains"
 								}
 							},

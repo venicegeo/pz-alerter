@@ -243,11 +243,12 @@ func Test05Logger(t *testing.T) {
 	assert := assert.New(t)
 	var err error
 
-	writer := &LocalReaderWriter{}
+	logWriter := &LocalReaderWriter{}
+	auditWriter := &LocalReaderWriter{}
 
 	// the following clause is what a developer would do
 	{
-		logger := NewLogger(writer, "testapp")
+		logger := NewLogger(logWriter, auditWriter, "testapp")
 		logger.UseSourceElement = false
 		err = logger.Debug("debug %d", 999)
 		assert.NoError(err)
@@ -272,7 +273,7 @@ func Test05Logger(t *testing.T) {
 		assert.NoError(err)
 	}
 
-	mssgs, err := writer.Read(100)
+	mssgs, err := logWriter.Read(100)
 	assert.NoError(err)
 	assert.Len(mssgs, 10)
 
@@ -299,10 +300,11 @@ func Test06LogLevel(t *testing.T) {
 	assert := assert.New(t)
 	var err error
 
-	writer := &LocalReaderWriter{}
+	logWriter := &LocalReaderWriter{}
+	auditWriter := &LocalReaderWriter{}
 
 	{
-		logger := NewLogger(writer, "testapp")
+		logger := NewLogger(logWriter, auditWriter, "testapp")
 		logger.UseSourceElement = true
 		logger.MinimumSeverity = Error
 		err = logger.Warning("bonk")
@@ -313,7 +315,7 @@ func Test06LogLevel(t *testing.T) {
 		assert.NoError(err)
 	}
 
-	mssgs, err := writer.Read(10)
+	mssgs, err := logWriter.Read(10)
 	assert.NoError(err)
 	assert.Len(mssgs, 2)
 
@@ -406,7 +408,7 @@ func Test09ElasticsearchWriter(t *testing.T) {
 func Test10Errors(t *testing.T) {
 	assert := assert.New(t)
 
-	logger := NewLogger(nil, "testapp")
+	logger := NewLogger(nil, nil, "testapp")
 	err := logger.Warning("bonk")
 	assert.Error(err)
 }

@@ -132,13 +132,39 @@ func GetApiKey(pzserver string) (string, error) {
 	return key, nil
 }
 
-// GetApiServer gets the $PZSERVER host.
+// TODO: just for backwards compatability
 func GetApiServer() (string, error) {
-	pzserver := os.Getenv("PZSERVER")
-	if pzserver == "" {
+	server := os.Getenv("PZSERVER")
+	if server == "" {
 		return "", fmt.Errorf("$PZSERVER not set")
 	}
-	return pzserver, nil
+	return server, nil
+}
+
+// GetPiazzaServer returns the URL of the $PZSERVER host, i.e. the public entry point.
+func GetPiazzaUrl() (string, error) {
+	host, err := GetApiServer()
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s://%s", DefaultProtocol, host), nil
+}
+
+// GetServiceServer returns the host name of the given service, based on $PZSERVER.
+func GetPiazzaServiceUrl(serviceName ServiceName) (string, error) {
+	pzHost, err := GetApiServer()
+	if err != nil {
+		return "", err
+	}
+
+	i := strings.Index(pzHost, ".")
+	if i < 1 {
+		return "", fmt.Errorf("Piazza server name is malformed: %s", pzHost)
+	}
+
+	serviceHost := string(serviceName) + pzHost[i:]
+
+	return fmt.Sprintf("%s://%s", DefaultProtocol, serviceHost), nil
 }
 
 // GetExternalIP returns the "best"(?) IP address we can reasonably get.

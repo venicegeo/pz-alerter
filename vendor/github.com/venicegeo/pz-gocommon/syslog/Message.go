@@ -341,7 +341,7 @@ func (se *SourceElement) String() string {
 	return s
 }
 
-const LogMapping = `
+var LogMapping = fmt.Sprintf(`
 	{
 	    "dynamic": "strict",
 	    "properties": {
@@ -355,8 +355,8 @@ const LogMapping = `
         		"type": "integer"
       		},
       		"timeStamp": {
-        		"type": "string",
-        		"index": "not_analyzed"
+        		"type": "date",
+        		"format": "%s"
       		},
       		"hostName": {
         		"type": "string",
@@ -428,4 +428,17 @@ const LogMapping = `
         		"index": "not_analyzed"
       		}
     	}
-	}`
+	}`, generateTimeFormat())
+
+func generateTimeFormat() string {
+	temp := `yyyy-MM-dd'T'HH:mm:ss.%sZZ`
+	res := `yyyy-MM-dd'T'HH:mm:ssZZ`
+	for i := 1; i < 8; i++ {
+		s := ""
+		for j := 0; j < i; j++ {
+			s += "S"
+		}
+		res += "||" + fmt.Sprintf(temp, s)
+	}
+	return res
+}
