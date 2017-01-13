@@ -50,7 +50,7 @@ func main() {
 
 	for _, mssg := range array {
 
-		date := mssg.TimeStamp.Format(time.RFC3339)
+		date := mssg.TimeStamp.String()
 		app := mssg.Application
 		sev := SeverityString(mssg.Severity)
 		text := mssg.Message
@@ -81,8 +81,8 @@ func main() {
 		fmt.Printf("%s\t%s\t%s\n", app, sev, text)
 	}
 
-	tstart := array[0].TimeStamp
-	tend := array[count-1].TimeStamp
+	tstart := time.Time(array[0].TimeStamp)
+	tend := time.Time(array[count-1].TimeStamp)
 	deltaS := tend.Sub(tstart).Seconds()
 	deltaM := tend.Sub(tstart).Minutes()
 	deltaH := tend.Sub(tstart).Hours()

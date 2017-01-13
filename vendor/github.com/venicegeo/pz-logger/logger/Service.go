@@ -41,6 +41,7 @@ type Service struct {
 
 func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer, esi elasticsearch.IIndex) error {
 	service.stats.CreatedOn = time.Now()
+	service.stats.NumMessagesByApplication = map[string]int{}
 
 	service.logWriter = logWriter
 	service.auditWriter = auditWriter
@@ -66,6 +67,13 @@ func (service *Service) newBadRequestResponse(err error) *piazza.JsonResponse {
 		Message:    err.Error(),
 		Origin:     service.origin,
 	}
+}
+
+func (service *Service) incrementStats(application string) {
+	service.Lock()
+	service.stats.NumMessages++
+	service.stats.NumMessagesByApplication[application]++
+	service.Unlock()
 }
 
 func (service *Service) GetRoot() *piazza.JsonResponse {
@@ -201,6 +209,8 @@ func (service *Service) PostSyslog(mNew *pzsyslog.Message) *piazza.JsonResponse 
 		return service.newInternalErrorResponse(err)
 	}
 
+	service.incrementStats(mNew.Application)
+
 	resp := &piazza.JsonResponse{
 		StatusCode: http.StatusOK,
 	}
@@ -224,10 +234,6 @@ func (service *Service) postSyslog(mssg *pzsyslog.Message) error {
 			return fmt.Errorf("syslog.Service.postSyslog (audit): %s", err.Error())
 		}
 	}
-
-	service.Lock()
-	service.stats.NumMessages++
-	service.Unlock()
 
 	return nil
 }

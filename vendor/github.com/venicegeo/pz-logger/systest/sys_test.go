@@ -449,3 +449,35 @@ func (suite *LoggerTester) Test08Params() {
 		assert.True(len(msgs) >= 1)
 	}
 }
+
+func (suite *LoggerTester) Test09Query() {
+	t := suite.T()
+	assert := assert.New(t)
+
+	suite.setupFixture()
+	defer suite.teardownFixture()
+
+	jsn := `
+{
+    "query": {
+        "match_all": {}
+    },
+	"size": 5,
+	"from": 0,
+	"sort": {
+		"timeStamp": "asc"
+	}
+}`
+
+	h := &piazza.Http{BaseUrl: suite.loggerUrl}
+	resp := h.PzPost("/query", jsn)
+
+	assert.False(resp.IsError())
+	assert.Nil(resp.ToError())
+
+	data := []pzsyslog.Message{}
+	err := resp.ExtractData(&data)
+	assert.NoError(err)
+
+	assert.Len(data, 5)
+}

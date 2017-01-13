@@ -17,6 +17,8 @@ package logger
 import (
 	"net/http"
 
+	"encoding/json"
+
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	syslogger "github.com/venicegeo/pz-gocommon/syslog"
@@ -88,8 +90,14 @@ func (server *Server) handlePostSyslog(c *gin.Context) {
 func (server *Server) handlePostQuery(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
 
-	var dslObj interface{}
-	err := c.BindJSON(&dslObj)
+	// We have been given a string (containing JSON) and we want to
+	// pass that to the service handler. There doesn't appear to be
+	// a BindString function, so we will convert that to an dumb object
+	// in the normal way, and then decode that object back out to a
+	// JSON string.
+	var obj interface{}
+
+	err := c.Bind(&obj)
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
@@ -99,8 +107,8 @@ func (server *Server) handlePostQuery(c *gin.Context) {
 		return
 	}
 
-	s, ok := dslObj.(string)
-	if !ok {
+	byts, err := json.Marshal(obj)
+	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,
 			Message:    "handlePostQuery: bad string format",
@@ -109,6 +117,6 @@ func (server *Server) handlePostQuery(c *gin.Context) {
 		return
 	}
 
-	resp := server.service.PostQuery(params, s)
+	resp := server.service.PostQuery(params, string(byts))
 	piazza.GinReturnJson(c, resp)
 }

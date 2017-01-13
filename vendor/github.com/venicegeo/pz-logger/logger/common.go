@@ -30,7 +30,9 @@ type Stats struct {
 
 	// this is the number of messages since the service was started,
 	// not the total number of messages in the system
-	NumMessages float64 `json:"numMessages"`
+	NumMessages int `json:"numMessages"`
+
+	NumMessagesByApplication map[string]int `json:"numMessagesByApplication"`
 }
 
 //---------------------------------------------------------------------------

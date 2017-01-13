@@ -440,8 +440,16 @@ func (suite *LoggerTester) Test08PostQuery() {
 
 	jsn := `
 {
-	"Foo": "bar"
+    "query": {
+        "match_all": {}
+    },
+	"size": 10000,
+	"from": 0,
+	"sort": {
+		"timeStamp": "asc"
+	}
 }`
+
 	resp := h.PzPost("/query", jsn)
 	assert.True(resp.IsError())
 	assert.Error(resp.ToError())
