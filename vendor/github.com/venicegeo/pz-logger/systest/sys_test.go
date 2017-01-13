@@ -103,7 +103,7 @@ func TestRunSuite(t *testing.T) {
 
 func (suite *LoggerTester) verifyMessage(expected string) {
 	format := &piazza.JsonPagination{
-		PerPage: 50,
+		PerPage: 500, // has to be this high, in case logger is under high load
 		Page:    0,
 		SortBy:  "timeStamp",
 		Order:   piazza.SortOrderDescending,
@@ -136,7 +136,6 @@ func (suite *LoggerTester) verifyMessageF(
 
 func (suite *LoggerTester) getVersion() (*piazza.Version, error) {
 	h := &piazza.Http{BaseUrl: suite.loggerUrl}
-
 	jresp := h.PzGet("/version")
 	if jresp.IsError() {
 		return nil, jresp.ToError()
@@ -169,7 +168,6 @@ func (suite *LoggerTester) makeMessage(text string) *pzsyslog.Message {
 	var err error
 
 	m := pzsyslog.NewMessage()
-
 	m.Message = text
 	m.HostName, err = piazza.GetExternalIP()
 	assert.NoError(err)
@@ -261,6 +259,8 @@ func (suite *LoggerTester) Test03Get() {
 	ms, _, err := suite.httpWriter.GetMessages(format, nil)
 	assert.NoError(err)
 	assert.Len(ms, format.PerPage)
+
+	assert.False(time.Time(ms[0].TimeStamp).IsZero())
 }
 
 func (suite *LoggerTester) Test04Post() {

@@ -19,7 +19,7 @@ import (
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	syslogger "github.com/venicegeo/pz-gocommon/syslog"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzlogger "github.com/venicegeo/pz-logger/logger"
 )
 
@@ -32,7 +32,50 @@ func main() {
 		log.Fatal(err)
 	}
 
-	loggerIndex, loggerType, auditType, err := syslogger.GetRequiredEnvVars()
+	idx, logESWriter, auditESWriter, err := setupES(sys)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	stdoutWriter := pzsyslog.STDOUTWriter{}
+	auditWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditESWriter, &stdoutWriter})
+
+	kit, err := pzlogger.NewKit(sys, logESWriter, auditWriter, idx)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = kit.Start()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = kit.Wait()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = closeES(idx, logESWriter, auditWriter)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func closeES(idx elasticsearch.IIndex, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer) error {
+	err := logWriter.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = auditWriter.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return idx.Close()
+}
+
+func setupES(sys *piazza.SystemConfig) (elasticsearch.IIndex, pzsyslog.Writer, pzsyslog.Writer, error) {
+	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -41,39 +84,13 @@ func main() {
 
 	idx, err := elasticsearch.NewIndex(sys, loggerIndex, "")
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, nil, err
 	}
 
-	logWriter, auditWriter, err := syslogger.GetRequiredESIWriters(idx, loggerType, auditType)
+	logESWriter, auditESWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
 	if err != nil {
-		log.Fatal(err)
+		return nil, nil, nil, err
 	}
 
-	stdOutWriter := syslogger.STDOUTWriter{}
-
-	service := &pzlogger.Service{}
-	err = service.Init(sys, logWriter, syslogger.NewMultiWriter([]syslogger.Writer{auditWriter, &stdOutWriter}), idx)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	server := &pzlogger.Server{}
-	server.Init(service)
-
-	genericServer := piazza.GenericServer{Sys: sys}
-
-	err = genericServer.Configure(server.Routes)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	done, err := genericServer.Start()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = <-done
-	if err != nil {
-		log.Fatal(err)
-	}
+	return idx, logESWriter, auditESWriter, nil
 }

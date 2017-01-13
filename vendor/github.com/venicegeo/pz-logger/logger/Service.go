@@ -24,7 +24,7 @@ import (
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	syslogger "github.com/venicegeo/pz-gocommon/syslog"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 type Service struct {
@@ -33,13 +33,13 @@ type Service struct {
 	stats  Stats
 	origin string
 
-	logWriter   syslogger.Writer
-	auditWriter syslogger.Writer
+	logWriter   pzsyslog.Writer
+	auditWriter pzsyslog.Writer
 
 	esIndex elasticsearch.IIndex
 }
 
-func (service *Service) Init(sys *piazza.SystemConfig, logWriter syslogger.Writer, auditWriter syslogger.Writer, esi elasticsearch.IIndex) error {
+func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer, esi elasticsearch.IIndex) error {
 	service.stats.CreatedOn = time.Now()
 
 	service.logWriter = logWriter
@@ -190,7 +190,7 @@ func createQueryDslAsString(
 	return string(output), nil
 }
 
-func (service *Service) PostSyslog(mNew *syslogger.Message) *piazza.JsonResponse {
+func (service *Service) PostSyslog(mNew *pzsyslog.Message) *piazza.JsonResponse {
 	err := mNew.Validate()
 	if err != nil {
 		return service.newBadRequestResponse(err)
@@ -207,17 +207,18 @@ func (service *Service) PostSyslog(mNew *syslogger.Message) *piazza.JsonResponse
 	return resp
 }
 
-func (service *Service) postSyslog(mssg *syslogger.Message) error {
-
+func (service *Service) postSyslog(mssg *pzsyslog.Message) error {
 	var err error
 	isAudit := mssg.AuditData != nil
 
-	err = service.logWriter.Write(mssg)
-	if err != nil {
-		return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
+	if service.logWriter != nil {
+		err = service.logWriter.Write(mssg)
+		if err != nil {
+			return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
+		}
 	}
 
-	if isAudit {
+	if isAudit && service.auditWriter != nil {
 		err = service.auditWriter.Write(mssg)
 		if err != nil {
 			return fmt.Errorf("syslog.Service.postSyslog (audit): %s", err.Error())
@@ -301,9 +302,9 @@ func (service *Service) GetSyslog(params *piazza.HttpQueryParams) *piazza.JsonRe
 	return resp
 }
 
-func extractFromSearchResult(searchResult *elasticsearch.SearchResult) ([]syslogger.Message, error) {
+func extractFromSearchResult(searchResult *elasticsearch.SearchResult) ([]pzsyslog.Message, error) {
 
-	var lines = make([]syslogger.Message, 0, len(*searchResult.GetHits()))
+	var lines = make([]pzsyslog.Message, 0, len(*searchResult.GetHits()))
 
 	if searchResult == nil || searchResult.GetHits() == nil {
 		return lines, nil
@@ -315,7 +316,7 @@ func extractFromSearchResult(searchResult *elasticsearch.SearchResult) ([]syslog
 			continue
 		}
 
-		msg := syslogger.Message{}
+		msg := pzsyslog.Message{}
 		err := json.Unmarshal(*hit.Source, &msg)
 		if err != nil {
 			log.Printf("UNABLE TO PARSE: %s", string(*hit.Source))

@@ -29,7 +29,7 @@ type Server struct {
 
 const Version = "1.0.0"
 
-func (server *Server) Init(service *Service) {
+func (server *Server) Init(service *Service) error {
 	server.service = service
 
 	server.Routes = []piazza.RouteData{
@@ -42,6 +42,8 @@ func (server *Server) Init(service *Service) {
 
 		{Verb: "POST", Path: "/query", Handler: server.handlePostQuery},
 	}
+
+	return nil
 }
 
 func (server *Server) handleGetRoot(c *gin.Context) {
@@ -69,6 +71,7 @@ func (server *Server) handleGetSyslog(c *gin.Context) {
 
 func (server *Server) handlePostSyslog(c *gin.Context) {
 	sysM := syslogger.NewMessage()
+
 	err := c.BindJSON(&sysM)
 	if err != nil {
 		resp := &piazza.JsonResponse{

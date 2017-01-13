@@ -16,14 +16,18 @@ package logger
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"testing"
 	"time"
 
+	"os"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
-	"github.com/venicegeo/pz-gocommon/syslog"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 )
 
 //---------------------------------------------------------------------
@@ -31,31 +35,79 @@ import (
 type LoggerTester struct {
 	suite.Suite
 
-	mockLogger *MockLoggerKit
+	kit *Kit
 
-	syslogger *syslog.Logger
-	writer    syslog.WriterReader
+	//	logWriter pzsyslog.Writer
+	logReader *pzsyslog.LocalReaderWriter
+	logger    *pzsyslog.Logger
 }
 
 func (suite *LoggerTester) setupFixture() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	var err error
+	// may need to update these over time
+	{
+		os.Setenv("AUDIT_TYPE", "AuditData")
+		os.Setenv("LOGGER_TYPE", "LoggerData")
+		os.Setenv("LOGGER_INDEX", "pzlogger4")
+	}
 
-	// make the server
-	suite.mockLogger, err = NewMockLoggerKit()
-	assert.NoError(err)
+	// set up the logger server
+	{
+		required := []piazza.ServiceName{}
+		sys, err := piazza.NewSystemConfig(piazza.PzLogger, required)
+		assert.NoError(err)
 
-	suite.syslogger = suite.mockLogger.SysLogger
-	suite.writer = suite.mockLogger.logWriter
+		idx, logESWriter, auditESWriter, err := setupES(sys)
+		assert.NoError(err)
+
+		rwLogReader := &pzsyslog.LocalReaderWriter{}
+		auditWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditESWriter, rwLogReader})
+
+		rwLogWriter := &pzsyslog.LocalReaderWriter{}
+		logWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{logESWriter, rwLogWriter})
+
+		suite.kit, err = NewKit(sys, logWriter, auditWriter, idx)
+		assert.NoError(err)
+
+		err = suite.kit.Start()
+		assert.NoError(err)
+
+		suite.logReader = rwLogWriter // backdoor, for testing
+	}
+
+	// set up the client support
+	{
+		writer, err := pzsyslog.NewHttpWriter(suite.kit.Url, "")
+		assert.NoError(err)
+		suite.logger = pzsyslog.NewLogger(writer, writer, "pz-logger/unittest")
+	}
+}
+
+func setupES(sys *piazza.SystemConfig) (elasticsearch.IIndex, pzsyslog.Writer, pzsyslog.Writer, error) {
+	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
+	if err != nil {
+		log.Fatal(err)
+	}
+	SetLogSchema(loggerType)
+	SetAuditSchema(auditType)
+
+	idx := elasticsearch.NewMockIndex(loggerIndex)
+
+	logESWriter, auditESWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return idx, logESWriter, auditESWriter, nil
 }
 
 func (suite *LoggerTester) teardownFixture() {
 	t := suite.T()
 	assert := assert.New(t)
 
-	err := suite.mockLogger.Close()
+	err := suite.kit.Stop()
 	assert.NoError(err)
 }
 
@@ -67,7 +119,7 @@ func TestRunSuite(t *testing.T) {
 //---------------------------------------------------------------------
 
 func (suite *LoggerTester) getVersion() (*piazza.Version, error) {
-	h := &piazza.Http{BaseUrl: suite.mockLogger.url}
+	h := &piazza.Http{BaseUrl: suite.kit.Url}
 
 	jresp := h.PzGet("/version")
 	if jresp.IsError() {
@@ -84,7 +136,7 @@ func (suite *LoggerTester) getVersion() (*piazza.Version, error) {
 }
 
 func (suite *LoggerTester) getStats(output interface{}) error {
-	h := &piazza.Http{BaseUrl: suite.mockLogger.url}
+	h := &piazza.Http{BaseUrl: suite.kit.Url}
 
 	jresp := h.PzGet("/admin/stats")
 	if jresp.IsError() {
@@ -102,16 +154,9 @@ func (suite *LoggerTester) getLastMessage() string {
 	t := suite.T()
 	assert := assert.New(t)
 
-	format := piazza.JsonPagination{
-		PerPage: 100,
-		Page:    0,
-		Order:   "", // ignored by MockClient
-		SortBy:  "", // ignored by MockClient
-	}
-	ms, count, err := suite.writer.GetMessages(&format, nil)
+	ms, err := suite.logReader.Read(1)
 	assert.NoError(err)
 	assert.True(len(ms) > 0)
-	assert.True(count >= len(ms))
 
 	return ms[len(ms)-1].String()
 }
@@ -170,62 +215,39 @@ func (suite *LoggerTester) Test03Pagination() {
 
 	var err error
 
-	syslogger := suite.syslogger
-
-	err = syslogger.Debug("d")
+	err = suite.logger.Debug("d")
 	assert.NoError(err)
-	err = syslogger.Info("i")
+	err = suite.logger.Info("i")
 	assert.NoError(err)
-	err = syslogger.Warning("w")
+	err = suite.logger.Warning("w")
 	assert.NoError(err)
-	err = syslogger.Error("e")
+	err = suite.logger.Error("e")
 	assert.NoError(err)
-	err = syslogger.Fatal("f")
+	err = suite.logger.Fatal("f")
 	assert.NoError(err)
 
 	sleep()
 
-	format := piazza.JsonPagination{
-		PerPage: 1,
-		Page:    0,
-		SortBy:  "", // ignored by MockClient
-		Order:   "", // ignored by MockClient
-	}
-	ms, count, err := suite.writer.GetMessages(&format, nil)
+	ms, err := suite.logReader.Read(1)
 	assert.NoError(err)
 	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/syslog?page=0", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
 
 	assert.Len(ms, 1)
-	assert.EqualValues(syslog.Debug, ms[0].Severity)
-	assert.Equal(5, count)
+	assert.EqualValues(pzsyslog.Fatal, ms[0].Severity)
 
-	format = piazza.JsonPagination{
-		PerPage: 5,
-		Page:    0,
-		SortBy:  "", // ignored by MockClient
-		Order:   "", // ignored by MockClient
-	}
-	ms, count, err = suite.writer.GetMessages(&format, nil)
+	ms, err = suite.logReader.Read(5)
 	assert.NoError(err)
 	assert.Len(ms, 5)
-	assert.EqualValues(syslog.Debug, ms[0].Severity)
-	assert.EqualValues(syslog.Fatal, ms[4].Severity)
-	assert.Equal(5, count)
+	assert.EqualValues(pzsyslog.Debug, ms[0].Severity)
+	assert.EqualValues(pzsyslog.Fatal, ms[4].Severity)
 
-	format = piazza.JsonPagination{
-		PerPage: 3,
-		Page:    1,
-		SortBy:  "", // ignored by MockClient
-		Order:   "", // ignored by MockClient
-	}
-	ms, count, err = suite.writer.GetMessages(&format, nil)
+	ms, err = suite.logReader.Read(8)
 	assert.NoError(err)
-	assert.Len(ms, 2)
+	assert.Len(ms, 5)
 
-	assert.EqualValues(syslog.Error, ms[0].Severity)
-	assert.EqualValues(syslog.Fatal, ms[1].Severity)
-	assert.Equal(5, count)
+	assert.EqualValues(pzsyslog.Error, ms[3].Severity)
+	assert.EqualValues(pzsyslog.Fatal, ms[4].Severity)
 }
 
 // this test uses an ES query that is not supported under mocking
@@ -354,37 +376,7 @@ func (suite *LoggerTester) Test06Server() {
 	assert.Equal("yow", resp.Origin)
 }
 
-func (suite *LoggerTester) Test07GetMessagesErrors() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	suite.setupFixture()
-	defer suite.teardownFixture()
-
-	format := piazza.JsonPagination{
-		PerPage: 1,
-		Page:    0,
-		SortBy:  "d",
-		Order:   "asc",
-	}
-	mssgs, count, err := suite.writer.GetMessages(&format, nil)
-	assert.NoError(err)
-	assert.Equal(0, count)
-	assert.EqualValues([]syslog.Message{}, mssgs)
-
-	format = piazza.JsonPagination{
-		PerPage: 9999,
-		Page:    9999,
-		SortBy:  "",
-		Order:   "",
-	}
-	mssgs, count, err = suite.writer.GetMessages(&format, nil)
-	assert.NoError(err)
-	assert.Equal(0, count)
-	assert.EqualValues([]syslog.Message{}, mssgs)
-}
-
-func (suite *LoggerTester) Test08Syslog() {
+func (suite *LoggerTester) Test07Syslog() {
 	t := suite.T()
 	assert := assert.New(t)
 
@@ -393,29 +385,27 @@ func (suite *LoggerTester) Test08Syslog() {
 
 	var err error
 
-	syslogger := suite.syslogger
-
 	{
 		s := "The quick brown fox"
-		err = syslogger.Warning(s)
+		err = suite.logger.Warning(s)
 		assert.NoError(err)
 		sleep()
 		actual := suite.getLastMessage()
 		assert.Contains(actual, s)
 		pri := fmt.Sprintf("<%d>%d",
-			8*syslog.DefaultFacility+syslog.Warning.Value(), syslog.DefaultVersion)
+			8*pzsyslog.DefaultFacility+pzsyslog.Warning.Value(), pzsyslog.DefaultVersion)
 		assert.Contains(actual, pri)
 	}
 
 	{
 		s := "The lazy dog"
-		err := syslogger.Error(s)
+		err := suite.logger.Error(s)
 		assert.NoError(err)
 		sleep()
 		actual := suite.getLastMessage()
 		assert.Contains(actual, s)
 		pri := fmt.Sprintf("<%d>%d",
-			8*syslog.DefaultFacility+syslog.Error.Value(), syslog.DefaultVersion)
+			8*pzsyslog.DefaultFacility+pzsyslog.Error.Value(), pzsyslog.DefaultVersion)
 		assert.Contains(actual, pri)
 	}
 
@@ -427,25 +417,26 @@ func (suite *LoggerTester) Test08Syslog() {
 	}
 
 	{
-		err := syslogger.Audit("123", "login", "456", "789")
+		err := suite.logger.Audit("123", "login!", "456", "789")
 		assert.NoError(err)
 		sleep()
+
 		actual := suite.getLastMessage()
 		assert.Contains(actual, "login")
 		pri := fmt.Sprintf("<%d>%d",
-			8*syslog.DefaultFacility+syslog.Notice.Value(), syslog.DefaultVersion)
+			8*pzsyslog.DefaultFacility+pzsyslog.Notice.Value(), pzsyslog.DefaultVersion)
 		assert.Contains(actual, pri)
 	}
 }
 
-func (suite *LoggerTester) Test09PostQuery() {
+func (suite *LoggerTester) Test08PostQuery() {
 	t := suite.T()
 	assert := assert.New(t)
 
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	h := &piazza.Http{BaseUrl: suite.mockLogger.url}
+	h := &piazza.Http{BaseUrl: suite.kit.Url}
 
 	jsn := `
 {

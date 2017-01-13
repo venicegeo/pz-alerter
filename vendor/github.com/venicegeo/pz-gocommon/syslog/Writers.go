@@ -55,13 +55,13 @@ func GetRequiredESIWriters(esi elasticsearch.IIndex, loggerType string, auditTyp
 		return nil, nil, err
 	}
 	if !indexExisted {
-		fmt.Println("Created index:", esi.IndexName())
+		//fmt.Println("Created index:", esi.IndexName())
 	}
 	if typeExisted, err = logWriter.CreateType(LogMapping); err != nil {
 		return nil, nil, err
 	}
 	if !typeExisted {
-		fmt.Println("Created type:", loggerType)
+		//fmt.Println("Created type:", loggerType)
 	}
 	auditWriter = ElasticWriter{Esi: esi}
 	if err = auditWriter.SetType(auditType); err != nil {
@@ -71,7 +71,7 @@ func GetRequiredESIWriters(esi elasticsearch.IIndex, loggerType string, auditTyp
 		return &logWriter, nil, err
 	}
 	if !auditTypeExisted {
-		fmt.Println("Created type:", auditType)
+		//fmt.Println("Created type:", auditType)
 	}
 	return &logWriter, &auditWriter, err
 }

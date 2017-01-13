@@ -68,9 +68,9 @@ func (ts TimeStamp) MarshalJSON() ([]byte, error) {
 }
 
 func (ts *TimeStamp) UnmarshalJSON(data []byte) error {
-	t := time.Time(*ts)
-	tp := &t
-	return tp.UnmarshalJSON(data)
+	t := (*time.Time)(ts)
+	err := t.UnmarshalJSON(data)
+	return err
 }
 
 func (ts *TimeStamp) Validate() error {
