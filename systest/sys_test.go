@@ -27,12 +27,13 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	"github.com/venicegeo/pz-workflow/workflow"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
+	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
 
 type WorkflowTester struct {
 	suite.Suite
-	client        *workflow.Client
+	client        *pzworkflow.Client
 	url           string
 	apiKey        string
 	apiServer     string
@@ -65,17 +66,22 @@ func (suite *WorkflowTester) setupFixture() {
 	suite.apiServer, err = piazza.GetApiServer()
 	assert.NoError(err)
 
-	i := strings.Index(suite.apiServer, ".")
-	assert.NotEqual(1, i)
-	host := "pz-workflow" + suite.apiServer[i:]
-	suite.url = "http://" + host
+	suite.url, err = piazza.GetPiazzaServiceUrl(piazza.PzWorkflow)
+	assert.NoError(err)
 
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
 
-	client, err := workflow.NewClient2(suite.url, suite.apiKey)
+	loggerUrl, err := piazza.GetPiazzaServiceUrl(piazza.PzLogger)
 	assert.NoError(err)
-	suite.client = client
+	logWriter, err := pzsyslog.NewHttpWriter(loggerUrl, suite.apiKey)
+	assert.NoError(err)
+	auditWriter, err := pzsyslog.NewHttpWriter(loggerUrl, suite.apiKey)
+	assert.NoError(err)
+	logger := pzsyslog.NewLogger(logWriter, auditWriter, "pz-workflow/systest")
+
+	suite.client, err = pzworkflow.NewClient(suite.url, suite.apiKey, logger)
+	assert.NoError(err)
 
 	suite.uniq = "systest$" + strconv.Itoa(time.Now().Nanosecond())
 	suite.eventTypeName = suite.uniq + "-eventtype"
@@ -162,7 +168,7 @@ func (suite *WorkflowTester) Test02PostEventType() {
 
 	client := suite.client
 
-	eventType := &workflow.EventType{
+	eventType := &pzworkflow.EventType{
 		Name: suite.eventTypeName,
 		Mapping: map[string]interface{}{
 			"alpha": elasticsearch.MappingElementTypeString,
@@ -187,7 +193,7 @@ func (suite *WorkflowTester) Test03GetEventType() {
 
 	client := suite.client
 
-	items, err := client.GetAllEventTypes()
+	items, err := client.GetAllEventTypes(100, 0)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 	//log.Printf("Number of eventTypes (GetAll): %d", len(*items))
@@ -223,7 +229,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 
 	client := suite.client
 
-	trigger := &workflow.Trigger{
+	trigger := &pzworkflow.Trigger{
 		Name:        suite.triggerName,
 		Enabled:     false,
 		EventTypeID: suite.eventTypeID,
@@ -234,9 +240,9 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 				},
 			},
 		},
-		Job: workflow.JobRequest{
+		Job: pzworkflow.JobRequest{
 			CreatedBy: "test",
-			JobType: workflow.JobType{
+			JobType: pzworkflow.JobType{
 				Type: "execute-service",
 				Data: map[string]interface{}{
 					"dataInputs": map[string]interface{}{
@@ -280,7 +286,7 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 
 	client := suite.client
 
-	items, err := client.GetAllTriggers()
+	items, err := client.GetAllTriggers(100, 0)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
@@ -313,7 +319,7 @@ func (suite *WorkflowTester) Test05PutTrigger() {
 	assert.NotNil(item)
 	assert.EqualValues(suite.triggerID, item.TriggerID)
 
-	triggerUpdate := workflow.TriggerUpdate{
+	triggerUpdate := pzworkflow.TriggerUpdate{
 		Enabled: true,
 	}
 
@@ -332,7 +338,7 @@ func (suite *WorkflowTester) Test06PostEvent() {
 
 	client := suite.client
 
-	eventY := &workflow.Event{
+	eventY := &pzworkflow.Event{
 		EventTypeID: suite.eventTypeID,
 		Data: map[string]interface{}{
 			"beta":  goodBeta,
@@ -340,7 +346,7 @@ func (suite *WorkflowTester) Test06PostEvent() {
 		},
 	}
 
-	eventN := &workflow.Event{
+	eventN := &pzworkflow.Event{
 		EventTypeID: suite.eventTypeID,
 		Data: map[string]interface{}{
 			"beta":  71,
@@ -370,7 +376,7 @@ func (suite *WorkflowTester) Test07GetEvent() {
 
 	client := suite.client
 
-	items, err := client.GetAllEvents()
+	items, err := client.GetAllEvents(100, 0)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
@@ -400,7 +406,7 @@ func (suite *WorkflowTester) Test08PostAlert() {
 
 	client := suite.client
 
-	alert := &workflow.Alert{
+	alert := &pzworkflow.Alert{
 		TriggerID: "x",
 		EventID:   "y",
 		JobID:     "z",
@@ -420,7 +426,7 @@ func (suite *WorkflowTester) Test09GetAlert() {
 
 	client := suite.client
 
-	items, err := client.GetAllAlerts()
+	items, err := client.GetAllAlerts(100, 0)
 	assert.NoError(err)
 	assert.True(len(*items) > 1)
 
@@ -571,7 +577,7 @@ func (suite *WorkflowTester) Test12TestElasticsearch() {
 
 	var id piazza.Ident
 
-	body := &workflow.TestElasticsearchBody{Value: 17, ID: "19"}
+	body := &pzworkflow.TestElasticsearchBody{Value: 17, ID: "19"}
 
 	{
 		retBody, err := client.TestElasticsearchPost(body)
@@ -602,7 +608,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	allEvents, err := client.GetAllEventsByEventType(suite.eventTypeID)
 	numEventsBefore := len(*allEvents)
 
-	repeatingEvent := &workflow.Event{
+	repeatingEvent := &pzworkflow.Event{
 		EventTypeID: suite.eventTypeID,
 		Data: map[string]interface{}{
 			"beta":  goodBeta,

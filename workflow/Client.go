@@ -27,59 +27,35 @@ import (
 type Client struct {
 	url    string
 	logger *pzsyslog.Logger
-	h      piazza.Http
+	h      *piazza.Http
 }
 
-func NewClient(sys *piazza.SystemConfig, logger *pzsyslog.Logger) (*Client, error) {
-
+func NewClient(url string, apiKey string, logger *pzsyslog.Logger) (*Client, error) {
 	var err error
 
-	err = sys.WaitForService(piazza.PzWorkflow)
+	err = piazza.WaitForService(piazza.PzUuidgen, url)
 	if err != nil {
 		return nil, err
 	}
 
-	url, err := sys.GetURL(piazza.PzWorkflow)
-	if err != nil {
-		return nil, err
+	h := &piazza.Http{
+		BaseUrl: url,
+		ApiKey:  apiKey,
 	}
 
-	h := piazza.Http{BaseUrl: url, ApiKey: ""}
-
-	service := &Client{
+	client := &Client{
 		url:    url,
 		logger: logger,
 		h:      h,
 	}
 
-	service.logger = logger
-	service.logger.Info("Client started")
+	err = client.logger.Info("Client started")
+	if err != nil {
+		return nil, err
+	}
 
-	return service, nil
+	return client, nil
 }
-
-//func NewClient2(url string, apiKey string) (*Client, error) {
-
-//	var err error
-
-//	h := piazza.Http{BaseUrl: url, ApiKey: apiKey}
-
-//	loggerURL := strings.Replace(url, "piazza", "logger", 1)
-//	loggerURL = strings.Replace(loggerURL, "pz-workflow", "logger", 1)
-//	logWriter, err := pzsyslog.NewHttpWriter(loggerURL, "")
-//	if err != nil {
-//		log.Fatal(err)
-//	}
-//	logger := pzsyslog.NewLogger(logWriter, "pz-workflow")
-
-//	service := &Client{
-//		url:    url,
-//		logger: logger,
-//		h:      h,
-//	}
-
-//	return service, nil
-//}
 
 //------------------------------------------------------------------------------
 
