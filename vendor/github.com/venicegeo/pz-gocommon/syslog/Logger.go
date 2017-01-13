@@ -32,6 +32,7 @@ type Logger struct {
 	application      string
 	hostname         string
 	processId        string
+	Async            bool
 }
 
 func NewLogger(logWriter Writer, auditWriter Writer, application string) *Logger {
@@ -50,6 +51,7 @@ func NewLogger(logWriter Writer, auditWriter Writer, application string) *Logger
 		application:      application,
 		hostname:         hostname,
 		processId:        processId,
+		Async:            false,
 	}
 
 	return logger
@@ -86,6 +88,15 @@ func (logger *Logger) makeMessage(severity Severity, text string, v ...interface
 
 // postMessage sends a log message
 func (logger *Logger) postMessage(mssg *Message) error {
+	if logger.Async {
+		// drop errors on floor
+		go logger.postMessageWork(mssg)
+		return nil
+	}
+	return logger.postMessageWork(mssg)
+}
+
+func (logger *Logger) postMessageWork(mssg *Message) error {
 	if logger.logWriter == nil {
 		return fmt.Errorf("No writer set for logger")
 	}
@@ -104,6 +115,15 @@ func (logger *Logger) postMessage(mssg *Message) error {
 
 // postAudit sends an audit message
 func (logger *Logger) postAudit(mssg *Message) error {
+	if logger.Async {
+		// drop errors on floor
+		go logger.postAuditWork(mssg)
+		return nil
+	}
+	return logger.postAuditWork(mssg)
+}
+
+func (logger *Logger) postAuditWork(mssg *Message) error {
 	if logger.auditWriter == nil {
 		return fmt.Errorf("No writer set for logger")
 	}

@@ -245,6 +245,7 @@ func Test05Logger(t *testing.T) {
 	// the following clause is what a developer would do
 	{
 		logger := NewLogger(logWriter, auditWriter, "testapp")
+		logger.Async = false
 		logger.UseSourceElement = false
 		err = logger.Debug("debug %d", 999)
 		assert.NoError(err)
@@ -301,6 +302,7 @@ func Test06LogLevel(t *testing.T) {
 
 	{
 		logger := NewLogger(logWriter, auditWriter, "testapp")
+		logger.Async = false
 		logger.UseSourceElement = true
 		logger.MinimumSeverity = Error
 		err = logger.Warning("bonk")
@@ -405,6 +407,7 @@ func Test10Errors(t *testing.T) {
 	assert := assert.New(t)
 
 	logger := NewLogger(nil, nil, "testapp")
+	logger.Async = false
 	err := logger.Warning("bonk")
 	assert.Error(err)
 }
