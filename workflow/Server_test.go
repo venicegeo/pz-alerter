@@ -89,7 +89,7 @@ func TestRunSuite(t *testing.T) {
 	}
 
 	clientLogger := pzsyslog.NewLogger(&pzsyslog.NilWriter{}, &pzsyslog.NilWriter{}, "pz-workflow-unittest")
-	client, err := NewClient(sys, clientLogger)
+	client, err := NewClient(kit.Url, "", clientLogger)
 	if err != nil {
 		log.Fatal(err)
 	}
