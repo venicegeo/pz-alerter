@@ -222,14 +222,14 @@ func (service *Service) postSyslog(mssg *pzsyslog.Message) error {
 	isAudit := mssg.AuditData != nil
 
 	if service.logWriter != nil {
-		err = service.logWriter.Write(mssg)
+		err = service.logWriter.Write(mssg, false)
 		if err != nil {
 			return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
 		}
 	}
 
 	if isAudit && service.auditWriter != nil {
-		err = service.auditWriter.Write(mssg)
+		err = service.auditWriter.Write(mssg, false)
 		if err != nil {
 			return fmt.Errorf("syslog.Service.postSyslog (audit): %s", err.Error())
 		}
