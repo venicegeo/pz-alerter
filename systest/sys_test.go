@@ -72,12 +72,8 @@ func (suite *WorkflowTester) setupFixture() {
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
 
-	loggerUrl, err := piazza.GetPiazzaServiceUrl(piazza.PzLogger)
-	assert.NoError(err)
-	logWriter, err := pzsyslog.NewHttpWriter(loggerUrl, suite.apiKey)
-	assert.NoError(err)
-	auditWriter, err := pzsyslog.NewHttpWriter(loggerUrl, suite.apiKey)
-	assert.NoError(err)
+	logWriter := &pzsyslog.NilWriter{}
+	auditWriter := &pzsyslog.NilWriter{}
 	logger := pzsyslog.NewLogger(logWriter, auditWriter, "pz-workflow/systest")
 
 	suite.client, err = pzworkflow.NewClient(suite.url, suite.apiKey, logger)
