@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"os"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -97,6 +98,25 @@ type Reader interface {
 type WriterReader interface {
 	Reader
 	Writer
+}
+
+//---------------------------------------------------------------------
+
+type writeWork func(*Message) error
+
+func aSyncLogic(write writeWork, mssg *Message, async bool) (err error) {
+	if async {
+		go func() {
+			if err = write(mssg); err != nil {
+				log.Printf("Unable to log message [%s] : %s\n", mssg.String(), err.Error())
+			}
+		}()
+		return nil
+	}
+	if err = write(mssg); err != nil {
+		log.Printf("Unable to log message [%s] : %s\n", mssg.String(), err.Error())
+	}
+	return err
 }
 
 //---------------------------------------------------------------------
@@ -233,11 +253,7 @@ func NewHttpWriter(url string, apiKey string) (*HttpWriter, error) {
 
 func (w *HttpWriter) Write(mssg *Message, async bool) error {
 	var _ Writer = (*HttpWriter)(nil)
-	if async {
-		go w.writeWork(mssg)
-		return nil
-	}
-	return w.writeWork(mssg)
+	return aSyncLogic(w.writeWork, mssg, async)
 }
 
 func (w *HttpWriter) writeWork(mssg *Message) error {
@@ -330,13 +346,8 @@ func (w *SyslogdWriter) initWriter() error {
 
 // Write writes the message to the OS's syslogd system.
 func (w *SyslogdWriter) Write(mssg *Message, async bool) error {
-	// compile-time check if interface is implemented
 	var _ Writer = (*SyslogdWriter)(nil)
-	if async {
-		go w.writeWork(mssg)
-		return nil
-	}
-	return w.writeWork(mssg)
+	return aSyncLogic(w.writeWork, mssg, async)
 }
 
 func (w *SyslogdWriter) writeWork(mssg *Message) error {
@@ -375,11 +386,7 @@ func NewElasticWriter(esi elasticsearch.IIndex, typ string) *ElasticWriter {
 // Write writes the message to the elasticsearch index, type, id
 func (w *ElasticWriter) Write(mssg *Message, async bool) error {
 	var _ Writer = (*ElasticWriter)(nil)
-	if async {
-		go w.writeWork(mssg)
-		return nil
-	}
-	return w.writeWork(mssg)
+	return aSyncLogic(w.writeWork, mssg, async)
 }
 
 func (w *ElasticWriter) writeWork(mssg *Message) error {

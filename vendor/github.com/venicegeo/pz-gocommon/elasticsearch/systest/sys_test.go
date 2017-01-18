@@ -14,7 +14,7 @@
 
 // This test only works if you have a local Elasticsearch installed somewhere.
 
-package main
+package elasticsearch
 
 import (
 	"encoding/json"

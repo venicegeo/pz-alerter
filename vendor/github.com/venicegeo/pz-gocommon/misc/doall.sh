@@ -51,6 +51,7 @@ logger() {
     ################go test -v
     cd ..
     go build main.go
+    rm -f main
 
     popd
 }
@@ -67,6 +68,7 @@ uuidgen() {
     go test -v
     cd ..
     go build main.go
+    rm -f main
 
     popd
 }
@@ -83,6 +85,7 @@ workflow() {
     go test -v
     cd ..
     go build main.go
+    rm -f main
 
     popd
 }

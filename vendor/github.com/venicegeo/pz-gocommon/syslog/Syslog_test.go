@@ -165,7 +165,7 @@ func Test03LocalWriter(t *testing.T) {
 	assert.NoError(err)
 	assert.Len(actual, 0)
 
-	err = w.Write(mssg1)
+	err = w.Write(mssg1, false)
 	assert.NoError(err)
 
 	actual, err = w.Read(0)
@@ -182,7 +182,7 @@ func Test03LocalWriter(t *testing.T) {
 	assert.Len(actual, 1)
 	assert.EqualValues(*mssg1, actual[0])
 
-	err = w.Write(mssg2)
+	err = w.Write(mssg2, false)
 	assert.NoError(err)
 
 	actual, err = w.Read(2)
@@ -214,7 +214,7 @@ func Test04FileWriter(t *testing.T) {
 	m2, expected2 := makeMessage(true)
 	{
 		w := &FileWriter{FileName: fname}
-		err = w.Write(m1)
+		err = w.Write(m1, false)
 		assert.NoError(err)
 		err = w.Close()
 		assert.NoError(err)
@@ -224,7 +224,7 @@ func Test04FileWriter(t *testing.T) {
 
 	{
 		w := &FileWriter{FileName: fname}
-		err = w.Write(m2)
+		err = w.Write(m2, false)
 		assert.NoError(err)
 		err = w.Close()
 		assert.NoError(err)
@@ -345,11 +345,11 @@ func Test08SyslogdWriter(t *testing.T) {
 
 	w := &SyslogdWriter{}
 
-	err := w.Write(m1)
+	err := w.Write(m1, false)
 	assert.NoError(err)
 	assert.Equal(1, w.writer.numWritten)
 
-	err = w.Write(m2)
+	err = w.Write(m2, false)
 	assert.NoError(err)
 	assert.Equal(2, w.writer.numWritten)
 
@@ -384,7 +384,7 @@ func Test09ElasticsearchWriter(t *testing.T) {
 
 	m := NewMessage()
 	m.Message = "Yow"
-	err = ew.Write(m)
+	err = ew.Write(m, false)
 	assert.NoError(err)
 
 	params := &piazza.HttpQueryParams{}
@@ -529,7 +529,7 @@ func Test11HttpWriter(t *testing.T) {
 		m1, _ := makeMessage(false)
 		m2, _ := makeMessage(true)
 
-		err := w.Write(m1)
+		err := w.Write(m1, false)
 		assert.NoError(err)
 		assert.EqualValues("/syslog", ts.lastUrl)
 		p1a := ts.lastPost.(map[string]interface{})
@@ -537,7 +537,7 @@ func Test11HttpWriter(t *testing.T) {
 		p1b := ts.lastPost.(map[string]interface{})
 		assert.Nil(p1b["auditData"])
 
-		err = w.Write(m2)
+		err = w.Write(m2, false)
 		assert.NoError(err)
 		assert.EqualValues("/syslog", ts.lastUrl)
 		p2a := ts.lastPost.(map[string]interface{})
@@ -591,7 +591,7 @@ func Test12NilWriter(t *testing.T) {
 	assert := assert.New(t)
 	w := NilWriter{}
 	m1, _ := makeMessage(false)
-	err := w.Write(m1)
+	err := w.Write(m1, false)
 	assert.NoError(err)
 	err = w.Close()
 	assert.NoError(err)
@@ -611,10 +611,10 @@ func Test13MultiWriter(t *testing.T) {
 
 	mw := NewMultiWriter(ws)
 
-	err = mw.Write(m1)
+	err = mw.Write(m1, false)
 	assert.NoError(err)
 
-	err = mw.Write(m2)
+	err = mw.Write(m2, false)
 	assert.NoError(err)
 
 	{
