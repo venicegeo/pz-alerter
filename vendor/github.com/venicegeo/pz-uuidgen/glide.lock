@@ -1,5 +1,5 @@
 hash: 80efde83e66c401d8db5fc2e5758c7aa62fa437c6506404b842f148f5fb22ca5
-updated: 2017-01-18T13:12:50.24645803-05:00
+updated: 2017-01-18T13:20:04.126008956-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -56,6 +56,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 85d2de0d3cb98866f83578b5e4d9e35d9ed958c7
+  version: f11c1092ca88c17843c6d79c136d8b4f33467e59
   subpackages:
   - logger

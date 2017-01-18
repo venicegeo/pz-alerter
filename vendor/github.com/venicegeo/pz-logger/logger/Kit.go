@@ -30,6 +30,7 @@ type Kit struct {
 	Sys           *piazza.SystemConfig
 	GenericServer *piazza.GenericServer
 	Url           string
+	Async         bool
 
 	done chan error
 }
@@ -41,6 +42,7 @@ func NewKit(
 	logWriter pzsyslog.Writer,
 	auditWriter pzsyslog.Writer,
 	esi elasticsearch.IIndex,
+	asyncLogging bool,
 ) (*Kit, error) {
 
 	var err error
@@ -51,8 +53,9 @@ func NewKit(
 	kit.Sys = sys
 	kit.LogWriter = logWriter
 	kit.AuditWriter = auditWriter
+	kit.Async = asyncLogging
 
-	err = kit.Service.Init(kit.Sys, kit.LogWriter, kit.AuditWriter, kit.esi)
+	err = kit.Service.Init(kit.Sys, kit.LogWriter, kit.AuditWriter, kit.esi, kit.Async)
 	if err != nil {
 		return nil, err
 	}

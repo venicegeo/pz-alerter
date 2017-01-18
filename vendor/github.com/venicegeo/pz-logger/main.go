@@ -40,7 +40,7 @@ func main() {
 	stdoutWriter := pzsyslog.StdoutWriter{}
 	auditWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditESWriter, &stdoutWriter})
 
-	kit, err := pzlogger.NewKit(sys, logESWriter, auditWriter, idx)
+	kit, err := pzlogger.NewKit(sys, logESWriter, auditWriter, idx, true)
 	if err != nil {
 		log.Fatal(err)
 	}
