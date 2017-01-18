@@ -12,7 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package elasticsearch
+// This test only works if you have a local Elasticsearch installed somewhere.
+
+package main
 
 import (
 	"encoding/json"

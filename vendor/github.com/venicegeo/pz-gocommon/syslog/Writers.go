@@ -80,7 +80,8 @@ func GetRequiredESIWriters(esi elasticsearch.IIndex, loggerType string, auditTyp
 
 // Writer is an interface for writing a Message to some sort of output.
 type Writer interface {
-	Write(*Message) error
+	Write(*Message, bool) error
+	writeWork(*Message) error
 	Close() error
 }
 
@@ -107,11 +108,12 @@ type FileWriter struct {
 }
 
 // Write writes the message to the supplied file.
-func (w *FileWriter) Write(mssg *Message) error {
+func (w *FileWriter) Write(mssg *Message, async bool) error {
 	var _ Writer = (*FileWriter)(nil)
+	return w.writeWork(mssg)
+}
 
-	var err error
-
+func (w *FileWriter) writeWork(mssg *Message) (err error) {
 	if w == nil || w.FileName == "" {
 		return fmt.Errorf("writer not set not set")
 	}
@@ -137,19 +139,23 @@ func (w *FileWriter) Close() error {
 
 //---------------------------------------------------------------------
 
-//STDOUTWriter writes messages to STDOUT
-type STDOUTWriter struct {
+//StdoutWriter writes messages to STDOUT
+type StdoutWriter struct {
 }
 
 //Writes message to STDOUT
-func (w *STDOUTWriter) Write(mssg *Message) error {
-	var _ Writer = (*FileWriter)(nil)
+func (w *StdoutWriter) Write(mssg *Message, async bool) error {
+	var _ Writer = (*StdoutWriter)(nil)
+	return w.writeWork(mssg)
+}
+
+func (w *StdoutWriter) writeWork(mssg *Message) error {
 	fmt.Println(mssg.String())
 	return nil
 }
 
 //Nothing to close for this writer
-func (w *STDOUTWriter) Close() error {
+func (w *StdoutWriter) Close() error {
 	return nil
 }
 
@@ -162,15 +168,16 @@ type LocalReaderWriter struct {
 }
 
 // Write writes the message to the backing array
-func (w *LocalReaderWriter) Write(mssg *Message) error {
+func (w *LocalReaderWriter) Write(mssg *Message, async bool) error {
 	var _ Writer = (*LocalReaderWriter)(nil)
+	return w.writeWork(mssg)
+}
 
+func (w *LocalReaderWriter) writeWork(mssg *Message) error {
 	if w.messages == nil {
 		w.messages = make([]Message, 0)
 	}
-
 	w.messages = append(w.messages, *mssg)
-
 	return nil
 }
 
@@ -224,11 +231,17 @@ func NewHttpWriter(url string, apiKey string) (*HttpWriter, error) {
 	return w, nil
 }
 
-func (w *HttpWriter) Write(mssg *Message) error {
+func (w *HttpWriter) Write(mssg *Message, async bool) error {
 	var _ Writer = (*HttpWriter)(nil)
+	if async {
+		go w.writeWork(mssg)
+		return nil
+	}
+	return w.writeWork(mssg)
+}
 
-	jresp := w.h.PzPost("/syslog", mssg)
-	if jresp.IsError() {
+func (w *HttpWriter) writeWork(mssg *Message) error {
+	if jresp := w.h.PzPost("/syslog", mssg); jresp.IsError() {
 		return jresp.ToError()
 	}
 	return nil
@@ -316,19 +329,21 @@ func (w *SyslogdWriter) initWriter() error {
 }
 
 // Write writes the message to the OS's syslogd system.
-func (w *SyslogdWriter) Write(mssg *Message) error {
+func (w *SyslogdWriter) Write(mssg *Message, async bool) error {
 	// compile-time check if interface is implemented
 	var _ Writer = (*SyslogdWriter)(nil)
+	if async {
+		go w.writeWork(mssg)
+		return nil
+	}
+	return w.writeWork(mssg)
+}
 
-	var err error
-
-	err = w.initWriter()
-	if err != nil {
+func (w *SyslogdWriter) writeWork(mssg *Message) error {
+	if err := w.initWriter(); err != nil {
 		return err
 	}
-
 	s := mssg.String()
-
 	return w.writer.Write(s)
 }
 
@@ -358,16 +373,21 @@ func NewElasticWriter(esi elasticsearch.IIndex, typ string) *ElasticWriter {
 }
 
 // Write writes the message to the elasticsearch index, type, id
-func (w *ElasticWriter) Write(mssg *Message) error {
+func (w *ElasticWriter) Write(mssg *Message, async bool) error {
 	var _ Writer = (*ElasticWriter)(nil)
+	if async {
+		go w.writeWork(mssg)
+		return nil
+	}
+	return w.writeWork(mssg)
+}
 
-	var err error
-
+func (w *ElasticWriter) writeWork(mssg *Message) error {
 	if w == nil || w.Esi == nil || w.typ == "" {
 		return fmt.Errorf("writer not set not set")
 	}
 
-	_, err = w.Esi.PostData(w.typ, w.id, mssg)
+	_, err := w.Esi.PostData(w.typ, w.id, mssg)
 	return err
 }
 
@@ -435,7 +455,12 @@ func (w *ElasticWriter) Read(count int) ([]Message, error) {
 type NilWriter struct {
 }
 
-func (*NilWriter) Write(*Message) error {
+func (*NilWriter) Write(*Message, bool) error {
+	var _ Writer = (*NilWriter)(nil)
+	return nil
+}
+
+func (*NilWriter) writeWork(*Message) error {
 	return nil
 }
 
@@ -459,11 +484,11 @@ func NewMultiWriter(ws []Writer) *MultiWriter {
 	return mw
 }
 
-func (mw *MultiWriter) Write(m *Message) error {
+func (mw *MultiWriter) Write(m *Message, async bool) error {
 	var err error
 
 	for _, w := range mw.writers {
-		e := w.Write(m)
+		e := w.Write(m, async)
 		if e != nil && err != nil {
 			err = e
 		}

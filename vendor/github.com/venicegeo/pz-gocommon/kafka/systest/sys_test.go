@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// This test only works if you have a local Kafka installed somewhere.
+
 package kafka
 
 import (
