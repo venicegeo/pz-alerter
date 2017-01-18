@@ -88,38 +88,5 @@ func (kit *Kit) Wait() error {
 
 func (kit *Kit) Stop() error {
 	err := kit.GenericServer.Stop()
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return err
 }
-
-func makeMockEsi() (elasticsearch.IIndex, error) {
-	esi := elasticsearch.NewMockIndex("loggertest$")
-	err := esi.Create("")
-	if err != nil {
-		return nil, err
-	}
-	return esi, nil
-}
-
-/*
-	// close index
-	{
-		err = mock.esi.Close()
-		if err != nil {
-			return err
-		}
-
-		err = mock.esi.Delete()
-		if err != nil {
-			return err
-		}
-	}
-
-*/
-
-/*
-
- */

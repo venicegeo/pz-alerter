@@ -48,9 +48,12 @@ func (suite *LoggerTester) setupFixture() {
 
 	// may need to update these over time
 	{
-		os.Setenv("AUDIT_TYPE", "AuditData")
-		os.Setenv("LOGGER_TYPE", "LoggerData")
-		os.Setenv("LOGGER_INDEX", "pzlogger4")
+		err := os.Setenv("AUDIT_TYPE", "AuditData")
+		assert.NoError(err)
+		err = os.Setenv("LOGGER_TYPE", "LoggerData")
+		assert.NoError(err)
+		err = os.Setenv("LOGGER_INDEX", "pzlogger4")
+		assert.NoError(err)
 	}
 
 	// set up the logger server

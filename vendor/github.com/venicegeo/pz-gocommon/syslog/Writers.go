@@ -117,7 +117,7 @@ func (w *FileWriter) Write(mssg *Message) error {
 	}
 
 	if w.file == nil {
-		w.file, err = os.OpenFile(w.FileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0777)
+		w.file, err = os.OpenFile(w.FileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0600)
 		if err != nil {
 			return err
 		}
@@ -455,9 +455,7 @@ type MultiWriter struct {
 func NewMultiWriter(ws []Writer) *MultiWriter {
 	mw := &MultiWriter{}
 	mw.writers = make([]Writer, len(ws))
-	for i, w := range ws {
-		mw.writers[i] = w
-	}
+	copy(mw.writers, ws)
 	return mw
 }
 

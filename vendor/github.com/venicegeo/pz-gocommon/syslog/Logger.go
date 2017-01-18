@@ -28,10 +28,10 @@ type Logger struct {
 	logWriter        Writer
 	auditWriter      Writer
 	MinimumSeverity  Severity // minimum severity level you want to record
-	UseSourceElement bool
 	application      string
 	hostname         string
 	processId        string
+	UseSourceElement bool
 	Async            bool
 }
 
@@ -90,7 +90,7 @@ func (logger *Logger) makeMessage(severity Severity, text string, v ...interface
 func (logger *Logger) postMessage(mssg *Message) error {
 	if logger.Async {
 		// drop errors on floor
-		go logger.postMessageWork(mssg)
+		go func() { _ = logger.postMessageWork(mssg) }()
 		return nil
 	}
 	return logger.postMessageWork(mssg)
@@ -117,7 +117,7 @@ func (logger *Logger) postMessageWork(mssg *Message) error {
 func (logger *Logger) postAudit(mssg *Message) error {
 	if logger.Async {
 		// drop errors on floor
-		go logger.postAuditWork(mssg)
+		go func() { _ = logger.postAuditWork(mssg) }()
 		return nil
 	}
 	return logger.postAuditWork(mssg)

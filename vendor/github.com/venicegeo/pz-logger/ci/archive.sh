@@ -19,6 +19,7 @@ cp $GOPATH/bin/$APP .
 tar cvzf $APP.$EXT \
     $APP \
     logger.cov \
+    logger.cov.txt \
     lint.txt \
     glide.lock \
     glide.yaml

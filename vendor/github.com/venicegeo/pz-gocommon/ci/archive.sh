@@ -16,10 +16,8 @@ source $root/ci/vars.sh
 
 cd $root
 tar cvzf $APP.$EXT \
-    common.cov \
-    elastic.cov \
-    kafka.cov \
-    syslog.cov \
+    *.cov \
+    *.cov.txt \
     lint.txt \
     glide.lock \
     glide.yaml

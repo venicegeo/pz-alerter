@@ -23,10 +23,12 @@ go get github.com/venicegeo/pz-gocommon/gocommon
 cd $GOPATH/src/github.com/venicegeo/pz-gocommon
 
 # run unit tests w/ coverage collection
-go test -v -coverprofile=$root/common.cov github.com/venicegeo/pz-gocommon/gocommon
-go test -v -coverprofile=$root/elastic.cov github.com/venicegeo/pz-gocommon/elasticsearch
-go test -v -coverprofile=$root/kafka.cov github.com/venicegeo/pz-gocommon/kafka
-go test -v -coverprofile=$root/syslog.cov github.com/venicegeo/pz-gocommon/syslog
+for i in gocommon elasticsearch kafka syslog
+do
+    go test -v -coverprofile=$root/$i.cov github.com/venicegeo/pz-gocommon/$i
+    go tool cover -func=$root/$i.cov -o $root/$i.cov.txt
+    cat $root/$i.cov.txt
+done
 
 # lint
 sh ci/metalinter.sh | tee $root/lint.txt
