@@ -20,6 +20,7 @@ cp $GOPATH/bin/$APP .
 tar cvzf $APP.$EXT \
     $APP \
     workflow.cov \
+    workflow.cov.txt \
     lint.txt \
     glide.lock \
     glide.yaml
