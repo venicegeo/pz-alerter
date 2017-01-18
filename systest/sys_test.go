@@ -113,7 +113,8 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	helloUrl := strings.Replace(suite.url, "pz-workflow", "pzsvc-hello", 1)
+	helloUrl, err = piazza.GetPiazzaServiceUrl(piazza.PzsvcHello)
+	assert.NoError(err)
 
 	body := map[string]interface{}{
 		"url":            helloUrl + "/hello",
@@ -129,7 +130,8 @@ func (suite *WorkflowTester) Test01RegisterService() {
 		},
 	}
 
-	url := strings.Replace(suite.url, "workflow", "gateway", 1)
+	url, err = piazza.GetPiazzaServiceUrl()
+	assert.NoError(err)
 	fmt.Println("URL", url)
 	h := piazza.Http{
 		BaseUrl: url,
