@@ -346,12 +346,14 @@ func (suite *ServerTester) Test03Trigger() {
 	trigger := makeTestTrigger([]piazza.Ident{eventTypeID})
 	//printJSON("trigger", trigger)
 	respTrigger, err := client.PostTrigger(trigger)
+	assert.NoError(err)
 	id := respTrigger.TriggerID
 	//printJSON("trigger id", id)
 
 	//log.Printf("Getting list of triggers:")
 	triggers, err = client.GetAllTriggers(100, 0)
 	assert.NoError(err)
+	assert.NotEmpty(*triggers)
 	//printJSON("triggers", triggers)
 
 	//log.Printf("Getting trigger by id: %s", id)

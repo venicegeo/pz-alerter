@@ -463,7 +463,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 
 	service.syslogger.Audit(eventType.CreatedBy, "creatingEventType", eventType.EventTypeID, "Service.PostEventType: User [%s] is creating eventType [%s]", eventType.CreatedBy, eventType.EventTypeID)
 
-	if err := service.eventTypeDB.PostData(eventType); err != nil {
+	if err = service.eventTypeDB.PostData(eventType); err != nil {
 		service.syslogger.Audit(eventType.CreatedBy, "creatingEventTypeFailure", eventType.EventTypeID, "Service.PostEventType: User [%s] failed to create eventType [%s]", eventType.CreatedBy, eventType.EventTypeID)
 		if strings.HasSuffix(err.Error(), "was not recognized as a valid mapping type") {
 			return service.statusBadRequest(err)
@@ -494,6 +494,10 @@ func IsSystemEvent(name string) bool {
 // DeleteEventType TODO
 func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id, "pz-workflow")
+	if err != nil {
+		service.syslogger.Audit("pz-workflow", "deletingEventTypeFailure", id, "Service.DeleteEventType: failed to get eventType [%s]", id)
+		return service.statusBadRequest(err)
+	}
 	// Only check for system events or "in use" if found
 	if found {
 		if eventType != nil && IsSystemEvent(eventType.Name) {
@@ -1020,6 +1024,10 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 	service.syslogger.Audit("pz-workflow", "queryingTriggers", service.triggerDB.mapping, "Service.QueryTriggers: User is querying triggers")
 
 	dslString, err = syncPagination(dslString, *format)
+	if err != nil {
+		service.syslogger.Audit("pz-workflow", "queryingTriggersFailure", service.triggerDB.mapping, "Service.QueryTriggers: syncPagination failed")
+		return service.statusBadRequest(err)
+	}
 	triggers, totalHits, err := service.triggerDB.GetTriggersByDslQuery(dslString, "pz-workflow")
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "queryingTriggersFailure", service.triggerDB.mapping, "Service.QueryTriggers: User failed to query triggers")
@@ -1053,7 +1061,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	trigger.TriggerID = service.newIdent()
 	trigger.CreatedOn = time.Now()
 
-	eventType := &EventType{}
+	var eventType *EventType
 	{ //check eventtype id
 		if trigger.EventTypeID == "" {
 			return service.statusBadRequest(fmt.Errorf("TriggerDB.PostData failed: no eventTypeId was specified"))
@@ -1219,6 +1227,10 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 	service.syslogger.Audit("pz-workflow", "queryingAlerts", service.alertDB.mapping, "Service.QueryAlerts: User is querying alerts")
 
 	dslString, err = syncPagination(dslString, *format)
+	if err != nil {
+		service.syslogger.Audit("pz-workflow", "queryingAlertsFailure", service.alertDB.mapping, "Service.QueryAlerts: syncPagination failed")
+		return service.statusBadRequest(err)
+	}
 	alerts, totalHits, err = service.alertDB.GetAlertsByDslQuery(dslString, "pz-workflow")
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "queryingAlertsFailure", service.alertDB.mapping, "Service.QueryAlerts: User failed to query alerts")

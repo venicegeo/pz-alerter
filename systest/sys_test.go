@@ -604,6 +604,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	client := suite.client
 
 	allEvents, err := client.GetAllEventsByEventType(suite.eventTypeID)
+	assert.NoError(err)
 	numEventsBefore := len(*allEvents)
 
 	repeatingEvent := &pzworkflow.Event{

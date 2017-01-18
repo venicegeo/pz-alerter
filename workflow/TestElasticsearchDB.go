@@ -86,7 +86,6 @@ func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestEl
 
 func (db *TestElasticsearchDB) PostData(obj interface{}, id piazza.Ident) (piazza.Ident, error) {
 	var p *TestElasticsearchBody
-	ok1 := false
 	temp1, ok1 := obj.(TestElasticsearchBody)
 	if !ok1 {
 		temp2, ok2 := obj.(*TestElasticsearchBody)

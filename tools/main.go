@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
+	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	"github.com/venicegeo/pz-workflow/workflow"
 )
 
@@ -114,18 +115,18 @@ func makeClient() (*workflow.Client, error) {
 		return nil, err
 	}
 
-	url := "https://" + apiServer
-	url = "https://pz-workflow.int.geointservices.io"
+	url := "https://pz-workflow.int.geointservices.io"
 
 	log.Printf("Url: %s", url)
 	//log.Printf("Key: %s", apiKey)
 
-	client, err := workflow.NewClient2(url, apiKey)
+	logger := pzsyslog.NewLogger(&pzsyslog.NilWriter{}, &pzsyslog.NilWriter{}, "pz-workflow/tool")
+	theClient, err := workflow.NewClient(url, apiKey, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	return client, nil
+	return theClient, nil
 }
 
 func deletePageOfAlerts(perPage int, page int) error {

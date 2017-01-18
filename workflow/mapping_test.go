@@ -334,8 +334,8 @@ func (suite *MappingTester) Test20Mappings() {
 			expectedOutput := pair[1]
 
 			{
-				inputTree := map[string]interface{}{}
-				expectedOutputTree := map[string]interface{}{}
+				var inputTree map[string]interface{}
+				var expectedOutputTree map[string]interface{}
 
 				temp, err := piazza.StructStringToInterface(input)
 				assert.NoError(err)
