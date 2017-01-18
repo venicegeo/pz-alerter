@@ -8,3 +8,7 @@ applications:
   timeout: 180
   services:
       - pz-elasticsearch
+  env:
+    LOGGER_INDEX: pzlogger4
+    LOGGER_TYPE: LogData
+    AUDIT_TYPE: AuditData

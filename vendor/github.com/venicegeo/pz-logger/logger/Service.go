@@ -32,6 +32,7 @@ type Service struct {
 
 	stats  Stats
 	origin string
+	async  bool
 
 	logWriter   pzsyslog.Writer
 	auditWriter pzsyslog.Writer
@@ -39,7 +40,7 @@ type Service struct {
 	esIndex elasticsearch.IIndex
 }
 
-func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer, esi elasticsearch.IIndex) error {
+func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer, esi elasticsearch.IIndex, asyncLogging bool) error {
 	service.stats.CreatedOn = time.Now()
 	service.stats.NumMessagesByApplication = map[string]int{}
 
@@ -49,6 +50,8 @@ func (service *Service) Init(sys *piazza.SystemConfig, logWriter pzsyslog.Writer
 	service.esIndex = esi
 
 	service.origin = string(sys.Name)
+
+	service.async = asyncLogging
 
 	return nil
 }
@@ -222,14 +225,14 @@ func (service *Service) postSyslog(mssg *pzsyslog.Message) error {
 	isAudit := mssg.AuditData != nil
 
 	if service.logWriter != nil {
-		err = service.logWriter.Write(mssg)
+		err = service.logWriter.Write(mssg, service.async)
 		if err != nil {
 			return fmt.Errorf("syslog.Service.postSyslog: %s", err.Error())
 		}
 	}
 
 	if isAudit && service.auditWriter != nil {
-		err = service.auditWriter.Write(mssg)
+		err = service.auditWriter.Write(mssg, service.async)
 		if err != nil {
 			return fmt.Errorf("syslog.Service.postSyslog (audit): %s", err.Error())
 		}

@@ -17,6 +17,7 @@ package systest
 import (
 	"bytes"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -77,11 +78,9 @@ func (suite *LoggerTester) setupFixture() {
 
 	suite.auditWriter, err = pzsyslog.NewHttpWriter(suite.loggerUrl, suite.apiKey)
 
-	uniq := strconv.FormatInt(time.Now().Unix(), 10)
-
 	suite.mssgHostName, err = piazza.GetExternalIP()
 	assert.NoError(err)
-	suite.mssgApplication = "pzlogger-systest" + "/" + uniq
+	suite.mssgApplication = "pz-logger/systest"
 	suite.mssgProcess = strconv.Itoa(os.Getpid())
 	suite.mmsgSeverity = pzsyslog.Informational
 
@@ -196,9 +195,12 @@ func (suite *LoggerTester) Test01RawGet() {
 
 	suite.setupFixture()
 	defer suite.teardownFixture()
-
 	resp, err := http.Get(suite.loggerUrl + "/syslog")
 	assert.NoError(err)
+	if resp.ContentLength <= 0 {
+		log.Printf("content-length is <= 0")
+		panic(99)
+	}
 	assert.True(resp.ContentLength > 0)
 
 	raw := make([]byte, resp.ContentLength)

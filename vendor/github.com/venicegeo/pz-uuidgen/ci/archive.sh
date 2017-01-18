@@ -19,6 +19,7 @@ cp $GOPATH/bin/$APP .
 tar cvzf $APP.$EXT \
     $APP \
     uuidgen.cov \
+    uuidgen.cov.txt \
     lint.txt \
     glide.lock \
     glide.yaml

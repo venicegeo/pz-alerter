@@ -88,15 +88,6 @@ func (logger *Logger) makeMessage(severity Severity, text string, v ...interface
 
 // postMessage sends a log message
 func (logger *Logger) postMessage(mssg *Message) error {
-	if logger.Async {
-		// drop errors on floor
-		go func() { _ = logger.postMessageWork(mssg) }()
-		return nil
-	}
-	return logger.postMessageWork(mssg)
-}
-
-func (logger *Logger) postMessageWork(mssg *Message) error {
 	if logger.logWriter == nil {
 		return fmt.Errorf("No writer set for logger")
 	}
@@ -105,7 +96,7 @@ func (logger *Logger) postMessageWork(mssg *Message) error {
 		return nil
 	}
 
-	err := logger.logWriter.Write(mssg)
+	err := logger.logWriter.Write(mssg, logger.Async)
 	if err != nil {
 		return fmt.Errorf("logger.postMessage: %s <<%#v>>", err.Error(), mssg)
 	}
@@ -115,15 +106,6 @@ func (logger *Logger) postMessageWork(mssg *Message) error {
 
 // postAudit sends an audit message
 func (logger *Logger) postAudit(mssg *Message) error {
-	if logger.Async {
-		// drop errors on floor
-		go func() { _ = logger.postAuditWork(mssg) }()
-		return nil
-	}
-	return logger.postAuditWork(mssg)
-}
-
-func (logger *Logger) postAuditWork(mssg *Message) error {
 	if logger.auditWriter == nil {
 		return fmt.Errorf("No writer set for logger")
 	}
@@ -136,12 +118,12 @@ func (logger *Logger) postAuditWork(mssg *Message) error {
 		return fmt.Errorf("Logger trying to audit a log")
 	}
 
-	err := logger.auditWriter.Write(mssg)
+	err := logger.auditWriter.Write(mssg, logger.Async)
 	if err != nil {
 		return fmt.Errorf("logger.postMessage: %s <<%#v>>", err.Error(), mssg)
 	}
 	if logger.logWriter != nil {
-		_ = logger.logWriter.Write(mssg)
+		_ = logger.logWriter.Write(mssg, logger.Async)
 	}
 
 	return nil

@@ -15,7 +15,6 @@
 package systest
 
 import (
-	"strings"
 	"testing"
 	"time"
 
@@ -46,10 +45,8 @@ func (suite *UuidgenTester) setupFixture() {
 	suite.apiServer, err = piazza.GetApiServer()
 	assert.NoError(err)
 
-	i := strings.Index(suite.apiServer, ".")
-	assert.NotEqual(1, i)
-	host := "pz-uuidgen" + suite.apiServer[i:]
-	suite.url = "https://" + host
+	suite.url, err = piazza.GetPiazzaServiceUrl(piazza.PzUuidgen)
+	assert.NoError(err)
 
 	suite.apiKey, err = piazza.GetApiKey(suite.apiServer)
 	assert.NoError(err)
