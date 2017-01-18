@@ -484,17 +484,19 @@ func NewMultiWriter(ws []Writer) *MultiWriter {
 	return mw
 }
 
-func (mw *MultiWriter) Write(m *Message, async bool) error {
-	var err error
-
+func (mw *MultiWriter) Write(m *Message, async bool) (err error) {
+	var _ Writer = (*HttpWriter)(nil)
 	for _, w := range mw.writers {
 		e := w.Write(m, async)
 		if e != nil && err != nil {
 			err = e
 		}
 	}
-
 	return err
+}
+
+func (mw *MultiWriter) writeWork(m *Message) (err error) {
+	return nil
 }
 
 func (mw *MultiWriter) Close() error {
