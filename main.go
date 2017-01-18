@@ -80,7 +80,7 @@ func makeClients() (
 		log.Fatal(err)
 	}
 
-	stdOutWriter := pzsyslog.STDOUTWriter{}
+	stdOutWriter := pzsyslog.StdoutWriter{}
 
 	url, err := sys.GetURL(piazza.PzUuidgen)
 	if err != nil {
