@@ -14,8 +14,8 @@ PATH=$PATH:"$GOPATH"/bin
 go version
 
 # install metalinter
-go get -u github.com/alecthomas/gometalinter
-gometalinter --install
+# go get -u github.com/alecthomas/gometalinter
+# gometalinter --install
 
 # build ourself, and go there
 go get github.com/venicegeo/pz-workflow
@@ -26,5 +26,5 @@ go test -v -coverprofile=$root/workflow.cov github.com/venicegeo/pz-workflow/wor
 go tool cover -func=$root/workflow.cov -o $root/workflow.cov.txt
 
 # lint
-sh ci/metalinter.sh | tee $root/lint.txt
-wc -l $root/lint.txt
+# sh ci/metalinter.sh | tee $root/lint.txt
+# wc -l $root/lint.txt
