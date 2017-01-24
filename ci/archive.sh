@@ -21,7 +21,7 @@ tar cvzf $APP.$EXT \
     $APP \
     workflow.cov \
     workflow.cov.txt \
-    lint.txt \
+    #lint.txt \
     glide.lock \
     glide.yaml
 tar tzf $APP.$EXT
