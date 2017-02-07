@@ -1,5 +1,5 @@
 hash: 48c98f4550c621d0c4d23fa1fcc726e118693ce098fd59b7bbaa3c9055528aba
-updated: 2017-01-18T16:55:51.085380755-05:00
+updated: 2017-02-07T14:29:09.6467217-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -43,13 +43,13 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: 4515a8cac3e23c4bc806177832e031517ed4084e
+  version: 094e601705f14f75506d01b626e364dfb9bab3c5
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-uuidgen
-  version: e61e9b032ebdd4fdf1053a02933aa38195876eb4
+  version: cc1da5657bb0415fc5e7e5409c2b0b1b7087334f
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron
@@ -84,6 +84,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 9ebd1c4057245070f1c180cb81db106479327fa5
+  version: 1d9627bc5ac3ae66edee37ee1e68f7ed9853ef12
   subpackages:
   - logger

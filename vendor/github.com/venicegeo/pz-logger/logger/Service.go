@@ -145,10 +145,66 @@ func createQueryDslAsString(
 		})
 	}
 	if contains != "" {
+		should := []map[string]interface{}{}
+		should = append(should, map[string]interface{}{
+			"query": map[string]interface{}{
+				"wildcard": map[string]interface{}{
+					"hostName": map[string]interface{}{
+						"value": "*" + contains + "*",
+					},
+				},
+			},
+		})
+		should = append(should, map[string]interface{}{
+			"query": map[string]interface{}{
+				"wildcard": map[string]interface{}{
+					"application": map[string]interface{}{
+						"value": "*" + contains + "*",
+					},
+				},
+			},
+		})
+		should = append(should, map[string]interface{}{
+			"query": map[string]interface{}{
+				"wildcard": map[string]interface{}{
+					"process": map[string]interface{}{
+						"value": "*" + contains + "*",
+					},
+				},
+			},
+		})
+		should = append(should, map[string]interface{}{
+			"query": map[string]interface{}{
+				"wildcard": map[string]interface{}{
+					"messageId": map[string]interface{}{
+						"value": "*" + contains + "*",
+					},
+				},
+			},
+		})
+		should = append(should, map[string]interface{}{
+			"query": map[string]interface{}{
+				"wildcard": map[string]interface{}{
+					"message": map[string]interface{}{
+						"value": "*" + contains + "*",
+					},
+				},
+			},
+		})
+		queries := make([]interface{}, len(should))
+		for i, s := range should {
+			queries[i] = s
+		}
 		must = append(must, map[string]interface{}{
-			"multi_match": map[string]interface{}{
-				"query":  contains,
-				"fields": []string{"hostName", "application", "process", "messageId", "message"},
+			"filtered": map[string]interface{}{
+				"query":  map[string]interface{}{
+					"match_all": map[string]interface{}{},
+				},
+				"filter": map[string]interface{}{
+					"bool": map[string]interface{}{
+						"should": queries,
+					},
+				},
 			},
 		})
 	}
