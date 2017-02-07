@@ -9,6 +9,6 @@ applications:
   services:
       - pz-elasticsearch
   env:
-    LOGGER_INDEX: pzlogger4
+    LOGGER_INDEX: pzlogger5
     LOGGER_TYPE: LogData
     AUDIT_TYPE: AuditData
