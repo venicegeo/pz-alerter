@@ -31,8 +31,8 @@ do
 done
 
 # lint
-sh ci/metalinter.sh | tee $root/lint.txt
-wc -l $root/lint.txt
+# sh ci/metalinter.sh | tee $root/lint.txt
+# wc -l $root/lint.txt
 
 #curl https://glide.sh/get | sh
 #go tool cover -html=common.cov

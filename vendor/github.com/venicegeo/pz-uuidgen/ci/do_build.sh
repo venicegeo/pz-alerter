@@ -26,5 +26,5 @@ go test -v -coverprofile=$root/uuidgen.cov github.com/venicegeo/pz-uuidgen/uuidg
 go tool cover -func=$root/uuidgen.cov -o $root/uuidgen.cov.txt
 
 # run lint
-sh ci/metalinter.sh | tee $root/lint.txt
-wc -l $root/lint.txt
+# sh ci/metalinter.sh | tee $root/lint.txt
+# wc -l $root/lint.txt

@@ -18,7 +18,6 @@ cd $root
 tar cvzf $APP.$EXT \
     *.cov \
     *.cov.txt \
-    lint.txt \
     glide.lock \
     glide.yaml
 tar tzf $APP.$EXT

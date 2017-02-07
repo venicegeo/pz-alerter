@@ -1,0 +1,14 @@
+applications:
+- name: pz-logger
+  host: pz-logger
+  command: chmod 755 ./pz-logger && ./pz-logger
+  buildpack: binary_buildpack
+  memory: 512M
+  instances: 1
+  timeout: 180
+  services:
+      - pz-elasticsearch
+  env:
+    LOGGER_INDEX: pzlogger4
+    LOGGER_TYPE: LogData
+    AUDIT_TYPE: AuditData
