@@ -1,0 +1,13 @@
+package: github.com/venicegeo/pz-logger
+import:
+- package: github.com/gin-gonic/gin
+- package: github.com/venicegeo/pz-gocommon
+  subpackages:
+  - elasticsearch
+  - gocommon
+  - syslog
+testImport:
+- package: github.com/stretchr/testify
+  subpackages:
+  - assert
+  - suite

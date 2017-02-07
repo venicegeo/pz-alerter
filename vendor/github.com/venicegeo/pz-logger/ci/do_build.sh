@@ -26,5 +26,5 @@ go test -v -coverprofile=$root/logger.cov -coverpkg github.com/venicegeo/pz-logg
 go tool cover -func=$root/logger.cov -o $root/logger.cov.txt
 
 # lint
-sh ci/metalinter.sh | tee $root/lint.txt
-wc -l $root/lint.txt
+# sh ci/metalinter.sh | tee $root/lint.txt
+# wc -l $root/lint.txt

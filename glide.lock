@@ -1,10 +1,10 @@
 hash: 48c98f4550c621d0c4d23fa1fcc726e118693ce098fd59b7bbaa3c9055528aba
-updated: 2017-01-18T16:55:51.085380755-05:00
+updated: 2017-02-07T13:47:39.0533181-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/eapache/go-resiliency
@@ -25,7 +25,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/snappy
-  version: d9eb7a3d35ec988b8585d4a0068e462c27d28380
+  version: 7db9049039a047d955fe8c19b83c8ff5abd765c7
 - name: github.com/klauspost/crc32
   version: cb6bfca970f6908083f26f39a79009d608efd5cd
 - name: github.com/manucorporat/sse
@@ -41,15 +41,15 @@ imports:
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
-  version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
+  version: 1579b0648e644d89245378ce3bbdd284f19825d9
 - name: github.com/venicegeo/pz-gocommon
-  version: 4515a8cac3e23c4bc806177832e031517ed4084e
+  version: 094e601705f14f75506d01b626e364dfb9bab3c5
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-uuidgen
-  version: e61e9b032ebdd4fdf1053a02933aa38195876eb4
+  version: cc1da5657bb0415fc5e7e5409c2b0b1b7087334f
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron
@@ -60,18 +60,18 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  version: 7a6e5648d140666db5d920909e082ca00a87ba2c
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
 - name: gopkg.in/olivere/elastic.v3
-  version: 96b262cf1d25006d71bd495fd99b590493cff29e
+  version: 9da4058517104766446811c87c0890f26c03d945
   subpackages:
   - backoff
   - uritemplates
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: 4c78c975fe7c825c6d1466c42be594d1d6f3aba6
 testImports:
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2
@@ -84,6 +84,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 9ebd1c4057245070f1c180cb81db106479327fa5
+  version: 1d9627bc5ac3ae66edee37ee1e68f7ed9853ef12
   subpackages:
   - logger

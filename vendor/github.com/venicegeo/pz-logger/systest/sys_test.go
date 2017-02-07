@@ -280,7 +280,7 @@ func (suite *LoggerTester) Test04Post() {
 	mssgz := suite.makeMessage(keyz)
 	mssgz.TimeStamp = nowz
 
-	err = suite.httpWriter.Write(mssgz)
+	err = suite.httpWriter.Write(mssgz, false)
 	assert.NoError(err)
 
 	// allow ES to catch up
