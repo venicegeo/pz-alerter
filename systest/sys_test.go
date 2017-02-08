@@ -132,7 +132,6 @@ func (suite *WorkflowTester) Test01RegisterService() {
 
 	url, err := piazza.GetPiazzaUrl()
 	assert.NoError(err)
-
 	fmt.Println("URL", url)
 	h := piazza.Http{
 		BaseUrl: url,
