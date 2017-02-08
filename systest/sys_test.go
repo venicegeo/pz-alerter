@@ -239,7 +239,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 			},
 		},
 		Job: pzworkflow.JobRequest{
-			CreatedBy: "test",
+			CreatedBy: suite.apiKey,
 			JobType: pzworkflow.JobType{
 				Type: "execute-service",
 				Data: map[string]interface{}{

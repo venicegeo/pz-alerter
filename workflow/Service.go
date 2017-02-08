@@ -149,7 +149,7 @@ func (service *Service) Init(
 	//log.Printf("SETUP INDEX: %t", ok)
 
 	// Ingest event type
-	ingestEventType := &EventType{Name: ingestTypeName}
+	ingestEventType := &EventType{Name: ingestTypeName, CreatedBy: sys.PiazzaSystem}
 	ingestEventTypeMapping := map[string]interface{}{
 		"dataId":   "string",
 		"dataType": "string",
@@ -171,7 +171,7 @@ func (service *Service) Init(
 	}
 
 	// Execution Completed event type
-	executionCompletedType := &EventType{Name: executeTypeName}
+	executionCompletedType := &EventType{Name: executeTypeName, CreatedBy: sys.PiazzaSystem}
 	executionCompletedTypeMapping := map[string]interface{}{
 		"jobId":  "string",
 		"status": "string",
