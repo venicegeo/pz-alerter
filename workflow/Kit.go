@@ -20,7 +20,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
-	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 //---------------------------------------------------------------------------
@@ -42,7 +41,6 @@ func NewKit(
 	sys *piazza.SystemConfig,
 	logWriter pzsyslog.Writer,
 	auditWriter pzsyslog.Writer,
-	uuidClient pzuuidgen.IClient,
 	mocking bool,
 ) (*Kit, error) {
 
@@ -61,7 +59,7 @@ func NewKit(
 		kit.indices = kit.makeIndices(sys)
 	}
 
-	err = kit.Service.Init(sys, logWriter, auditWriter, uuidClient, kit.indices)
+	err = kit.Service.Init(sys, logWriter, auditWriter, kit.indices)
 	if err != nil {
 		return nil, err
 	}
