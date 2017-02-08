@@ -760,18 +760,23 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				}
 				jobString := string(jobInstance)
 
-				idamURL, err5 := service.sys.GetURL(piazza.PzIdam)
-				if err5 == nil { //Mocking
-					service.syslogger.Audit("pz-workflow", "createJobRequestAccess", "pz-idam", "User [%s] POSTed event [%s] requesting access to trigger [%s] created by [%s]", event.CreatedBy, event.EventID, trigger.TriggerID, trigger.CreatedBy)
-					auth, err6 := piazza.RequestAuthZAccess(idamURL, eventType.CreatedBy)
-					if err6 != nil {
-						results[triggerID] = service.statusInternalError(err6)
-						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
-						return
-					} else if !auth {
-						results[triggerID] = service.statusForbidden(errors.New("Access to create job denied"))
-						service.syslogger.Audit("pz-workflow", "createJobRequestAccessDenied", "pz-idam", "Event [%s] firing trigger [%s] was denied access to create job", event.EventID, trigger.TriggerID)
-						return
+				// System level events should always have authority
+				// but can anyone else just create an arbitrary event of these types
+				if eventType.Name == ingestTypeName || eventType.Name == executeTypeName {
+					idamURL, err5 := service.sys.GetURL(piazza.PzIdam)
+					if err5 == nil {
+						//Mocking
+						service.syslogger.Audit("pz-workflow", "createJobRequestAccess", "pz-idam", "User [%s] POSTed event [%s] requesting access to trigger [%s] created by [%s]", event.CreatedBy, event.EventID, trigger.TriggerID, trigger.CreatedBy)
+						auth, err6 := piazza.RequestAuthZAccess(idamURL, eventType.CreatedBy)
+						if err6 != nil {
+							results[triggerID] = service.statusInternalError(err6)
+							service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
+							return
+						} else if !auth {
+							results[triggerID] = service.statusForbidden(errors.New("Access to create job denied"))
+							service.syslogger.Audit("pz-workflow", "createJobRequestAccessDenied", "pz-idam", "Event [%s] firing trigger [%s] was denied access to create job", event.EventID, trigger.TriggerID)
+							return
+						}
 					}
 				}
 
