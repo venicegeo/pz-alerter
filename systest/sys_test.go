@@ -132,6 +132,7 @@ func (suite *WorkflowTester) Test01RegisterService() {
 
 	url, err := piazza.GetPiazzaUrl()
 	assert.NoError(err)
+
 	fmt.Println("URL", url)
 	h := piazza.Http{
 		BaseUrl: url,
@@ -239,7 +240,7 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 			},
 		},
 		Job: pzworkflow.JobRequest{
-			CreatedBy: "test",
+			CreatedBy: suite.apiKey,
 			JobType: pzworkflow.JobType{
 				Type: "execute-service",
 				Data: map[string]interface{}{
