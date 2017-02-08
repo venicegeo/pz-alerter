@@ -762,7 +762,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 				// System level events should always have authority
 				// but can anyone else just create an arbitrary event of these types
-				if eventType.Name == ingestTypeName || eventType.Name == executeTypeName {
+				if eventType.Name != ingestTypeName && eventType.Name != executeTypeName {
 					idamURL, err5 := service.sys.GetURL(piazza.PzIdam)
 					if err5 == nil {
 						//Mocking
