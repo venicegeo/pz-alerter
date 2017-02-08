@@ -101,6 +101,7 @@ type SystemConfig struct {
 	endpoints ServicesMap
 
 	Space string // int or stage or prod or...
+	PiazzaSystem string // System-level username
 
 	vcapApplication *VcapApplication
 	vcapServices    *VcapServices
@@ -140,6 +141,11 @@ func NewSystemConfig(serviceName ServiceName,
 	sys.Space = os.Getenv("SPACE")
 	if sys.Space == "" {
 		sys.Space = "int"
+	}
+
+	sys.PiazzaSystem = os.Getenv("PIAZZA_SYSTEM")
+	if sys.PiazzaSystem == "" {
+		sys.PiazzaSystem = "piazzaSystem"
 	}
 
 	// set some data about our own service first
