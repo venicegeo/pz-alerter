@@ -51,7 +51,6 @@ func makeClients() (
 
 	required := []piazza.ServiceName{
 		piazza.PzElasticSearch,
-		piazza.PzLogger,
 		piazza.PzKafka,
 		piazza.PzServiceController,
 		piazza.PzIdam,
