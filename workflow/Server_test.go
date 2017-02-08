@@ -27,7 +27,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
-	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 )
 
 type ServerTester struct {
@@ -72,13 +71,7 @@ func TestRunSuite(t *testing.T) {
 	logWriter := &pzsyslog.LocalReaderWriter{}
 	auditWriter := &pzsyslog.LocalReaderWriter{}
 
-	var uuidgen pzuuidgen.IClient
-	uuidgen, err = pzuuidgen.NewMockClient()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	kit, err := NewKit(sys, logWriter, auditWriter, uuidgen, true)
+	kit, err := NewKit(sys, logWriter, auditWriter, true)
 	if err != nil {
 		log.Fatal(err)
 	}

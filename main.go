@@ -20,16 +20,15 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
-	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
 
 func main() {
 	log.Printf("pz-workflow starting...")
 
-	sys, logWriter, auditWriter, uuidgen := makeClients()
+	sys, logWriter, auditWriter := makeClients()
 
-	kit, err := pzworkflow.NewKit(sys, logWriter, auditWriter, uuidgen, false)
+	kit, err := pzworkflow.NewKit(sys, logWriter, auditWriter, false)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -48,13 +47,11 @@ func main() {
 func makeClients() (
 	*piazza.SystemConfig,
 	pzsyslog.Writer,
-	pzsyslog.Writer,
-	*pzuuidgen.Client) {
+	pzsyslog.Writer) {
 
 	required := []piazza.ServiceName{
 		piazza.PzElasticSearch,
 		piazza.PzLogger,
-		piazza.PzUuidgen,
 		piazza.PzKafka,
 		piazza.PzServiceController,
 		piazza.PzIdam,
@@ -82,14 +79,5 @@ func makeClients() (
 
 	stdOutWriter := pzsyslog.StdoutWriter{}
 
-	url, err := sys.GetURL(piazza.PzUuidgen)
-	if err != nil {
-		log.Fatal(err)
-	}
-	uuidgen, err := pzuuidgen.NewClient(url, "")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return sys, logWriter, pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditWriter, &stdOutWriter}), uuidgen
+	return sys, logWriter, pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditWriter, &stdOutWriter})
 }

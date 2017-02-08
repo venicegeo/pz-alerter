@@ -29,7 +29,6 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
-	pzuuidgen "github.com/venicegeo/pz-uuidgen/uuidgen"
 	cron "github.com/venicegeo/vegertar-cron"
 )
 
@@ -58,8 +57,6 @@ type Service struct {
 
 	syslogger *pzsyslog.Logger
 
-	uuidgen pzuuidgen.IClient
-
 	sys *piazza.SystemConfig
 
 	cron *cron.Cron
@@ -74,7 +71,6 @@ func (service *Service) Init(
 	sys *piazza.SystemConfig,
 	logWriter pzsyslog.Writer,
 	auditWriter pzsyslog.Writer,
-	uuidgen pzuuidgen.IClient,
 	indices *map[string]elasticsearch.IIndex,
 ) error {
 
@@ -89,7 +85,7 @@ func (service *Service) Init(
 
 	service.syslogger = pzsyslog.NewLogger(logWriter, auditWriter, string(piazza.PzWorkflow))
 
-	service.sys, service.uuidgen = sys, uuidgen
+	service.sys = sys
 
 	service.stats.CreatedOn = time.Now()
 
