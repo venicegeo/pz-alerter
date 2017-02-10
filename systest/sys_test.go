@@ -15,11 +15,10 @@
 package workflowsystest
 
 import (
-	//"errors"
+	"errors"
 	"fmt"
 	"log"
 	"strconv"
-	//"strings"
 	"testing"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	//pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
+	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
 
 type WorkflowTester struct {
@@ -88,7 +88,7 @@ func TestRunSuite(t *testing.T) {
 	suite.Run(t, s)
 }
 
-func (suite *WorkflowTester) postToGateway(endpoint string, body map[string]interface{}, obj map[string]interface{}) (int, error) {
+func (suite *WorkflowTester) postToGateway(endpoint string, body interface{}, obj *map[string]interface{}) (int, error) {
 	h := piazza.Http{
 		BaseUrl: suite.url,
 		ApiKey:  suite.apiKey,
@@ -106,6 +106,16 @@ func (suite *WorkflowTester) getFromGateway(endpoint string, obj *map[string]int
 		//Postflight: piazza.SimplePostflight,
 	}
 	return h.Get(endpoint, obj)
+}
+
+func (suite *WorkflowTester) putToGateway(endpoint string, body interface{}, obj *map[string]interface{}) (int, error) {
+	h := piazza.Http{
+		BaseUrl: suite.url,
+		ApiKey:  suite.apiKey,
+		//Preflight:  piazza.SimplePreflight,
+		//Postflight: piazza.SimplePostflight,
+	}
+	return h.Put(endpoint, body, obj)
 }
 
 func (suite *WorkflowTester) Test01RegisterService() {
@@ -139,7 +149,6 @@ func (suite *WorkflowTester) Test01RegisterService() {
 	assert.Equal(201, code)
 	assert.NotNil(obj)
 
-	assert.IsType(mapType, obj["data"])
 	data := obj["data"].(map[string]interface{})
 	assert.IsType(stringType, data["serviceId"])
 	serviceID := data["serviceId"].(string)
@@ -158,20 +167,20 @@ func (suite *WorkflowTester) Test02PostEventType() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	body := map[string]interface{}{
-		"name": suite.eventTypeName,
-		"mapping": map[string]interface{}{
+	eventType := &pzworkflow.EventType{
+		Name: suite.eventTypeName,
+		Mapping: map[string]interface{}{
 			"alpha": elasticsearch.MappingElementTypeString,
 			"beta":  elasticsearch.MappingElementTypeInteger,
 		},
 	}
+
 	obj := map[string]interface{}{}
-	code, err := suite.postToGateway("/eventType", body, &obj)
+	code, err := suite.postToGateway("/eventType", eventType, &obj)
 	assert.NoError(err)
 	assert.Equal(201, code)
 	assert.NotNil(obj)
 
-	assert.IsType(mapType, obj["data"])
 	data := obj["data"].(map[string]interface{})
 	assert.IsType(stringType, data["eventTypeId"])
 	eventTypeID := data["eventTypeId"].(string)
@@ -226,7 +235,7 @@ func (suite *WorkflowTester) Test03GetEventType() {
 	assert.NotNil(data3)
 	assert.EqualValues(suite.eventTypeID, data3["eventTypeId"])
 }
-/*
+
 //---------------------------------------------------------------------
 
 func (suite *WorkflowTester) Test04PostTrigger() {
@@ -238,8 +247,6 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 
 	//suite.eventTypeId = "77bbe4c6-b1ac-4bbb-8e86-0f6e6a731c39"
 	//suite.serviceId = "61985d9c-d4d0-45d9-a655-7dcf2dc08fad"
-
-	client := suite.client
 
 	trigger := &pzworkflow.Trigger{
 		Name:        suite.triggerName,
@@ -278,14 +285,21 @@ func (suite *WorkflowTester) Test04PostTrigger() {
 	str, _ := piazza.StructInterfaceToString(trigger)
 	println(str)
 
-	ack, err := client.PostTrigger(trigger)
+	obj := map[string]interface{}{}
+	code, err := suite.postToGateway("/trigger", trigger, &obj)
 	if err != nil {
 		println(err.Error())
 	}
 	assert.NoError(err)
-	assert.NotNil(ack)
+	assert.Equal(201, code)
+	assert.NotNil(obj)
 
-	suite.triggerID = ack.TriggerID
+	data := obj["data"].(map[string]interface{})
+	assert.IsType(stringType, data["triggerId"])
+	triggerID := data["triggerId"].(string)
+	assert.NotEmpty(triggerID)
+
+	suite.triggerID = piazza.Ident(triggerID)
 	log.Printf("TriggerId: %s", suite.triggerID)
 }
 
@@ -296,25 +310,43 @@ func (suite *WorkflowTester) Test05GetTrigger() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	items, err := client.GetAllTriggers(100, 0)
+	obj := map[string]interface{}{}
+	code, err := suite.getFromGateway("/trigger?size=100", &obj)
 	assert.NoError(err)
-	assert.True(len(*items) > 1)
+	assert.Equal(200, code)
+	assert.NotNil(obj)
+
+	assert.IsType(listType, obj["data"])
+	data := obj["data"].([]interface{})
+	assert.True(len(data) > 1)
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"match_all": map[string]interface{}{},
 		},
 	}
-	items, err = client.QueryTriggers(query)
-	assert.NoError(err)
-	assert.True(len(*items) > 1)
 
-	item, err := client.GetTrigger(suite.triggerID)
+	obj2 := map[string]interface{}{}
+	code, err = suite.postToGateway("/trigger/query", query, &obj2)
 	assert.NoError(err)
-	assert.NotNil(item)
-	assert.EqualValues(suite.triggerID, item.TriggerID)
+	assert.Equal(200, code)
+	assert.NotNil(obj2)
+
+	assert.IsType(listType, obj2["data"])
+	data2 := obj2["data"].([]interface{})
+	assert.True(len(data2) > 1)
+
+	obj3 := map[string]interface{}{}
+	code, err = suite.getFromGateway("/trigger/"+string(suite.triggerID), &obj3)
+	assert.NoError(err)
+	assert.Equal(200, code)
+	assert.NotNil(obj3)
+
+	assert.IsType(mapType, obj3["data"])
+	data3 := obj3["data"].(map[string]interface{})
+	assert.NoError(err)
+	assert.NotNil(data3)
+	assert.EqualValues(suite.triggerID, data3["triggerId"])
 }
 
 func (suite *WorkflowTester) Test05PutTrigger() {
@@ -324,19 +356,29 @@ func (suite *WorkflowTester) Test05PutTrigger() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	item, err := client.GetTrigger(suite.triggerID)
+	obj := map[string]interface{}{}
+	code, err := suite.getFromGateway("/trigger/"+string(suite.triggerID), &obj)
 	assert.NoError(err)
-	assert.NotNil(item)
-	assert.EqualValues(suite.triggerID, item.TriggerID)
+	assert.Equal(200, code)
+	assert.NotNil(obj)
+
+	assert.IsType(mapType, obj["data"])
+	data3 := obj["data"].(map[string]interface{})
+	assert.NoError(err)
+	assert.NotNil(data3)
+	assert.EqualValues(suite.triggerID, data3["triggerId"])
 
 	triggerUpdate := pzworkflow.TriggerUpdate{
 		Enabled: true,
 	}
-
-	err = client.PutTrigger(suite.triggerID, &triggerUpdate)
+	obj2 := map[string]interface{}{}
+	code, err = suite.putToGateway("/trigger/"+string(suite.triggerID), triggerUpdate, &obj2)
+	if err != nil {
+		println(err.Error())
+	}
 	assert.NoError(err)
+	assert.Equal(200, code)
+	assert.NotNil(obj2)
 }
 
 //---------------------------------------------------------------------
@@ -347,8 +389,6 @@ func (suite *WorkflowTester) Test06PostEvent() {
 
 	suite.setupFixture()
 	defer suite.teardownFixture()
-
-	client := suite.client
 
 	eventY := &pzworkflow.Event{
 		EventTypeID: suite.eventTypeID,
@@ -366,16 +406,32 @@ func (suite *WorkflowTester) Test06PostEvent() {
 		},
 	}
 
-	ack, err := client.PostEvent(eventY)
+	obj := map[string]interface{}{}
+	code, err := suite.postToGateway("/event", eventY, &obj)
 	assert.NoError(err)
-	assert.NotNil(ack)
-	suite.eventIDYes = ack.EventID
+	assert.Equal(201, code)
+	assert.NotNil(obj)
+
+	data := obj["data"].(map[string]interface{})
+	assert.IsType(stringType, data["eventId"])
+	eventIDYes := data["eventId"].(string)
+	assert.NotEmpty(eventIDYes)
+
+	suite.eventIDYes = piazza.Ident(eventIDYes)
 	log.Printf("EventIdY: %s", suite.eventIDYes)
 
-	ack, err = client.PostEvent(eventN)
+	obj2 := map[string]interface{}{}
+	code, err = suite.postToGateway("/event", eventN, &obj2)
 	assert.NoError(err)
-	assert.NotNil(ack)
-	suite.eventIDNo = ack.EventID
+	assert.Equal(201, code)
+	assert.NotNil(obj2)
+
+	data = obj2["data"].(map[string]interface{})
+	assert.IsType(stringType, data["eventId"])
+	eventIDNo := data["eventId"].(string)
+	assert.NotEmpty(eventIDNo)
+
+	suite.eventIDNo = piazza.Ident(eventIDNo)
 	log.Printf("EventIdN: %s", suite.eventIDNo)
 }
 
@@ -386,48 +442,46 @@ func (suite *WorkflowTester) Test07GetEvent() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	items, err := client.GetAllEvents(100, 0)
+	obj := map[string]interface{}{}
+	code, err := suite.getFromGateway("/event?size=100", &obj)
 	assert.NoError(err)
-	assert.True(len(*items) > 1)
+	assert.Equal(200, code)
+	assert.NotNil(obj)
+
+	assert.IsType(listType, obj["data"])
+	data := obj["data"].([]interface{})
+	assert.True(len(data) > 1)
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"match_all": map[string]interface{}{},
 		},
 	}
-	items, err = client.QueryEvents(query)
-	assert.NoError(err)
-	assert.True(len(*items) > 1)
 
-	item, err := client.GetEvent(suite.eventIDYes)
+	obj2 := map[string]interface{}{}
+	code, err = suite.postToGateway("/event/query", query, &obj2)
 	assert.NoError(err)
-	assert.NotNil(item)
-	assert.EqualValues(suite.eventIDYes, item.EventID)
+	assert.Equal(200, code)
+	assert.NotNil(obj2)
+
+	assert.IsType(listType, obj2["data"])
+	data2 := obj2["data"].([]interface{})
+	assert.True(len(data2) > 1)
+
+	obj3 := map[string]interface{}{}
+	code, err = suite.getFromGateway("/event/"+string(suite.eventIDYes), &obj3)
+	assert.NoError(err)
+	assert.Equal(200, code)
+	assert.NotNil(obj3)
+
+	assert.IsType(mapType, obj3["data"])
+	data3 := obj3["data"].(map[string]interface{})
+	assert.NoError(err)
+	assert.NotNil(data3)
+	assert.EqualValues(suite.eventIDYes, data3["eventId"])
 }
 
 //---------------------------------------------------------------------
-
-func (suite *WorkflowTester) Test08PostAlert() {
-	t := suite.T()
-	assert := assert.New(t)
-
-	suite.setupFixture()
-	defer suite.teardownFixture()
-
-	client := suite.client
-
-	alert := &pzworkflow.Alert{
-		TriggerID: "x",
-		EventID:   "y",
-		JobID:     "z",
-	}
-
-	ack, err := client.PostAlert(alert)
-	assert.NoError(err)
-	assert.NotNil(ack)
-}
 
 func (suite *WorkflowTester) Test09GetAlert() {
 	t := suite.T()
@@ -436,32 +490,59 @@ func (suite *WorkflowTester) Test09GetAlert() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	items, err := client.GetAllAlerts(100, 0)
+	obj := map[string]interface{}{}
+	code, err := suite.getFromGateway("/alert?size=100", &obj)
 	assert.NoError(err)
-	assert.True(len(*items) > 1)
+	assert.Equal(200, code)
+	assert.NotNil(obj)
+
+	assert.IsType(listType, obj["data"])
+	data := obj["data"].([]interface{})
+	assert.True(len(data) > 1)
+
+	obj2 := map[string]interface{}{}
+	code, err = suite.getFromGateway("/alert?triggerId="+string(suite.triggerID), &obj2)
+	assert.NoError(err)
+	assert.Equal(200, code)
+	assert.NotNil(obj2)
+
+	assert.IsType(listType, obj["data"])
+	data = obj["data"].([]interface{})
+	assert.True(len(data) > 1)
+	alert := data[0].(map[string]interface{})
+	assert.EqualValues(suite.eventIDYes, alert["eventId"])
+	suite.alertID = piazza.Ident(alert["alertId"].(string))
+	log.Printf("AlertId: %s", suite.alertID)
+	suite.jobID = piazza.Ident(alert["jobId"].(string))
+	log.Printf("JobId: %s", suite.jobID)
 
 	query := map[string]interface{}{
 		"query": map[string]interface{}{
 			"match_all": map[string]interface{}{},
 		},
 	}
-	items, err = client.QueryAlerts(query)
+
+	obj3 := map[string]interface{}{}
+	code, err = suite.postToGateway("/alert/query", query, &obj3)
 	assert.NoError(err)
-	assert.True(len(*items) > 1)
+	assert.Equal(200, code)
+	assert.NotNil(obj3)
 
-	items, err = client.GetAlertByTrigger(suite.triggerID)
+	assert.IsType(listType, obj3["data"])
+	data2 := obj3["data"].([]interface{})
+	assert.True(len(data2) > 1)
+
+	obj4 := map[string]interface{}{}
+	code, err = suite.getFromGateway("/alert/"+string(suite.alertID), &obj4)
 	assert.NoError(err)
-	assert.NotNil(items)
-	assert.Len(*items, 1)
-	assert.EqualValues(suite.eventIDYes, (*items)[0].EventID)
+	assert.Equal(200, code)
+	assert.NotNil(obj4)
 
-	suite.alertID = (*items)[0].AlertID
-	log.Printf("AlertId: %s", suite.alertID)
-
-	suite.jobID = (*items)[0].JobID
-	log.Printf("JobId: %s", suite.jobID)
+	assert.IsType(mapType, obj4["data"])
+	data3 := obj4["data"].(map[string]interface{})
+	assert.NoError(err)
+	assert.NotNil(data3)
+	assert.EqualValues(suite.alertID, data3["alertId"])
 }
 
 //---------------------------------------------------------------------
@@ -473,11 +554,8 @@ func (suite *WorkflowTester) Test10GetJob() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	//client := suite.client
-
-	url := strings.Replace(suite.url, "workflow", "gateway", 1)
 	h := piazza.Http{
-		BaseUrl: url,
+		BaseUrl: suite.url,
 		ApiKey:  suite.apiKey,
 		//Preflight:  piazza.SimplePreflight,
 		//Postflight: piazza.SimplePostflight,
@@ -537,11 +615,8 @@ func (suite *WorkflowTester) Test11GetData() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	//client := suite.client
-
-	url := strings.Replace(suite.url, "workflow", "gateway", 1)
 	h := piazza.Http{
-		BaseUrl: url,
+		BaseUrl: suite.url,
 		ApiKey:  suite.apiKey,
 		//Preflight:  piazza.SimplePreflight,
 		//Postflight: piazza.SimplePostflight,
@@ -571,7 +646,7 @@ func (suite *WorkflowTester) Test11GetData() {
 }
 
 //---------------------------------------------------------------------
-
+/*
 func (suite *WorkflowTester) Test12TestElasticsearch() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -607,7 +682,7 @@ func (suite *WorkflowTester) Test12TestElasticsearch() {
 		assert.NotEmpty(retBody.ID)
 	}
 }
-
+*/
 func (suite *WorkflowTester) Test13RepeatingEvent() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -615,11 +690,16 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
-	client := suite.client
-
-	allEvents, err := client.GetAllEventsByEventType(suite.eventTypeID)
+	obj := map[string]interface{}{}
+	code, err := suite.getFromGateway("/event?eventTypeId=" + string(suite.eventTypeID), &obj)
 	assert.NoError(err)
-	numEventsBefore := len(*allEvents)
+	assert.Equal(200, code)
+	assert.NotNil(obj)
+
+	assert.IsType(listType, obj["data"])
+	data := obj["data"].([]interface{})
+	assert.True(len(data) > 1)
+	numEventsBefore := len(data)
 
 	repeatingEvent := &pzworkflow.Event{
 		EventTypeID: suite.eventTypeID,
@@ -627,23 +707,45 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 			"beta":  goodBeta,
 			"alpha": goodAlpha,
 		},
-		CronSchedule: "*/ /*2 * * * * *",
+		CronSchedule: "*/2 * * * * *",
 	}
 
-	ack, err := client.PostEvent(repeatingEvent)
+	obj2 := map[string]interface{}{}
+	code, err = suite.postToGateway("/event", repeatingEvent, &obj2)
 	assert.NoError(err)
-	assert.NotNil(ack)
-	suite.repeatID = ack.EventID
+	assert.Equal(201, code)
+	assert.NotNil(obj2)
+	log.Printf("Post response: %v", obj2)
+
+	data2 := obj2["data"].(map[string]interface{})
+	assert.IsType(stringType, data2["eventId"])
+	suite.repeatID = piazza.Ident(data2["eventId"].(string))
 	log.Printf("RepeatId: %s", suite.repeatID)
 
 	time.Sleep(20 * time.Second)
 
-	err = client.DeleteEvent(suite.repeatID)
+	h := piazza.Http{
+		BaseUrl: suite.url,
+		ApiKey:  suite.apiKey,
+		//Preflight:  piazza.SimplePreflight,
+		//Postflight: piazza.SimplePostflight,
+	}
+
+	obj3 := map[string]interface{}{}
+	code, err = h.Delete("/event/"+string(suite.repeatID), &obj3)
+	assert.Equal(200, code)
 	assert.NoError(err)
 
-	allEvents, err = client.GetAllEventsByEventType(suite.eventTypeID)
+	obj4 := map[string]interface{}{}
+	code, err = suite.getFromGateway("/event?eventTypeId=" + string(suite.eventTypeID), &obj4)
 	assert.NoError(err)
-	numEventsAfter := len(*allEvents)
+	assert.Equal(200, code)
+	assert.NotNil(obj4)
+
+	assert.IsType(listType, obj4["data"])
+	data = obj4["data"].([]interface{})
+	assert.True(len(data) > 1)
+	numEventsAfter := len(data)
 
 	numEventsCreated := numEventsAfter - numEventsBefore
 	log.Printf("Number of repeating events created: %d", numEventsCreated)
@@ -651,7 +753,7 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 }
 
 //---------------------------------------------------------------------
-
+/*
 func (suite *WorkflowTester) Test99Admin() {
 	t := suite.T()
 	assert := assert.New(t)
