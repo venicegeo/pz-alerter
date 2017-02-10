@@ -213,8 +213,11 @@ func (db *TriggerDB) GetTriggersByDslQuery(dslString string, actor string) ([]Tr
 
 func (db *TriggerDB) GetOne(id piazza.Ident, actor string) (*Trigger, bool, error) {
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
-	if err != nil {
+	if err != nil && getResult != nil {
 		return nil, getResult.Found, LoggedError("TriggerDB.GetOne failed: %s", err)
+	}
+	if err != nil && getResult == nil {
+		return nil, false, LoggedError("TriggerDB.GetOne failed and result is nil: %s", err)
 	}
 	if getResult == nil {
 		return nil, true, LoggedError("TriggerDB.GetOne failed: no getResult")
