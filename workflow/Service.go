@@ -757,9 +757,11 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				jobString := string(jobInstance)
 
 				idamURL, err5 := service.sys.GetURL(piazza.PzIdam)
+				service.syslogger.Info("Requesting pz-idam url: %s", idamURL)
 				if err5 == nil { //Mocking
 					service.syslogger.Audit("pz-workflow", "createJobRequestAccess", "pz-idam", "User [%s] POSTed event [%s] requesting access to trigger [%s] created by [%s]", event.CreatedBy, event.EventID, trigger.TriggerID, trigger.CreatedBy)
 					auth, err6 := piazza.RequestAuthZAccess(idamURL, eventType.CreatedBy)
+					service.syslogger.Info("Pz-idam authoriazation for user [%s]: %t", eventType.CreatedBy, auth)
 					if err6 != nil {
 						results[triggerID] = service.statusInternalError(err6)
 						service.syslogger.Audit("pz-workflow", "createJobRequestAccessFailure", "pz-idam", "Event [%s] firing trigger [%s] could not get access to create job", event.EventID, trigger.TriggerID)
