@@ -62,11 +62,11 @@ func (suite *LoggerTester) setupFixture() {
 		sys, err := piazza.NewSystemConfig(piazza.PzLogger, required)
 		assert.NoError(err)
 
-		idx, logESWriter, auditESWriter, err := setupES(sys)
+		idx, logESWriter, err := setupES(sys)
 		assert.NoError(err)
 
 		rwLogReader := &pzsyslog.LocalReaderWriter{}
-		auditWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditESWriter, rwLogReader})
+		auditWriter := rwLogReader
 
 		rwLogWriter := &pzsyslog.LocalReaderWriter{}
 		logWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{logESWriter, rwLogWriter})
@@ -88,22 +88,21 @@ func (suite *LoggerTester) setupFixture() {
 	}
 }
 
-func setupES(sys *piazza.SystemConfig) (elasticsearch.IIndex, pzsyslog.Writer, pzsyslog.Writer, error) {
-	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
+func setupES(sys *piazza.SystemConfig) (elasticsearch.IIndex, pzsyslog.Writer, error) {
+	loggerIndex, loggerType, err := pzsyslog.GetRequiredEnvVars()
 	if err != nil {
 		log.Fatal(err)
 	}
 	SetLogSchema(loggerType)
-	SetAuditSchema(auditType)
 
 	idx := elasticsearch.NewMockIndex(loggerIndex)
 
-	logESWriter, auditESWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
+	logESWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	return idx, logESWriter, auditESWriter, nil
+	return idx, logESWriter, nil
 }
 
 func (suite *LoggerTester) teardownFixture() {
