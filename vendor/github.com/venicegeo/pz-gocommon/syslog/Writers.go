@@ -20,6 +20,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"reflect"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
@@ -414,7 +415,19 @@ func (w *ElasticWriter) CreateType(mapping string) (bool, error) {
 	if err != nil {
 		return exists, err
 	}
-	if !exists {
+	if exists {
+		var currentMapping, newMapi interface{}
+		if currentMapping, err = w.Esi.GetMapping(w.typ); err != nil {
+			return exists, err
+		}
+		if newMapi, err = piazza.StructStringToInterface(mapping); err != nil {
+			return exists, err
+		}
+		newMap := map[string]interface{}{w.typ: newMapi}
+		if !reflect.DeepEqual(currentMapping, newMap) {
+			return exists, errors.New("Elasticsearch contains an invalid mapping for type: " + w.typ)
+		}
+	} else {
 		return exists, w.Esi.SetMapping(w.typ, piazza.JsonString(mapping))
 	}
 	return exists, nil
