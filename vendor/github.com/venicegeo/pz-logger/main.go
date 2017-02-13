@@ -32,15 +32,14 @@ func main() {
 		log.Fatal(err)
 	}
 
-	idx, logESWriter, auditESWriter, err := setupES(sys)
+	idx, logESWriter, err := setupES(sys)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	stdoutWriter := pzsyslog.StdoutWriter{}
-	auditWriter := pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditESWriter, &stdoutWriter})
 
-	kit, err := pzlogger.NewKit(sys, logESWriter, auditWriter, idx, true)
+	kit, err := pzlogger.NewKit(sys, logESWriter, &stdoutWriter, idx, true)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -55,42 +54,37 @@ func main() {
 		log.Fatal(err)
 	}
 
-	err = closeES(idx, logESWriter, auditWriter)
+	err = closeES(idx, logESWriter)
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func closeES(idx elasticsearch.IIndex, logWriter pzsyslog.Writer, auditWriter pzsyslog.Writer) error {
+func closeES(idx elasticsearch.IIndex, logWriter pzsyslog.Writer) error {
 	err := logWriter.Close()
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	err = auditWriter.Close()
-	if err != nil {
-		log.Fatal(err)
-	}
 	return idx.Close()
 }
 
-func setupES(sys *piazza.SystemConfig) (elasticsearch.IIndex, pzsyslog.Writer, pzsyslog.Writer, error) {
-	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
+func setupES(sys *piazza.SystemConfig) (elasticsearch.IIndex, pzsyslog.Writer, error) {
+	loggerIndex, loggerType, err := pzsyslog.GetRequiredEnvVars()
 	if err != nil {
 		log.Fatal(err)
 	}
 	pzlogger.SetLogSchema(loggerType)
-	pzlogger.SetAuditSchema(auditType)
 
 	idx, err := elasticsearch.NewIndex(sys, loggerIndex, "")
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	logESWriter, auditESWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
+	logESWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, err
 	}
 
-	return idx, logESWriter, auditESWriter, nil
+	return idx, logESWriter, nil
 }

@@ -1,5 +1,5 @@
-hash: 2fc3bf436db0c442e46ecd0ebc3a32a523ce8eb57c1eae71763cfb31776c06e8
-updated: 2017-02-08T16:02:44.4965335-05:00
+hash: 5d06a71e7215d4979f2de35691bfa789bf22c739e99778ed959c4d2a9061ef8c
+updated: 2017-02-13T11:20:41.037599662-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -15,9 +15,9 @@ imports:
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-isatty
-  version: 30a891c33c7cde7b02a981314b4228ec99380cca
+  version: 281032e84ae07510239465db46bf442aa44b953a
 - name: github.com/venicegeo/pz-gocommon
-  version: 8b2b5f9258a2cfacaada7a12444f5b4ffea0bc3d
+  version: bf52430e21b8861cf695e979ee7eedf9356f0a44
   subpackages:
   - elasticsearch
   - gocommon
@@ -28,7 +28,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: d75a52659825e75fff6158388dddc6a5b04f9ba5
+  version: aaabbdc969c3935a2a7f61efac801e7163c73a2a
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
@@ -39,7 +39,7 @@ imports:
   - backoff
   - uritemplates
 - name: gopkg.in/yaml.v2
-  version: a5b47d31c556af34a302ce5d659e6fea44d90de0
+  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
 testImports:
 - name: github.com/davecgh/go-spew
   version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d

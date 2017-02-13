@@ -61,7 +61,7 @@ func makeClients() (
 		log.Fatal(err)
 	}
 
-	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
+	loggerIndex, loggerType, err := pzsyslog.GetRequiredEnvVars()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -71,12 +71,12 @@ func makeClients() (
 		log.Fatal(err)
 	}
 
-	logWriter, auditWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
+	logWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	stdOutWriter := pzsyslog.StdoutWriter{}
 
-	return sys, logWriter, pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditWriter, &stdOutWriter})
+	return sys, logWriter, &stdOutWriter
 }

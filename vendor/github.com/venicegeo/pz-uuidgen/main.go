@@ -27,7 +27,6 @@ func main() {
 
 	required := []piazza.ServiceName{
 		piazza.PzElasticSearch,
-		piazza.PzLogger,
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzUuidgen, required)
@@ -35,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	loggerIndex, loggerType, auditType, err := pzsyslog.GetRequiredEnvVars()
+	loggerIndex, loggerType, err := pzsyslog.GetRequiredEnvVars()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,13 +42,13 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	logWriter, auditWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType, auditType)
+	logWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType)
 	if err != nil {
 		log.Fatal(err)
 	}
 	stdOutWriter := pzsyslog.StdoutWriter{}
 
-	kit, err := pzuuidgen.NewKit(sys, logWriter, pzsyslog.NewMultiWriter([]pzsyslog.Writer{auditWriter, &stdOutWriter}))
+	kit, err := pzuuidgen.NewKit(sys, logWriter, &stdOutWriter)
 	if err != nil {
 		log.Fatal(err)
 	}

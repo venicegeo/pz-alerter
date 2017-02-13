@@ -21,7 +21,6 @@ import (
 )
 
 var logSchema string = "LogData"
-var auditSchema string = "AuditData"
 
 //---------------------------------------------------------------------------
 
@@ -51,8 +50,4 @@ func paginationCreatedOnToTimeStamp(pagination *piazza.JsonPagination) {
 
 func SetLogSchema(schema string) {
 	logSchema = schema
-}
-
-func SetAuditSchema(schema string) {
-	auditSchema = schema
 }
