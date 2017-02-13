@@ -1,7 +1,9 @@
 package: github.com/venicegeo/pz-workflow
 import:
 - package: github.com/Shopify/sarama
+  version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - package: github.com/gin-gonic/gin
+  version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
 - package: github.com/venicegeo/pz-gocommon
   subpackages:
   - elasticsearch
@@ -11,8 +13,10 @@ import:
   subpackages:
   - uuidgen
 - package: github.com/venicegeo/vegertar-cron
+  version: cffdae6aaf2ddc29a99ff27db06aa108d40f21e6
 testImport:
 - package: github.com/stretchr/testify
+  version: f390dcf405f7b83c997eac1b06768bb9f44dec18
   subpackages:
   - assert
   - suite
