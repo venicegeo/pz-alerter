@@ -724,13 +724,13 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				defer waitGroup.Done()
 
 				trigger, found, err2 := service.triggerDB.GetOne(triggerID, event.CreatedBy)
+				if err2 != nil {
+					results[triggerID] = service.statusBadRequest(err2)
+					return
+				}
 				if !found {
 					// Don't fail for this, just log something and continue to the next trigger id
 					service.syslogger.Warning("Percolation error: Trigger %s does not exist", string(triggerID))
-					return
-				}
-				if err2 != nil {
-					results[triggerID] = service.statusBadRequest(err2)
 					return
 				}
 				if !trigger.Enabled {
