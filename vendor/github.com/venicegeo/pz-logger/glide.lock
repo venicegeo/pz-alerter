@@ -1,5 +1,5 @@
 hash: 5d06a71e7215d4979f2de35691bfa789bf22c739e99778ed959c4d2a9061ef8c
-updated: 2017-02-13T14:52:57.019099453-05:00
+updated: 2017-02-15T10:20:58.415930976-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -17,7 +17,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 281032e84ae07510239465db46bf442aa44b953a
 - name: github.com/venicegeo/pz-gocommon
-  version: 63795172b0ead63fe3ddee8243384f898728619d
+  version: cdeabcf6603eca0ca7defca67bfd5a1068664cda
   subpackages:
   - elasticsearch
   - gocommon
@@ -28,7 +28,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: aaabbdc969c3935a2a7f61efac801e7163c73a2a
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8

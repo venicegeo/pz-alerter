@@ -59,7 +59,7 @@ func TestNT(t *testing.T) {
 	}
 
 	GetValueFromHeader(http.Header{}, "Content-Type")
-	_, _, _, err := HTTP(GET, "localhost:"+LocalPortNumbers[PzGoCommonTest], NewHeaderBuilder().AddJsonContentType().AddBasicAuth("foo", "bar").GetHeader(), nil)
+	_, _, _, err := HTTP(GET, "http://localhost:"+LocalPortNumbers[PzGoCommonTest], NewHeaderBuilder().AddJsonContentType().AddBasicAuth("foo", "bar").GetHeader(), nil)
 	if err != nil {
 		assert.FailNow(err.Error())
 	}

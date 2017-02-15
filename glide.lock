@@ -1,5 +1,5 @@
 hash: 710a85a3bd0e357b5e2a702215443e17b9294bcfab5a68d81f2724e245411555
-updated: 2017-02-13T14:56:12.116529623-05:00
+updated: 2017-02-15T10:21:56.838884114-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -43,13 +43,13 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: 63795172b0ead63fe3ddee8243384f898728619d
+  version: cdeabcf6603eca0ca7defca67bfd5a1068664cda
   subpackages:
   - elasticsearch
   - gocommon
   - syslog
 - name: github.com/venicegeo/pz-uuidgen
-  version: 53b31f491ad820423d186c4cd857f41e6a8f7270
+  version: 2cbb9f468a51b92815f5289b5a80c5fbb8077ce0
   subpackages:
   - uuidgen
 - name: github.com/venicegeo/vegertar-cron
@@ -60,7 +60,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: aaabbdc969c3935a2a7f61efac801e7163c73a2a
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
@@ -84,6 +84,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 44a7681cb2cd367424062294f174de7cfb7d964a
+  version: 7d4e465e348be1cedc0867dc07fde0fc91a98702
   subpackages:
   - logger

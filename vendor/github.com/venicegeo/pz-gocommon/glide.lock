@@ -1,5 +1,5 @@
 hash: 65a0e6eb5fc7008f41468f98d8a91dd4d0ed8e56864dc5304e1372c5230cbe27
-updated: 2017-02-13T12:24:01.821318915-05:00
+updated: 2017-02-15T10:20:32.823305151-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -48,7 +48,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: aaabbdc969c3935a2a7f61efac801e7163c73a2a
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8

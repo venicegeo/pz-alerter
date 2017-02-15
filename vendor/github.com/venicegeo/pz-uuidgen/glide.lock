@@ -1,5 +1,5 @@
 hash: 79bbd6761beb4821269f64504431e78785ca352ba276c4820221378d0c6073e8
-updated: 2017-02-13T14:55:08.581402033-05:00
+updated: 2017-02-15T10:21:28.566038815-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -17,7 +17,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: 281032e84ae07510239465db46bf442aa44b953a
 - name: github.com/venicegeo/pz-gocommon
-  version: 63795172b0ead63fe3ddee8243384f898728619d
+  version: cdeabcf6603eca0ca7defca67bfd5a1068664cda
   subpackages:
   - elasticsearch
   - gocommon
@@ -28,7 +28,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: aaabbdc969c3935a2a7f61efac801e7163c73a2a
+  version: e24f485414aeafb646f6fca458b0bf869c0880a1
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
@@ -56,6 +56,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 44a7681cb2cd367424062294f174de7cfb7d964a
+  version: 7d4e465e348be1cedc0867dc07fde0fc91a98702
   subpackages:
   - logger
