@@ -15,9 +15,7 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"reflect"
 
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -71,8 +69,6 @@ func makeClients() (
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(reflect.TypeOf(logWriter), reflect.TypeOf(auditWriter))
 
 	return sys, logWriter, auditWriter
 }
