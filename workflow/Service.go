@@ -203,7 +203,7 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 	topic := fmt.Sprintf("Request-Job-%s", service.sys.Space)
 	message := jobInstance
 
-	producer, err := sarama.NewSyncProducer([]string{kafkaAddress}, nil)
+	producer, err := sarama.NewSyncProducer(strings.Split(kafkaAddress, ","), nil)
 	if err != nil {
 		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (2)", actor, jobID)
 		return LoggedError("Kafka-related failure (2): %s", err.Error())
