@@ -15,9 +15,10 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"reflect"
 
-	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
@@ -66,17 +67,12 @@ func makeClients() (
 		log.Fatal(err)
 	}
 
-	idx, err := elasticsearch.NewIndex(sys, loggerIndex, "")
+	logWriter, auditWriter, err := pzsyslog.GetRequiredWriters(sys, loggerIndex, loggerType)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	logWriter, err := pzsyslog.GetRequiredESIWriters(idx, loggerType)
-	if err != nil {
-		log.Fatal(err)
-	}
+	fmt.Println(reflect.TypeOf(logWriter), reflect.TypeOf(auditWriter))
 
-	stdOutWriter := pzsyslog.StdoutWriter{}
-
-	return sys, logWriter, &stdOutWriter
+	return sys, logWriter, auditWriter
 }

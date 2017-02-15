@@ -42,25 +42,25 @@ func GetRequiredEnvVars() (string, string, error) {
 	return loggerIndex, loggerType, nil
 }
 
-func GetRequiredESIWriters(esi elasticsearch.IIndex, loggerType string) (logWriter *ElasticWriter, err error) {
-	var indexExisted, typeExisted bool
-	logWriter = &ElasticWriter{Esi: esi}
+func GetRequiredWriters(sys *piazza.SystemConfig, loggerIndex string, loggerType string) (Writer, Writer, error) {
+	var indexExists bool
+	var err error
+	indexExists, err = elasticsearch.IndexExists(sys, loggerIndex)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !indexExists {
+		return &StdoutWriter{}, &NilWriter{}, nil
+	}
+	esi, err := elasticsearch.NewIndex(sys, loggerIndex, "")
+	if err != nil {
+		return nil, nil, err
+	}
+	logWriter := &ElasticWriter{Esi: esi}
 	if err = logWriter.SetType(loggerType); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if indexExisted, err = logWriter.CreateIndex(); err != nil {
-		return nil, err
-	}
-	if !indexExisted {
-		//fmt.Println("Created index:", esi.IndexName())
-	}
-	if typeExisted, err = logWriter.CreateType(LogMapping); err != nil {
-		return nil, err
-	}
-	if !typeExisted {
-		//fmt.Println("Created type:", loggerType)
-	}
-	return logWriter, err
+	return logWriter, &StdoutWriter{}, err
 }
 
 //---------------------------------------------------------------------
