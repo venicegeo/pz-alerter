@@ -9,9 +9,6 @@ import:
   - elasticsearch
   - gocommon
   - syslog
-- package: github.com/venicegeo/pz-uuidgen
-  subpackages:
-  - uuidgen
 - package: github.com/venicegeo/vegertar-cron
   version: cffdae6aaf2ddc29a99ff27db06aa108d40f21e6
 testImport:
@@ -20,6 +17,3 @@ testImport:
   subpackages:
   - assert
   - suite
-- package: github.com/venicegeo/pz-logger
-  subpackages:
-  - logger
