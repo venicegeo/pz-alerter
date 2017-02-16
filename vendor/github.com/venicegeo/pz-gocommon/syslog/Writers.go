@@ -42,25 +42,25 @@ func GetRequiredEnvVars() (string, string, error) {
 	return loggerIndex, loggerType, nil
 }
 
-func GetRequiredESIWriters(esi elasticsearch.IIndex, loggerType string) (logWriter *ElasticWriter, err error) {
-	var indexExisted, typeExisted bool
-	logWriter = &ElasticWriter{Esi: esi}
+func GetRequiredWriters(sys *piazza.SystemConfig, loggerIndex string, loggerType string) (Writer, Writer, error) {
+	var indexExists bool
+	var err error
+	indexExists, err = elasticsearch.IndexExists(sys, loggerIndex)
+	if err != nil {
+		return nil, nil, err
+	}
+	if !indexExists {
+		return &StderrWriter{}, &StdoutWriter{}, nil
+	}
+	esi, err := elasticsearch.NewIndex(sys, loggerIndex, "")
+	if err != nil {
+		return nil, nil, err
+	}
+	logWriter := &ElasticWriter{Esi: esi}
 	if err = logWriter.SetType(loggerType); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	if indexExisted, err = logWriter.CreateIndex(); err != nil {
-		return nil, err
-	}
-	if !indexExisted {
-		//fmt.Println("Created index:", esi.IndexName())
-	}
-	if typeExisted, err = logWriter.CreateType(LogMapping); err != nil {
-		return nil, err
-	}
-	if !typeExisted {
-		//fmt.Println("Created type:", loggerType)
-	}
-	return logWriter, err
+	return logWriter, &StdoutWriter{}, err
 }
 
 //---------------------------------------------------------------------
@@ -162,6 +162,28 @@ func (w *StdoutWriter) writeWork(mssg *Message) error {
 
 //Nothing to close for this writer
 func (w *StdoutWriter) Close() error {
+	return nil
+}
+
+//---------------------------------------------------------------------
+
+//StderrWriter writes messages to STDERR
+type StderrWriter struct {
+}
+
+//Writes message to STDERR
+func (w *StderrWriter) Write(mssg *Message, async bool) error {
+	var _ Writer = (*StderrWriter)(nil)
+	return w.writeWork(mssg)
+}
+
+func (w *StderrWriter) writeWork(mssg *Message) error {
+	fmt.Fprintln(os.Stderr, mssg.String())
+	return nil
+}
+
+//Nothing to close for this writer
+func (w *StderrWriter) Close() error {
 	return nil
 }
 

@@ -80,6 +80,39 @@ func NewIndex2(url string, index string, settings string) (*Index, error) {
 	return esi, nil
 }
 
+func IndexExists(sys *piazza.SystemConfig, index string) (bool, error) {
+	url, err := sys.GetURL(piazza.PzElasticSearch)
+	if err != nil {
+		return false, err
+	}
+	if strings.HasSuffix(index, "$") {
+		index = fmt.Sprintf("%s.%x", index[0:len(index)-1], time.Now().Nanosecond())
+	}
+
+	esi := &Index{
+		index: index,
+		url:   url,
+	}
+
+	esi.lib, err = elastic.NewClient(
+		elastic.SetURL(url),
+		elastic.SetSniff(false),
+		elastic.SetMaxRetries(5),
+		//elastic.SetErrorLog(log.New(os.Stderr, "ELASTIC ", log.LstdFlags)), // TODO
+		//elastic.SetInfoLog(log.New(os.Stdout, "", log.LstdFlags)),
+	)
+	if err != nil {
+		return false, err
+	}
+
+	esi.version, err = esi.lib.ElasticsearchVersion(url)
+	if err != nil {
+		return false, err
+	}
+
+	return esi.IndexExists()
+}
+
 // GetVersion returns the Elasticsearch version.
 func (esi *Index) GetVersion() string {
 	return esi.version

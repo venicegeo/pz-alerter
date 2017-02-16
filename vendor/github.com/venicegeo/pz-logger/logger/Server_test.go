@@ -186,7 +186,7 @@ func (suite *LoggerTester) Test01Version() {
 	version, err := suite.getVersion()
 	assert.NoError(err)
 	assert.EqualValues("1.0.0", version.Version)
-	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/version", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
+	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("http://localhost:%s/version", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
 }
 
@@ -202,7 +202,7 @@ func (suite *LoggerTester) Test02Admin() {
 	assert.NoError(err, "GetFromAdminStats")
 	assert.NotNil(output)
 
-	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/admin/stats", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
+	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("http://localhost:%s/admin/stats", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
 
 }
@@ -232,7 +232,7 @@ func (suite *LoggerTester) Test03Pagination() {
 
 	ms, err := suite.logReader.Read(1)
 	assert.NoError(err)
-	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("localhost:%s/syslog?page=0", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
+	_, _, _, err = piazza.HTTP(piazza.GET, fmt.Sprintf("http://localhost:%s/syslog?page=0", piazza.LocalPortNumbers[piazza.PzLogger]), piazza.NewHeaderBuilder().AddJsonContentType().GetHeader(), nil)
 	assert.NoError(err)
 
 	assert.Len(ms, 1)
@@ -328,7 +328,7 @@ func (suite *LoggerTester) Test05ConstructDsl() {
 	{
 		"from":0,
 		"query": {
-			"filtered":{ 
+			"filtered":{
 				"query":{
 					"bool":{
 						"must":
@@ -337,16 +337,26 @@ func (suite *LoggerTester) Test05ConstructDsl() {
 								"match":{"application":"myservice"}
 							},
 							{
-								"multi_match":{
-									"fields":["hostName", "application", "process", "messageId", "message"],
-									"query":"mycontains"
+								"filtered":{
+									"filter":{
+										"bool":{
+											"should":[
+												{"query":{"wildcard":{"hostName":{"value":"*mycontains*"}}}},
+												{"query":{"wildcard":{"application":{"value":"*mycontains*"}}}},
+												{"query":{"wildcard":{"process":{"value":"*mycontains*"}}}},
+												{"query":{"wildcard":{"messageId":{"value":"*mycontains*"}}}},
+												{"query":{"wildcard":{"message":{"value":"*mycontains*"}}}}
+											]
+										}
+									},
+									"query":{"match_all":{}}
 								}
 							},
 							{
 								"range":
 								{
 									"timeStamp":{
-										"gte":"2016-07-26T02:00:00Z", "lte":"2016-07-26T01:00:00Z"
+										"lte":"2016-07-26T01:00:00Z", "gte":"2016-07-26T02:00:00Z"
 									}
 								}
 							}
@@ -355,7 +365,7 @@ func (suite *LoggerTester) Test05ConstructDsl() {
 				}
 			}
 		},
-		"size":100, 
+		"size":100,
 		"sort":{"timeStamp":"desc"}
 	}`
 	assert.JSONEq(expected, actual)

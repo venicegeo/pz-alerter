@@ -1,5 +1,5 @@
 hash: 710a85a3bd0e357b5e2a702215443e17b9294bcfab5a68d81f2724e245411555
-updated: 2017-02-15T10:21:56.838884114-05:00
+updated: 2017-02-16T09:23:14.341600648-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -25,7 +25,7 @@ imports:
   subpackages:
   - proto
 - name: github.com/golang/snappy
-  version: 7db9049039a047d955fe8c19b83c8ff5abd765c7
+  version: 553a641470496b2327abcac10b36396bd98e45c9
 - name: github.com/klauspost/crc32
   version: 1bab8b35b6bb565f92cbc97939610af9369f942a
 - name: github.com/manucorporat/sse
@@ -43,7 +43,7 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: cdeabcf6603eca0ca7defca67bfd5a1068664cda
+  version: 4c7ef0a7aec69a7e663a0d47377be1dd7e4b3105
   subpackages:
   - elasticsearch
   - gocommon
@@ -84,6 +84,6 @@ testImports:
   - require
   - suite
 - name: github.com/venicegeo/pz-logger
-  version: 7d4e465e348be1cedc0867dc07fde0fc91a98702
+  version: 48a37d03b40d03dcf6bcb2d9267ffe69073e187e
   subpackages:
   - logger
