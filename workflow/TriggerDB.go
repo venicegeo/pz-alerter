@@ -96,7 +96,7 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 	//log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationID = piazza.Ident(indexResult.ID)
 
-	strTrigger, err := piazza.StructInterfaceToString(trigger)
+	strTrigger, err := piazza.StructToString(trigger)
 	if err != nil {
 		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
 		return LoggedError("TriggerDB.PostData failed: %s", err)
@@ -128,7 +128,7 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 
 func (db *TriggerDB) PutTrigger(trigger *Trigger, update *TriggerUpdate, actor string) (*Trigger, error) {
 	trigger.Enabled = update.Enabled
-	strTrigger, err := piazza.StructInterfaceToString(*trigger)
+	strTrigger, err := piazza.StructToString(*trigger)
 	if err != nil {
 		return trigger, LoggedError("TriggerDB.PutData failed: %s", err)
 	}

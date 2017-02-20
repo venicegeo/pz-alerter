@@ -357,12 +357,12 @@ func (suite *MappingTester) Test20Mappings() {
 
 func doVerification(expecte map[string]interface{}, actua map[string]interface{}) error {
 
-	expected, err := piazza.StructInterfaceToString(expecte)
+	expected, err := piazza.StructToString(expecte)
 	if err != nil {
 		return err
 	}
 	expected = piazza.RemoveWhitespace(expected)
-	actual, err := piazza.StructInterfaceToString(actua)
+	actual, err := piazza.StructToString(actua)
 	if err != nil {
 		return err
 	}

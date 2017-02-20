@@ -228,6 +228,37 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 	return nil
 }
 
+func (service *Service) paramsToQuery(params *piazza.HttpQueryParams, struc interface{}) (string, error) {
+	vars, err := piazza.GetVarsFromStruct(struc)
+	if err != nil {
+		return "", err
+	}
+	mustMatch := `{"term":{"%s":"%s"}}`
+	matches := []string{}
+	secret := strconv.FormatInt(time.Now().UnixNano(), 10) + strconv.FormatInt(time.Now().UnixNano(), 10)
+	for k, _ := range vars {
+		val, err := params.GetAsString(k, secret)
+		if err != nil {
+			return "", err
+		}
+		if val != secret {
+			matches = append(matches, fmt.Sprintf(mustMatch, k, val))
+		}
+	}
+	if len(matches) == 0 {
+		return "", err
+	}
+	matchesComb := ""
+	for _, m := range matches[:len(matches)-1] {
+		matchesComb += m + ","
+	}
+	matchesComb += matches[len(matches)-1]
+
+	query := `{"query": {"bool": {"must": [%s]}}}`
+
+	return fmt.Sprintf(query, matchesComb), nil
+}
+
 //---------------------------------------------------------------------
 
 func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
@@ -320,6 +351,11 @@ func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.Json
 
 // GetAllEventTypes TODO
 func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	paramQuery, err := service.paramsToQuery(params, EventType{})
+	if paramQuery != "" && err == nil {
+		return service.QueryEventTypes(paramQuery, params)
+	}
+
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -565,6 +601,11 @@ func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 
 // GetAllEvents TODO
 func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	paramQuery, err := service.paramsToQuery(params, Event{})
+	if paramQuery != "" && err == nil {
+		return service.QueryEvents(paramQuery, params)
+	}
+
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -603,6 +644,7 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 
 	service.syslogger.Audit("pz-workflow", "gettingAllEvents", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User is getting all events")
 
+	fmt.Println(query, format)
 	events, totalHits, err := service.eventDB.GetAll(query, format, "pz-workflow")
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "gettingAllEventsFailure", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User failed to get all events")
@@ -978,6 +1020,11 @@ func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	paramQuery, err := service.paramsToQuery(params, Trigger{})
+	if paramQuery != "" && err == nil {
+		return service.QueryTriggers(paramQuery, params)
+	}
+
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1151,6 +1198,11 @@ func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	paramQuery, err := service.paramsToQuery(params, Alert{})
+	if paramQuery != "" && err == nil {
+		return service.QueryAlerts(paramQuery, params)
+	}
+
 	triggerID, err := params.GetAsID("triggerId", "")
 	if err != nil {
 		return service.statusBadRequest(err)

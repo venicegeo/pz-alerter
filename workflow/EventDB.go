@@ -287,7 +287,7 @@ func ConstructEventMappingSchema(name string, mapping map[string]interface{}) (p
 	if err != nil {
 		return piazza.JsonString(""), err
 	}
-	strDsl, err := piazza.StructInterfaceToString(esdsl)
+	strDsl, err := piazza.StructToString(esdsl)
 	if err != nil {
 		return piazza.JsonString(""), err
 	}
