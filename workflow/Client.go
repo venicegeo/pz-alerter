@@ -33,7 +33,7 @@ type Client struct {
 func NewClient(url string, apiKey string, logger *pzsyslog.Logger) (*Client, error) {
 	var err error
 
-	err = piazza.WaitForService(piazza.PzUuidgen, url)
+	err = piazza.WaitForService(piazza.PzWorkflow, url)
 	if err != nil {
 		return nil, err
 	}
