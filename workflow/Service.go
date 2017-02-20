@@ -236,7 +236,10 @@ func (service *Service) paramsToQuery(params *piazza.HttpQueryParams, struc inte
 	mustMatch := `{"term":{"%s":"%s"}}`
 	matches := []string{}
 	secret := strconv.FormatInt(time.Now().UnixNano(), 10) + strconv.FormatInt(time.Now().UnixNano(), 10)
-	for k, _ := range vars {
+	for k, v := range vars {
+		if v == nil {
+			continue
+		}
 		val, err := params.GetAsString(k, secret)
 		if err != nil {
 			return "", err
