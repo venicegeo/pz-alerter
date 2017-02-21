@@ -408,7 +408,59 @@ func (esi *MockIndex) FilterByTermQuery(typeName string, name string, value inte
 }
 
 func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error) {
-	return nil, fmt.Errorf("SearchByJSON not supported under mocking")
+	objs := make(map[string]*json.RawMessage)
+
+	for ik, iv := range esi.types[typ].items {
+		objs[ik] = iv
+	}
+	type term map[string]map[string]interface{}
+	type Must struct {
+		Must []term `json:"must"`
+	}
+	type Query struct {
+		Bool Must `json:"bool"`
+	}
+	type TermQuery struct {
+		Qeury Query `json:"query"`
+	}
+	query := TermQuery{}
+	if err := json.Unmarshal([]byte(jsn), &query); err != nil {
+		return nil, err
+	}
+	resp := &SearchResult{
+		totalHits: 0,
+		hits:      make([]*SearchResultHit, 0),
+	}
+	for objId, obj := range objs {
+		objGood := true
+		for _, termMap := range query.Qeury.Bool.Must {
+			var term string
+			for term, _ = range termMap["term"] {
+				break
+			}
+			dat, err := obj.MarshalJSON()
+			if err != nil {
+				return resp, err
+			}
+			vars, err := piazza.GetVarsFromStringStruct(string(dat))
+			if err != nil {
+				return resp, err
+			}
+			if vars[term] != termMap["term"][term] {
+				objGood = false
+			}
+		}
+		if objGood {
+			resp.hits = append(resp.hits, &SearchResultHit{ID: objId, Source: obj})
+			resp.totalHits++
+		}
+	}
+
+	if len(resp.hits) > 0 {
+		resp.Found = true
+	}
+
+	return resp, nil
 }
 
 func (esi *MockIndex) GetTypes() ([]string, error) {

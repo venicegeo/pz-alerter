@@ -50,6 +50,14 @@ func StructToMap(stru interface{}) (map[string]interface{}, error) {
 	return mp, nil
 }
 
+func GetVarsFromStringStruct(stru string) (map[string]interface{}, error) {
+	struc, err := StructStringToInterface(stru)
+	if err != nil {
+		return nil, err
+	}
+	return GetVarsFromStruct(struc)
+}
+
 func GetVarsFromStruct(struc interface{}) (map[string]interface{}, error) {
 	iMap, err := StructToMap(struc)
 	if err != nil {
