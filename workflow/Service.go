@@ -645,7 +645,6 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 
 	service.syslogger.Audit("pz-workflow", "gettingAllEvents", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User is getting all events")
 
-	fmt.Println(query, format)
 	events, totalHits, err := service.eventDB.GetAll(query, format, "pz-workflow")
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "gettingAllEventsFailure", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User failed to get all events")
