@@ -408,22 +408,13 @@ func (esi *MockIndex) FilterByTermQuery(typeName string, name string, value inte
 }
 
 func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error) {
-	objs := make(map[string]*json.RawMessage)
-
-	for ik, iv := range esi.types[typ].items {
-		objs[ik] = iv
+	query := map[string]interface{}{
+		"query": map[string]interface{}{
+			"bool": map[string]interface{}{
+				"must": []map[string]map[string]interface{}{},
+			},
+		},
 	}
-	type term map[string]map[string]interface{}
-	type Must struct {
-		Must []term `json:"must"`
-	}
-	type Query struct {
-		Bool Must `json:"bool"`
-	}
-	type TermQuery struct {
-		Qeury Query `json:"query"`
-	}
-	query := TermQuery{}
 	if err := json.Unmarshal([]byte(jsn), &query); err != nil {
 		return nil, err
 	}
@@ -431,11 +422,19 @@ func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error
 		totalHits: 0,
 		hits:      make([]*SearchResultHit, 0),
 	}
-	for objId, obj := range objs {
+	var ok bool
+	for objId, obj := range esi.types[typ].items {
 		objGood := true
-		for _, termMap := range query.Qeury.Bool.Must {
+		for _, termMapI := range query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]interface{}) { //query.Qeury.Bool.Must {
+			var termMap, termMapBranch map[string]interface{}
+			if termMap, ok = termMapI.(map[string]interface{}); !ok {
+				return resp, errors.New("Term map not of type map[string]interface{}")
+			}
+			if termMapBranch, ok = termMap["term"].(map[string]interface{}); !ok {
+				return resp, errors.New("Term map key [term] not of type map[string]interface{}")
+			}
 			var term string
-			for term, _ = range termMap["term"] {
+			for term, _ = range termMapBranch {
 				break
 			}
 			dat, err := obj.MarshalJSON()
@@ -446,7 +445,7 @@ func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error
 			if err != nil {
 				return resp, err
 			}
-			if vars[term] != termMap["term"][term] {
+			if vars[term] != termMapBranch[term] {
 				objGood = false
 			}
 		}
@@ -455,11 +454,9 @@ func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error
 			resp.totalHits++
 		}
 	}
-
 	if len(resp.hits) > 0 {
 		resp.Found = true
 	}
-
 	return resp, nil
 }
 
