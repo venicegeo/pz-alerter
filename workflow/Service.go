@@ -490,6 +490,10 @@ func IsSystemEvent(name string) bool {
 // DeleteEventType TODO
 func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 	eventType, found, err := service.eventTypeDB.GetOne(id, "pz-workflow")
+	if !found {
+		service.syslogger.Audit("pz-workflow", "deletingEventTypeFailure", id, "Service.DeleteEventType: failed to get eventType [%s]", id)
+		return service.statusNotFound(err)
+	}
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "deletingEventTypeFailure", id, "Service.DeleteEventType: failed to get eventType [%s]", id)
 		return service.statusBadRequest(err)
