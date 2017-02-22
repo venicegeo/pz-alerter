@@ -235,7 +235,7 @@ func (service *Service) paramsToQuery(params *piazza.HttpQueryParams, struc inte
 	}
 	mustMatch := `{"term":{"%s":"%s"}}`
 	matches := []string{}
-	secret := strconv.FormatInt(time.Now().UnixNano(), 10) + strconv.FormatInt(time.Now().UnixNano(), 10)
+	secret := service.newIdent().String() + "-" + service.newIdent().String()
 	for k, v := range vars {
 		if v == nil {
 			continue
