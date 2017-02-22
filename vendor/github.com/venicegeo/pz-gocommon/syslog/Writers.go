@@ -29,20 +29,18 @@ import (
 const (
 	SyslogdNetwork = ""
 	SyslogdRaddr   = ""
+	LoggerType     = "LogData"
 )
 
-func GetRequiredEnvVars() (string, string, error) {
-	var loggerIndex, loggerType string
+func GetRequiredEnvVars() (string, error) {
+	var loggerIndex string
 	if loggerIndex = os.Getenv("LOGGER_INDEX"); loggerIndex == "" {
-		return "", "", errors.New("Elasticsearch index name not set")
+		return "", errors.New("Elasticsearch index name not set")
 	}
-	if loggerType = os.Getenv("LOGGER_TYPE"); loggerType == "" {
-		return "", "", errors.New("Elasticsearch type name not set")
-	}
-	return loggerIndex, loggerType, nil
+	return loggerIndex, nil
 }
 
-func GetRequiredWriters(sys *piazza.SystemConfig, loggerIndex string, loggerType string) (Writer, Writer, error) {
+func GetRequiredWriters(sys *piazza.SystemConfig, loggerIndex string) (Writer, Writer, error) {
 	var indexExists bool
 	var err error
 	indexExists, err = elasticsearch.IndexExists(sys, loggerIndex)
@@ -57,7 +55,7 @@ func GetRequiredWriters(sys *piazza.SystemConfig, loggerIndex string, loggerType
 		return nil, nil, err
 	}
 	logWriter := &ElasticWriter{Esi: esi}
-	if err = logWriter.SetType(loggerType); err != nil {
+	if err = logWriter.SetType(LoggerType); err != nil {
 		return nil, nil, err
 	}
 	return logWriter, &StdoutWriter{}, err
