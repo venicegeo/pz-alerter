@@ -484,12 +484,12 @@ func (esi *Index) GetTypes() ([]string, error) {
 	}
 
 	typs := (*getresp[esi.index]).Mappings
-	result := make([]string, len(typs))
+	result := []string{}
 
-	i := 0
 	for k := range typs {
-		result[i] = k
-		i++
+		if k != "_default_" && k != ".percolator" {
+			result = append(result, k)
+		}
 	}
 
 	return result, nil
