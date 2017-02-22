@@ -747,6 +747,27 @@ func (suite *WorkflowTester) Test13RepeatingEvent() {
 	assert.InDelta(10, numEventsCreated, 4.0)
 }
 
+type multiError struct {
+	errors []error
+}
+
+func (m *multiError) add(err error) {
+	if err != nil {
+		m.errors = append(m.errors, err)
+	}
+}
+func (m *multiError) error() error {
+	var str string
+	for _, err := range m.errors {
+		str += err.Error() + "\n"
+	}
+	if str == "" {
+		return nil
+	} else {
+		return errors.New(str)
+	}
+}
+
 func (suite *WorkflowTester) TestRemoveTrace() {
 	t := suite.T()
 	assert := assert.New(t)
@@ -754,9 +775,12 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 	suite.setupFixture()
 	defer suite.teardownFixture()
 
+	merr := multiError{}
 	test := func(code int, err error) {
-		assert.NoError(err)
-		assert.Equal(200, code)
+		merr.add(err)
+		if code != 200 {
+			merr.add(errors.New(fmt.Sprintf("Code %d is not 200", code)))
+		}
 	}
 
 	test(suite.deleteFromGateway("/service/"+suite.serviceID.String()+"?softDelete=false", &map[string]interface{}{}))
@@ -766,9 +790,7 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 	test(suite.deleteFromGateway("/event/"+suite.eventIDYes.String(), &map[string]interface{}{}))
 	{
 		events := map[string]interface{}{}
-		code, err := suite.getFromGateway("/event?eventTypeId="+string(suite.eventTypeID), &events)
-		assert.NoError(err)
-		assert.Equal(200, code)
+		test(suite.getFromGateway("/event?eventTypeId="+string(suite.eventTypeID), &events))
 		assert.NotNil(events)
 		assert.IsType(listType, events["data"])
 		data := events["data"].([]interface{})
@@ -781,11 +803,13 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 	}
 	{
 		triggers := map[string]interface{}{}
-		code, err := suite.getFromGateway("/trigger?eventTypeId="+string(suite.eventTypeID), &triggers)
-		assert.NoError(err)
-		assert.Equal(200, code)
+		//code, err := suite.getFromGateway("/trigger?eventTypeId="+string(suite.eventTypeID), &triggers)
+		query, err := piazza.StructStringToInterface(fmt.Sprintf(`{"query": {"bool": {"must": [{"term":{"eventTypeId":"%s"}}]}}}`, suite.eventTypeID.String()))
+		merr.add(err)
+		test(suite.postToGateway("/trigger/query", query, &triggers))
 		assert.IsType(listType, triggers["data"])
 		data := triggers["data"].([]interface{})
+		fmt.Println("Found", len(data), "triggers")
 		t := map[string]interface{}{}
 		for _, tr := range data {
 			t = tr.(map[string]interface{})
@@ -793,7 +817,8 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 			test(suite.deleteFromGateway("/trigger/"+t["triggerId"].(string), &map[string]interface{}{}))
 		}
 	}
-	test(suite.deleteFromGateway("/eventType/"+suite.eventTypeID.String(), &map[string]interface{}{}))
+	fmt.Println(suite.deleteFromGateway("/eventType/"+suite.eventTypeID.String(), &map[string]interface{}{}))
+	assert.NoError(merr.error())
 }
 
 //---------------------------------------------------------------------
