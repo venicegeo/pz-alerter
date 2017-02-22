@@ -793,6 +793,8 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 	test("deleting event n", code, err)
 	code, err = suite.deleteFromGateway("/event/"+suite.eventIDYes.String(), &map[string]interface{}{})
 	test("deleting event y", code, err)
+	// Wait a little bit for reads on the db to catch up
+	time.Sleep(20 * time.Second)
 	{
 		events := map[string]interface{}{}
 		code, err = suite.getFromGateway("/event?perPage=100&eventTypeId="+string(suite.eventTypeID), &events)
@@ -826,6 +828,8 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 			test("deleting trigger "+t["triggerId"].(string), code, err)
 		}
 	}
+	// Wait a little bit for reads on the db to catch up
+	time.Sleep(10 * time.Second)
 	code, err = suite.deleteFromGateway("/eventType/"+suite.eventTypeID.String(), &map[string]interface{}{})
 	test("deleting eventtype", code, err)
 	assert.NoError(merr.error())
