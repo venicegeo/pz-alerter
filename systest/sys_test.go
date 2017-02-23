@@ -786,35 +786,6 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 	test("deleting service", code, err)
 	code, err = suite.deleteFromGateway("/data/"+suite.dataID.String(), &map[string]interface{}{})
 	test("deleting data", code, err)
-	//code, err = suite.deleteFromGateway("/trigger/"+suite.triggerID.String(), &map[string]interface{}{})
-	//test("deleting trigger", code, err)
-	code, err = suite.deleteFromGateway("/event/"+suite.eventIDNo.String(), &map[string]interface{}{})
-	test("deleting event n", code, err)
-	code, err = suite.deleteFromGateway("/event/"+suite.eventIDYes.String(), &map[string]interface{}{})
-	test("deleting event y", code, err)
-	// Wait until the db has settled
-	pollingFnYN := elasticsearch.GetData(func() (bool, error) {
-		resultYes := map[string]interface{}{}
-		codeY, errY := suite.getFromGateway("/event/"+suite.eventIDYes.String(), &resultYes)
-		if errY != nil {
-			return false, errY
-		}
-		fmt.Println("codeY: ", codeY)
-		resultNo := map[string]interface{}{}
-		codeN, errN := suite.getFromGateway("/event/"+suite.eventIDNo.String(), &resultNo)
-		if errN != nil {
-			return false, errN
-		}
-		fmt.Println("codeN: ", codeN)
-		if codeY == 404 && codeN == 404 {
-			fmt.Println("eventY and N deleted successfully")
-			return true, nil
-		}
-		return false, nil
-	})
-
-	_, err = elasticsearch.PollFunction(pollingFnYN)
-	assert.NoError(err)
 
 	{
 		events := map[string]interface{}{}
