@@ -26,7 +26,6 @@ import (
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
-	//pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	pzworkflow "github.com/venicegeo/pz-workflow/workflow"
 )
 
@@ -793,8 +792,30 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 	test("deleting event n", code, err)
 	code, err = suite.deleteFromGateway("/event/"+suite.eventIDYes.String(), &map[string]interface{}{})
 	test("deleting event y", code, err)
-	// Wait a little bit for reads on the db to catch up
-	time.Sleep(20 * time.Second)
+	// Wait until the db has settled
+	pollingFnYN := elasticsearch.GetData(func() (bool, error) {
+		resultYes := map[string]interface{}{}
+		codeY, errY := suite.getFromGateway("/event/"+suite.eventIDYes.String(), &resultYes)
+		if errY != nil {
+			return false, errY
+		}
+		fmt.Println("codeY: ", codeY)
+		resultNo := map[string]interface{}{}
+		codeN, errN := suite.getFromGateway("/event/"+suite.eventIDNo.String(), &resultNo)
+		if errN != nil {
+			return false, errN
+		}
+		fmt.Println("codeN: ", codeN)
+		if codeY == 404 && codeN == 404 {
+			fmt.Println("eventY and N deleted successfully")
+			return true, nil
+		}
+		return false, nil
+	})
+
+	_, err = elasticsearch.PollFunction(pollingFnYN)
+	assert.NoError(err)
+
 	{
 		events := map[string]interface{}{}
 		code, err = suite.getFromGateway("/event?perPage=100&eventTypeId="+string(suite.eventTypeID), &events)
@@ -809,6 +830,24 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 			code, err = suite.deleteFromGateway("/event/"+e["eventId"].(string), &map[string]interface{}{})
 			test("deleting event "+e["eventId"].(string), code, err)
 		}
+		// Wait until the db has settled to continue
+		eventPollingFn := elasticsearch.GetData(func() (bool, error) {
+			result := map[string]interface{}{}
+			code, err = suite.getFromGateway("/event?perPage=100&eventTypeId="+string(suite.eventTypeID), &result)
+			if err != nil {
+				return false, err
+			}
+			assert.IsType(listType, result["data"])
+			data := result["data"].([]interface{})
+			fmt.Println("Found", len(data), "events")
+			if code == 200 && len(data) == 0 {
+				return true, nil
+			}
+			return false, nil
+		})
+
+		_, err = elasticsearch.PollFunction(eventPollingFn)
+		assert.NoError(err)
 	}
 	{
 		triggers := map[string]interface{}{}
@@ -827,9 +866,27 @@ func (suite *WorkflowTester) TestRemoveTrace() {
 			code, err = suite.deleteFromGateway("/trigger/"+t["triggerId"].(string), &map[string]interface{}{})
 			test("deleting trigger "+t["triggerId"].(string), code, err)
 		}
+		// Wait until the db has settled to continue
+		triggerPollingFn := elasticsearch.GetData(func() (bool, error) {
+			result := map[string]interface{}{}
+			code, err = suite.postToGateway("/trigger/query?perPage=100", query, &result)
+			if err != nil {
+				return false, err
+			}
+			assert.IsType(listType, result["data"])
+			data := result["data"].([]interface{})
+			fmt.Println("Found", len(data), "triggers")
+			if code == 200 && len(data) == 0 {
+				return true, nil
+			}
+			return false, nil
+		})
+
+		_, err = elasticsearch.PollFunction(triggerPollingFn)
+		assert.NoError(err)
 	}
-	// Wait a little bit for reads on the db to catch up
-	time.Sleep(10 * time.Second)
+	time.Sleep(1 * time.Second)
+	fmt.Println("Deleting eventType now that everything has been deleted successfully")
 	code, err = suite.deleteFromGateway("/eventType/"+suite.eventTypeID.String(), &map[string]interface{}{})
 	test("deleting eventtype", code, err)
 	assert.NoError(merr.error())
