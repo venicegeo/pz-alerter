@@ -477,19 +477,29 @@ func (esi *Index) GetTypes() ([]string, error) {
 		return nil, fmt.Errorf("Index %s does not exist", esi.index)
 	}
 
+	aliases, err := esi.lib.IndexGet().Feature("_aliases").Index(esi.index).Do()
+	if err != nil {
+		return nil, err
+	}
+	var indexName string
+	for testIndexName, al := range aliases {
+		for alName, _ := range al.Aliases {
+			if alName == esi.IndexName() {
+				indexName = testIndexName
+				break
+			}
+		}
+	}
+	if indexName == "" {
+		return nil, fmt.Errorf("Unable to find index name associated with alias [%s]", esi.IndexName())
+	}
+
 	getresp, err := esi.lib.IndexGet().Feature("_mappings").Index(esi.index).Do()
 	if err != nil {
 		return nil, err
 	}
 
-	if len(getresp) != 1 {
-		return nil, fmt.Errorf("Length of indicies on GetTypes result for index [%s] not 1", esi.IndexName())
-	}
-	var typs map[string]interface{}
-	for indexName, _ := range getresp {
-		typs = (*getresp[indexName]).Mappings
-	}
-
+	typs := (*getresp[indexName]).Mappings
 	result := []string{}
 	for k := range typs {
 		if k != "_default_" && k != ".percolator" {
