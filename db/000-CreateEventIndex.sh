@@ -61,7 +61,9 @@ if [[ $TESTING == "" ]]; then
 fi
 
 function removeAliases {
-  echo "Running remove alias function"
+  if [ "$TESTING" = true ] ; then
+    echo "Running remove alias function"
+  fi
   crash=$1
 
   #
@@ -84,7 +86,9 @@ function removeAliases {
   regex=""\""alias"\"":"\""$ALIAS_NAME"\"","\""index"\"":"\""([^"\""]+)"
   temp=`echo $getAliasesCurl|grep -Eo $regex | cut -d\" -f8`
   indexArr=(${temp// / })
-  echo "Found ${#indexArr[@]} indices currently using alias $ALIAS_NAME: ${indexArr[@]}"
+  if [ "$TESTING" = true ] ; then
+    echo "Found ${#indexArr[@]} indices currently using alias $ALIAS_NAME: ${indexArr[@]}"
+  fi
 
   #
   # Remove alias from all above indices
@@ -104,12 +108,16 @@ function removeAliases {
         exit 1
       fi
     fi
-    echo "Removed alias $ALIAS_NAME on index $index"
+	if [ "$TESTING" = true ] ; then
+      echo "Removed alias $ALIAS_NAME on index $index"
+    fi
   done
 }
 
 function createAlias {
-  echo "Running create alias function"
+  if [ "$TESTING" = true ] ; then
+    echo "Running create alias function"
+  fi
   crash=$1
 
   #
@@ -128,14 +136,18 @@ function createAlias {
       exit 1
     fi
   fi
-  echo "Created alias $ALIAS_NAME on index $INDEX_NAME"
+  if [ "$TESTING" = true ] ; then
+    echo "Created alias $ALIAS_NAME on index $INDEX_NAME"
+  fi
 }
 
 #
 # Check to see if index already exists
 #
 
-echo "Checking to see if index $INDEX_NAME already exists..."
+if [ "$TESTING" = true ] ; then
+  echo "Checking to see if index $INDEX_NAME already exists..."
+fi
 cat=_cat
 catCurl=`curl -X GET -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$cat/indices" --write-out %{http_code} 2>/dev/null`
 http_code=`echo $catCurl | cut -d] -f2`
@@ -155,9 +167,10 @@ fi
 # Create the index
 #
 
-echo "Creating index $INDEX_NAME with mappings..."
+if [ "$TESTING" = true ] ; then
+  echo "Creating index $INDEX_NAME with mappings..."
+fi
 createIndexCurl=`curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "$IndexSettings" "$ES_IP$INDEX_NAME" --write-out %{http_code} 2>/dev/null`
-echo $createIndexCurl
 http_code=`echo $catCurl | cut -d] -f2`
 if [[ $createIndexCurl != '{"acknowledged":true}200' ]]; then
   echo "Failed to create index $INDEX_NAME. Code: $http_code"
@@ -186,5 +199,4 @@ removeAliases false
 
 createAlias true
 
-echo 
 echo "Success!"
