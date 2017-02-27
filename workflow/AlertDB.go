@@ -28,7 +28,7 @@ type AlertDB struct {
 }
 
 func NewAlertDB(service *Service, esi elasticsearch.IIndex) (*AlertDB, error) {
-	rdb, err := NewResourceDB(service, esi, AlertIndexSettings)
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}

@@ -21,13 +21,13 @@ type ResourceDB struct {
 	Esi     elasticsearch.IIndex
 }
 
-func NewResourceDB(service *Service, esi elasticsearch.IIndex, settings string) (*ResourceDB, error) {
+func NewResourceDB(service *Service, esi elasticsearch.IIndex) (*ResourceDB, error) {
 	db := &ResourceDB{
 		service: service,
 		Esi:     esi,
 	}
 
-	if err := esi.Create(settings); err != nil {
+	if err := esi.Create(""); err != nil {
 		return nil, err
 	}
 

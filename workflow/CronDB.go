@@ -29,7 +29,7 @@ type CronDB struct {
 
 // NewCronDB TODO
 func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
-	rdb, err := NewResourceDB(service, esi, CronIndexSettings)
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}

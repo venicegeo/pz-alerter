@@ -27,7 +27,7 @@ type EventDB struct {
 }
 
 func NewEventDB(service *Service, esi elasticsearch.IIndex) (*EventDB, error) {
-	rdb, err := NewResourceDB(service, esi, EventIndexSettings)
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}

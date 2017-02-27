@@ -30,7 +30,7 @@ type TriggerDB struct {
 }
 
 func NewTriggerDB(service *Service, esi elasticsearch.IIndex) (*TriggerDB, error) {
-	rdb, err := NewResourceDB(service, esi, TriggerIndexSettings)
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
