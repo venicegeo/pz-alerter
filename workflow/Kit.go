@@ -15,7 +15,11 @@
 package workflow
 
 import (
+	"errors"
 	"log"
+	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
@@ -146,26 +150,56 @@ func (kit *Kit) makeMockIndices() *map[string]elasticsearch.IIndex {
 
 func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.IIndex {
 	var err error
-
+	var pwd, esURL string
+	{
+		pwd, err = os.Getwd()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		esURL, err = sys.GetURL(piazza.PzElasticSearch)
+		if err != nil {
+			log.Fatalln(err)
+		}
+	}
+	keyToScript := map[string]string{
+		keyEventTypes:        "000-CreateEventTypeIndex.sh",
+		keyEvents:            "000-CreateEventIndex.sh",
+		keyTriggers:          "000-CreateTriggerIndex.sh",
+		keyAlerts:            "000-CreateAlertIndex.sh",
+		keyCrons:             "000-CreateCronIndex.sh",
+		keyTestElasticsearch: "000-CreateTestESIndex.sh",
+	}
 	indices := make(map[string]elasticsearch.IIndex)
 
-	if indices[keyEventTypes], err = elasticsearch.NewIndex(sys, "eventtypes003", EventTypeIndexSettings); err != nil {
-		log.Fatal(err)
+	for alias, script := range keyToScript {
+		log.Println("Running", alias, "init script")
+		outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		if !(strings.HasSuffix(string(outDat), "Index already exists\n") || strings.HasSuffix(string(outDat), "Success!\n")) {
+			log.Fatalln(errors.New(string(outDat)))
+		}
+		log.Println(string(outDat))
 	}
-	if indices[keyEvents], err = elasticsearch.NewIndex(sys, "events004", EventIndexSettings); err != nil {
-		log.Fatal(err)
+
+	if indices[keyEventTypes], err = elasticsearch.NewIndex(sys, keyEventTypes, ""); err != nil {
+		log.Fatalln(err)
 	}
-	if indices[keyTriggers], err = elasticsearch.NewIndex(sys, "triggers003", TriggerIndexSettings); err != nil {
-		log.Fatal(err)
+	if indices[keyEvents], err = elasticsearch.NewIndex(sys, keyEvents, ""); err != nil {
+		log.Fatalln(err)
 	}
-	if indices[keyAlerts], err = elasticsearch.NewIndex(sys, "alerts003", AlertIndexSettings); err != nil {
-		log.Fatal(err)
+	if indices[keyTriggers], err = elasticsearch.NewIndex(sys, keyTriggers, ""); err != nil {
+		log.Fatalln(err)
 	}
-	if indices[keyCrons], err = elasticsearch.NewIndex(sys, "crons003", CronIndexSettings); err != nil {
-		log.Fatal(err)
+	if indices[keyAlerts], err = elasticsearch.NewIndex(sys, keyAlerts, ""); err != nil {
+		log.Fatalln(err)
 	}
-	if indices[keyTestElasticsearch], err = elasticsearch.NewIndex(sys, "testelasticsearch003", TestElasticsearchSettings); err != nil {
-		log.Fatal(err)
+	if indices[keyCrons], err = elasticsearch.NewIndex(sys, keyCrons, ""); err != nil {
+		log.Fatalln(err)
+	}
+	if indices[keyTestElasticsearch], err = elasticsearch.NewIndex(sys, keyTestElasticsearch, ""); err != nil {
+		log.Fatalln(err)
 	}
 
 	return &indices

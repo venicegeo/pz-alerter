@@ -74,6 +74,12 @@ func (service *Service) Init(
 	indices *map[string]elasticsearch.IIndex,
 ) error {
 
+	for k, v := range *indices {
+		fmt.Println(k)
+		dat, err := json.MarshalIndent(v, " ", "   ")
+		fmt.Println(string(dat), err)
+	}
+
 	eventtypesIndex := (*indices)[keyEventTypes]
 	eventsIndex := (*indices)[keyEvents]
 	triggersIndex := (*indices)[keyTriggers]
@@ -115,6 +121,10 @@ func (service *Service) Init(
 
 	service.cron = cron.New()
 	service.origin = string(sys.Name)
+
+	fmt.Println(eventtypesIndex)
+	fmt.Println(eventtypesIndex.IndexExists())
+	fmt.Println(eventtypesIndex.GetTypes())
 
 	// allow the database time to settle
 	//time.Sleep(time.Second * 5)

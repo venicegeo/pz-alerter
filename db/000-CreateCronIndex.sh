@@ -168,15 +168,15 @@ fi
 
 if [ "$TESTING" = true ] ; then
     echo "Creating test indices..."
-    apple=apple
-    curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$apple" --write-out %{http_code}; echo " "
+    blueberry=blueberry
+    curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$blueberry" --write-out %{http_code}; echo " "
     curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{
-    "\""actions"\"" : [ { "\""add"\"" : { "\""index"\"" : "\""apple"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } } ]
+    "\""actions"\"" : [ { "\""add"\"" : { "\""index"\"" : "\""blueberry"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } } ]
     }" "$ES_IP$aliases" --write-out %{http_code}; echo " "
-    pear=pear
-    curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$pear" --write-out %{http_code}; echo " "
+    strawberry=strawberry
+    curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$strawberry" --write-out %{http_code}; echo " "
     curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{
-    "\""actions"\"" : [ { "\""add"\"" : { "\""index"\"" : "\""pear"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } } ]
+    "\""actions"\"" : [ { "\""add"\"" : { "\""index"\"" : "\""strawberry"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } } ]
     }" "$ES_IP$aliases" --write-out %{http_code}; echo " "
 fi
 
