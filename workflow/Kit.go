@@ -145,6 +145,12 @@ func (kit *Kit) makeMockIndices() *map[string]elasticsearch.IIndex {
 		keyCrons:             elasticsearch.NewMockIndex(keyCrons),
 		keyTestElasticsearch: elasticsearch.NewMockIndex(keyTestElasticsearch),
 	}
+	(*indices)[keyEventTypes].SetMapping(EventTypeDBMapping, "{}")
+	(*indices)[keyEvents].SetMapping(EventTypeDBMapping, "{}")
+	(*indices)[keyTriggers].SetMapping(TriggerDBMapping, "{}")
+	(*indices)[keyAlerts].SetMapping(AlertDBMapping, "{}")
+	(*indices)[keyCrons].SetMapping(CronDBMapping, "{}")
+	(*indices)[keyTestElasticsearch].SetMapping(TestElasticsearchMapping, "{}")
 	return indices
 }
 

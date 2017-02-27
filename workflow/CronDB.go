@@ -33,7 +33,7 @@ func NewCronDB(service *Service, esi elasticsearch.IIndex) (*CronDB, error) {
 	if err != nil {
 		return nil, err
 	}
-	crdb := CronDB{ResourceDB: rdb, mapping: cronDBMapping}
+	crdb := CronDB{ResourceDB: rdb, mapping: CronDBMapping}
 	return &crdb, nil
 }
 
