@@ -20,6 +20,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"reflect"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -84,6 +87,7 @@ func (service *Service) Init(
 	var err error
 
 	service.syslogger = pzsyslog.NewLogger(logWriter, auditWriter, string(piazza.PzWorkflow))
+	defer service.handlePanic()
 
 	service.sys = sys
 
@@ -192,6 +196,14 @@ func (service *Service) newIdent() piazza.Ident {
 	return piazza.Ident(piazza.NewUuid().String())
 }
 
+func (service *Service) handlePanic() {
+	if r := recover(); r != nil {
+		report := fmt.Sprintf("Recovered from panic: [%s]: %v\n%s", reflect.TypeOf(r), r, string(debug.Stack()))
+		service.syslogger.Error(report)
+		fmt.Fprintln(os.Stderr, report)
+	}
+}
+
 func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, actor string) error {
 	service.syslogger.Audit(actor, "creatingJob", "kafka", "User [%s] is sending job [%s] to kafka", actor, jobID)
 	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
@@ -292,6 +304,7 @@ func (service *Service) statusNotFound(err error) *piazza.JsonResponse {
 
 // GetStats TODO
 func (service *Service) GetStats() *piazza.JsonResponse {
+	defer service.handlePanic()
 	service.Lock()
 	t := service.stats
 	service.Unlock()
@@ -302,6 +315,7 @@ func (service *Service) GetStats() *piazza.JsonResponse {
 
 // GetEventType TODO
 func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.JsonResponse {
+	defer service.handlePanic()
 	service.syslogger.Audit(actor, "gettingEventType", id, "Service.GetEventType: User is getting eventType")
 	eventType, found, err := service.eventTypeDB.GetOne(id, actor)
 	if !found {
@@ -320,6 +334,7 @@ func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.Json
 
 // GetAllEventTypes TODO
 func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -384,6 +399,7 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 }
 
 func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -423,6 +439,7 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 
 // PostEventType TODO
 func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse {
+	defer service.handlePanic()
 	// Check if our EventType.Name already exists
 	found, err := service.eventDB.NameExists(eventType.Name, eventType.CreatedBy)
 	if err != nil {
@@ -489,6 +506,7 @@ func IsSystemEvent(name string) bool {
 
 // DeleteEventType TODO
 func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	eventType, found, err := service.eventTypeDB.GetOne(id, "pz-workflow")
 	if !found {
 		service.syslogger.Audit("pz-workflow", "deletingEventTypeFailure", id, "Service.DeleteEventType: failed to get eventType [%s]", id)
@@ -543,6 +561,7 @@ func (service *Service) DeleteEventType(id piazza.Ident) *piazza.JsonResponse {
 
 // GetEvent TODO
 func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id, "pz-workflow")
 	if mapping == "" {
 		return service.statusNotFound(err)
@@ -569,6 +588,7 @@ func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 
 // GetAllEvents TODO
 func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -639,6 +659,7 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 // this initial event, so that searching for events created by the initial event
 // is easier.
 func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
+	defer service.handlePanic()
 	// Post the event in the database, WITHOUT "triggering"
 	eventTypeID := event.EventTypeID
 	eventType, found, err := service.eventTypeDB.GetOne(eventTypeID, event.CreatedBy)
@@ -689,6 +710,7 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 
 // PostEvent TODO
 func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
+	defer service.handlePanic()
 	eventType, found, err := service.eventTypeDB.GetOne(event.EventTypeID, event.CreatedBy)
 	if err != nil || !found {
 		return service.statusBadRequest(err)
@@ -821,6 +843,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 }
 
 func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -910,6 +933,7 @@ func syncPagination(dslString string, format piazza.JsonPagination) (string, err
 }
 
 func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	mapping, err := service.eventDB.lookupEventTypeNameByEventID(id, "pz-workflow")
 	if mapping == "" {
 		return service.statusNotFound(err)
@@ -960,6 +984,7 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 //------------------------------------------------------------------------------
 
 func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	service.syslogger.Audit("pz-workflow", "gettingTrigger", id, "Service.GetTrigger: User is getting trigger [%s]", id)
 	trigger, found, err := service.triggerDB.GetOne(id, "pz-workflow")
 	if !found {
@@ -982,6 +1007,7 @@ func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1018,6 +1044,7 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 }
 
 func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1059,6 +1086,7 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 }
 
 func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
+	defer service.handlePanic()
 	var err error
 	trigger.TriggerID = service.newIdent()
 	trigger.CreatedOn = time.Now()
@@ -1098,6 +1126,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 }
 
 func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piazza.JsonResponse {
+	defer service.handlePanic()
 	trigger, found, err := service.triggerDB.GetOne(id, "pz-workflow")
 	if !found {
 		return service.statusNotFound(err)
@@ -1119,6 +1148,7 @@ func (service *Service) PutTrigger(id piazza.Ident, update *TriggerUpdate) *piaz
 }
 
 func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	service.syslogger.Audit("pz-workflow", "deletingTrigger", id, "Service.DeleteTrigger: User is deleting trigger [%s]", id)
 
 	ok, err := service.triggerDB.DeleteTrigger(id, "pz-workflow")
@@ -1139,6 +1169,7 @@ func (service *Service) DeleteTrigger(id piazza.Ident) *piazza.JsonResponse {
 //---------------------------------------------------------------------
 
 func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	service.syslogger.Audit("pz-workflow", "gettingAlert", id, "Service.GetAlert: User is getting alert [%s]", id)
 	alert, found, err := service.alertDB.GetOne(id, "pz-workflow")
 	if !found {
@@ -1155,6 +1186,7 @@ func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	triggerID, err := params.GetAsID("triggerId", "")
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1218,6 +1250,7 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 }
 
 func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	defer service.handlePanic()
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1318,6 +1351,7 @@ func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 
 // PostAlert TODO
 func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
+	defer service.handlePanic()
 	alert.AlertID = service.newIdent()
 	alert.CreatedOn = time.Now()
 
@@ -1337,6 +1371,7 @@ func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 
 // DeleteAlert TODO
 func (service *Service) DeleteAlert(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	service.syslogger.Audit("pz-workflow", "deletingAlert", id, "Service.DeleteAlert: User is deleteing alert [%s]", id)
 
 	ok, err := service.alertDB.DeleteByID(id, "pz-workflow")
@@ -1370,6 +1405,7 @@ func (service *Service) removeUniqueParams(uniqueKey string, inputObj map[string
 
 // InitCron TODO
 func (service *Service) InitCron() error {
+	defer service.handlePanic()
 	ok, err := service.cronDB.Exists("pz-workflow")
 	if err != nil {
 		return err
@@ -1423,7 +1459,7 @@ func (c cronEvent) Key() string {
 //---------------------------------------------------------------------
 
 func (service *Service) TestElasticsearchVersion() *piazza.JsonResponse {
-
+	defer service.handlePanic()
 	version, err := service.testElasticsearchDB.GetVersion()
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1437,6 +1473,7 @@ func (service *Service) TestElasticsearchVersion() *piazza.JsonResponse {
 }
 
 func (service *Service) TestElasticsearchGetOne(id piazza.Ident) *piazza.JsonResponse {
+	defer service.handlePanic()
 	body, found, err := service.testElasticsearchDB.GetOne(id)
 	if !found {
 		return service.statusNotFound(err)
@@ -1448,6 +1485,7 @@ func (service *Service) TestElasticsearchGetOne(id piazza.Ident) *piazza.JsonRes
 }
 
 func (service *Service) TestElasticsearchPost(body *TestElasticsearchBody) *piazza.JsonResponse {
+	defer service.handlePanic()
 	body.ID = service.newIdent()
 
 	if _, err := service.testElasticsearchDB.PostData(body, body.ID); err != nil {
