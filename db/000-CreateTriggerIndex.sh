@@ -1,5 +1,5 @@
 #!/bin/bash
-INDEX_NAME=triggers003
+INDEX_NAME=triggers004
 ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
@@ -13,12 +13,13 @@ TriggerMapping='
 			},
 			"title": {
 				"type": "string",
-			"index": "not_analyzed"
+				"index": "not_analyzed"
 			},
 			"createdOn": {
-				"type": "date"
+				"type": "date",
+				"format": "yyyy-MM-dd'\''T'\''HH:mm:ssZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSSSZZ"
 			},
-		"createdBy": {
+			"createdBy": {
 				"type": "string",
 				"index": "not_analyzed"
 			},
@@ -27,12 +28,11 @@ TriggerMapping='
 				"index": "not_analyzed"
 			},
 			"enabled": {
-				"type": "boolean",
-				"index": "not_analyzed"
+				"type": "boolean"
 			},
 			"condition": {
-				"dynamic": true,
-				"properties": {}
+				"dynamic": "false",
+				"type": "object"
 			},
 			"job": {
 				"properties": {
@@ -41,8 +41,8 @@ TriggerMapping='
 						"index": "not_analyzed"
 					},
 					"jobType": {
-						"dynamic": true,
-						"properties": {}
+						"dynamic": "false",
+						"type": "object"
 					}
 				}
 			},

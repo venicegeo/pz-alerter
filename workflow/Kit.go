@@ -220,7 +220,6 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			log.Fatalln(err)
 		}
 		if scriptRes.Mapping != "" {
-			log.Println("Check mapping")
 			inter, err := piazza.StructStringToInterface(scriptRes.Mapping)
 			if err != nil {
 				log.Fatalln(err)
@@ -231,17 +230,14 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 				log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", alias, keyToType[alias])
 			}
 			if inter, err = indices[alias].GetMapping(keyToType[alias]); err != nil {
-				log.Println(keyToType[alias])
 				log.Fatalln(err)
 			}
 			if esMap, ok = inter.(map[string]interface{}); !ok {
 				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", alias, keyToType[alias])
 			}
-			dat, _ := json.MarshalIndent(scriptMap, " ", "   ")
-			log.Println(string(dat))
-			dat, _ = json.MarshalIndent(esMap, " ", "   ")
-			log.Println(string(dat))
-			log.Println(reflect.DeepEqual(scriptMap, esMap))
+			if !reflect.DeepEqual(scriptMap, esMap) {
+				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch does not match the mapping provided\n", alias, keyToType[alias])
+			}
 		}
 	}
 
