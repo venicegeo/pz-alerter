@@ -228,16 +228,16 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			var scriptMap, esMap map[string]interface{}
 			var ok bool
 			if scriptMap, ok = inter.(map[string]interface{}); !ok {
-				log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", alias, keyToType[alias])
+				log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", keyToType[alias], alias)
 			}
 			if inter, err = indices[alias].GetMapping(keyToType[alias]); err != nil {
 				log.Fatalln(err)
 			}
 			if esMap, ok = inter.(map[string]interface{}); !ok {
-				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", alias, keyToType[alias])
+				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", keyToType[alias], alias)
 			}
 			if !reflect.DeepEqual(scriptMap, esMap) {
-				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch does not match the mapping provided\n", alias, keyToType[alias])
+				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch does not match the mapping provided\n", keyToType[alias], alias)
 			}
 		}
 	}
