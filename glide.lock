@@ -1,5 +1,5 @@
 hash: 30bf1819b0aee799802f7c307ea92dc37d455f1ed180241ff4d8ea6d76196f51
-updated: 2017-02-22T15:06:35.882089327-05:00
+updated: 2017-03-01T15:25:19.515583711-05:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -33,7 +33,7 @@ imports:
 - name: github.com/mattn/go-isatty
   version: dda3de49cbfcec471bd7a70e6cc01fcc3ff90109
 - name: github.com/pierrec/lz4
-  version: 5c9560bfa9ace2bf86080bf40d46b34ae44604df
+  version: 90290f74b1b4d9c097f0a3b3c7eba2ef3875c699
 - name: github.com/pierrec/xxHash
   version: 5a004441f897722c627870a981d02b29924215fa
   subpackages:
@@ -43,7 +43,7 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: 4f52ec302f5a4c30cf43c5204ea52fbd5acf1d39
+  version: 1c7894f10140c7459a8daefc1ce8362f7f5be74b
   subpackages:
   - elasticsearch
   - gocommon
@@ -56,7 +56,7 @@ imports:
   - context
   - context/ctxhttp
 - name: golang.org/x/sys
-  version: 075e574b89e4c2d22f2286a7e2b919519c6f3547
+  version: 76cc09b634294339fa19ec41b5f2a0b3932cea8b
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
