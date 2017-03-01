@@ -61,6 +61,8 @@ type TriggerList []Trigger
 
 //-EVENT------------------------------------------------------------------------
 
+const EventDBMapping string = "_default_"
+
 // An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
 type Event struct {

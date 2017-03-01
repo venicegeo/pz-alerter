@@ -15,11 +15,12 @@
 package workflow
 
 import (
-	"errors"
+	"encoding/json"
 	"log"
 	"os"
 	"os/exec"
-	"strings"
+	"reflect"
+	"regexp"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
@@ -146,7 +147,7 @@ func (kit *Kit) makeMockIndices() *map[string]elasticsearch.IIndex {
 		keyTestElasticsearch: elasticsearch.NewMockIndex(keyTestElasticsearch),
 	}
 	(*indices)[keyEventTypes].SetMapping(EventTypeDBMapping, "{}")
-	(*indices)[keyEvents].SetMapping(EventTypeDBMapping, "{}")
+	(*indices)[keyEvents].SetMapping(EventDBMapping, "{}")
 	(*indices)[keyTriggers].SetMapping(TriggerDBMapping, "{}")
 	(*indices)[keyAlerts].SetMapping(AlertDBMapping, "{}")
 	(*indices)[keyCrons].SetMapping(CronDBMapping, "{}")
@@ -175,37 +176,73 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		keyCrons:             "000-CreateCronIndex.sh",
 		keyTestElasticsearch: "000-CreateTestESIndex.sh",
 	}
+	keyToType := map[string]string{
+		keyEventTypes:        EventTypeDBMapping,
+		keyEvents:            EventDBMapping,
+		keyTriggers:          TriggerDBMapping,
+		keyAlerts:            AlertDBMapping,
+		keyCrons:             CronDBMapping,
+		keyTestElasticsearch: TestElasticsearchMapping,
+	}
 	indices := make(map[string]elasticsearch.IIndex)
 
+	type ScriptRes struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+		Mapping string `json:"mapping"`
+	}
+
+	format := func(dat []byte) []byte {
+		re := regexp.MustCompile(`\r?\n?\t`)
+		return []byte(re.ReplaceAllString(string(dat), ""))
+	}
+
 	for alias, script := range keyToScript {
+		//	alias := keyEventTypes
+		//	script := keyToScript[alias]
 		log.Println("Running", alias, "init script")
 		outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
 		if err != nil {
 			log.Fatalln(err)
 		}
-		if !(strings.HasSuffix(string(outDat), "Index already exists\n") || strings.HasSuffix(string(outDat), "Success!\n")) {
-			log.Fatalln(errors.New(string(outDat)))
+		outDat = format(outDat)
+		scriptRes := ScriptRes{}
+		if err = json.Unmarshal(outDat, &scriptRes); err != nil {
+			log.Fatalln(err)
 		}
-		log.Println(string(outDat))
-	}
-
-	if indices[keyEventTypes], err = elasticsearch.NewIndex(sys, keyEventTypes, ""); err != nil {
-		log.Fatalln(err)
-	}
-	if indices[keyEvents], err = elasticsearch.NewIndex(sys, keyEvents, ""); err != nil {
-		log.Fatalln(err)
-	}
-	if indices[keyTriggers], err = elasticsearch.NewIndex(sys, keyTriggers, ""); err != nil {
-		log.Fatalln(err)
-	}
-	if indices[keyAlerts], err = elasticsearch.NewIndex(sys, keyAlerts, ""); err != nil {
-		log.Fatalln(err)
-	}
-	if indices[keyCrons], err = elasticsearch.NewIndex(sys, keyCrons, ""); err != nil {
-		log.Fatalln(err)
-	}
-	if indices[keyTestElasticsearch], err = elasticsearch.NewIndex(sys, keyTestElasticsearch, ""); err != nil {
-		log.Fatalln(err)
+		if scriptRes.Status != "success" {
+			log.Fatalf("Script failed: [%s]\n", scriptRes.Message)
+		}
+		if scriptRes.Message != "" {
+			log.Println(scriptRes.Message)
+		}
+		if indices[alias], err = elasticsearch.NewIndex(sys, alias, ""); err != nil {
+			log.Fatalln(err)
+		}
+		if scriptRes.Mapping != "" {
+			log.Println("Check mapping")
+			inter, err := piazza.StructStringToInterface(scriptRes.Mapping)
+			if err != nil {
+				log.Fatalln(err)
+			}
+			var scriptMap, esMap map[string]interface{}
+			var ok bool
+			if scriptMap, ok = inter.(map[string]interface{}); !ok {
+				log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", alias, keyToType[alias])
+			}
+			if inter, err = indices[alias].GetMapping(keyToType[alias]); err != nil {
+				log.Println(keyToType[alias])
+				log.Fatalln(err)
+			}
+			if esMap, ok = inter.(map[string]interface{}); !ok {
+				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", alias, keyToType[alias])
+			}
+			dat, _ := json.MarshalIndent(scriptMap, " ", "   ")
+			log.Println(string(dat))
+			dat, _ = json.MarshalIndent(esMap, " ", "   ")
+			log.Println(string(dat))
+			log.Println(reflect.DeepEqual(scriptMap, esMap))
+		}
 	}
 
 	return &indices
