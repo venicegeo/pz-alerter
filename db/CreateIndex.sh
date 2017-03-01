@@ -48,9 +48,9 @@ function tryCrash {
 	fi
 }
 
-function removeAliases {
-  printIfTesting "Running remove alias function"
-  crash=$1
+function handleAliases {
+  printIfTesting "Running handle alias function"
+  crash=true
 
   #
   # Search for indices that are using the alias we are trying to set
@@ -60,7 +60,7 @@ function removeAliases {
   http_code=`echo $catCurl | cut -d] -f2`
   if [[ "$http_code" != 200 ]]; then
     tryCrash $crash "Status code $http_code returned from catting aliases"
-	echo "Status code $http_code returned from catting aliases"
+	printIfTesting "Status code $http_code returned from catting aliases"
   fi
 
   #
@@ -70,47 +70,43 @@ function removeAliases {
   regex=""\""alias"\"":"\""$ALIAS_NAME"\"","\""index"\"":"\""([^"\""]+)"
   temp=`echo $getAliasesCurl|grep -Eo $regex | cut -d\" -f8`
   indexArr=(${temp// / })
-  printIfTesting "Found ${#indexArr[@]} indices currently using alias $ALIAS_NAME: ${indexArr[@]}"
-
-  #
-  # Remove alias from all above indices
-  #
-
+  if [ "$TESTING" = true ] ; then
+    echo "Found ${#indexArr[@]} indices currently using alias $ALIAS_NAME: ${indexArr[@]}"
+  fi
+  if [ "${#indexArr[@]}" -eq 1 ] ; then
+    if [ "${indexArr[0]}" = $INDEX_NAME ] ; then
+	  printIfTesting "Alias already exists on index"
+	  return
+    fi
+  fi
+  declare -a actions=()
+  actionsLength=0
   for index in ${indexArr[@]}
   do
-    removeAliasCurl=`curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{
-      "\""actions"\"" : [
-          { "\""remove"\"" : { "\""index"\"" : "\""$index"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } }
-      ]
-    }" "$ES_IP$aliases" --write-out %{http_code} 2>/dev/null`
-    http_code=`echo $catCurl | cut -d] -f2`
-    if [[ $removeAliasCurl != '{"acknowledged":true}200' ]]; then
-      tryCrash $crash "Failed to remove alias $ALIAS_NAME on index $index. Code: $http_code"
-      echo "Failed to remove alias $ALIAS_NAME on index $index. Code: $http_code"
-    fi
-    printIfTesting "Removed alias $ALIAS_NAME on index $index"
+    actions[actionsLength]="{"\""remove"\"":{"\""index"\"":"\""$index"\"","\""alias"\"":"\""$ALIAS_NAME"\""}}"
+    let actionsLength+=1
   done
-}
-
-function createAlias {
-  printIfTesting "Running create alias function"
-  crash=$1
-
-  #
-  # Create alias on our index
-  #
-
-  createAliasCurl=`curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{
-      "\""actions"\"" : [
-          { "\""add"\"" : { "\""index"\"" : "\""$INDEX_NAME"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } }
-      ]
-  }" "$ES_IP$aliases" --write-out %{http_code} 2>/dev/null`
-  http_code=`echo $catCurl | cut -d] -f2`
-  if [[ $createAliasCurl != '{"acknowledged":true}200' ]]; then
-    tryCrash $crash "Failed to create alias $ALIAS_NAME on index $INDEX_NAME. Code: $http_code"
-    echo "Failed to create alias $ALIAS_NAME on index $INDEX_NAME. Code: $http_code"
-  fi
-  printIfTesting "Created alias $ALIAS_NAME on index $INDEX_NAME"
+  actions[actionsLength]="{"\""add"\"":{"\""index"\"":"\""$INDEX_NAME"\"","\""alias"\"":"\""$ALIAS_NAME"\""}}"
+  let actionsLength+=1
+  concatCount=0
+  total=""
+  for action in ${actions[@]}
+  do
+    total=$total$action
+    let aLt=$actionsLength-1
+	if [ $concatCount -lt $aLt ]; then
+	  total="$total,"
+	fi
+	let concatCount+=1
+  done
+  total="{"\""actions"\"":[$total]}"
+  aliasCurl=`curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "$total" "$ES_IP$aliases" --write-out %{http_code} 2>/dev/null`
+	http_code=`echo $catCurl | cut -d] -f2`
+    if [[ $aliasCurl != '{"acknowledged":true}200' ]]; then
+      tryCrash $crash "Failed to set up aliases"
+    else
+      printIfTesting "Successfully set up aliases"
+	fi
 }
 
 #
@@ -125,8 +121,7 @@ if [[ "$http_code" != 200 ]]; then
 fi
 
 if [[ $catCurl == *""\""index"\"":"\""$INDEX_NAME"\"""* ]]; then
-  removeAliases false
-  createAlias true
+  handleAliases
   success "Index already exists"
 fi
 
@@ -159,8 +154,10 @@ if [ "$TESTING" = true ] ; then
     }" "$ES_IP$aliases" --write-out %{http_code}; echo " "
 fi
 
-removeAliases false
+handleAliases
 
-createAlias true
+#removeAliases false
+
+#createAlias true
 
 success "Index created successfully"
