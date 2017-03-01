@@ -215,7 +215,7 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			log.Fatalf("Script failed: [%s]\n", scriptRes.Message)
 		}
 		if scriptRes.Message != "" {
-			log.Println(scriptRes.Message)
+			log.Println(" ", scriptRes.Message)
 		}
 		if indices[alias], err = elasticsearch.NewIndex(sys, alias, ""); err != nil {
 			log.Fatalln(err)
