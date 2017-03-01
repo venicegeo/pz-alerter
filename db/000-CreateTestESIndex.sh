@@ -25,9 +25,5 @@ IndexSettings="
 	}
 }"
 
-echo $IndexSettings >> db/index.txt
-echo $TestElasticsearchMapping >> db/mapping.txt
 
-
-
-bash db/CreateIndex.sh $INDEX_NAME $ALIAS_NAME $ES_IP $TESTING
+bash db/CreateIndex.sh $INDEX_NAME $ALIAS_NAME $ES_IP "$IndexSettings" "$TestElasticsearchMapping" $TESTING

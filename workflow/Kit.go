@@ -15,6 +15,7 @@
 package workflow
 
 import (
+	"bytes"
 	"encoding/json"
 	"log"
 	"os"
@@ -194,12 +195,12 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 
 	format := func(dat []byte) []byte {
 		re := regexp.MustCompile(`\r?\n?\t`)
-		return []byte(re.ReplaceAllString(string(dat), ""))
+		return bytes.TrimPrefix([]byte(re.ReplaceAllString(string(dat), "")), []byte("\xef\xbb\xbf"))
 	}
 
 	for alias, script := range keyToScript {
-		//	alias := keyEventTypes
-		//	script := keyToScript[alias]
+		//alias := keyEventTypes
+		//script := keyToScript[alias]
 		log.Println("Running", alias, "init script")
 		outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
 		if err != nil {

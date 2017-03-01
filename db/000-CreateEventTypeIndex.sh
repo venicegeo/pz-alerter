@@ -35,9 +35,6 @@ IndexSettings="
 		$EventTypeMapping
 	}
 }"
-echo $IndexSettings >> db/index.txt
-echo $EventTypeMapping >> db/mapping.txt
 
 
-
-bash db/CreateIndex.sh $INDEX_NAME $ALIAS_NAME $ES_IP $TESTING
+bash db/CreateIndex.sh $INDEX_NAME $ALIAS_NAME $ES_IP "$IndexSettings" "$EventTypeMapping" $TESTING

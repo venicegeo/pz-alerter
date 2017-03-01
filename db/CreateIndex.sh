@@ -1,16 +1,14 @@
 INDEX_NAME=$1
 ALIAS_NAME=$2
 ES_IP=$3
-TESTING=$4
+IndexSettings=$4
+MappingEsc=$5
+TESTING=$6
+
+MappingEsc=${MappingEsc//"\""/'\"'}
 
 aliases=_aliases
 cat=_cat
-
-IndexSettings=$(cat db/index.txt)
-MappingEsc=$(cat db/mapping.txt)
-MappingEsc=${MappingEsc//"\""/'\"'}
-rm db/index.txt
-rm db/mapping.txt
 
 function failure {
 	echo "{"\""status"\"":"\""failure"\"","\""message"\"":"\""$1"\""}"
