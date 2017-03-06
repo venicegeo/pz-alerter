@@ -16,6 +16,7 @@ package piazza
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -29,17 +30,44 @@ func StructStringToInterface(stru string) (interface{}, error) {
 	err := json.Unmarshal(*source, &res)
 	return res, err
 }
-func StructInterfaceToString(stru interface{}) (string, error) {
+func StructToString(stru interface{}) (string, error) {
 	data, err := json.MarshalIndent(stru, " ", "   ")
 	return string(data), err
 }
+func StructToMap(stru interface{}) (map[string]interface{}, error) {
+	str, err := StructToString(stru)
+	if err != nil {
+		return nil, err
+	}
+	inter, err := StructStringToInterface(str)
+	if err != nil {
+		return nil, err
+	}
+	mp, ok := inter.(map[string]interface{})
+	if !ok {
+		return nil, errors.New("Could not convert interface to map")
+	}
+	return mp, nil
+}
+
+func GetVarsFromStringStruct(stru string) (map[string]interface{}, error) {
+	struc, err := StructStringToInterface(stru)
+	if err != nil {
+		return nil, err
+	}
+	return GetVarsFromStruct(struc)
+}
 
 func GetVarsFromStruct(struc interface{}) (map[string]interface{}, error) {
-	input, ok := struc.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("Structure is not of type map[string]interface{}, currently: %T", struc)
+	iMap, err := StructToMap(struc)
+	if err != nil {
+		return nil, err
 	}
-	return getVarsFromStructHelper(input, map[string]interface{}{}, []string{}), nil
+	return FlattenMap(iMap), nil
+}
+
+func FlattenMap(struc map[string]interface{}) map[string]interface{} {
+	return getVarsFromStructHelper(struc, map[string]interface{}{}, []string{})
 }
 func getVarsFromStructHelper(inputObj map[string]interface{}, res map[string]interface{}, path []string) map[string]interface{} {
 	for k, v := range inputObj {

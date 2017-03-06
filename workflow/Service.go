@@ -228,6 +228,40 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 	return nil
 }
 
+func (service *Service) paramsToQuery(params *piazza.HttpQueryParams, struc interface{}) (string, error) {
+	vars, err := piazza.GetVarsFromStruct(struc)
+	if err != nil {
+		return "", err
+	}
+	mustMatch := `{"term":{"%s":"%s"}}`
+	matches := []string{}
+	secret := service.newIdent().String() + "-" + service.newIdent().String()
+	for k, v := range vars {
+		if v == nil {
+			continue
+		}
+		val, err := params.GetAsString(k, secret)
+		if err != nil {
+			return "", err
+		}
+		if val != secret {
+			matches = append(matches, fmt.Sprintf(mustMatch, k, val))
+		}
+	}
+	if len(matches) == 0 {
+		return "", err
+	}
+	matchesComb := ""
+	for _, m := range matches[:len(matches)-1] {
+		matchesComb += m + ","
+	}
+	matchesComb += matches[len(matches)-1]
+
+	query := `{"query": {"bool": {"must": [%s]}}}`
+
+	return fmt.Sprintf(query, matchesComb), nil
+}
+
 //---------------------------------------------------------------------
 
 func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
@@ -320,51 +354,22 @@ func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.Json
 
 // GetAllEventTypes TODO
 func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	format, err := piazza.NewJsonPagination(params)
-	if err != nil {
-		return service.statusBadRequest(err)
+	if paramQuery, err := service.paramsToQuery(params, EventType{}); paramQuery != "" && err == nil {
+		return service.QueryEventTypes(paramQuery, params)
 	}
 
-	var totalHits int64
-	var eventtypes []EventType
-	nameParam, err := params.GetAsString("name", "")
+	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
 	}
 
 	service.syslogger.Audit("pz-workflow", "gettingAllEventTypes", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User is getting all eventTypes")
 
-	if nameParam != "" {
-		nameParamValue := nameParam
-		var foundName bool
-		var eventtypeid *piazza.Ident
-		eventtypeid, foundName, err = service.eventTypeDB.GetIDByName(format, nameParamValue, "pz-workflow")
-		var foundType = false
-		var eventtype *EventType
-		if foundName && eventtypeid != nil {
-			if err != nil {
-				service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
-				return service.statusBadRequest(err)
-			}
-			eventtype, foundType, err = service.eventTypeDB.GetOne(*eventtypeid, "pz-workflow")
-			if err != nil {
-				service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
-				return service.statusInternalError(err)
-			}
-		}
-		eventtypes = make([]EventType, 0)
-		if foundType && eventtype != nil {
-			eventtypes = append(eventtypes, *eventtype)
-		}
-		totalHits = int64(len(eventtypes))
-	} else {
-		eventtypes, totalHits, err = service.eventTypeDB.GetAll(format, "pz-workflow")
-		if err != nil {
-			service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
-			return service.statusInternalError(err)
-		}
-	}
-	if eventtypes == nil {
+	eventtypes, totalHits, err := service.eventTypeDB.GetAll(format, "pz-workflow")
+	if err != nil {
+		service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
+		return service.statusInternalError(err)
+	} else if eventtypes == nil {
 		service.syslogger.Audit("pz-workflow", "gettingAllEventTypesFailure", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User failed to get all eventTypes")
 		return service.statusInternalError(errors.New("getalleventtypes returned nil"))
 	}
@@ -569,6 +574,10 @@ func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 
 // GetAllEvents TODO
 func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	if paramQuery, err := service.paramsToQuery(params, Event{}); paramQuery != "" && err == nil {
+		return service.QueryEvents(paramQuery, params)
+	}
+
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -982,6 +991,10 @@ func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
+	if paramQuery, err := service.paramsToQuery(params, Trigger{}); paramQuery != "" && err == nil {
+		return service.QueryTriggers(paramQuery, params)
+	}
+
 	format, err := piazza.NewJsonPagination(params)
 	if err != nil {
 		return service.statusBadRequest(err)
@@ -1155,9 +1168,8 @@ func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	triggerID, err := params.GetAsID("triggerId", "")
-	if err != nil {
-		return service.statusBadRequest(err)
+	if paramQuery, err := service.paramsToQuery(params, Alert{}); paramQuery != "" && err == nil {
+		return service.QueryAlerts(paramQuery, params)
 	}
 
 	format, err := piazza.NewJsonPagination(params)
@@ -1165,32 +1177,15 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 		return service.statusBadRequest(err)
 	}
 
-	var alerts []Alert
-	var totalHits int64
-
 	service.syslogger.Audit("pz-workflow", "gettingAllAlerts", service.alertDB.mapping, "Service.GetAllAlerts: User is getting all alerts")
 
-	if triggerID != "" && piazza.ValidUuid(triggerID.String()) {
-		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID, "pz-workflow")
-		if err != nil {
-			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
-			return service.statusInternalError(err)
-		} else if alerts == nil {
-			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
-			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
-		}
-	} else if triggerID == "" {
-		alerts, totalHits, err = service.alertDB.GetAll(format, "pz-workflow")
-		if err != nil {
-			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
-			return service.statusInternalError(err)
-		} else if alerts == nil {
-			service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
-			return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
-		}
-	} else {
+	alerts, totalHits, err := service.alertDB.GetAll(format, "pz-workflow")
+	if err != nil {
 		service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
-		return service.statusBadRequest(errors.New("Malformed triggerId query parameter"))
+		return service.statusInternalError(err)
+	} else if alerts == nil {
+		service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
+		return service.statusInternalError(errors.New("GetAllAlerts returned nil"))
 	}
 
 	var resp *piazza.JsonResponse
