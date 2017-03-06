@@ -28,61 +28,6 @@ import (
 // TriggerDBMapping is the name of the Elasticsearch type to which Triggers are added
 const TriggerDBMapping string = "Trigger"
 
-// TriggerIndexSettings is the mapping for the "trigger" index in Elasticsearch
-const TriggerIndexSettings = `
-{
-	"mappings": {
-		"Trigger": {
-			"properties": {
-				"triggerId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"title": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date"
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"eventTypeId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"enabled": {
-					"type": "boolean",
-					"index": "not_analyzed"
-				},
-				"condition": {
-					"dynamic": true,
-					"properties": {}
-				},
-				"job": {
-					"properties": {
-						"createdBy": {
-							"type": "string",
-							"index": "not_analyzed"
-						},
-						"jobType": {
-							"dynamic": true,
-							"properties": {}
-						}
-					}
-				},
-				"percolationId": {
-					"type": "string",
-					"index": "not_analyzed"
-				}
-			}
-		}
-	}
-}
-`
-
 type JobRequest struct {
 	CreatedBy string  `json:"createdBy"`
 	JobType   JobType `json:"jobType" binding:"required"`
@@ -116,44 +61,7 @@ type TriggerList []Trigger
 
 //-EVENT------------------------------------------------------------------------
 
-// EventIndexSettings is the mapping for the "events" index in Elasticsearch
-const EventIndexSettings = `
-{
-	"settings": {
-		"index.mapping.coerce": false,
-		"index.version.created": 2010299
-	},
-	"mappings": {
-		"_default_": {
-			"dynamic": "false",
-			"properties": {
-				"eventTypeId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"eventId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"data": {
-					"properties": {}
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date"
-				},
-				"cronSchedule": {
-					"type": "string",
-					"index": "not_analyzed"
-				}
-			}
-		}
-	}
-}
-`
+const EventDBMapping string = "_default_"
 
 // An Event is posted by some source (service, user, etc) to indicate Something Happened
 // Data is specific to the event type
@@ -174,37 +82,6 @@ type EventList []Event
 // EventTypeDBMapping is the name of the Elasticsearch type to which Events are added
 const EventTypeDBMapping string = "EventType"
 
-// EventTypeIndexSettings is the mapping for the "eventtypes" index in Elasticsearch
-const EventTypeIndexSettings = `
-{
-	"mappings": {
-		"EventType": {
-			"properties": {
-				"eventTypeId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"name": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date"
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"mapping": {
-					"dynamic": false,
-					"properties": {}
-				}
-			}
-		}
-	}
-}
-`
-
 // EventType describes an Event that is to be sent to workflow by a client or service
 type EventType struct {
 	EventTypeID piazza.Ident           `json:"eventTypeId"`
@@ -221,49 +98,6 @@ type EventTypeList []EventType
 
 // AlertDBMapping is the name of the Elasticsearch type to which Alerts are added
 const AlertDBMapping string = "Alert"
-
-// AlertIndexSettings are the default settings for our Elasticsearch alerts index
-// Explanation:
-//   "index": "not_analyzed"
-//     This means that these properties are not analyzed by Elasticsearch.
-//     Previously, these ids were analyzed by ES and thus broken up into chunks;
-//     in the case of a UUID this would happen via break-up by the "-" character.
-//     For example, the UUID "ab3142cd-1a8e-44f8-6a01-5ce8a9328fb2" would be broken
-//     into "ab3142cd", "1a8e", "44f8", "6a01" and "5ce8a9328fb2", and queries would
-//     match on all of these separate strings, which was undesired behavior.
-const AlertIndexSettings = `
-{
-	"mappings": {
-		"Alert": {
-			"properties": {
-				"alertId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"triggerId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"jobId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"eventId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date"
-				}
-			}
-		}
-	}
-}
-`
 
 // Alert is a notification, automatically created when a Trigger happens
 type Alert struct {
@@ -286,43 +120,7 @@ type AlertExt struct {
 
 //-CRON-------------------------------------------------------------------------
 
-const CronIndexSettings = `
-{
-	"settings": {
-		"index.mapping.coerce": false
-	},
-	"mappings": {
-		"Cron": {
-			"properties": {
-				"eventTypeId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"eventId": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"data": {
-					"properties": {}
-				},
-				"createdBy": {
-					"type": "string",
-					"index": "not_analyzed"
-				},
-				"createdOn": {
-					"type": "date"
-				},
-				"cronSchedule": {
-					"type": "string",
-					"index": "not_analyzed"
-				}
-			}
-		}
-	}
-}
-`
-
-const cronDBMapping = "Cron"
+const CronDBMapping = "Cron"
 
 //-- Stats ------------------------------------------------------------
 

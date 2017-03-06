@@ -462,6 +462,8 @@ const (
 	F_ULOCK                          = 0x0
 	F_UNLCK                          = 0x2
 	F_WRLCK                          = 0x1
+	GRND_NONBLOCK                    = 0x1
+	GRND_RANDOM                      = 0x2
 	HUPCL                            = 0x400
 	IBSHIFT                          = 0x10
 	ICANON                           = 0x2
@@ -1425,6 +1427,7 @@ const (
 	SOL_IP                           = 0x0
 	SOL_IPV6                         = 0x29
 	SOL_IRDA                         = 0x10a
+	SOL_NETLINK                      = 0x10e
 	SOL_PACKET                       = 0x107
 	SOL_RAW                          = 0xff
 	SOL_SOCKET                       = 0x1

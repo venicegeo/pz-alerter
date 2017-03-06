@@ -469,7 +469,6 @@ func (esi *Index) SetMapping(typename string, jsn piazza.JsonString) error {
 
 // GetTypes returns the list of types within the index.
 func (esi *Index) GetTypes() ([]string, error) {
-
 	ok, err := esi.IndexExists()
 	if err != nil {
 		return nil, err
@@ -483,12 +482,12 @@ func (esi *Index) GetTypes() ([]string, error) {
 		return nil, err
 	}
 
-	typs := (*getresp[esi.index]).Mappings
 	result := []string{}
-
-	for k := range typs {
-		if k != "_default_" && k != ".percolator" {
-			result = append(result, k)
+	for _, index := range getresp {
+		for typ, _ := range index.Mappings {
+			if typ != "_default_" && typ != ".percolator" {
+				result = append(result, typ)
+			}
 		}
 	}
 
@@ -513,14 +512,12 @@ func (esi *Index) GetMapping(typ string) (interface{}, error) {
 	if getresp == nil {
 		return nil, fmt.Errorf("expected get mapping response; got: %v", getresp)
 	}
-	props, ok := getresp[esi.index]
-	if !ok {
-		return nil, fmt.Errorf("expected JSON root to be of type map[string]interface{}; got: %s -- %#v", esi.index, getresp)
+
+	for _, props := range getresp {
+		return props.(map[string]interface{})["mappings"], nil
 	}
 
-	props2 := props.(map[string]interface{})
-
-	return props2["mappings"], nil
+	return nil, fmt.Errorf("type not found after loop; got: %v", getresp)
 }
 
 // AddPercolationQuery adds a percolation query to the index.

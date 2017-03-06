@@ -31,32 +31,11 @@ type TestElasticsearchBody struct {
 	Value int          `json:"value"`
 }
 
-const TestElasticsearchSettings = `{
-	"TestElasticsearch":{
-		"properties":{
-			"id": {
-				"type":"string"
-			},
-			"data": {
-				"type":"string"
-			},
-			"tags": {
-				"type":"string"
-			}
-		}
-	}
-}`
-
 const TestElasticsearchMapping = "TestElasticsearch"
 
 func NewTestElasticsearchDB(service *Service, esi elasticsearch.IIndex) (*TestElasticsearchDB, error) {
 
-	rdb, err := NewResourceDB(service, esi, "")
-	if err != nil {
-		return nil, err
-	}
-
-	err = esi.SetMapping(TestElasticsearchMapping, TestElasticsearchSettings)
+	rdb, err := NewResourceDB(service, esi)
 	if err != nil {
 		return nil, err
 	}
