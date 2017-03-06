@@ -1,5 +1,5 @@
 #!/bin/bash
-INDEX_NAME=testelasticsearch003
+INDEX_NAME=testelasticsearch004
 ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
