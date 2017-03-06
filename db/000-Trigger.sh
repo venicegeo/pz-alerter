@@ -11,7 +11,7 @@ TriggerMapping='
 				"type": "string",
 				"index": "not_analyzed"
 			},
-			"title": {
+			"name": {
 				"type": "string",
 				"index": "not_analyzed"
 			},
