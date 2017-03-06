@@ -18,7 +18,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/venicegeo/pz-gocommon/gocommon"
 )
@@ -49,7 +48,7 @@ type Trigger struct {
 	Job           JobRequest             `json:"job" binding:"required"`
 	PercolationID piazza.Ident           `json:"percolationId"`
 	CreatedBy     string                 `json:"createdBy"`
-	CreatedOn     time.Time              `json:"createdOn"`
+	CreatedOn     piazza.TimeStamp       `json:"createdOn"`
 	Enabled       bool                   `json:"enabled"`
 }
 type TriggerUpdate struct {
@@ -70,7 +69,7 @@ type Event struct {
 	EventTypeID  piazza.Ident           `json:"eventTypeId" binding:"required"`
 	Data         map[string]interface{} `json:"data"`
 	CreatedBy    string                 `json:"createdBy"`
-	CreatedOn    time.Time              `json:"createdOn"`
+	CreatedOn    piazza.TimeStamp       `json:"createdOn"`
 	CronSchedule string                 `json:"cronSchedule"`
 }
 
@@ -88,7 +87,7 @@ type EventType struct {
 	Name        string                 `json:"name" binding:"required"`
 	Mapping     map[string]interface{} `json:"mapping" binding:"required"`
 	CreatedBy   string                 `json:"createdBy"`
-	CreatedOn   time.Time              `json:"createdOn"`
+	CreatedOn   piazza.TimeStamp       `json:"createdOn"`
 }
 
 // EventTypeList is a list of EventTypes
@@ -101,21 +100,21 @@ const AlertDBMapping string = "Alert"
 
 // Alert is a notification, automatically created when a Trigger happens
 type Alert struct {
-	AlertID   piazza.Ident `json:"alertId"`
-	TriggerID piazza.Ident `json:"triggerId"`
-	EventID   piazza.Ident `json:"eventId"`
-	JobID     piazza.Ident `json:"jobId"`
-	CreatedBy string       `json:"createdBy"`
-	CreatedOn time.Time    `json:"createdOn"`
+	AlertID   piazza.Ident     `json:"alertId"`
+	TriggerID piazza.Ident     `json:"triggerId"`
+	EventID   piazza.Ident     `json:"eventId"`
+	JobID     piazza.Ident     `json:"jobId"`
+	CreatedBy string           `json:"createdBy"`
+	CreatedOn piazza.TimeStamp `json:"createdOn"`
 }
 
 type AlertExt struct {
-	AlertID   piazza.Ident `json:"alertId"`
-	Trigger   Trigger      `json:"trigger" binding:"required"`
-	Event     Event        `json:"event" binding:"required"`
-	JobID     piazza.Ident `json:"jobId"`
-	CreatedBy string       `json:"createdBy"`
-	CreatedOn time.Time    `json:"createdOn"`
+	AlertID   piazza.Ident     `json:"alertId"`
+	Trigger   Trigger          `json:"trigger" binding:"required"`
+	Event     Event            `json:"event" binding:"required"`
+	JobID     piazza.Ident     `json:"jobId"`
+	CreatedBy string           `json:"createdBy"`
+	CreatedOn piazza.TimeStamp `json:"createdOn"`
 }
 
 //-CRON-------------------------------------------------------------------------
@@ -125,12 +124,12 @@ const CronDBMapping = "Cron"
 //-- Stats ------------------------------------------------------------
 
 type Stats struct {
-	CreatedOn        time.Time `json:"createdOn"`
-	NumEventTypes    int       `json:"numEventTypes"`
-	NumEvents        int       `json:"numEvents"`
-	NumTriggers      int       `json:"numTriggers"`
-	NumAlerts        int       `json:"numAlerts"`
-	NumTriggeredJobs int       `json:"numTriggeredJobs"`
+	CreatedOn        piazza.TimeStamp `json:"createdOn"`
+	NumEventTypes    int              `json:"numEventTypes"`
+	NumEvents        int              `json:"numEvents"`
+	NumTriggers      int              `json:"numTriggers"`
+	NumAlerts        int              `json:"numAlerts"`
+	NumTriggeredJobs int              `json:"numTriggeredJobs"`
 }
 
 func (stats *Stats) incrCounter(counter *int) {

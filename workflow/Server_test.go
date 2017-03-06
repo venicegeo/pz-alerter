@@ -20,7 +20,6 @@ import (
 	"math/rand"
 	"strconv"
 	"testing"
-	"time"
 
 	assert "github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
@@ -119,7 +118,7 @@ func makeTestEventType(eventTypeName string) *EventType {
 func makeTestEvent(eventTypeID piazza.Ident) *Event {
 	event := &Event{
 		EventTypeID: eventTypeID,
-		CreatedOn:   time.Now(),
+		CreatedOn:   piazza.NewTimeStamp(),
 		Data: map[string]interface{}{
 			"num": 17,
 		},
@@ -130,7 +129,7 @@ func makeTestEvent(eventTypeID piazza.Ident) *Event {
 func makeTestCronEvent(eventTypeID piazza.Ident) *Event {
 	event := &Event{
 		EventTypeID: eventTypeID,
-		CreatedOn:   time.Now(),
+		CreatedOn:   piazza.NewTimeStamp(),
 		Data: map[string]interface{}{
 			"num": 17,
 		},
@@ -500,7 +499,7 @@ func (suite *ServerTester) Test05EventMapping() {
 		//log.Printf("Creating event: %s %s %d\n", eventTypeID, eventTypeName, value)
 		event := &Event{
 			EventTypeID: eventTypeID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num": value,
 			},
@@ -657,7 +656,7 @@ func (suite *ServerTester) Test06Workflow() {
 		// will cause trigger TRG1
 		event := &Event{
 			EventTypeID: et1ID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -684,7 +683,7 @@ func (suite *ServerTester) Test06Workflow() {
 		// will cause no triggers
 		event := &Event{
 			EventTypeID: et1ID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -838,7 +837,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	{
 		event := &Event{
 			EventTypeId: eterrID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num": 17,
 				"str": "quick",
@@ -856,7 +855,7 @@ func (suite *ServerTester) Test07MultiTrigger() {
 	{
 		event := &Event{
 			EventTypeId: eterrID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      []string{"quick"},

@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/Shopify/sarama"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -91,7 +90,7 @@ func (service *Service) Init(
 
 	service.sys = sys
 
-	service.stats.CreatedOn = time.Now()
+	service.stats.CreatedOn = piazza.NewTimeStamp()
 
 	if service.eventTypeDB, err = NewEventTypeDB(service, eventtypesIndex); err != nil {
 		return err
@@ -458,7 +457,7 @@ func (service *Service) PostEventType(eventType *EventType) *piazza.JsonResponse
 	}
 
 	eventType.EventTypeID = service.newIdent()
-	eventType.CreatedOn = time.Now()
+	eventType.CreatedOn = piazza.NewTimeStamp()
 
 	vars, err := piazza.GetVarsFromStruct(eventType.Mapping)
 	if err != nil {
@@ -673,7 +672,7 @@ func (service *Service) PostRepeatingEvent(event *Event) *piazza.JsonResponse {
 	}
 
 	event.EventID = service.newIdent()
-	event.CreatedOn = time.Now()
+	event.CreatedOn = piazza.NewTimeStamp()
 
 	response := *event
 
@@ -717,7 +716,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 	}
 
 	event.EventID = service.newIdent()
-	event.CreatedOn = time.Now()
+	event.CreatedOn = piazza.NewTimeStamp()
 
 	response := *event
 
@@ -1089,7 +1088,7 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	defer service.handlePanic()
 	var err error
 	trigger.TriggerID = service.newIdent()
-	trigger.CreatedOn = time.Now()
+	trigger.CreatedOn = piazza.NewTimeStamp()
 
 	var eventType *EventType
 	{ //check eventtype id
@@ -1353,7 +1352,7 @@ func (service *Service) inflateAlert(alert Alert) (*AlertExt, error) {
 func (service *Service) PostAlert(alert *Alert) *piazza.JsonResponse {
 	defer service.handlePanic()
 	alert.AlertID = service.newIdent()
-	alert.CreatedOn = time.Now()
+	alert.CreatedOn = piazza.NewTimeStamp()
 
 	service.syslogger.Audit(alert.CreatedBy, "creatingAlert", alert.AlertID, "Service.PostAlert: User [%s] is creating alert [%s]", alert.CreatedBy, alert.AlertID)
 
@@ -1446,7 +1445,7 @@ func (c cronEvent) Run() {
 	ev := &Event{
 		EventTypeID: c.EventTypeID,
 		Data:        uniqueMap.(map[string]interface{}),
-		CreatedOn:   time.Now(),
+		CreatedOn:   piazza.NewTimeStamp(),
 		CreatedBy:   c.EventID.String(),
 	}
 	c.service.PostEvent(ev)

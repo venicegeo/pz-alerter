@@ -15,8 +15,6 @@
 package workflow
 
 import (
-	"time"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -118,7 +116,7 @@ func (suite *ClientTester) Test13EventResource() {
 
 	event := &Event{
 		EventTypeID: etID,
-		CreatedOn:   time.Now(),
+		CreatedOn:   piazza.NewTimeStamp(),
 		Data: map[string]interface{}{
 			"myint": 17,
 			"mystr": "quick",
@@ -254,7 +252,7 @@ func (suite *ClientTester) Test15One() {
 		// will cause trigger t1ID
 		e1 := &Event{
 			EventTypeID: etID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -277,7 +275,7 @@ func (suite *ClientTester) Test15One() {
 		// will cause no triggers
 		e2 := &Event{
 			EventTypeID: etID,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num": 18,
 				"str": "brown",
@@ -475,7 +473,7 @@ func (suite *ClientTester) Test17Triggering() {
 		// will cause trigger TA
 		e1 := Event{
 			EventTypeID: etC,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num":      17,
 				"str":      "quick",
@@ -494,7 +492,7 @@ func (suite *ClientTester) Test17Triggering() {
 		// will cause trigger TB
 		e2 := Event{
 			EventTypeID: etD,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num":      18,
 				"str":      "brown",
@@ -513,7 +511,7 @@ func (suite *ClientTester) Test17Triggering() {
 		// will cause no triggers
 		e3 := Event{
 			EventTypeID: etE,
-			CreatedOn:   time.Now(),
+			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
 				"num": 19,
 				"str": "fox",
