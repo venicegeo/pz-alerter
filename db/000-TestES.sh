@@ -15,7 +15,10 @@ TestElasticsearchMapping='
 			},
 			"tags": {
 				"type":"string"
-			}
+			},
+			"value": {
+ 		        	"type": "long"
+      			}
 		}
 	}'
 IndexSettings="
