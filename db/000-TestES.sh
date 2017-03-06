@@ -17,8 +17,8 @@ TestElasticsearchMapping='
 				"type":"string"
 			},
 			"value": {
- 		        	"type": "long"
-      			}
+				"type": "long"
+			}
 		}
 	}'
 IndexSettings="
