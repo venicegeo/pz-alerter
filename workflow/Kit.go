@@ -17,11 +17,14 @@ package workflow
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
 	"reflect"
 	"regexp"
+	"sort"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
@@ -169,13 +172,22 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			log.Fatalln(err)
 		}
 	}
-	keyToScript := map[string]string{
-		keyEventTypes:        "000-CreateEventTypeIndex.sh",
-		keyEvents:            "000-CreateEventIndex.sh",
-		keyTriggers:          "000-CreateTriggerIndex.sh",
-		keyAlerts:            "000-CreateAlertIndex.sh",
-		keyCrons:             "000-CreateCronIndex.sh",
-		keyTestElasticsearch: "000-CreateTestESIndex.sh",
+
+	keyToPattern := map[string]string{
+		keyEventTypes:        "EventType",
+		keyEvents:            "Event",
+		keyTriggers:          "Trigger",
+		keyAlerts:            "Alert",
+		keyCrons:             "Cron",
+		keyTestElasticsearch: "TestES",
+	}
+	keyToScripts := map[string][]string{
+		keyEventTypes:        []string{},
+		keyEvents:            []string{},
+		keyTriggers:          []string{},
+		keyAlerts:            []string{},
+		keyCrons:             []string{},
+		keyTestElasticsearch: []string{},
 	}
 	keyToType := map[string]string{
 		keyEventTypes:        EventTypeDBMapping,
@@ -186,6 +198,27 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		keyTestElasticsearch: TestElasticsearchMapping,
 	}
 	indices := make(map[string]elasticsearch.IIndex)
+
+	{
+		files, err := ioutil.ReadDir(pwd + "/db/")
+		if err != nil {
+			log.Fatalln(err)
+		}
+		for _, f := range files {
+			for alias, pattern := range keyToPattern {
+				re, err := regexp.Compile(fmt.Sprintf(`^[0-9]{3}-%s.sh$`, pattern))
+				if err != nil {
+					log.Fatalln(err)
+				}
+				if re.MatchString(f.Name()) {
+					keyToScripts[alias] = append(keyToScripts[alias], f.Name())
+				}
+			}
+		}
+		for _, scripts := range keyToScripts {
+			sort.Strings(scripts)
+		}
+	}
 
 	type ScriptRes struct {
 		Status  string `json:"status"`
@@ -198,46 +231,44 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		return bytes.TrimPrefix([]byte(re.ReplaceAllString(string(dat), "")), []byte("\xef\xbb\xbf"))
 	}
 
-	for alias, script := range keyToScript {
-		//alias := keyEventTypes
-		//script := keyToScript[alias]
-		log.Println("Running", alias, "init script")
-		outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		outDat = format(outDat)
-		scriptRes := ScriptRes{}
-		if err = json.Unmarshal(outDat, &scriptRes); err != nil {
-			log.Fatalln(err)
-		}
-		if scriptRes.Status != "success" {
-			log.Fatalf("Script failed: [%s]\n", scriptRes.Message)
-		}
-		if scriptRes.Message != "" {
-			log.Println(" ", scriptRes.Message)
-		}
-		if indices[alias], err = elasticsearch.NewIndex(sys, alias, ""); err != nil {
-			log.Fatalln(err)
-		}
-		if scriptRes.Mapping != "" {
-			inter, err := piazza.StructStringToInterface(scriptRes.Mapping)
+	for alias, scripts := range keyToScripts {
+		log.Println(alias)
+		for i, script := range scripts {
+			log.Println(" ", script)
+			outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
 			if err != nil {
 				log.Fatalln(err)
 			}
-			var scriptMap, esMap map[string]interface{}
-			var ok bool
-			if scriptMap, ok = inter.(map[string]interface{}); !ok {
-				log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", keyToType[alias], alias)
-			}
-			if inter, err = indices[alias].GetMapping(keyToType[alias]); err != nil {
+			outDat = format(outDat)
+			scriptRes := ScriptRes{}
+			if err = json.Unmarshal(outDat, &scriptRes); err != nil {
 				log.Fatalln(err)
 			}
-			if esMap, ok = inter.(map[string]interface{}); !ok {
-				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", keyToType[alias], alias)
+			if scriptRes.Status != "success" {
+				log.Fatalf("Script failed: [%s]\n", scriptRes.Message)
 			}
-			if !reflect.DeepEqual(scriptMap, esMap) {
-				log.Fatalf("Schema [%s] on alias [%s] on elasticsearch does not match the mapping provided\n", keyToType[alias], alias)
+			if indices[alias], err = elasticsearch.NewIndex(sys, alias, ""); err != nil {
+				log.Fatalln(err)
+			}
+			if scriptRes.Mapping != "" && i == len(scripts)-1 {
+				inter, err := piazza.StructStringToInterface(scriptRes.Mapping)
+				if err != nil {
+					log.Fatalln(err)
+				}
+				var scriptMap, esMap map[string]interface{}
+				var ok bool
+				if scriptMap, ok = inter.(map[string]interface{}); !ok {
+					log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", keyToType[alias], alias)
+				}
+				if inter, err = indices[alias].GetMapping(keyToType[alias]); err != nil {
+					log.Fatalln(err)
+				}
+				if esMap, ok = inter.(map[string]interface{}); !ok {
+					log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", keyToType[alias], alias)
+				}
+				if !reflect.DeepEqual(scriptMap, esMap) {
+					log.Fatalf("Schema [%s] on alias [%s] on elasticsearch does not match the mapping provided\n", keyToType[alias], alias)
+				}
 			}
 		}
 	}
