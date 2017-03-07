@@ -156,4 +156,12 @@ fi
 
 handleAliases
 
+if [ "$TESTING" = true ] ; then	
+	echo "Deleting test indices..."
+	peach=peach
+    curl -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$peach" --write-out %{http_code}; echo " "
+   	pineapple=pineapple
+    curl -X DELETE -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$pineapple" --write-out %{http_code}; echo " "
+fi
+
 success "Index created successfully"

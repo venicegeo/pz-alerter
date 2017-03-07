@@ -25,6 +25,7 @@ import (
 	"reflect"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
@@ -228,7 +229,9 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 
 	format := func(dat []byte) []byte {
 		re := regexp.MustCompile(`\r?\n?\t`)
-		return bytes.TrimPrefix([]byte(re.ReplaceAllString(string(dat), "")), []byte("\xef\xbb\xbf"))
+		splitStr := `{"status":`
+		split := strings.SplitN(string(bytes.TrimPrefix([]byte(re.ReplaceAllString(string(dat), "")), []byte("\xef\xbb\xbf"))), splitStr, 2)
+		return []byte(splitStr + split[len(split)-1])
 	}
 
 	log.Println("==========")
@@ -236,14 +239,14 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		log.Println(alias)
 		for i, script := range scripts {
 			log.Println(" ", script)
-			outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
+			outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL, "true").Output()
 			if err != nil {
 				log.Fatalln(err)
 			}
-			outDat = format(outDat)
+			resDat := format(outDat)
 			scriptRes := ScriptRes{}
-			if err = json.Unmarshal(outDat, &scriptRes); err != nil {
-				log.Fatalln(err)
+			if err = json.Unmarshal(resDat, &scriptRes); err != nil {
+				log.Fatalln(err, "\nOutput:", string(outDat))
 			}
 			if scriptRes.Status != "success" {
 				log.Fatalf("Script failed: [%s]\n", scriptRes.Message)
