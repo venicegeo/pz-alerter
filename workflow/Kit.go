@@ -231,6 +231,7 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		return bytes.TrimPrefix([]byte(re.ReplaceAllString(string(dat), "")), []byte("\xef\xbb\xbf"))
 	}
 
+	log.Println("==========")
 	for alias, scripts := range keyToScripts {
 		log.Println(alias)
 		for i, script := range scripts {
@@ -272,6 +273,7 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			}
 		}
 	}
+	log.Println("==========")
 
 	return &indices
 }

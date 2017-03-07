@@ -6,6 +6,7 @@ TESTING=$3
 
 TriggerMapping='
 	"Trigger": {
+		"dynamic": "strict",
 		"properties": {
 			"triggerId": {
 				"type": "string",
