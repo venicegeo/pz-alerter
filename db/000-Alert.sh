@@ -6,6 +6,7 @@ TESTING=$3
 
 AlertMapping='
 	"Alert": {
+		"dynamic": "strict",
 		"properties": {
 			"alertId": {
 				"type": "string",

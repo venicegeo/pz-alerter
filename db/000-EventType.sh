@@ -6,6 +6,7 @@ TESTING=$3
 
 EventTypeMapping='
 	"EventType": {
+		"dynamic": "strict",
 		"properties": {
 			"eventTypeId": {
 				"type": "string",

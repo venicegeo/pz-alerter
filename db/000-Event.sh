@@ -6,7 +6,7 @@ TESTING=$3
 
 EventMapping='
 	"_default_": {
-		"dynamic": "false",
+		"dynamic": "strict",
 		"properties": {
 			"eventTypeId": {
 				"type": "string",
@@ -17,6 +17,7 @@ EventMapping='
 				"index": "not_analyzed"
 			},
 			"data": {
+				"dynamic": "true",
 				"type": "object"
 			},
 			"createdBy": {

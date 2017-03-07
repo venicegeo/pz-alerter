@@ -6,6 +6,7 @@ TESTING=$3
 
 TestElasticsearchMapping='
 	"TestElasticsearch":{
+		"dynamic": "strict",
 		"properties":{
 			"id": {
 				"type":"string"

@@ -6,6 +6,7 @@ TESTING=$3
 
 CronMapping='
 	"Cron": {
+		"dynamic": "strict",
 		"properties": {
 			"eventTypeId": {
 				"type": "string",
@@ -16,6 +17,7 @@ CronMapping='
 				"index": "not_analyzed"
 			},
 			"data": {
+				"dynamic": "false",
 				"type": "object"
 			},
 			"createdBy": {
