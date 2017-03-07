@@ -4,6 +4,8 @@ ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
 
+echo "Running testES script"
+
 TestElasticsearchMapping='
 	"TestElasticsearch":{
 		"dynamic": "strict",
