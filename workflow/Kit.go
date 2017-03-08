@@ -243,6 +243,7 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			if err != nil {
 				log.Fatalln(err)
 			}
+			log.Println(string(outDat))
 			resDat := format(outDat)
 			scriptRes := ScriptRes{}
 			if err = json.Unmarshal(resDat, &scriptRes); err != nil {
