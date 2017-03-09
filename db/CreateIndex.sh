@@ -14,7 +14,7 @@ printIfTesting "CreateIndex script running"
 
 function failure {
 	echo "{"\""status"\"":"\""failure"\"","\""message"\"":"\""$1"\""}"
-	exit 1
+	exit 0
 }
 
 function success {
@@ -104,11 +104,11 @@ function handleAliases {
   total="{"\""actions"\"":[$total]}"
   aliasCurl=`curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "$total" "$ES_IP$aliases" --write-out %{http_code} 2>/dev/null`
   http_code=${aliasCurl: -3}
-    if [ "$aliasCurl" != '{"acknowledged":true}200' ]; then
-      tryCrash $crash "Failed to set up aliases"
-    else
-      printIfTesting "Successfully set up aliases"
-	fi
+  if [ "$http_code" -ne 200 ]; then
+    tryCrash $crash "Failed to set up aliases"
+  else
+    printIfTesting "Successfully set up aliases"
+  fi
 }
 
 #

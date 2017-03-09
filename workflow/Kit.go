@@ -239,11 +239,10 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		log.Println(alias)
 		for i, script := range scripts {
 			log.Println(" ", script)
-			outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL, "true").Output()
+			outDat, err := exec.Command("bash", pwd+"/db/"+script, alias, esURL).Output()
 			if err != nil {
-				log.Fatalln(err)
+				log.Fatalf(" Script failed to run: %s\n Output: %s", err.Error(), string(outDat))
 			}
-			log.Println(string(outDat))
 			resDat := format(outDat)
 			scriptRes := ScriptRes{}
 			if err = json.Unmarshal(resDat, &scriptRes); err != nil {
