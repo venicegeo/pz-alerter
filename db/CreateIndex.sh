@@ -10,8 +10,6 @@ MappingEsc=${MappingEsc//"\""/'\"'}
 aliases=_aliases
 cat=_cat
 
-printIfTesting "CreateIndex script running"
-
 function failure {
 	echo "{"\""status"\"":"\""failure"\"","\""message"\"":"\""$1"\""}"
 	exit 1
