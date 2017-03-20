@@ -389,10 +389,8 @@ func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza
 
 	service.syslogger.Audit("pz-workflow", "gotAllEventTypes", service.eventTypeDB.mapping, "Service.GetAllEventTypes: User successfully got all eventTypes")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -428,10 +426,8 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 
 	service.syslogger.Audit("pz-workflow", "queriedEventTypes", service.eventTypeDB.mapping, "Service.QueryEventTypes: User successfully queried eventTypes")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -643,10 +639,8 @@ func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.Jso
 
 	service.syslogger.Audit("pz-workflow", "gotAllEvents", service.eventDB.Esi.IndexName(), "Service.GetAllEvents: User successfully got all events")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -894,10 +888,8 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 
 	service.syslogger.Audit("pz-workflow", "queriedEvents", service.eventDB.Esi.IndexName(), "Service.QueryEvents: User successfully queried events")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -1034,10 +1026,8 @@ func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.J
 
 	service.syslogger.Audit("pz-workflow", "gotAllTriggers", service.triggerDB.mapping, "Service.GetAllTriggers: User successfully got all triggers")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -1076,10 +1066,8 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 
 	service.syslogger.Audit("pz-workflow", "queriedTriggers", service.triggerDB.mapping, "Service.QueryTriggers: User successfully queried triggers")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -1240,10 +1228,8 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 
 	service.syslogger.Audit("pz-workflow", "gotAllAlerts", service.alertDB.mapping, "Service.GetAllAlerts: User successfully got all alerts")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
@@ -1290,10 +1276,8 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 
 	service.syslogger.Audit("pz-workflow", "queriedAlerts", service.alertDB.mapping, "Service.QueryAlerts: User successfully queried alerts")
 
-	if totalHits > 0 {
-		format.Count = int(totalHits)
-		resp.Pagination = format
-	}
+	format.Count = int(totalHits)
+	resp.Pagination = format
 
 	return resp
 }
