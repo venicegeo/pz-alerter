@@ -1,10 +1,6 @@
-# pz-workflow
+# Running pz-workflow locally
 
-Build instructions
-
-Built for golang 1.7
-
-Have $GOPATH set. Example: '/home/USER/Desktop/go/'
+To run workflow golang 1.7 and a valid go environment are required.
 
 Create the directories 'src/venicegeo' in $GOPATH
 
@@ -15,3 +11,5 @@ To simply build, from '$GOPATH/src/venicegeo/pz-workflow/' execute 'go build'
 To run execute './pz-workflow'
 
 To run pz-workflow without building execute 'go run main.go`
+
+In order for workflow to successfully start, it needs access to running ElasticSearch, Kafka, pz-servicecontroller, pz-idam services.
