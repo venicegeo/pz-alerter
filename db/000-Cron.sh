@@ -1,5 +1,5 @@
 #!/bin/bash
-INDEX_NAME=crons004
+INDEX_NAME=crons005
 ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
@@ -9,28 +9,24 @@ CronMapping='
 		"dynamic": "strict",
 		"properties": {
 			"eventTypeId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"eventId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"data": {
 				"dynamic": "false",
 				"type": "object"
 			},
 			"createdBy": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"createdOn": {
 				"type": "date",
 				"format": "yyyy-MM-dd'\''T'\''HH:mm:ssZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSSSZZ"
 			},
 			"cronSchedule": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			}
 		}
 	}'

@@ -1,5 +1,5 @@
 #!/bin/bash
-INDEX_NAME=alerts004
+INDEX_NAME=alerts005
 ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
@@ -9,24 +9,19 @@ AlertMapping='
 		"dynamic": "strict",
 		"properties": {
 			"alertId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"triggerId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"jobId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"eventId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"createdBy": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"createdOn": {
 				"type": "date",

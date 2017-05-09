@@ -1,10 +1,10 @@
-hash: 30bf1819b0aee799802f7c307ea92dc37d455f1ed180241ff4d8ea6d76196f51
-updated: 2017-03-01T15:25:19.515583711-05:00
+hash: 62d4090b026018b219cd84353834675b8f149d6afef029ad73c8c18c90a0da43
+updated: 2017-05-08T15:23:14.502823153-04:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
 - name: github.com/davecgh/go-spew
-  version: 5215b55f46b2b919f50a1df0eaa5886afe4e3b3d
+  version: 346938d642f2ec3594ed81d874461961cd0faa76
   subpackages:
   - spew
 - name: github.com/eapache/go-resiliency
@@ -31,19 +31,21 @@ imports:
 - name: github.com/manucorporat/sse
   version: ee05b128a739a0fb76c7ebd3ae4810c1de808d6d
 - name: github.com/mattn/go-isatty
-  version: dda3de49cbfcec471bd7a70e6cc01fcc3ff90109
+  version: fc9e8d8ef48496124e79ae0df75490096eccf6fe
 - name: github.com/pierrec/lz4
-  version: 90290f74b1b4d9c097f0a3b3c7eba2ef3875c699
+  version: f5b77fd73d83122495309c0f459b810f83cc291f
 - name: github.com/pierrec/xxHash
   version: 5a004441f897722c627870a981d02b29924215fa
   subpackages:
   - xxHash32
+- name: github.com/pkg/errors
+  version: c605e284fe17294bda444b34710735b29d1a9d90
 - name: github.com/rcrowley/go-metrics
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: 1c7894f10140c7459a8daefc1ce8362f7f5be74b
+  version: 2bd994fab244194a9f708d689034eae7778cc065
   subpackages:
   - elasticsearch
   - gocommon
@@ -54,20 +56,18 @@ imports:
   version: f315505cf3349909cdf013ea56690da34e96a451
   subpackages:
   - context
-  - context/ctxhttp
 - name: golang.org/x/sys
-  version: 76cc09b634294339fa19ec41b5f2a0b3932cea8b
+  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
   subpackages:
   - unix
 - name: gopkg.in/go-playground/validator.v8
   version: c193cecd124b5cc722d7ee5538e945bdb3348435
-- name: gopkg.in/olivere/elastic.v3
-  version: 96b262cf1d25006d71bd495fd99b590493cff29e
+- name: gopkg.in/olivere/elastic.v5
+  version: d401c698bf1e0f5f6c13a5388a79967f095836be
   subpackages:
-  - backoff
   - uritemplates
 - name: gopkg.in/yaml.v2
-  version: a3f3340b5840cee44f372bddb5880fcbc419b46a
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports:
 - name: github.com/pmezard/go-difflib
   version: 792786c7400a136282c1664665ae0a8db921c6c2

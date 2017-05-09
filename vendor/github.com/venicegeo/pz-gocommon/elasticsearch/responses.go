@@ -16,8 +16,9 @@ package elasticsearch
 
 import (
 	"encoding/json"
+	"log"
 
-	"gopkg.in/olivere/elastic.v3"
+	"gopkg.in/olivere/elastic.v5"
 )
 
 type SearchResultHit struct {
@@ -98,21 +99,22 @@ type PercolateResponse struct {
 	Matches []*PercolateResponseMatch
 }
 
-func NewPercolateResponse(percolateResponse *elastic.PercolateResponse) *PercolateResponse {
-	resp := &PercolateResponse{
-		Total:   percolateResponse.Total,
-		Matches: make([]*PercolateResponseMatch, len(percolateResponse.Matches)),
-	}
+func NewPercolateResponse(percolateResponse interface{}) *PercolateResponse {
+	//	resp := &PercolateResponse{
+	//		Total:   percolateResponse["total"],
+	//		Matches: make([]*PercolateResponseMatch, len(percolateResponse.Matches)),
+	//	}
 
-	for i, v := range percolateResponse.Matches {
-		m := &PercolateResponseMatch{
-			Id:    v.Id,
-			Index: v.Index,
-		}
-		resp.Matches[i] = m
-	}
+	//	for i, v := range percolateResponse.Matches {
+	//		m := &PercolateResponseMatch{
+	//			Id:    v.Id,
+	//			Index: v.Index,
+	//		}
+	//		resp.Matches[i] = m
+	//	}
+	log.Println(percolateResponse)
 
-	return resp
+	return nil
 }
 
 // DeleteResponse is the response when a deletion of a document or type occurs

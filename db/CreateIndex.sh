@@ -56,7 +56,7 @@ function handleAliases {
   # Search for indices that are using the alias we are trying to set
   #
 
-  getAliasesCurl=`curl -XGET -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$cat/aliases" --write-out %{http_code} 2>/dev/null`
+  getAliasesCurl=`curl -XGET -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$cat/aliases?format=json" --write-out %{http_code} 2>/dev/null`
   http_code=${getAliasesCurl: -3}
   if [ "$http_code" -ne 200 ]; then
     tryCrash $crash "Status code $http_code returned from catting aliases"
@@ -114,7 +114,7 @@ function handleAliases {
 #
 
 printIfTesting "Checking to see if index $INDEX_NAME already exists..."
-catCurl=`curl -X GET -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$cat/indices" --write-out %{http_code} 2>/dev/null`
+catCurl=`curl -X GET -H "Content-Type: application/json" -H "Cache-Control: no-cache" "$ES_IP$cat/indices?format=json" --write-out %{http_code} 2>/dev/null`
 http_code=${catCurl: -3}
 if [ "$http_code" -ne 200 ]; then
   failure "Status code $http_code returned while checking indices"
@@ -130,9 +130,9 @@ fi
 #
 
 printIfTesting "Creating index $INDEX_NAME with mappings..."
-createIndexCurl=`curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "$IndexSettings" "$ES_IP$INDEX_NAME" --write-out %{http_code} 2>/dev/null`
+createIndexCurl=`curl -X PUT -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "$IndexSettings" "$ES_IP$INDEX_NAME" --write-out %{http_code} 2>/dev/null`
 http_code=${createIndexCurl: -3}
-if [ $createIndexCurl != '{"acknowledged":true}200' ]; then
+if [ $createIndexCurl != '{"acknowledged":true,"shards_acknowledged":true}200' ]; then
   failure "Failed to create index $INDEX_NAME. Code: $http_code"
 fi
 
@@ -143,12 +143,12 @@ fi
 if [ "$TESTING" = true ] ; then
     echo "Creating test indices..."
     peach=peach
-    curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$peach" --write-out %{http_code}; echo " "
+    curl -X PUT -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$peach" --write-out %{http_code}; echo " "
     curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{
     "\""actions"\"" : [ { "\""add"\"" : { "\""index"\"" : "\""peach"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } } ]
     }" "$ES_IP$aliases" --write-out %{http_code}; echo " "
     pineapple=pineapple
-    curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$pineapple" --write-out %{http_code}; echo " "
+    curl -X PUT -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{}" "$ES_IP$pineapple" --write-out %{http_code}; echo " "
     curl -X POST -H "Content-Type: application/json" -H "Cache-Control: no-cache" -d "{
     "\""actions"\"" : [ { "\""add"\"" : { "\""index"\"" : "\""pineapple"\"", "\""alias"\"" : "\""$ALIAS_NAME"\"" } } ]
     }" "$ES_IP$aliases" --write-out %{http_code}; echo " "

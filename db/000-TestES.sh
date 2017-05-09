@@ -1,5 +1,5 @@
 #!/bin/bash
-INDEX_NAME=testelasticsearch004
+INDEX_NAME=testelasticsearch005
 ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
@@ -9,13 +9,13 @@ TestElasticsearchMapping='
 		"dynamic": "strict",
 		"properties":{
 			"id": {
-				"type":"string"
+				"type":"keyword"
 			},
 			"data": {
-				"type":"string"
+				"type":"keyword"
 			},
 			"tags": {
-				"type":"string"
+				"type":"keyword"
 			},
 			"value": {
 				"type": "long"

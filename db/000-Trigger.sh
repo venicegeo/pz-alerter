@@ -1,5 +1,5 @@
 #!/bin/bash
-INDEX_NAME=triggers004
+INDEX_NAME=triggers006
 ALIAS_NAME=$1
 ES_IP=$2
 TESTING=$3
@@ -9,24 +9,20 @@ TriggerMapping='
 		"dynamic": "strict",
 		"properties": {
 			"triggerId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"name": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"createdOn": {
 				"type": "date",
 				"format": "yyyy-MM-dd'\''T'\''HH:mm:ssZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSSZZ||yyyy-MM-dd'\''T'\''HH:mm:ss.SSSSSSSZZ"
 			},
 			"createdBy": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"eventTypeId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			},
 			"enabled": {
 				"type": "boolean"
@@ -38,8 +34,7 @@ TriggerMapping='
 			"job": {
 				"properties": {
 					"createdBy": {
-						"type": "string",
-						"index": "not_analyzed"
+						"type": "keyword"
 					},
 					"jobType": {
 						"dynamic": "false",
@@ -48,11 +43,18 @@ TriggerMapping='
 				}
 			},
 			"percolationId": {
-				"type": "string",
-				"index": "not_analyzed"
+				"type": "keyword"
 			}
 		}
-	}'
+	},
+	"queries": {
+	    "dynamic": "strict",
+            "properties": {
+                "query": {
+                    "type": "percolator"
+                }
+            }
+        }'
 IndexSettings="
 {
 	"\""mappings"\"": {
