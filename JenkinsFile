@@ -1,0 +1,72 @@
+@Library('pipelib@master') _
+
+node {
+  def root = pwd()
+
+  stage('Setup') {
+    git([
+      url: "https://github.com/venicegeo/pz-workflow",
+      branch: "master"
+    ])
+  }
+
+  stage('Archive') {
+    withGolang {
+      sh """
+        # install metalinter
+        go get -u github.com/alecthomas/gometalinter
+        gometalinter --install
+
+        # build ourself, and go there
+        go get github.com/venicegeo/pz-workflow
+        cd \$GOPATH/src/github.com/venicegeo/pz-workflow
+
+        go test -v -coverprofile=${root}/workflow.cov -coverpkg github.com/venicegeo/pz-workflow/workflow github.com/venicegeo/pz-workflow/workflow
+        go tool cover -func=${root}/workflow.cov -o ${root}/workflow.cov.txt
+
+        cd ${root}
+
+        cp \$GOPATH/bin/pz-workflow ${root}/pz-workflow
+        tar -cvzf pz-workflow.tgz \
+            pz-workflow \
+            *.cov \
+            *.cov.txt \
+            glide.lock \
+            glide.yaml
+      """
+    }
+    mavenPush()
+  }
+
+  stage('CI Deploy') {
+    cfPush()
+    cfBgDeploy()
+  }
+
+  stage('Integration Testing') {
+    postman()
+  }
+
+  stage('Reset') {
+    git([
+      url: "https://github.com/venicegeo/pz-workflow",
+      branch: "master"
+    ])
+  }
+
+  stage('Staging Deploy') {
+    cfPush {
+      cfDomain  = 'stage.geointservices.io'
+      cfSpace   = 'stage'
+    }
+    cfBgDeploy {
+      cfDomain  = 'stage.geointservices.io'
+      cfSpace   = 'stage'
+    }
+  }
+
+
+  stage('Cleanup') {
+    deleteDir()
+  }
+}

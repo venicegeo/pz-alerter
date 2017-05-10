@@ -1,0 +1,17 @@
+ci/
+config/
+db/
+gopath/
+systest/
+tools/
+vendor/
+workflow/
+glide.lock
+glide.yaml
+JenkinsFile
+jenkins.properties
+main.go
+manifest.*.yml
+.*
+*.properties
+*.tgz
