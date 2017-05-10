@@ -1,8 +1,6 @@
 ci/
 config/
-db/
 gopath/
-systest/
 tools/
 vendor/
 workflow/
