@@ -181,6 +181,7 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		keyAlerts:            "Alert",
 		keyCrons:             "Cron",
 		keyTestElasticsearch: "TestES",
+		keyPercs:             "Percolator",
 	}
 	keyToScripts := map[string][]string{
 		keyEventTypes:        []string{},
@@ -189,15 +190,9 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 		keyAlerts:            []string{},
 		keyCrons:             []string{},
 		keyTestElasticsearch: []string{},
+		keyPercs:             []string{},
 	}
-	keyToType := map[string]string{
-		keyEventTypes:        EventTypeDBMapping,
-		keyEvents:            EventDBMapping,
-		keyTriggers:          TriggerDBMapping,
-		keyAlerts:            AlertDBMapping,
-		keyCrons:             CronDBMapping,
-		keyTestElasticsearch: TestElasticsearchMapping,
-	}
+
 	indices := make(map[string]elasticsearch.IIndex)
 
 	{
@@ -254,24 +249,37 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 			if indices[alias], err = elasticsearch.NewIndex(sys, alias, ""); err != nil {
 				log.Fatalln(err)
 			}
+			if scriptRes.Message == "Index already exists" {
+				continue
+			}
 			if scriptRes.Mapping != "" && i == len(scripts)-1 {
 				inter, err := piazza.StructStringToInterface(scriptRes.Mapping)
 				if err != nil {
 					log.Fatalln(err)
 				}
-				var scriptMap, esMap map[string]interface{}
+				var scriptMap, esTemp map[string]interface{}
+				esMap := map[string]interface{}{}
 				var ok bool
 				if scriptMap, ok = inter.(map[string]interface{}); !ok {
-					log.Fatalf("Schema [%s] on alias [%s] in script is not type map[string]interface{}\n", keyToType[alias], alias)
+					log.Fatalf("Mappings on alias [%s] in script is not type map[string]interface{}\n", alias)
 				}
-				if inter, err = indices[alias].GetMapping(keyToType[alias]); err != nil {
+				types, err := indices[alias].GetTypes(true)
+				if err != nil {
 					log.Fatalln(err)
 				}
-				if esMap, ok = inter.(map[string]interface{}); !ok {
-					log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", keyToType[alias], alias)
+				for _, typ := range types {
+					if inter, err = indices[alias].GetMapping(typ); err != nil {
+						log.Fatalln(err)
+					}
+					if esTemp, ok = inter.(map[string]interface{}); !ok {
+						log.Fatalf("Schema [%s] on alias [%s] on elasticsearch is not type map[string]interface{}\n", typ, alias)
+					}
+					for k, v := range esTemp {
+						esMap[k] = v
+					}
 				}
 				if !reflect.DeepEqual(scriptMap, esMap) {
-					log.Fatalf("Schema [%s] on alias [%s] on elasticsearch does not match the mapping provided\n", keyToType[alias], alias)
+					log.Fatalf("Mappings on alias [%s] on elasticsearch does not match the mapping provided\n", alias)
 				}
 			}
 		}

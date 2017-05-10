@@ -76,6 +76,18 @@ type Event struct {
 // EventList is a list of events
 type EventList []Event
 
+//-PERCOLATOR-------------------------------------------------------------------
+
+const PercolatorDBMapping string = "doctype"
+
+// A Percolator is a query designed to be run on event ingest
+type Percolator struct {
+	//TODO
+}
+
+// PercolatorList is a list of Percolators
+type PercolatorList []Percolator
+
 //-EVENTTYPE--------------------------------------------------------------------
 
 // EventTypeDBMapping is the name of the Elasticsearch type to which Events are added

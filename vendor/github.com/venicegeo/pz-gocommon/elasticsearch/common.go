@@ -35,21 +35,24 @@ type QueryFormat struct {
 
 // Constants representing the supported data types for the Event parameters.
 const (
-	MappingElementTypeString      MappingElementTypeName = "string"
-	MappingElementTypeLong        MappingElementTypeName = "long"
-	MappingElementTypeInteger     MappingElementTypeName = "integer"
-	MappingElementTypeShort       MappingElementTypeName = "short"
-	MappingElementTypeByte        MappingElementTypeName = "byte"
-	MappingElementTypeDouble      MappingElementTypeName = "double"
-	MappingElementTypeFloat       MappingElementTypeName = "float"
-	MappingElementTypeDate        MappingElementTypeName = "date"
-	MappingElementTypeBool        MappingElementTypeName = "boolean"
-	MappingElementTypeBinary      MappingElementTypeName = "binary"
-	MappingElementTypeGeoPoint    MappingElementTypeName = "geo_point"
-	MappingElementTypeGeoShape    MappingElementTypeName = "geo_shape"
-	MappingElementTypeIp          MappingElementTypeName = "ip"
-	MappingElementTypeCompletion  MappingElementTypeName = "completion"
-	MappingElementTypeStringA     MappingElementTypeName = "[string]"
+	MappingElementTypeText       MappingElementTypeName = "text"
+	MappingElementTypeKeyword    MappingElementTypeName = "keyword"
+	MappingElementTypeLong       MappingElementTypeName = "long"
+	MappingElementTypeInteger    MappingElementTypeName = "integer"
+	MappingElementTypeShort      MappingElementTypeName = "short"
+	MappingElementTypeByte       MappingElementTypeName = "byte"
+	MappingElementTypeDouble     MappingElementTypeName = "double"
+	MappingElementTypeFloat      MappingElementTypeName = "float"
+	MappingElementTypeDate       MappingElementTypeName = "date"
+	MappingElementTypeBool       MappingElementTypeName = "boolean"
+	MappingElementTypeBinary     MappingElementTypeName = "binary"
+	MappingElementTypeGeoPoint   MappingElementTypeName = "geo_point"
+	MappingElementTypeGeoShape   MappingElementTypeName = "geo_shape"
+	MappingElementTypeIp         MappingElementTypeName = "ip"
+	MappingElementTypeCompletion MappingElementTypeName = "completion"
+
+	MappingElementTypeTextA       MappingElementTypeName = "[text]"
+	MappingElementTypeKeywordA    MappingElementTypeName = "[keyword]"
 	MappingElementTypeLongA       MappingElementTypeName = "[long]"
 	MappingElementTypeIntegerA    MappingElementTypeName = "[integer]"
 	MappingElementTypeShortA      MappingElementTypeName = "[short]"
@@ -86,7 +89,7 @@ type IIndex interface {
 	FilterByMatchQuery(typ string, name string, value interface{}, format *piazza.JsonPagination) (*SearchResult, error)
 	SearchByJSON(typ string, jsn string) (*SearchResult, error)
 	SetMapping(typename string, jsn piazza.JsonString) error
-	GetTypes() ([]string, error)
+	GetTypes(includeHidden bool) ([]string, error)
 	GetMapping(typ string) (interface{}, error)
 	AddPercolationQuery(id string, query piazza.JsonString) (*IndexResponse, error)
 	DeletePercolationQuery(id string) (*DeleteResponse, error)
@@ -180,10 +183,12 @@ func (name MappingElementTypeName) isValidMappingType() bool {
 	return valid
 }
 
+//TODO
 func (name MappingElementTypeName) isValidScalarMappingType() bool {
 
 	switch name {
-	case MappingElementTypeString,
+	case MappingElementTypeText,
+		MappingElementTypeKeyword,
 		MappingElementTypeLong,
 		MappingElementTypeInteger,
 		MappingElementTypeShort,
@@ -203,10 +208,12 @@ func (name MappingElementTypeName) isValidScalarMappingType() bool {
 	return false
 }
 
+//TODO
 func (name MappingElementTypeName) isValidArrayMappingType() bool {
 
 	switch name {
-	case MappingElementTypeStringA,
+	case MappingElementTypeTextA,
+		MappingElementTypeKeywordA,
 		MappingElementTypeLongA,
 		MappingElementTypeIntegerA,
 		MappingElementTypeShortA,

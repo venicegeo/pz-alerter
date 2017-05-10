@@ -411,7 +411,7 @@ func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error
 	return nil, fmt.Errorf("SearchByJSON not supported under mocking")
 }
 
-func (esi *MockIndex) GetTypes() ([]string, error) {
+func (esi *MockIndex) GetTypes(bool) ([]string, error) {
 	var s []string
 
 	for k := range esi.types {

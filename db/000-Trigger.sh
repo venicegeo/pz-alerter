@@ -46,15 +46,7 @@ TriggerMapping='
 				"type": "keyword"
 			}
 		}
-	},
-	"queries": {
-	    "dynamic": "strict",
-            "properties": {
-                "query": {
-                    "type": "percolator"
-                }
-            }
-        }'
+	}'
 IndexSettings="
 {
 	"\""mappings"\"": {

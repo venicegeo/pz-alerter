@@ -45,6 +45,7 @@ const keyTriggers = "triggers"
 const keyAlerts = "alerts"
 const keyCrons = "crons"
 const keyTestElasticsearch = "testElasticsearch"
+const keyPercs = "percs"
 
 type Service struct {
 	eventTypeDB         *EventTypeDB
@@ -53,6 +54,7 @@ type Service struct {
 	alertDB             *AlertDB
 	cronDB              *CronDB
 	testElasticsearchDB *TestElasticsearchDB
+	percolatorDB        *PercolatorDB
 
 	stats Stats
 	sync.Mutex
@@ -82,6 +84,7 @@ func (service *Service) Init(
 	alertsIndex := (*indices)[keyAlerts]
 	cronIndex := (*indices)[keyCrons]
 	testElasticsearchIndex := (*indices)[keyTestElasticsearch]
+	percolatorIndex := (*indices)[keyPercs]
 
 	var err error
 
@@ -116,6 +119,10 @@ func (service *Service) Init(
 		return err
 	}
 
+	if service.percolatorDB, err = NewPercolatorDB(service, percolatorIndex); err != nil {
+		return err
+	}
+
 	service.cron = cron.New()
 	service.origin = string(sys.Name)
 
@@ -131,7 +138,7 @@ func (service *Service) Init(
 			return false, nil
 		}
 		var types []string
-		types, err = eventtypesIndex.GetTypes()
+		types, err = eventtypesIndex.GetTypes(false)
 		if err != nil {
 			return false, err
 		}
@@ -154,8 +161,8 @@ func (service *Service) Init(
 	// Ingest event type
 	ingestEventType := &EventType{Name: ingestTypeName, CreatedBy: sys.PiazzaSystem}
 	ingestEventTypeMapping := map[string]interface{}{
-		"dataId":   "string",
-		"dataType": "string",
+		"dataId":   "keyword",
+		"dataType": "keyword",
 		"epsg":     "integer",
 		"minX":     "double",
 		"minY":     "double",
@@ -176,9 +183,9 @@ func (service *Service) Init(
 	// Execution Completed event type
 	executionCompletedType := &EventType{Name: executeTypeName, CreatedBy: sys.PiazzaSystem}
 	executionCompletedTypeMapping := map[string]interface{}{
-		"jobId":  "string",
-		"status": "string",
-		"dataId": "string",
+		"jobId":  "keyword",
+		"status": "keyword",
+		"dataId": "keyword",
 	}
 	executionCompletedType.Mapping = executionCompletedTypeMapping
 	postedExecutionCompletedType := service.PostEventType(executionCompletedType)
@@ -727,7 +734,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	{
 		// Find triggers associated with event
-		triggerIDs, err1 := service.eventDB.PercolateEventData(eventType.Name, event.Data, event.EventID, event.CreatedBy)
+		triggerIDs, err1 := service.percolatorDB.PercolateEventData(eventType.Name, event.Data, event.EventID, event.CreatedBy)
 		if err1 != nil {
 			return service.statusBadRequest(err1)
 		}
@@ -1091,16 +1098,20 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 		}
 		eventType = et
 	}
-	fixedQuery, ok := service.triggerDB.addUniqueParamsToQuery(trigger.Condition, eventType).(map[string]interface{})
-	if !ok {
-		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
-	}
+	//	dat, _ := json.MarshalIndent(trigger.Condition, " ", "   ")
+	//	fmt.Println(string(dat))
+	//	fixedQuery, ok := service.triggerDB.handleUniqueParams(trigger.Condition, eventType, service.triggerDB.getNewKeyName).(map[string]interface{})
+	//	if !ok {
+	//		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
+	//	}
+	//	dat, _ = json.MarshalIndent(fixedQuery, " ", "   ")
+	//	fmt.Println(string(dat))
 	response := *trigger
-	trigger.Condition = fixedQuery
+	//	trigger.Condition = fixedQuery
 
 	service.syslogger.Audit(trigger.CreatedBy, "creatingTrigger", trigger.TriggerID, "Service.PostTrigger: User [%s] is creating trigger [%s]", trigger.CreatedBy, trigger.TriggerID)
 
-	if err = service.triggerDB.PostData(trigger); err != nil {
+	if err = service.triggerDB.PostData(trigger, eventType.Name); err != nil {
 		service.syslogger.Audit(trigger.CreatedBy, "creatingTriggerFailure", trigger.TriggerID, "Service.PostTrigger: User [%s] failed to create trigger [%s]", trigger.CreatedBy, trigger.TriggerID)
 		return service.statusBadRequest(err)
 	}

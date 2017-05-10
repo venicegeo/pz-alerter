@@ -203,7 +203,7 @@ func (db *EventDB) GetEventsByEventTypeID(format *piazza.JsonPagination, mapping
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident, actor string) (string, error) {
 	var mapping string
 
-	types, err := db.Esi.GetTypes()
+	types, err := db.Esi.GetTypes(false)
 	if err != nil {
 		return "", err
 	}
@@ -342,23 +342,23 @@ func visitLeafE(k string, v interface{}) (map[string]interface{}, error) {
 	return tree, nil
 }
 
-func (db *EventDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident, actor string) (*[]piazza.Ident, error) {
-	fixed := map[string]interface{}{}
-	fixed["data"] = data
-	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, fixed)
+//func (db *TriggerDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident, actor string) (*[]piazza.Ident, error) {
+//	fixed := map[string]interface{}{}
+//	fixed["data"] = data
+//	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, fixed)
 
-	if err != nil {
-		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
-	}
-	if percolateResponse == nil {
-		return nil, LoggedError("EventDB.PercolateEventData failed: no percolateResult")
-	}
+//	if err != nil {
+//		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
+//	}
+//	if percolateResponse == nil {
+//		return nil, LoggedError("EventDB.PercolateEventData failed: no percolateResult")
+//	}
 
-	// add the triggers to the alert queue
-	ids := make([]piazza.Ident, len(percolateResponse.Matches))
-	for i, v := range percolateResponse.Matches {
-		ids[i] = piazza.Ident(v.Id)
-	}
+//	// add the triggers to the alert queue
+//	ids := make([]piazza.Ident, len(percolateResponse.Matches))
+//	for i, v := range percolateResponse.Matches {
+//		ids[i] = piazza.Ident(v.Id)
+//	}
 
-	return &ids, nil
-}
+//	return &ids, nil
+//}

@@ -53,6 +53,11 @@ func (db *EventTypeDB) PostData(eventType *EventType) error {
 		return LoggedError("EventTypeDB.PostData failed: not created")
 	}
 
+	if err = db.service.percolatorDB.AddEventMappingValues(vars); err != nil {
+		go db.DeleteByID(eventType.EventTypeID, "")
+		return LoggedError("EventTypeDB.PostData failed: unable to percolate data: %s", err)
+	}
+
 	return nil
 }
 
