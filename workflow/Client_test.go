@@ -101,8 +101,8 @@ func (suite *ClientTester) Test13EventResource() {
 	var err error
 
 	mapping := map[string]interface{}{
-		"myint": elasticsearch.MappingElementTypeString,
-		"mystr": elasticsearch.MappingElementTypeString,
+		"myint": elasticsearch.MappingElementTypeInteger,
+		"mystr": elasticsearch.MappingElementTypeText,
 	}
 	eventTypeName := "mytype"
 	eventType := &EventType{Name: eventTypeName, Mapping: mapping}
@@ -152,8 +152,8 @@ func (suite *ClientTester) Test14EventTypeResource() {
 	var err error
 
 	mapping := map[string]interface{}{
-		"myint": elasticsearch.MappingElementTypeString,
-		"mystr": elasticsearch.MappingElementTypeString,
+		"myint": elasticsearch.MappingElementTypeInteger,
+		"mystr": elasticsearch.MappingElementTypeText,
 	}
 	eventType := &EventType{Name: "typnam", Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
@@ -197,7 +197,7 @@ func (suite *ClientTester) Test15One() {
 	{
 		mapping := map[string]interface{}{
 			"num": elasticsearch.MappingElementTypeInteger,
-			"str": elasticsearch.MappingElementTypeString,
+			"str": elasticsearch.MappingElementTypeText,
 		}
 
 		eventType := &EventType{Name: eventTypeName, Mapping: mapping}
@@ -304,8 +304,8 @@ func (suite *ClientTester) Test16TriggerResource() {
 	var err error
 
 	mapping := map[string]interface{}{
-		"myint": elasticsearch.MappingElementTypeString,
-		"mystr": elasticsearch.MappingElementTypeString,
+		"myint": elasticsearch.MappingElementTypeInteger,
+		"mystr": elasticsearch.MappingElementTypeText,
 	}
 	eventType := &EventType{Name: "typnam2", Mapping: mapping}
 	respEventType, err := client.PostEventType(eventType)
@@ -370,7 +370,7 @@ func (suite *ClientTester) Test17Triggering() {
 	{
 		mapping := map[string]interface{}{
 			"num": elasticsearch.MappingElementTypeInteger,
-			"str": elasticsearch.MappingElementTypeString,
+			"str": elasticsearch.MappingElementTypeText,
 		}
 		eventTypeC := &EventType{Name: "EventType C", Mapping: mapping}
 		eventTypeD := &EventType{Name: "EventType D", Mapping: mapping}

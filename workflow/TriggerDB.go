@@ -74,38 +74,15 @@ func (db *TriggerDB) PostData(trigger *Trigger, eventTypeName string) error {
 	//		return err
 	//	}
 
-	//log.Printf("Posting percolation query: %s", body)
-	/*indexResult,*/
-	//err := db.service.percolatorDB.PostData(trigger.Condition, trigger.TriggerID) //, piazza.JsonString(body))
-	var err error = nil
-	if err != nil {
-		var errMessage string
-		if strings.Contains(err.Error(), "elastic: Error 500 (Internal Server Error): failed to parse query") {
-			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed: elastic failed to parse query. Common causes: [Variables do not start with 'data.' or are not found at your specified path, invalid perc query structure].")
-		} else {
-			errMessage = fmt.Sprintf("TriggerDB.PostData addpercquery failed [unknown cause]: %s ", err)
-		}
-		return LoggedError(errMessage)
-	}
-	//	if indexResult == nil {
-	//		return LoggedError("TriggerDB.PostData addpercquery failed: no indexResult")
-	//	}
-	//	if !indexResult.Created {
-	//		return LoggedError("TriggerDB.PostData addpercquery failed: not created")
-	//	}
-
-	//log.Printf("percolation query added: ID: %s, Type: %s, Index: %s", indexResult.Id, indexResult.Type, indexResult.Index)
-	//log.Printf("percolation id: %s", indexResult.Id)
-	//trigger.PercolationID = piazza.Ident(indexResult.ID)
 	trigger.PercolationID = trigger.TriggerID
 
-	//##//
 	//Handle unique
 	uniqueCondition := handleUniqueParams(trigger.Condition, eventTypeName, func(name string, key string) string { return name + "." + key })
 
 	//Post perc
-	//TODO
-	fmt.Println(db.service.percolatorDB.PostData(uniqueCondition, trigger.TriggerID))
+	if err := db.service.percolatorDB.PostPercolatorQuery(uniqueCondition, trigger.TriggerID); err != nil {
+		return LoggedError("TriggerDB.PostData failed: %s", err)
+	}
 
 	//handle dots
 	uniqueTildeCondition := handleDotTilde(uniqueCondition, func(in string) string { return strings.Replace(in, ".", "~", -1) })
@@ -114,11 +91,11 @@ func (db *TriggerDB) PostData(trigger *Trigger, eventTypeName string) error {
 	trigger.Condition = uniqueTildeCondition.(map[string]interface{})
 	indexResult2, err := db.Esi.PostData(db.mapping, trigger.TriggerID.String(), trigger)
 	if err != nil {
-		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
+		_, _ = db.service.percolatorDB.DeletePercolatorQuery(trigger.TriggerID)
 		return LoggedError("TriggerDB.PostData failed: %s", err)
 	}
 	if !indexResult2.Created {
-		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
+		_, _ = db.service.percolatorDB.DeletePercolatorQuery(trigger.TriggerID)
 		return LoggedError("TriggerDB.PostData failed: not created")
 	}
 
@@ -285,15 +262,11 @@ func (db *TriggerDB) DeleteTrigger(id piazza.Ident, actor string) (bool, error) 
 		return false, nil
 	}
 
-	deleteResult2, err := db.service.eventDB.Esi.DeletePercolationQuery(string(trigger.PercolationID))
+	found, err = db.service.percolatorDB.DeletePercolatorQuery(trigger.PercolationID)
 	if err != nil {
-		return deleteResult2.Found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
+		return found, LoggedError("TriggerDB.DeleteById percquery failed: %s", err)
 	}
-	if deleteResult2 == nil {
-		return false, LoggedError("TriggerDB.DeleteById percquery failed: no deleteResult")
-	}
-
-	return deleteResult2.Found, nil
+	return found, nil
 }
 
 func decodeCondition(in interface{}) (out interface{}) {

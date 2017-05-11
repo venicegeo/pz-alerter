@@ -263,7 +263,7 @@ func (kit *Kit) makeIndices(sys *piazza.SystemConfig) *map[string]elasticsearch.
 				if scriptMap, ok = inter.(map[string]interface{}); !ok {
 					log.Fatalf("Mappings on alias [%s] in script is not type map[string]interface{}\n", alias)
 				}
-				types, err := indices[alias].GetTypes(true)
+				types, err := indices[alias].GetTypes()
 				if err != nil {
 					log.Fatalln(err)
 				}

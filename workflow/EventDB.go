@@ -203,7 +203,7 @@ func (db *EventDB) GetEventsByEventTypeID(format *piazza.JsonPagination, mapping
 func (db *EventDB) lookupEventTypeNameByEventID(id piazza.Ident, actor string) (string, error) {
 	var mapping string
 
-	types, err := db.Esi.GetTypes(false)
+	types, err := db.Esi.GetTypes()
 	if err != nil {
 		return "", err
 	}

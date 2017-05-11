@@ -89,11 +89,8 @@ type IIndex interface {
 	FilterByMatchQuery(typ string, name string, value interface{}, format *piazza.JsonPagination) (*SearchResult, error)
 	SearchByJSON(typ string, jsn string) (*SearchResult, error)
 	SetMapping(typename string, jsn piazza.JsonString) error
-	GetTypes(includeHidden bool) ([]string, error)
+	GetTypes() ([]string, error)
 	GetMapping(typ string) (interface{}, error)
-	AddPercolationQuery(id string, query piazza.JsonString) (*IndexResponse, error)
-	DeletePercolationQuery(id string) (*DeleteResponse, error)
-	AddPercolationDocument(typ string, doc interface{}) (*PercolateResponse, error)
 
 	DirectAccess(verb string, endpoint string, input interface{}, output interface{}) error
 }

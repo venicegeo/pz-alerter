@@ -138,7 +138,7 @@ func (service *Service) Init(
 			return false, nil
 		}
 		var types []string
-		types, err = eventtypesIndex.GetTypes(false)
+		types, err = eventtypesIndex.GetTypes()
 		if err != nil {
 			return false, err
 		}
@@ -734,7 +734,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 
 	{
 		// Find triggers associated with event
-		triggerIDs, err1 := service.percolatorDB.PercolateEventData(eventType.Name, event.Data, event.EventID, event.CreatedBy)
+		triggerIDs, err1 := service.percolatorDB.PercolateEventData(event.Data)
 		if err1 != nil {
 			return service.statusBadRequest(err1)
 		}
@@ -1098,16 +1098,8 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 		}
 		eventType = et
 	}
-	//	dat, _ := json.MarshalIndent(trigger.Condition, " ", "   ")
-	//	fmt.Println(string(dat))
-	//	fixedQuery, ok := service.triggerDB.handleUniqueParams(trigger.Condition, eventType, service.triggerDB.getNewKeyName).(map[string]interface{})
-	//	if !ok {
-	//		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
-	//	}
-	//	dat, _ = json.MarshalIndent(fixedQuery, " ", "   ")
-	//	fmt.Println(string(dat))
+
 	response := *trigger
-	//	trigger.Condition = fixedQuery
 
 	service.syslogger.Audit(trigger.CreatedBy, "creatingTrigger", trigger.TriggerID, "Service.PostTrigger: User [%s] is creating trigger [%s]", trigger.CreatedBy, trigger.TriggerID)
 

@@ -263,8 +263,6 @@ func (s *IndexService) Do(ctx context.Context) (*IndexResponse, error) {
 		body = s.bodyString
 	}
 
-	fmt.Println(method, path, params, body)
-
 	// Get HTTP response
 	res, err := s.client.PerformRequest(ctx, method, path, params, body)
 	if err != nil {

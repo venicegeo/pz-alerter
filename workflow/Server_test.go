@@ -595,9 +595,9 @@ func (suite *ServerTester) Test06Workflow() {
 	{
 		mapping := map[string]interface{}{
 			"num":      elasticsearch.MappingElementTypeInteger,
-			"str":      elasticsearch.MappingElementTypeString,
-			"userName": elasticsearch.MappingElementTypeString,
-			"jobId":    elasticsearch.MappingElementTypeString,
+			"str":      elasticsearch.MappingElementTypeText,
+			"userName": elasticsearch.MappingElementTypeKeyword,
+			"jobId":    elasticsearch.MappingElementTypeKeyword,
 		}
 
 		//log.Printf("Creating event type:\n")
@@ -714,9 +714,9 @@ func (suite *ServerTester) Test07MultiTrigger() {
 
 	var mapping = map[string]interface{}{
 		"num":      elasticsearch.MappingElementTypeInteger,
-		"str":      elasticsearch.MappingElementTypeString,
-		"userName": elasticsearch.MappingElementTypeString,
-		"jobId":    elasticsearch.MappingElementTypeString,
+		"str":      elasticsearch.MappingElementTypeText,
+		"userName": elasticsearch.MappingElementTypeKeyword,
+		"jobId":    elasticsearch.MappingElementTypeKeyword,
 	}
 
 	var data = map[string]interface{}{

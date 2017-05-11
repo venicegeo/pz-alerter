@@ -16,7 +16,6 @@ package elasticsearch
 
 import (
 	"encoding/json"
-	"log"
 
 	"gopkg.in/olivere/elastic.v5"
 )
@@ -87,34 +86,6 @@ func NewIndexResponse(indexResponse *elastic.IndexResponse) *IndexResponse {
 		Version: indexResponse.Version,
 	}
 	return resp
-}
-
-type PercolateResponseMatch struct {
-	Id    string
-	Index string
-}
-
-type PercolateResponse struct {
-	Total   int64
-	Matches []*PercolateResponseMatch
-}
-
-func NewPercolateResponse(percolateResponse interface{}) *PercolateResponse {
-	//	resp := &PercolateResponse{
-	//		Total:   percolateResponse["total"],
-	//		Matches: make([]*PercolateResponseMatch, len(percolateResponse.Matches)),
-	//	}
-
-	//	for i, v := range percolateResponse.Matches {
-	//		m := &PercolateResponseMatch{
-	//			Id:    v.Id,
-	//			Index: v.Index,
-	//		}
-	//		resp.Matches[i] = m
-	//	}
-	log.Println(percolateResponse)
-
-	return nil
 }
 
 // DeleteResponse is the response when a deletion of a document or type occurs

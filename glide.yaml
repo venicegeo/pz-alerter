@@ -5,7 +5,7 @@ import:
 - package: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
 - package: github.com/venicegeo/pz-gocommon
-  version: 2bd994fab244194a9f708d689034eae7778cc065
+  version: 7cfa874430caf0b84a6d182f41383ae8a25cd3e8
   subpackages:
   - elasticsearch
   - gocommon

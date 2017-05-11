@@ -78,11 +78,21 @@ type EventList []Event
 
 //-PERCOLATOR-------------------------------------------------------------------
 
-const PercolatorDBMapping string = "doctype"
+const PercolatorQueryField string = "query"
+const PercolatorFieldDBMapping string = "doctype"
+const PercolatorQueryDBMapping string = "queries"
 
-// A Percolator is a query designed to be run on event ingest
+// A Percolator is the reverse query to be run on event ingest
 type Percolator struct {
-	//TODO
+	PercolatorQuery PercolatorQuery `json:"query"`
+}
+type PercolatorQuery struct {
+	PercolatorPercolate PercolatorPercolate `json:"percolate"`
+}
+type PercolatorPercolate struct {
+	Field        string      `json:"field"`
+	DocumentType string      `json:"document_type"`
+	Document     interface{} `json:"document"`
 }
 
 // PercolatorList is a list of Percolators

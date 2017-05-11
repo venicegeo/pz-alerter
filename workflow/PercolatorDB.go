@@ -24,7 +24,6 @@ import (
 
 type PercolatorDB struct {
 	*ResourceDB
-	mapping string
 }
 
 func NewPercolatorDB(service *Service, esi elasticsearch.IIndex) (*PercolatorDB, error) {
@@ -32,68 +31,80 @@ func NewPercolatorDB(service *Service, esi elasticsearch.IIndex) (*PercolatorDB,
 	if err != nil {
 		return nil, err
 	}
-	prdb := PercolatorDB{ResourceDB: rdb, mapping: PercolatorDBMapping}
+	prdb := PercolatorDB{ResourceDB: rdb}
 	return &prdb, nil
 }
 
-func (db *PercolatorDB) PostData(percolator interface{}, id piazza.Ident) error {
-	indexResult, err := db.Esi.PostData("queries", id.String(), percolator)
+func NewPercolator(doc interface{}) *Percolator {
+	return &Percolator{PercolatorQuery{PercolatorPercolate{Field: PercolatorQueryField, DocumentType: PercolatorFieldDBMapping, Document: doc}}}
+}
+
+func (db *PercolatorDB) PostPercolatorQuery(percolator interface{}, id piazza.Ident) error {
+	indexResult, err := db.Esi.PostData(PercolatorQueryDBMapping, id.String(), percolator)
 	if err != nil {
 		return LoggedError("PercolatorDB.PostData failed: %s", err)
-	}
-	if !indexResult.Created {
+	} else if !indexResult.Created {
 		return LoggedError("PercolatorDB.PostData failed: not created")
 	}
 	return nil
 }
+func (db *PercolatorDB) DeletePercolatorQuery(id piazza.Ident) (bool, error) {
+	deleteResult, err := db.Esi.DeleteByID(PercolatorQueryDBMapping, string(id))
+	if err != nil {
+		return deleteResult.Found, fmt.Errorf("PercolatorDB.DeleteById failed: %s", err)
+	} else if deleteResult == nil {
+		return false, fmt.Errorf("PercolatorDB.DeleteById failed: no deleteResult")
+	} else if !deleteResult.Found {
+		return false, fmt.Errorf("PercolatorDB.DeleteById failed: not found")
+	}
+	return deleteResult.Found, nil
+}
 
-func (db *PercolatorDB) PercolateEventData(eventType string, data map[string]interface{}, id piazza.Ident, actor string) (*[]piazza.Ident, error) {
-	fixed := map[string]interface{}{}
-	fixed["data"] = data
-	percolateResponse, err := db.Esi.AddPercolationDocument(eventType, data)
-
+func (db *PercolatorDB) PercolateEventData(data interface{}) (*[]piazza.Ident, error) {
+	percolator := NewPercolator(data)
+	dat, err := json.Marshal(*percolator)
 	if err != nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
 	}
-	if percolateResponse == nil {
+	searchResponse, err := db.Esi.SearchByJSON("", string(dat))
+	if err != nil {
+		return nil, LoggedError("EventDB.PercolateEventData failed: %s", err)
+	} else if searchResponse == nil {
 		return nil, LoggedError("EventDB.PercolateEventData failed: no percolateResult")
 	}
 
 	// add the triggers to the alert queue
-	ids := make([]piazza.Ident, len(percolateResponse.Matches))
-	for i, v := range percolateResponse.Matches {
-		ids[i] = piazza.Ident(v.Id)
+	ids := make([]piazza.Ident, searchResponse.NumHits())
+	for i, v := range *searchResponse.GetHits() {
+		ids[i] = piazza.Ident(v.ID)
 	}
 
 	return &ids, nil
 }
 
 func (db *PercolatorDB) AddEventMappingValues(vars map[string]interface{}) error {
-	template := `"%s":{"type":"%s"},`
-	body := ""
+	template, body := `"%s":{"type":"%s"},`, ""
 	for k, v := range vars {
 		body += fmt.Sprintf(template, k, v)
 	}
 	body = fmt.Sprintf(`{"properties":{%s}}`, body[0:len(body)-1])
-	return db.Esi.SetMapping("doctype", piazza.JsonString(body))
+	return db.Esi.SetMapping(PercolatorFieldDBMapping, piazza.JsonString(body))
 }
 
 func (db *PercolatorDB) GetAll(format *piazza.JsonPagination, actor string) ([]Percolator, int64, error) {
-	percolators := []Percolator{}
+	percolators := PercolatorList{}
 
-	exists, err := db.Esi.TypeExists(db.mapping)
+	exists, err := db.Esi.TypeExists(PercolatorQueryDBMapping)
 	if err != nil {
 		return percolators, 0, err
-	}
-	if !exists {
+	} else if !exists {
 		return percolators, 0, nil
 	}
 
-	searchResult, err := db.Esi.FilterByMatchAll(db.mapping, format)
+	searchResult, err := db.Esi.FilterByMatchAll(PercolatorQueryDBMapping, format)
 	if err != nil {
 		return nil, 0, LoggedError("PercolatorDB.GetAll failed: %s", err)
-	}
-	if searchResult == nil {
+	} else if searchResult == nil {
 		return nil, 0, LoggedError("PercolatorDB.GetAll failed: no searchResult")
 	}
 
@@ -110,13 +121,12 @@ func (db *PercolatorDB) GetAll(format *piazza.JsonPagination, actor string) ([]P
 	return percolators, searchResult.TotalHits(), nil
 }
 
-func (db *PercolatorDB) GetOne(id piazza.Ident, actor string) (*Percolator, bool, error) {
-	getResult, err := db.Esi.GetByID(db.mapping, id.String())
+func (db *PercolatorDB) GetOne(id piazza.Ident) (*Percolator, bool, error) {
+	getResult, err := db.Esi.GetByID(PercolatorQueryDBMapping, id.String())
 	if err != nil {
 		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err)
-	}
-	if getResult == nil {
-		return nil, true, fmt.Errorf("AlertDB.GetOne failed: %s no getResult", id.String())
+	} else if getResult == nil {
+		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s no getResult", id.String())
 	}
 
 	src := getResult.Source
@@ -126,20 +136,4 @@ func (db *PercolatorDB) GetOne(id piazza.Ident, actor string) (*Percolator, bool
 	}
 
 	return &percolator, getResult.Found, nil
-}
-
-func (db *PercolatorDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
-	deleteResult, err := db.Esi.DeleteByID(db.mapping, string(id))
-	if err != nil {
-		return deleteResult.Found, fmt.Errorf("PercolatorDB.DeleteById failed: %s", err)
-	}
-	if deleteResult == nil {
-		return false, fmt.Errorf("PercolatorDB.DeleteById failed: no deleteResult")
-	}
-
-	if !deleteResult.Found {
-		return false, fmt.Errorf("PercolatorDB.DeleteById failed: not found")
-	}
-
-	return deleteResult.Found, nil
 }
