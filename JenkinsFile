@@ -1,11 +1,13 @@
 @Library('pipelib@master') _
 
+def THREADFIX_ID = env.THREADFIX_ID ? env.THREADFIX_ID : '115'
+
 node {
   def root = pwd()
 
   stage('Setup') {
     git([
-      url: "https://github.com/venicegeo/pz-workflow",
+      url: env.GIT_URL ? env.GIT_URL : 'https://github.com/venicegeo/pz-workflow',
       branch: "master"
     ])
   }
@@ -40,6 +42,9 @@ node {
 
   stage('CI Deploy') {
     cfPush()
+    zap {
+      threadfixId = THREADFIX_ID
+    }
     cfBgDeploy()
   }
 
@@ -49,7 +54,7 @@ node {
 
   stage('Reset') {
     git([
-      url: "https://github.com/venicegeo/pz-workflow",
+      url: env.GIT_URL ? env.GIT_URL : 'https://github.com/venicegeo/pz-workflow',
       branch: "master"
     ])
   }
