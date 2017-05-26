@@ -948,6 +948,7 @@ func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
 		service.syslogger.Audit("pz-workflow", "deletingEventFailure", id, "Service.DeleteEvent: User failed to delete event [%s]", id)
 		return service.statusBadRequest(err)
 	}
+	service.syslogger.Audit("pz-workflow", "deletedCronEvent", id, "Service.DeleteEvent: User successfully deleted event [%s]", id)
 
 	// If it's a cron event, remove from cronDB, stop cronjob
 	ok, err = service.cronDB.itemExists(id, "pz-workflow")
