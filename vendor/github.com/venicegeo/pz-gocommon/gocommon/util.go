@@ -35,20 +35,34 @@ func StructInterfaceToString(stru interface{}) (string, error) {
 }
 
 func GetVarsFromStruct(struc interface{}) (map[string]interface{}, error) {
+	return GetVarsFromStructSkip(struc, map[string]bool{})
+}
+
+func GetVarsFromStructSkip(struc interface{}, skipMaps map[string]bool) (map[string]interface{}, error) {
 	input, ok := struc.(map[string]interface{})
 	if !ok {
 		return nil, fmt.Errorf("Structure is not of type map[string]interface{}, currently: %T", struc)
 	}
-	return getVarsFromStructHelper(input, map[string]interface{}{}, []string{}), nil
+	return getVarsFromStructHelper(input, map[string]interface{}{}, []string{}, skipMaps), nil
 }
-func getVarsFromStructHelper(inputObj map[string]interface{}, res map[string]interface{}, path []string) map[string]interface{} {
+func getVarsFromStructHelper(inputObj map[string]interface{}, res map[string]interface{}, path []string, skipMaps map[string]bool) map[string]interface{} {
 	for k, v := range inputObj {
 		wasMap := false
 		switch v.(type) {
 		case map[string]interface{}:
-			wasMap = true
-			path = append(path, k)
-			res = getVarsFromStructHelper(v.(map[string]interface{}), res, path)
+			temp := ""
+			for i := 0; i < len(path); i++ {
+				temp += path[i] + "."
+			}
+			varPath := fmt.Sprintf("%s%s", temp, k)
+			if _, contains := skipMaps[varPath]; contains {
+				data, _ := json.Marshal(v)
+				res[varPath] = string(data)
+			} else {
+				wasMap = true
+				path = append(path, k)
+				res = getVarsFromStructHelper(v.(map[string]interface{}), res, path, skipMaps)
+			}
 		default:
 			temp := ""
 			for i := 0; i < len(path); i++ {
