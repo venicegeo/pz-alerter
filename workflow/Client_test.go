@@ -254,9 +254,8 @@ func (suite *ClientTester) Test15One() {
 			EventTypeID: etID,
 			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
-				"num":      17,
-				"str":      "quick",
-				"userName": "my-api-key-38n987",
+				"num": 17,
+				"str": "quick",
 			},
 		}
 
@@ -475,10 +474,8 @@ func (suite *ClientTester) Test17Triggering() {
 			EventTypeID: etC,
 			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
-				"num":      17,
-				"str":      "quick",
-				"userName": "my-api-key-38n987",
-				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
+				"num": 17,
+				"str": "quick",
 			},
 		}
 		respEventF, err := client.PostEvent(&e1)
@@ -494,10 +491,8 @@ func (suite *ClientTester) Test17Triggering() {
 			EventTypeID: etD,
 			CreatedOn:   piazza.NewTimeStamp(),
 			Data: map[string]interface{}{
-				"num":      18,
-				"str":      "brown",
-				"userName": "my-api-key-38n987",
-				"jobId":    "43688858-b6d4-4ef9-a98b-163e1980bba8",
+				"num": 18,
+				"str": "brown",
 			},
 		}
 		respEventG, err := client.PostEvent(&e2)

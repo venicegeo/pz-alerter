@@ -58,20 +58,42 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 	if !ok {
 		return LoggedError("EventDB.PostData failed: unable to obtain specified eventtype")
 	}
-	eventTypeMappingVars, err := piazza.GetVarsFromStruct(eventType.Mapping)
+	eventTypeMapping := eventType.Mapping
+	eventTypeMappingVars, err := piazza.GetVarsFromStruct(eventTypeMapping)
 	if err != nil {
 		return LoggedError("EventDB.PostData failed: %s", err)
 	}
-	eventDataVars, err := piazza.GetVarsFromStruct(db.service.removeUniqueParams(eventType.Name, event.Data))
-	if err != nil {
-		return LoggedError("EventDB.PostData failed: %s", err)
-	}
-	notFound := []string{}
+	exclude := map[string]bool{}
 	for k, v := range eventTypeMappingVars {
-		found := false
+		if fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoPoint) || fmt.Sprint(v) == string(elasticsearch.MappingElementTypeGeoShape) {
+			exclude[k] = false
+		}
+	}
+	eventdata := db.service.removeUniqueParams(eventType.Name, event.Data)
+	eventDataVars, err := piazza.GetVarsFromStructSkip(eventdata, exclude)
+	if err != nil {
+		return LoggedError("EventDB.PostData failed: %s", err)
+	}
+	if len(eventTypeMappingVars) > len(eventDataVars) {
+		notFound := []string{}
+		for k, _ := range eventTypeMappingVars {
+			if _, ok := eventDataVars[k]; !ok {
+				notFound = append(notFound, k)
+			}
+		}
+		return LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
+	} else if len(eventTypeMappingVars) < len(eventDataVars) {
+		extra := []string{}
+		for k, _ := range eventDataVars {
+			if _, ok := eventTypeMappingVars[k]; !ok {
+				extra = append(extra, k)
+			}
+		}
+		return LoggedError("EventDB.PostData failed: the variables %s were not specified in the EventType but were found in the Event", extra)
+	}
+	for k, v := range eventTypeMappingVars {
 		for k2, v2 := range eventDataVars {
 			if k2 == k {
-				found = true
 				if !elasticsearch.IsValidArrayTypeMapping(v) {
 					if piazza.ValueIsValidArray(v2) {
 						return LoggedError("EventDB.PostData failed: an array was passed into the non-array field %s", k)
@@ -84,12 +106,6 @@ func (db *EventDB) verifyEventReadyToPost(event *Event) error {
 				break
 			}
 		}
-		if !found {
-			notFound = append(notFound, k)
-		}
-	}
-	if len(notFound) > 0 {
-		return LoggedError("EventDB.PostData failed: the variables %s were specified in the EventType but were not found in the Event", notFound)
 	}
 	return nil
 }
