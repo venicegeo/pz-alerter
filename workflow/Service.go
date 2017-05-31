@@ -1073,6 +1073,17 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 	return resp
 }
 
+//func (db *TriggerDB) getNewKeyName(eventType *EventType, key string) string {
+//	mapping := db.service.removeUniqueParams(eventType.Name, eventType.Mapping)
+//	vars, _ := piazza.GetVarsFromStruct(mapping)
+//	for varName := range vars {
+//		if "data."+varName == key {
+//			return strings.Replace(key, "data.", "data."+eventType.Name+".", 1)
+//		}
+//	}
+//	return key
+//}
+
 func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 	defer service.handlePanic()
 	var err error
@@ -1092,7 +1103,9 @@ func (service *Service) PostTrigger(trigger *Trigger) *piazza.JsonResponse {
 		}
 		eventType = et
 	}
-	fixedQuery, ok := service.triggerDB.addUniqueParamsToQuery(trigger.Condition, eventType).(map[string]interface{})
+	fixedQuery, ok := handleUniqueParams(trigger.Condition, eventType.Name, func(eventTypeName string, key string) string {
+		return strings.Replace(key, "data.", "data."+eventTypeName+".", 1)
+	}).(map[string]interface{})
 	if !ok {
 		return service.statusBadRequest(fmt.Errorf("TriggerEB.PostData failed: failed to parse query"))
 	}
