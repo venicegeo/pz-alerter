@@ -2,6 +2,9 @@
 
 To run workflow, golang 1.7 and a valid go environment are required. Installation instructions can be found here: https://golang.org/doc/install
 
+To build and run this project, software such as ElasticSearch is required.  For details on these prerequisites, refer to the
+[Piazza Developer's Guide](https://pz-docs.geointservices.io/devguide/index.html#_piazza_core_overview).
+
 In order for workflow to successfully start it needs access to running ElasticSearch, Kafka, pz-servicecontroller, pz-idam services.
 Additionally, the environment variable `LOGGER_INDEX` may be set; the value of this will be the name of the index in ElasticSearch for logger purposes. When running locally workflow will connect with ElasticSearch locally, however the `DOMAIN` environment variable must be set to the domain where the rest of Piazza is running in order to find pz-servicecontroller and pz-idam.
 
