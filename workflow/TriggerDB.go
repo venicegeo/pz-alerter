@@ -96,21 +96,6 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 	//log.Printf("percolation id: %s", indexResult.Id)
 	trigger.PercolationID = piazza.Ident(indexResult.ID)
 
-	//	strTrigger, err := piazza.StructInterfaceToString(trigger)
-	//	if err != nil {
-	//		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
-	//		return LoggedError("TriggerDB.PostData failed: %s", err)
-	//	}
-	//	intTrigger, err := piazza.StructStringToInterface(strTrigger)
-	//	if err != nil {
-	//		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
-	//		return LoggedError("TriggerDB.PostData failed: %s", err)
-	//	}
-	//	mapTrigger, ok := intTrigger.(map[string]interface{})
-	//	if !ok {
-	//		_, _ = db.service.eventDB.Esi.DeletePercolationQuery(trigger.TriggerID.String())
-	//		return LoggedError("TriggerDB.PostData failed: bad trigger")
-	//	}
 	trigger.Condition = encodeCondition(trigger.Condition).(map[string]interface{})
 
 	indexResult2, err := db.Esi.PostData(db.mapping, trigger.TriggerID.String(), trigger)
