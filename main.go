@@ -16,6 +16,7 @@ package main
 
 import (
 	"log"
+	"os"
 
 	piazza "github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -27,7 +28,12 @@ func main() {
 
 	sys, logWriter, auditWriter := makeClients()
 
-	kit, err := pzworkflow.NewKit(sys, logWriter, auditWriter, false)
+	pzPen := os.Getenv("PZ_PEN")
+	if pzPen == "" {
+		log.Fatal("Environment Variable PZ_PEN not found")
+	}
+
+	kit, err := pzworkflow.NewKit(sys, logWriter, auditWriter, false, pzPen)
 	if err != nil {
 		log.Fatal(err)
 	}

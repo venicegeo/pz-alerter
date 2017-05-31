@@ -52,6 +52,7 @@ func NewKit(
 	logWriter pzsyslog.Writer,
 	auditWriter pzsyslog.Writer,
 	mocking bool,
+	pen string,
 ) (*Kit, error) {
 
 	var err error
@@ -69,7 +70,7 @@ func NewKit(
 		kit.indices = kit.makeIndices(sys)
 	}
 
-	err = kit.Service.Init(sys, logWriter, auditWriter, kit.indices)
+	err = kit.Service.Init(sys, logWriter, auditWriter, kit.indices, pen)
 	if err != nil {
 		return nil, err
 	}

@@ -11,3 +11,4 @@ applications:
       - pz-kafka
   env:
     LOGGER_INDEX: piazzalogger
+    PZ_PEN: 48851

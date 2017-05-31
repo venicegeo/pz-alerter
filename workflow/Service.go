@@ -74,6 +74,7 @@ func (service *Service) Init(
 	logWriter pzsyslog.Writer,
 	auditWriter pzsyslog.Writer,
 	indices *map[string]elasticsearch.IIndex,
+	pen string,
 ) error {
 
 	eventtypesIndex := (*indices)[keyEventTypes]
@@ -85,7 +86,7 @@ func (service *Service) Init(
 
 	var err error
 
-	service.syslogger = pzsyslog.NewLogger(logWriter, auditWriter, string(piazza.PzWorkflow))
+	service.syslogger = pzsyslog.NewLogger(logWriter, auditWriter, string(piazza.PzWorkflow), pen)
 	defer service.handlePanic()
 
 	service.sys = sys
