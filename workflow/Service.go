@@ -228,40 +228,6 @@ func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, acto
 	return nil
 }
 
-func (service *Service) paramsToQuery(params *piazza.HttpQueryParams, struc interface{}) (string, error) {
-	vars, err := piazza.GetVarsFromStruct(struc)
-	if err != nil {
-		return "", err
-	}
-	mustMatch := `{"term":{"%s":"%s"}}`
-	matches := []string{}
-	secret := service.newIdent().String() + "-" + service.newIdent().String()
-	for k, v := range vars {
-		if v == nil {
-			continue
-		}
-		val, err := params.GetAsString(k, secret)
-		if err != nil {
-			return "", err
-		}
-		if val != secret {
-			matches = append(matches, fmt.Sprintf(mustMatch, k, val))
-		}
-	}
-	if len(matches) == 0 {
-		return "", err
-	}
-	matchesComb := ""
-	for _, m := range matches[:len(matches)-1] {
-		matchesComb += m + ","
-	}
-	matchesComb += matches[len(matches)-1]
-
-	query := `{"query": {"bool": {"must": [%s]}}}`
-
-	return fmt.Sprintf(query, matchesComb), nil
-}
-
 //---------------------------------------------------------------------
 
 func (service *Service) statusOK(obj interface{}) *piazza.JsonResponse {
@@ -354,7 +320,7 @@ func (service *Service) GetEventType(id piazza.Ident, actor string) *piazza.Json
 
 // GetAllEventTypes TODO
 func (service *Service) GetAllEventTypes(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	if paramQuery, err := service.paramsToQuery(params, EventType{}); paramQuery != "" && err == nil {
+	if paramQuery, err := params.ToQuery(EventType{}); paramQuery != "" && err == nil {
 		return service.QueryEventTypes(paramQuery, params)
 	}
 
@@ -570,7 +536,7 @@ func (service *Service) GetEvent(id piazza.Ident) *piazza.JsonResponse {
 
 // GetAllEvents TODO
 func (service *Service) GetAllEvents(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	if paramQuery, err := service.paramsToQuery(params, Event{}); paramQuery != "" && err == nil {
+	if paramQuery, err := params.ToQuery(Event{}); paramQuery != "" && err == nil {
 		return service.QueryEvents(paramQuery, params)
 	}
 
@@ -987,7 +953,7 @@ func (service *Service) GetTrigger(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllTriggers(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	if paramQuery, err := service.paramsToQuery(params, Trigger{}); paramQuery != "" && err == nil {
+	if paramQuery, err := params.ToQuery(Trigger{}); paramQuery != "" && err == nil {
 		return service.QueryTriggers(paramQuery, params)
 	}
 
@@ -1164,7 +1130,7 @@ func (service *Service) GetAlert(id piazza.Ident) *piazza.JsonResponse {
 }
 
 func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.JsonResponse {
-	if paramQuery, err := service.paramsToQuery(params, Alert{}); paramQuery != "" && err == nil {
+	if paramQuery, err := params.ToQuery(Alert{}); paramQuery != "" && err == nil {
 		return service.QueryAlerts(paramQuery, params)
 	}
 

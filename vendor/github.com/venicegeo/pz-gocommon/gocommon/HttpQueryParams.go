@@ -183,6 +183,41 @@ func (params *HttpQueryParams) GetSortBy(defalt string) (string, error) {
 	return params.GetAsString("sortBy", defalt)
 }
 
+//ToQuery provides a shortcut to creating a dsl query from http parameters
+func (params *HttpQueryParams) ToQuery(struc interface{}) (string, error) {
+	vars, err := GetVarsFromStruct(struc)
+	if err != nil {
+		return "", err
+	}
+	mustMatch := `{"term":{"%s":"%s"}}`
+	matches := []string{}
+	secret := NewUuid().String() + "-" + NewUuid().String()
+	for k, v := range vars {
+		if v == nil {
+			continue
+		}
+		val, err := params.GetAsString(k, secret)
+		if err != nil {
+			return "", err
+		}
+		if val != secret {
+			matches = append(matches, fmt.Sprintf(mustMatch, k, val))
+		}
+	}
+	if len(matches) == 0 {
+		return "", err
+	}
+	matchesComb := ""
+	for _, m := range matches[:len(matches)-1] {
+		matchesComb += m + ","
+	}
+	matchesComb += matches[len(matches)-1]
+
+	query := `{"query": {"bool": {"must": [%s]}}}`
+
+	return fmt.Sprintf(query, matchesComb), nil
+}
+
 // String returns the parameter list expressed in URL style.
 func (params *HttpQueryParams) String() string {
 

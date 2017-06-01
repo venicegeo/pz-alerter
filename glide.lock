@@ -43,7 +43,7 @@ imports:
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
 - name: github.com/venicegeo/pz-gocommon
-  version: 4c7ef0a7aec69a7e663a0d47377be1dd7e4b3105
+  version: 85dd9990f3e439ab1542c3732abe62b32df2d2e4
   subpackages:
   - elasticsearch
   - gocommon

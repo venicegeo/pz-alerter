@@ -425,7 +425,7 @@ func (esi *MockIndex) SearchByJSON(typ string, jsn string) (*SearchResult, error
 	var ok bool
 	for objId, obj := range esi.types[typ].items {
 		objGood := true
-		for _, termMapI := range query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]interface{}) { //query.Qeury.Bool.Must {
+		for _, termMapI := range query["query"].(map[string]interface{})["bool"].(map[string]interface{})["must"].([]interface{}) {
 			var termMap, termMapBranch map[string]interface{}
 			if termMap, ok = termMapI.(map[string]interface{}); !ok {
 				return resp, errors.New("Term map not of type map[string]interface{}")
