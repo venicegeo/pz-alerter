@@ -172,7 +172,7 @@ func (server *Server) handleGetAllEvents(c *gin.Context) {
 
 func (server *Server) handlePostEvent(c *gin.Context) {
 	event := &Event{}
-	err := c.BindJSON(event)
+	err := piazza.UnmarshalNumber(c.Request.Body, event)
 	if err != nil {
 		resp := &piazza.JsonResponse{
 			StatusCode: http.StatusBadRequest,

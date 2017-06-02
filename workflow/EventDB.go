@@ -15,7 +15,7 @@
 package workflow
 
 import (
-	"encoding/json"
+	"bytes"
 	"fmt"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -134,12 +134,15 @@ func (db *EventDB) GetAll(mapping string, format *piazza.JsonPagination, actor s
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
-			var event Event
-			err := json.Unmarshal(*hit.Source, &event)
+			event := &Event{}
+			dat, err := hit.Source.MarshalJSON()
 			if err != nil {
 				return nil, 0, err
 			}
-			events = append(events, event)
+			if err = piazza.UnmarshalNumber(bytes.NewReader(dat), event); err != nil {
+				return nil, 0, err
+			}
+			events = append(events, *event)
 		}
 	}
 
@@ -170,11 +173,15 @@ func (db *EventDB) GetEventsByDslQuery(mapping string, jsnString string, actor s
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
-			var event Event
-			if err := json.Unmarshal(*hit.Source, &event); err != nil {
+			event := &Event{}
+			dat, err := hit.Source.MarshalJSON()
+			if err != nil {
 				return nil, 0, err
 			}
-			events = append(events, event)
+			if err = piazza.UnmarshalNumber(bytes.NewReader(dat), event); err != nil {
+				return nil, 0, err
+			}
+			events = append(events, *event)
 		}
 	}
 
@@ -205,11 +212,15 @@ func (db *EventDB) GetEventsByEventTypeID(format *piazza.JsonPagination, mapping
 
 	if searchResult != nil && searchResult.GetHits() != nil {
 		for _, hit := range *searchResult.GetHits() {
-			var event Event
-			if err := json.Unmarshal(*hit.Source, &event); err != nil {
+			event := &Event{}
+			dat, err := hit.Source.MarshalJSON()
+			if err != nil {
 				return nil, 0, err
 			}
-			events = append(events, event)
+			if err = piazza.UnmarshalNumber(bytes.NewReader(dat), event); err != nil {
+				return nil, 0, err
+			}
+			events = append(events, *event)
 		}
 	}
 
@@ -255,13 +266,16 @@ func (db *EventDB) GetOne(mapping string, id piazza.Ident, actor string) (*Event
 		return nil, true, LoggedError("EventDB.GetOne failed: no getResult")
 	}
 
-	src := getResult.Source
-	var event Event
-	if err = json.Unmarshal(*src, &event); err != nil {
+	event := &Event{}
+	dat, err := getResult.Source.MarshalJSON()
+	if err != nil {
+		return nil, getResult.Found, err
+	}
+	if err = piazza.UnmarshalNumber(bytes.NewReader(dat), event); err != nil {
 		return nil, getResult.Found, err
 	}
 
-	return &event, getResult.Found, nil
+	return event, getResult.Found, nil
 }
 
 func (db *EventDB) DeleteByID(mapping string, id piazza.Ident, actor string) (bool, error) {
