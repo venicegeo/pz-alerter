@@ -70,7 +70,7 @@ func TestRunSuite(t *testing.T) {
 	logWriter := &pzsyslog.LocalReaderWriter{}
 	auditWriter := &pzsyslog.LocalReaderWriter{}
 
-	kit, err := NewKit(sys, logWriter, auditWriter, true)
+	kit, err := NewKit(sys, logWriter, auditWriter, true, "123456")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -80,7 +80,7 @@ func TestRunSuite(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	clientLogger := pzsyslog.NewLogger(&pzsyslog.NilWriter{}, &pzsyslog.NilWriter{}, "pz-workflow-unittest")
+	clientLogger := pzsyslog.NewLogger(&pzsyslog.NilWriter{}, &pzsyslog.NilWriter{}, "pz-workflow-unittest", "123456")
 	client, err := NewClient(kit.Url, "", clientLogger)
 	if err != nil {
 		log.Fatal(err)
