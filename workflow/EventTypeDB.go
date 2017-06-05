@@ -123,10 +123,10 @@ func (db *EventTypeDB) GetEventTypesByDslQuery(dslString string, actor string) (
 func (db *EventTypeDB) GetOne(id piazza.Ident, actor string) (*EventType, bool, error) {
 	getResult, err := db.Esi.GetByID(db.mapping, id.String())
 	if err != nil {
-		return nil, getResult.Found, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
+		return nil, false, LoggedError("EventTypeDB.GetOne failed: %s", err.Error())
 	}
 	if getResult == nil {
-		return nil, true, LoggedError("EventTypeDB.GetOne failed: no getResult")
+		return nil, false, LoggedError("EventTypeDB.GetOne failed: no getResult")
 	}
 
 	src := getResult.Source
@@ -134,7 +134,6 @@ func (db *EventTypeDB) GetOne(id piazza.Ident, actor string) (*EventType, bool, 
 	if err = json.Unmarshal(*src, &eventType); err != nil {
 		return nil, getResult.Found, err
 	}
-
 	return &eventType, getResult.Found, nil
 }
 
@@ -174,6 +173,5 @@ func (db *EventTypeDB) DeleteByID(id piazza.Ident, actor string) (bool, error) {
 	if deleteResult == nil {
 		return false, LoggedError("EventTypeDB.DeleteById failed: no deleteResult")
 	}
-
 	return deleteResult.Found, nil
 }

@@ -251,16 +251,16 @@ func (suite *ServerTester) Test02Event() {
 	//log.Printf("CCC %#v", eventType)
 	respEventType, err := client.PostEventType(eventType)
 	//log.Printf("BBB %#v", respEventType)
-	eventTypeID := respEventType.EventTypeID
 	assert.NoError(err)
+	eventTypeID := respEventType.EventTypeID
 	//printJSON("event type id", eventTypeID)
 
 	//log.Printf("Creating new event:")
 	event := makeTestEvent(eventTypeID)
 	respEvent, err := client.PostEvent(event)
+	assert.NoError(err)
 	//log.Printf("CCC %#v", respEvent)
 	id := respEvent.EventID
-	assert.NoError(err)
 	//printJSON("event id", id)
 
 	respEvent, err = client.PostEvent(makeTestCronEvent(eventTypeID))
