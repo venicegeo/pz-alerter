@@ -302,11 +302,6 @@ func (suite *ServerTester) Test02Event() {
 	assert.Len(*events, 0)
 	//printJSON("Events", events)
 
-	//log.Println("Getting event type")
-	eventType, err = client.GetEventType(eventTypeID)
-	assert.NoError(err)
-	//printJSON("EventType", eventType)
-
 	//log.Printf("Deleting event type by id: %s", eventTypeID)
 	err = client.DeleteEventType(eventTypeID)
 	assert.NoError(err)
@@ -315,7 +310,7 @@ func (suite *ServerTester) Test02Event() {
 	assert.Error(err)
 }
 
-func (suite *ServerTester) xTest03Trigger() {
+func (suite *ServerTester) Test03Trigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	client := suite.client
@@ -380,7 +375,7 @@ func (suite *ServerTester) xTest03Trigger() {
 	assert.Error(err)
 }
 
-func (suite *ServerTester) xTest04Alert() {
+func (suite *ServerTester) Test04Alert() {
 	t := suite.T()
 	assert := assert.New(t)
 	client := suite.client
@@ -465,7 +460,7 @@ func (suite *ServerTester) xTest04Alert() {
 
 //---------------------------------------------------------------------------
 
-func (suite *ServerTester) xTest05EventMapping() {
+func (suite *ServerTester) Test05EventMapping() {
 	t := suite.T()
 	assert := assert.New(t)
 	client := suite.client
@@ -586,7 +581,7 @@ func (suite *ServerTester) xTest05EventMapping() {
 	}
 }
 
-func (suite *ServerTester) xTest06Workflow() {
+func (suite *ServerTester) Test06Workflow() {
 	t := suite.T()
 	assert := assert.New(t)
 	client := suite.client
@@ -712,7 +707,7 @@ func (suite *ServerTester) xTest06Workflow() {
 	}
 }
 
-func (suite *ServerTester) xTest07MultiTrigger() {
+func (suite *ServerTester) Test07MultiTrigger() {
 	t := suite.T()
 	assert := assert.New(t)
 	client := suite.client
@@ -878,7 +873,7 @@ func (suite *ServerTester) xTest07MultiTrigger() {
 	}
 }*/
 
-func (suite *ServerTester) xTest09Elasticsearch() {
+func (suite *ServerTester) Test09Elasticsearch() {
 	t := suite.T()
 	assert := assert.New(t)
 
