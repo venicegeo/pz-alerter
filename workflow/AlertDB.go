@@ -158,7 +158,7 @@ func (db *AlertDB) GetOne(id piazza.Ident, actor string) (*Alert, bool, error) {
 		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, true, fmt.Errorf("AlertDB.GetOne failed: %s no getResult", id.String())
+		return nil, false, fmt.Errorf("AlertDB.GetOne failed: %s no getResult", id.String())
 	}
 
 	src := getResult.Source

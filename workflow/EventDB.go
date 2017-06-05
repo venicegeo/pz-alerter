@@ -263,7 +263,7 @@ func (db *EventDB) GetOne(mapping string, id piazza.Ident, actor string) (*Event
 		return nil, false, LoggedError("EventDB.GetOne failed: %s", err)
 	}
 	if getResult == nil {
-		return nil, true, LoggedError("EventDB.GetOne failed: no getResult")
+		return nil, false, LoggedError("EventDB.GetOne failed: no getResult")
 	}
 
 	event := &Event{}
