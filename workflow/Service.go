@@ -32,6 +32,8 @@ import (
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
 	cron "github.com/venicegeo/vegertar-cron"
+
+	"time"
 )
 
 //------------------------------------------------------------------------------
@@ -1190,9 +1192,9 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 
 	var alerts []Alert
 	var totalHits int64
-
+	preresultaudit := time.Now().UTC().UnixNano()
 	service.syslogger.Audit("pz-workflow", "gettingAllAlerts", service.alertDB.mapping, "Service.GetAllAlerts: User is getting all alerts")
-
+	preresult := time.Now().UTC().UnixNano()
 	if triggerID != "" && piazza.ValidUuid(triggerID.String()) {
 		alerts, totalHits, err = service.alertDB.GetAllByTrigger(format, triggerID, "pz-workflow")
 		if err != nil {
@@ -1215,7 +1217,7 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 		service.syslogger.Audit("pz-workflow", "gettingAllAlertsFailure", service.alertDB.mapping, "Service.GetAllAlerts: User failed to get all alerts")
 		return service.statusBadRequest(errors.New("Malformed triggerId query parameter"))
 	}
-
+	postresult := time.Now().UTC().UnixNano()
 	var resp *piazza.JsonResponse
 	inflate := getInflateParam(params)
 
@@ -1231,9 +1233,13 @@ func (service *Service) GetAllAlerts(params *piazza.HttpQueryParams) *piazza.Jso
 	}
 
 	service.syslogger.Audit("pz-workflow", "gotAllAlerts", service.alertDB.mapping, "Service.GetAllAlerts: User successfully got all alerts")
-
+	postresultaudit := time.Now().UTC().UnixNano()
 	format.Count = int(totalHits)
 	resp.Pagination = format
+
+	log.Printf("Pre request Audit: %s", strconv.FormatInt(preresult - preresultaudit, 10))
+	log.Printf("Request: %s", strconv.FormatInt(postresult - preresult, 10))
+	log.Printf("Post request Audit: %s", strconv.FormatInt(postresultaudit - postresult, 10))
 
 	return resp
 }

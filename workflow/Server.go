@@ -16,11 +16,15 @@ package workflow
 
 import (
 	"net/http"
-
+	
 	"bytes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/venicegeo/pz-gocommon/gocommon"
+	
+	"log"
+	"time"
+	"strconv"
 )
 
 //---------------------------------------------------------------------------
@@ -299,7 +303,11 @@ func (server *Server) handleGetAlert(c *gin.Context) {
 
 func (server *Server) handleGetAllAlerts(c *gin.Context) {
 	params := piazza.NewQueryParams(c.Request)
+	pretime := time.Now().UTC().UnixNano()
+	log.Printf(strconv.FormatInt(pretime,10))
 	resp := server.service.GetAllAlerts(params)
+	posttime := time.Now().UTC().UnixNano()
+	log.Printf(strconv.FormatInt(posttime - pretime, 10))
 	piazza.GinReturnJson(c, resp)
 }
 

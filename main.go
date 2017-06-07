@@ -28,6 +28,7 @@ func main() {
 
 	sys, logWriter, auditWriter := makeClients()
 
+
 	pzPen := os.Getenv("PZ_PEN")
 	if pzPen == "" {
 		log.Fatal("Environment Variable PZ_PEN not found")
