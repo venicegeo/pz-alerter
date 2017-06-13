@@ -17,6 +17,7 @@ package piazza
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"strings"
 	"unicode"
@@ -97,4 +98,9 @@ func InsertString(str, insert string, index int) string {
 }
 func SplitString(str string, whereToSplit int) (string, string) {
 	return str[:whereToSplit], str[whereToSplit:]
+}
+func UnmarshalNumber(r io.Reader, v interface{}) error {
+	decoder := json.NewDecoder(r)
+	decoder.UseNumber()
+	return decoder.Decode(v)
 }
