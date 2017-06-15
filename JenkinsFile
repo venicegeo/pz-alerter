@@ -6,7 +6,10 @@ node {
   def golangTool = tool 'golang_1.7'
   def zapHome = tool 'ZAProxy_v2_5_0'
   def nodejs = tool 'NodeJS_6'
-  
+  def appvers = sh(script: "git describe --long --tags --always | sed 's/\\./-/'g", returnStdout: true)
+  appvers = appvers.trim()
+  def appName = "pz-workflow-${appvers}"
+    
   // Getting the GO environment ready along with defining GIT credentials
     stage('Setup') {
         deleteDir()
@@ -33,27 +36,20 @@ node {
             sh "mkdir -p integration-tests"
           }
           withCredentials([file(credentialsId: "${POSTMAN_SECRET_FILE}", variable: 'POSTMAN_FILE')]) {
-            withEnv(["PATH+=${root}/integration-tests/node_modules/newman/bin:${nodejs}/bin", "PCF_SPACE=${env.PHASE_ONE_PCF_SPACE}", "HOME=${WORKSPACE}"]) {
+            withEnv(["PATH+=${nodejs}/bin", "NPM_CONFIG_CACHE=${root}/.npmcache", "HOME=${WORKSPACE}"]) {
               dir ("integration-tests") {
                 if(env.GITLAB_CREDS) {
-                  git url: "https://github.com/venicegeo/pztest-integration.git", branch: "master", credentialsId: "${env.GITLAB_CREDS}"
+                  git url: "${env.INTEGRATION_GIT_URL}", branch: "${env.INTEGRATION_GIT_BRANCH}", credentialsId: "${env.GITLAB_CREDS}"
                 } else {
-                  git url: "https://github.com/venicegeo/pztest-integration.git", branch: "master"
+                  git url: "${env.INTEGRATION_GIT_URL}", branch: "${env.INTEGRATION_GIT_BRANCH}"
                 }
-                sh "npm install newman@2"
+                sh """
+                  mkdir -p ${root}/.npmcache
+                  npm install newman@2
+                """
               }
             }
           }
-        }
-    }
-    
-    def appvers = sh(script: "git describe --long --tags --always | sed 's/\\./-/'g", returnStdout: true)
-    appvers = appvers.trim()
-    def appName = "pz-workflow-${appvers}"
-
-    if(params.SECENV) {
-        stage("Security Configs") {
-        //Do CTM Stuff
         }
     }
     
