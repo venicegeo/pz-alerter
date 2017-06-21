@@ -405,7 +405,7 @@ func (service *Service) QueryEventTypes(dslString string, params *piazza.HttpQue
 
 	var totalHits int64
 	var eventtypes []EventType
-	if dslString, err = syncPagination(dslString, *format); err != nil {
+	if dslString, err = format.SyncPagination(dslString); err != nil {
 		return service.statusBadRequest(err)
 	}
 
@@ -874,7 +874,7 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 		query = ""
 	}
 
-	if jsonString, err = syncPagination(jsonString, *format); err != nil {
+	if jsonString, err = format.SyncPagination(jsonString); err != nil {
 		return service.statusBadRequest(err)
 	}
 
@@ -893,35 +893,6 @@ func (service *Service) QueryEvents(jsonString string, params *piazza.HttpQueryP
 	resp.Pagination = format
 
 	return resp
-}
-
-func syncPagination(dslString string, format piazza.JsonPagination) (string, error) {
-	// Overwrite any from/size in dsl with what's in the params
-	b := []byte(dslString)
-	var f interface{}
-	err := json.Unmarshal(b, &f)
-	if err != nil {
-		return "", err
-	}
-	dsl := f.(map[string]interface{})
-	dsl["from"] = format.Page * format.PerPage
-	dsl["size"] = format.PerPage
-	if dsl["sort"] == nil {
-		// Since ES has more fine grained sorting allow their sorting to take precedence
-		// If sorting wasn't specified in the DSL, put in sorting from Piazza
-		bts := []byte("[{\"" + format.SortBy + "\":\"" + string(format.Order) + "\"}]")
-		var g interface{}
-		if err = json.Unmarshal(bts, &g); err != nil {
-			return "", err
-		}
-		sortDsl := g.([]interface{})
-		dsl["sort"] = sortDsl
-	}
-	byteArray, err := json.Marshal(dsl)
-	if err != nil {
-		return "", err
-	}
-	return string(byteArray), nil
 }
 
 func (service *Service) DeleteEvent(id piazza.Ident) *piazza.JsonResponse {
@@ -1043,7 +1014,7 @@ func (service *Service) QueryTriggers(dslString string, params *piazza.HttpQuery
 
 	service.syslogger.Audit("pz-workflow", "queryingTriggers", service.triggerDB.mapping, "Service.QueryTriggers: User is querying triggers")
 
-	dslString, err = syncPagination(dslString, *format)
+	dslString, err = format.SyncPagination(dslString)
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "queryingTriggersFailure", service.triggerDB.mapping, "Service.QueryTriggers: syncPagination failed")
 		return service.statusBadRequest(err)
@@ -1250,7 +1221,7 @@ func (service *Service) QueryAlerts(dslString string, params *piazza.HttpQueryPa
 
 	service.syslogger.Audit("pz-workflow", "queryingAlerts", service.alertDB.mapping, "Service.QueryAlerts: User is querying alerts")
 
-	dslString, err = syncPagination(dslString, *format)
+	dslString, err = format.SyncPagination(dslString)
 	if err != nil {
 		service.syslogger.Audit("pz-workflow", "queryingAlertsFailure", service.alertDB.mapping, "Service.QueryAlerts: syncPagination failed")
 		return service.statusBadRequest(err)
