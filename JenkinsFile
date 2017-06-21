@@ -13,9 +13,6 @@ node {
         } else {
             git url: "${env.GIT_URL}", branch: "${env.GIT_BRANCH}"
         }
-      def appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true)
-      appvers = appvers.trim()
-      def appName = "pz-workflow-${appvers}"
         withEnv([
           "PATH+=${golangTool}/bin:${root}/gopath/bin",
           "GOROOT=${golangTool}",
@@ -53,6 +50,11 @@ node {
             }
         }
     }
+
+   def appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true)
+   appvers = appvers.trim()
+   def appName = "pz-workflow-${appvers}"
+
     stage("Security Scan Pass/Fail") {
         // Query threadfix and block if any highs/crits are found
         /*sh "mkdir -p sspf-pkg"
