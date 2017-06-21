@@ -6,6 +6,9 @@ node {
     def golangTool = tool 'golang_1.7'
     def zapHome = tool 'ZAProxy_v2_5_0'
     def nodejs = tool 'NodeJS_6'
+    def appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true)
+    appvers = appvers.trim()
+    def appName = "pz-workflow-${appvers}"
     stage("Setup") {
         deleteDir()
         if(env.GITLAB_CREDS) {
@@ -50,11 +53,6 @@ node {
             }
         }
     }
-
-   def appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true)
-   appvers = appvers.trim()
-   def appName = "pz-workflow-${appvers}"
-
     stage("Security Scan Pass/Fail") {
         // Query threadfix and block if any highs/crits are found
         /*sh "mkdir -p sspf-pkg"
@@ -75,12 +73,6 @@ node {
           "GOROOT=${golangTool}",
           "GOPATH=${root}/gopath"
         ]) {
-            if(params.INSTALL_METALINTER) {
-                sh """
-                  go get -u github.com/alecthomas/gometalinter
-                  gometalinter --install
-                """
-            }
             sh """
               mkdir -p ${GOPATH}/src/github.com/venicegeo/pz-workflow
               find . -maxdepth 1 -mindepth 1 -not -name gopath -exec cp -R '{}' gopath/src/github.com/venicegeo/pz-workflow/ \\;
