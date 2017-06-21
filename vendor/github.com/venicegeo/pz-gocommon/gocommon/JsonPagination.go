@@ -126,6 +126,7 @@ func (format *JsonPagination) SyncPagination(dslString string) (string, error) {
 		if !ok {
 			dsl["from"] = format.Page * format.PerPage
 		} else {
+			dsl["from"] = int(dslFrom) - (int(dslFrom) % format.PerPage)
 			format.Page = int(dslFrom) / format.PerPage
 		}
 	}
