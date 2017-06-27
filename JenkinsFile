@@ -50,11 +50,9 @@ node {
             }
         }
     }
-
     def appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true)
     appvers = appvers.trim()
     def appName = "pz-workflow-${appvers}"
-
     stage("Security Scan Pass/Fail") {
         // Query threadfix and block if any highs/crits are found
         /*sh "mkdir -p sspf-pkg"
@@ -82,6 +80,7 @@ node {
               go install
               cd workflow
               go test -v -coverprofile=${root}/workflow.cov
+              cd ..
               cd ${root}
               go tool cover -func=workflow.cov -o workflow.cov.txt
               cp \$GOPATH/bin/pz-workflow ${root}/pz-workflow
@@ -114,6 +113,7 @@ node {
                   cf push ${appName} -f manifest.jenkins.yml --hostname ${appName} -d ${env.PHASE_ONE_PCF_DOMAIN} --no-start
                   cf set-env ${appName} SPACE ${env.PHASE_ONE_PCF_SPACE}
                   cf set-env ${appName} DOMAIN ${env.PHASE_ONE_PCF_DOMAIN}
+                  cf restage ${appName}
                   cf start ${appName}
                 """
             }
@@ -163,68 +163,71 @@ node {
                   "HOME=${WORKSPACE}"
                 ]) {
                     dir ("integration-tests") {
-                        sh "ci/blackbox.sh"
+                        sh "sh ci/blackbox.sh"
                     }
                 }
             }
         }
     }
-    stage("Phase Two Deploy") {
-        if(!fileExists('.cf')) {
-            sh "mkdir -p .cf"
-        }
-        withEnv([
-          "CF_HOME=.cf"
-        ]) {
+    if(params.DEPLOY_PHASE_TWO) {
+        stage("Phase Two Deploy") {
+            if(!fileExists('.cf')) {
+                sh "mkdir -p .cf"
+            }
+            withEnv([
+              "CF_HOME=.cf"
+            ]) {
+                withCredentials([
+                  [$class: 'UsernamePasswordMultiBinding', credentialsId: "${env.PCF_CREDS}", usernameVariable: "CFUSER", passwordVariable: "CFPASS"]
+                ]) {
+                    sh """
+                      cf api ${env.PCF_API_ENDPOINT}
+                      cf auth ${CFUSER} ${CFPASS}
+                      cf target -o ${env.PCF_ORG} -s ${env.PHASE_TWO_PCF_SPACE}
+                      cf push ${appName} -f manifest.jenkins.yml --hostname ${appName} -d ${env.PHASE_TWO_PCF_DOMAIN} --no-start
+                      cf set-env ${appName} SPACE ${env.PHASE_TWO_PCF_SPACE}
+                      cf set-env ${appName} DOMAIN ${env.PHASE_TWO_PCF_DOMAIN}
+                      cf restage ${appName}
+                      cf start ${appName}
+                    """
+                }
+            }
             withCredentials([
-              [$class: 'UsernamePasswordMultiBinding', credentialsId: "${env.PCF_CREDS}", usernameVariable: "CFUSER", passwordVariable: "CFPASS"]
+              [$class: 'StringBinding', credentialsId: "${env.THREADFIX_API_KEY}", variable: "THREADFIX_KEY"]
             ]) {
                 sh """
-                  cf api ${env.PCF_API_ENDPOINT}
-                  cf auth ${CFUSER} ${CFPASS}
-                  cf target -o ${env.PCF_ORG} -s ${env.PHASE_TWO_PCF_SPACE}
-                  cf push ${appName} -f manifest.jenkins.yml --hostname ${appName} -d ${env.PHASE_TWO_PCF_DOMAIN} --no-start
-                  cf set-env ${appName} SPACE ${env.PHASE_TWO_PCF_SPACE}
-                  cf set-env ${appName} DOMAIN ${env.PHASE_TWO_PCF_SPACE}
-                  cf start ${appName}
+                  mkdir -p ${root}/zap-out
+                  ${zapHome}/zap.sh -cmd -quickout ${root}/zap-out/zap.xml -quickurl https://${appName}.${env.PHASE_TWO_PCF_DOMAIN}
+                  cat ${root}/zap-out/zap.xml
+                  /bin/curl -v --insecure -H 'Accept: application/json' -X POST --form file=@${root}/zap-out/zap.xml ${env.THREADFIX_URL}/rest/applications/${THREADFIX_ID}/upload?apiKey=${THREADFIX_KEY}
                 """
             }
-        }
-        withCredentials([
-          [$class: 'StringBinding', credentialsId: "${env.THREADFIX_API_KEY}", variable: "THREADFIX_KEY"]
-        ]) {
-            sh """
-              mkdir -p ${root}/zap-out
-              ${zapHome}/zap.sh -cmd -quickout ${root}/zap-out/zap.xml -quickurl https://${appName}.${env.PHASE_TWO_PCF_SPACE}
-              cat ${root}/zap-out/zap.xml
-              /bin/curl -v --insecure -H 'Accept: application/json' -X POST --form file=@${root}/zap-out/zap.xml ${env.THREADFIX_URL}/rest/applications/${THREADFIX_ID}/upload?apiKey=${THREADFIX_KEY}
-            """
-        }
-        withEnv([
-          "CF_HOME=.cf"
-        ]) {
-            withCredentials([
-              [$class: 'UsernamePasswordMultiBinding', credentialsId: "${env.PCF_CREDS}", usernameVariable: "CFUSER", passwordVariable: "CFPASS"]
+            withEnv([
+              "CF_HOME=.cf"
             ]) {
-                sh """
-                  cf api ${env.PCF_API_ENDPOINT}
-                  cf auth ${CFUSER} ${CFPASS}
-                  cf target -o ${env.PCF_ORG} -s ${env.PHASE_TWO_PCF_SPACE}
-                """
-                def legacyAppNames = sh(script: """cf routes | grep \"pz-workflow \" | awk '{print \$4}'""", returnStdout: true)
-                sh "cf map-route ${appName} ${env.PHASE_TWO_PCF_DOMAIN} --hostname pz-workflow"
-                // Remove legacy applications
-                for (Object legacyApp : legacyAppNames.trim().tokenize(',')) {
-                    def legacyAppName = legacyApp.toString().trim()
-                    if(legacyAppName != appName) {
-                        sh "cf unmap-route ${legacyAppName} ${env.PHASE_TWO_PCF_DOMAIN} --hostname ${legacyAppName}"
-                        sh "cf delete -f ${legacyAppName}"
+                withCredentials([
+                  [$class: 'UsernamePasswordMultiBinding', credentialsId: "${env.PCF_CREDS}", usernameVariable: "CFUSER", passwordVariable: "CFPASS"]
+                ]) {
+                    sh """
+                      cf api ${env.PCF_API_ENDPOINT}
+                      cf auth ${CFUSER} ${CFPASS}
+                      cf target -o ${env.PCF_ORG} -s ${env.PHASE_TWO_PCF_SPACE}
+                    """
+                    def legacyAppNames = sh(script: """cf routes | grep \"pz-workflow \" | awk '{print \$4}'""", returnStdout: true)
+                    sh "cf map-route ${appName} ${env.PHASE_TWO_PCF_DOMAIN} --hostname pz-workflow"
+                    // Remove legacy applications
+                    for (Object legacyApp : legacyAppNames.trim().tokenize(',')) {
+                        def legacyAppName = legacyApp.toString().trim()
+                        if(legacyAppName != appName) {
+                            sh "cf unmap-route ${legacyAppName} ${env.PHASE_TWO_PCF_DOMAIN} --hostname ${legacyAppName}"
+                            sh "cf delete -f ${legacyAppName}"
+                        }
                     }
                 }
             }
         }
     }
-    if(!params.SKIP_INTEGRATION_TESTS) {
+    if(params.DEPLOY_PHASE_TWO && !params.SKIP_INTEGRATION_TESTS) {
         stage("Phase Two Integration Tests") {
             withCredentials([
               file(credentialsId: "${POSTMAN_SECRET_FILE}", variable: "POSTMAN_FILE")
@@ -235,7 +238,7 @@ node {
                   "HOME=${WORKSPACE}"
                 ]) {
                     dir ("integration-tests") {
-                        sh "ci/blackbox.sh"
+                        sh "sh ci/blackbox.sh"
                     }
                 }
             }
