@@ -226,19 +226,19 @@ node {
                 }
             }
         }
-    }
-    if(params.DEPLOY_PHASE_TWO && !params.SKIP_INTEGRATION_TESTS) {
-        stage("Phase Two Integration Tests") {
-            withCredentials([
-              file(credentialsId: "${POSTMAN_SECRET_FILE}", variable: "POSTMAN_FILE")
-            ]) {
-                withEnv([
-                  "PATH+=${root}/integration-tests/node_modules/newman/bin:${nodejs}/bin",
-                  "PCF_SPACE=${env.PHASE_TWO_PCF_SPACE}",
-                  "HOME=${WORKSPACE}"
+        if(!params.SKIP_INTEGRATION_TESTS) {
+            stage("Phase Two Integration Tests") {
+                withCredentials([
+                  file(credentialsId: "${POSTMAN_SECRET_FILE}", variable: "POSTMAN_FILE")
                 ]) {
-                    dir ("integration-tests") {
-                        sh "sh ci/blackbox.sh"
+                    withEnv([
+                      "PATH+=${root}/integration-tests/node_modules/newman/bin:${nodejs}/bin",
+                      "PCF_SPACE=${env.PHASE_TWO_PCF_SPACE}",
+                      "HOME=${WORKSPACE}"
+                    ]) {
+                        dir ("integration-tests") {
+                            sh "sh ci/blackbox.sh"
+                        }
                     }
                 }
             }
