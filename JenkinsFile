@@ -114,8 +114,14 @@ node {
                   cf set-env ${appName} SPACE ${env.PHASE_ONE_PCF_SPACE}
                   cf set-env ${appName} DOMAIN ${env.PHASE_ONE_PCF_DOMAIN}
                   cf restage ${appName}
-                  cf start ${appName}
                 """
+                try {
+                  sh "cf start ${appName}"
+                } catch (Exception e) {
+                  //sh "cf logs --recent ${appName}"
+                  sh "cf delete ${appName} -f"
+                  error("Error during application start. Deleting ${appName} and failing the build.")
+                }
             }
         }
         withCredentials([
@@ -188,8 +194,14 @@ node {
                       cf set-env ${appName} SPACE ${env.PHASE_TWO_PCF_SPACE}
                       cf set-env ${appName} DOMAIN ${env.PHASE_TWO_PCF_DOMAIN}
                       cf restage ${appName}
-                      cf start ${appName}
                     """
+                    try {
+                      sh "cf start ${appName}"
+                    } catch (Exception e) {
+                      //sh "cf logs --recent ${appName}"
+                      sh "cf delete ${appName} -f"
+                      error("Error during application start. Deleting ${appName} and failing the build.")
+                    }
                 }
             }
             withCredentials([
