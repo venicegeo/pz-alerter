@@ -74,7 +74,8 @@ node {
               cd ${root}
               go tool cover -func=workflow.cov -o workflow.cov.txt
               cp \$GOPATH/bin/pz-workflow ${root}
-              tar -cvzf ${archiveName} pz-workflow *.cov *.cov.txt glide.lock glide.yaml
+              rm -rf gopath
+              tar -cvzf ${archiveName} *
             """
             def getDependencyStatus = sh(script: """mvn --quiet --settings ~/.m2/settings.xml dependency:get -Dmaven.repo.local="${root}/.m2/repository" -DrepositoryId=nexus -DartifactId=pz-workflow -Dversion=${appvers} -DgroupId="org.venice.piazza" -Dpackaging=tgz -DremoteRepositories="nexus::default::${env.ARTIFACT_STORAGE_DEPLOY_URL}" >> /dev/null 2>&1""", returnStatus: true)
             if(getDependencyStatus == 0) {
