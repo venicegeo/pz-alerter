@@ -6,22 +6,26 @@ node {
     def golangTool = tool 'golang_1.7'
     def zapHome = tool 'ZAProxy_v2_5_0'
     def nodejs = tool 'NodeJS_6'
+    def appvers = ""
     stage("Setup") {
         deleteDir()
-        if(env.GITLAB_CREDS) {
-            git url: "${env.GIT_URL}", branch: "${env.GIT_BRANCH}", credentialsId: "${env.GITLAB_CREDS}"
-        } else {
-            git url: "${env.GIT_URL}", branch: "${env.GIT_BRANCH}"
-        }
         withEnv([
           "PATH+=${golangTool}/bin:${root}/gopath/bin",
           "GOROOT=${golangTool}",
           "GOPATH=${root}/gopath"
         ]) {
             sh """
-              mkdir -p ${root}/gopath/bin ${root}/gopath/pkg ${root}/gopath/src
+              mkdir -p ${root}/gopath/bin ${root}/gopath/pkg ${root}/gopath/src/github.com/venicegeo/pz-workflow
               go version
             """
+        }
+        dir("${root}/gopath/src/github.com/venicegeo/pz-workflow") {
+            if(env.GITLAB_CREDS) {
+                git url: "${env.GIT_URL}", branch: "${env.GIT_BRANCH}", credentialsId: "${env.GITLAB_CREDS}"
+            } else {
+                git url: "${env.GIT_URL}", branch: "${env.GIT_BRANCH}"
+            }
+            appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true).trim()
         }
         if(!params.SKIP_INTEGRATION_TESTS) {
             if(!fileExists("integration-tests")) {
@@ -50,22 +54,7 @@ node {
             }
         }
     }
-    def appvers = sh(script: """git describe --long --tags --always | sed 's/\\./-/'g""", returnStdout: true)
-    appvers = appvers.trim()
     def appName = "pz-workflow-${appvers}"
-    stage("Security Scan Pass/Fail") {
-        // Query threadfix and block if any highs/crits are found
-        /*sh "mkdir -p sspf-pkg"
-        dir("./sspf-pkg") {
-            withCredentials([[$class: 'StringBinding', credentialsId: "${env.THREADFIX_API_KEY}", variable: 'THREADFIX_KEY']]) {
-                sh "curl -L ${env.SSPF_PACKAGE} -o sspf.zip"
-                sh "unzip sspf.zip"
-                dir("./sspf-master/sspf") {
-                    sh "/bin/curl --fail --silent ${env.THREADFIX_URL}/rest/applications/${THREADFIX_ID}?apiKey=${THREADFIX_KEY} | ./sspf.py"
-                }
-            }
-        }*/
-    }
     stage("Archive") {
         def archiveName = "pz-workflow.tgz"
         withEnv([
@@ -74,16 +63,16 @@ node {
           "GOPATH=${root}/gopath"
         ]) {
             sh """
-              mkdir -p ${GOPATH}/src/github.com/venicegeo/pz-workflow
-              find . -maxdepth 1 -mindepth 1 -not -name gopath -exec cp -R '{}' gopath/src/github.com/venicegeo/pz-workflow/ \\;
               cd "\$GOPATH/src/github.com/venicegeo/pz-workflow"
               go install
+              cp glide.* ${root}
+              cp manifest.jenkins.yml ${root}
               cd workflow
               go test -v -coverprofile=${root}/workflow.cov
               cd ..
               cd ${root}
               go tool cover -func=workflow.cov -o workflow.cov.txt
-              cp \$GOPATH/bin/pz-workflow ${root}/pz-workflow
+              cp \$GOPATH/bin/pz-workflow ${root}
               tar -cvzf ${archiveName} pz-workflow *.cov *.cov.txt glide.lock glide.yaml
             """
             def getDependencyStatus = sh(script: """mvn --quiet --settings ~/.m2/settings.xml dependency:get -Dmaven.repo.local="${root}/.m2/repository" -DrepositoryId=nexus -DartifactId=pz-workflow -Dversion=${appvers} -DgroupId="org.venice.piazza" -Dpackaging=tgz -DremoteRepositories="nexus::default::${env.ARTIFACT_STORAGE_DEPLOY_URL}" >> /dev/null 2>&1""", returnStatus: true)
