@@ -65,6 +65,7 @@ node {
             sh """
               cd "\$GOPATH/src/github.com/venicegeo/pz-workflow"
               go install
+              cp -r db ${root}
               cp glide.* ${root}
               cp manifest.jenkins.yml ${root}
               cd workflow
