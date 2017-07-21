@@ -47,10 +47,8 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 		if !ok {
 			return LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
 		}
-		log.Println("domain", os.Getenv("DOMAIN"))
 		if domain := os.Getenv("DOMAIN"); domain != "" {
-			serviceControllerURL := db.service.sys.BindTo + "pz-servicecontroller." + domain
-			log.Println(serviceControllerURL)
+			serviceControllerURL := db.service.sys.BindTo + "https://pz-servicecontroller." + domain
 			// TODO:
 			// if err is nil, we have a servicecontroller to talk to
 			// if err is not nil, we'll assume we are mocking (which means
