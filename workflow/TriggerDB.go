@@ -47,9 +47,8 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 		if !ok {
 			return LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
 		}
-
+		log.Println("domain", os.Getenv("DOMAIN"))
 		if domain := os.Getenv("DOMAIN"); domain != "" {
-
 			serviceControllerURL := db.service.sys.BindTo + "pz-servicecontroller." + domain
 			log.Println(serviceControllerURL)
 			// TODO:
