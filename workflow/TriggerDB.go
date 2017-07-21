@@ -17,7 +17,9 @@ package workflow
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
@@ -45,8 +47,11 @@ func (db *TriggerDB) PostData(trigger *Trigger) error {
 		if !ok {
 			return LoggedError("TriggerDB.PostData failed: serviceId field not of type string")
 		}
-		serviceControllerURL, err := db.service.sys.GetURL(piazza.PzServiceController)
-		if err == nil {
+
+		if domain := os.Getenv("DOMAIN"); domain != "" {
+
+			serviceControllerURL := db.service.sys.BindTo + "pz-servicecontroller." + domain
+			log.Println(serviceControllerURL)
 			// TODO:
 			// if err is nil, we have a servicecontroller to talk to
 			// if err is not nil, we'll assume we are mocking (which means
