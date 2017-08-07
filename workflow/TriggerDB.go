@@ -350,9 +350,9 @@ func handleUniqueParamsMap(inputObj map[string]interface{}, eventTypeName string
 	for k, v := range inputObj {
 		switch v.(type) {
 		case []interface{}:
-			outputObj[k] = handleUniqueParamsArr(v.([]interface{}), eventTypeName, getKey)
+			outputObj[getKey(eventTypeName, k)] = handleUniqueParamsArr(v.([]interface{}), eventTypeName, getKey)
 		case map[string]interface{}:
-			outputObj[k] = handleUniqueParamsMap(v.(map[string]interface{}), eventTypeName, getKey)
+			outputObj[getKey(eventTypeName, k)] = handleUniqueParamsMap(v.(map[string]interface{}), eventTypeName, getKey)
 		default:
 			outputObj[getKey(eventTypeName, k)] = v
 		}
