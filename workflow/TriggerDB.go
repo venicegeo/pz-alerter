@@ -197,6 +197,9 @@ func (db *TriggerDB) GetTriggersByDslQuery(dslString string, actor string) ([]Tr
 			triggers = append(triggers, trigger)
 		}
 	}
+	for i, trigger := range triggers {
+		triggers[i].Condition = decodeCondition(trigger.Condition).(map[string]interface{})
+	}
 	return triggers, searchResult.TotalHits(), nil
 }
 
