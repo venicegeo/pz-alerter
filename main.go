@@ -56,7 +56,7 @@ func makeClients() (
 
 	required := []piazza.ServiceName{
 		piazza.PzElasticSearch,
-		piazza.PzKafka,
+		piazza.PzRabbitMQ,
 	}
 
 	sys, err := piazza.NewSystemConfig(piazza.PzWorkflow, required)

@@ -21,7 +21,7 @@ imports:
 - name: github.com/streadway/amqp
   version: 2cbfe40c9341ad63ba23e53013b3ddc7989d801c
 - name: github.com/venicegeo/pz-gocommon
-  version: 29b7ec7e2b80393445f7fb1014e89178ff4d096f
+  version: c82da410ae16bd9e95401042ff5ca79ee4cb2fe2
   subpackages:
   - elasticsearch
   - gocommon

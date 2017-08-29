@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"reflect"
@@ -27,7 +26,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Shopify/sarama"
+	"github.com/streadway/amqp"
 	"github.com/venicegeo/pz-gocommon/elasticsearch"
 	"github.com/venicegeo/pz-gocommon/gocommon"
 	pzsyslog "github.com/venicegeo/pz-gocommon/syslog"
@@ -204,38 +203,61 @@ func (service *Service) handlePanic() {
 	}
 }
 
-func (service *Service) sendToKafka(jobInstance string, jobID piazza.Ident, actor string) error {
-	service.syslogger.Audit(actor, "creatingJob", "kafka", "User [%s] is sending job [%s] to kafka", actor, jobID)
-	kafkaAddress, err := service.sys.GetAddress(piazza.PzKafka)
+func (service *Service) sendToRabbitMQ(jobInstance string, jobID piazza.Ident, actor string) error {
+	service.syslogger.Audit(actor, "creatingJob", "rabbitmq", "User [%s] is sending job [%s] to rabbitmq", actor, jobID)
+	rabbitAddress, err := service.sys.GetAddress(piazza.PzRabbitMQ)
 	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (1)", actor, jobID)
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (1)", actor, jobID)
 		return LoggedError("Kafka-related failure (1): %s", err.Error())
+	}
+	conn, err := amqp.Dial(rabbitAddress)
+	if err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (2)", actor, jobID)
+		return LoggedError("Kafka-related failure (2): %s", err.Error())
+	}
+	defer conn.Close()
+	ch, err := conn.Channel()
+	if err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (3)", actor, jobID)
+		return LoggedError("Kafka-related failure (3): %s", err.Error())
+	}
+	defer ch.Close()
+
+	ex := os.Getenv("PIAZZA_EXCHANGE_NAME")
+	if ex == "" {
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (4)", actor, jobID)
+		return LoggedError("Kafka-related failure (4): Exchange variable does not exist or is empty")
 	}
 
 	topic := fmt.Sprintf("Request-Job-%s", service.sys.Space)
 	message := jobInstance
 
-	producer, err := sarama.NewSyncProducer(strings.Split(kafkaAddress, ","), nil)
+	q, err := ch.QueueDeclare(
+		topic, // name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
+	)
 	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (2)", actor, jobID)
-		return LoggedError("Kafka-related failure (2): %s", err.Error())
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (5)", actor, jobID)
+		return LoggedError("Kafka-related failure (5): Exchange variable does not exist or is empty")
 	}
-	defer func() {
-		if errC := producer.Close(); errC != nil {
-			service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka failed (3)", actor, jobID)
-			log.Fatalf("Kafka-related failure (3): " + errC.Error())
-		}
-	}()
 
-	msg := &sarama.ProducerMessage{
-		Topic: topic,
-		Value: sarama.StringEncoder(message),
-		Key:   sarama.StringEncoder(jobID)}
-	if _, _, err = producer.SendMessage(msg); err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "kafka", "User [%s] sending job [%s] to kafka (4)", actor, jobID)
-		return LoggedError("Kafka-related failure (4): %s", err.Error())
+	err = ch.Publish(
+		ex,     // exchange
+		q.Name, // routing key
+		false,  // mandatory
+		false,  // immediate
+		amqp.Publishing{
+			ContentType: "application/json",
+			Body:        []byte(message),
+		})
+	if err != nil {
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (6)", actor, jobID)
+		return LoggedError("Kafka-related failure (6): Exchange variable does not exist or is empty")
 	}
-	service.syslogger.Audit(actor, "createdJob", "kafka", "User [%s] sent job [%s] to kafka", actor, jobID)
 
 	return nil
 }
@@ -804,7 +826,7 @@ func (service *Service) PostEvent(event *Event) *piazza.JsonResponse {
 				//log.Printf("JOB ID: %s", jobID)
 				//log.Printf("JOB STRING: %s", jobString)
 
-				err7 := service.sendToKafka(jobString, jobID, trigger.CreatedBy)
+				err7 := service.sendToRabbitMQ(jobString, jobID, trigger.CreatedBy)
 				if err7 != nil {
 					results[triggerID] = service.statusInternalError(err7)
 					return

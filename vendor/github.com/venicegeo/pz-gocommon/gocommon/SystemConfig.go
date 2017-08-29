@@ -38,7 +38,7 @@ const (
 	PzElasticSearch     ServiceName = "pz-elasticsearch"
 	PzGoCommon          ServiceName = "PZ-GOCOMMON"     // not a real service, just for testing
 	PzGoCommonTest      ServiceName = "PZ-GOCOMMONTEST" // not a real service, just for testing
-	PzKafka             ServiceName = "pz-kafka"
+	PzRabbitMQ          ServiceName = "pz-rabbitmq"
 	PzLogger            ServiceName = "pz-logger"
 	PzUuidgen           ServiceName = "pz-uuidgen"
 	PzWorkflow          ServiceName = "pz-workflow"
@@ -56,7 +56,7 @@ var LocalPortNumbers = map[ServiceName]string{
 	PzElasticSearch:     "20004",
 	PzServiceController: "20005",
 	PzMetrics:           "20006",
-	PzKafka:             "20007",
+	PzRabbitMQ:          "20007",
 	PzsvcHello:          "20008",
 	PzGoCommon:          "20009",
 	PzGoCommonTest:      "20010",
@@ -66,7 +66,7 @@ var LocalPortNumbers = map[ServiceName]string{
 var EndpointPrefixes = map[ServiceName]string{
 	PzDiscover:          "",
 	PzElasticSearch:     "",
-	PzKafka:             "",
+	PzRabbitMQ:          "",
 	PzLogger:            "",
 	PzUuidgen:           "",
 	PzWorkflow:          "",
@@ -79,7 +79,7 @@ var EndpointPrefixes = map[ServiceName]string{
 var HealthcheckEndpoints = map[ServiceName]string{
 	PzDiscover:          "",
 	PzElasticSearch:     "",
-	PzKafka:             "",
+	PzRabbitMQ:          "",
 	PzLogger:            "/",
 	PzUuidgen:           "/",
 	PzWorkflow:          "/",
@@ -100,7 +100,7 @@ type SystemConfig struct {
 	// our external services
 	endpoints ServicesMap
 
-	Space string // int or stage or prod or...
+	Space        string // int or stage or prod or...
 	PiazzaSystem string // System-level username
 
 	vcapApplication *VcapApplication
@@ -192,7 +192,7 @@ func (sys *SystemConfig) checkRequirements(requirements []ServiceName) error {
 
 func (sys *SystemConfig) runHealthChecks() error {
 	for name, addr := range sys.endpoints {
-		if name == sys.Name || name == PzKafka {
+		if name == sys.Name || name == PzRabbitMQ {
 			continue
 		}
 
