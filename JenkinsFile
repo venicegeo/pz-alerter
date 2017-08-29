@@ -104,7 +104,6 @@ node {
                   cf push ${appName} -f manifest.jenkins.yml --hostname ${appName} -d ${env.PHASE_ONE_PCF_DOMAIN} --no-start
                   cf set-env ${appName} SPACE ${env.PHASE_ONE_PCF_SPACE}
                   cf set-env ${appName} DOMAIN ${env.PHASE_ONE_PCF_DOMAIN}
-                  cf restage ${appName}
                 """
                 try {
                   sh "cf start ${appName}"
@@ -184,7 +183,6 @@ node {
                       cf push ${appName} -f manifest.jenkins.yml --hostname ${appName} -d ${env.PHASE_TWO_PCF_DOMAIN} --no-start
                       cf set-env ${appName} SPACE ${env.PHASE_TWO_PCF_SPACE}
                       cf set-env ${appName} DOMAIN ${env.PHASE_TWO_PCF_DOMAIN}
-                      cf restage ${appName}
                     """
                     try {
                       sh "cf start ${appName}"
