@@ -208,27 +208,22 @@ func (service *Service) sendToRabbitMQ(jobInstance string, jobID piazza.Ident, a
 	rabbitAddress, err := service.sys.GetAddress(piazza.PzRabbitMQ)
 	if err != nil {
 		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (1)", actor, jobID)
-		return LoggedError("Kafka-related failure (1): %s", err.Error())
+		return LoggedError("rabbit-related failure (1): %s", err.Error())
 	}
 	conn, err := amqp.Dial(rabbitAddress)
 	if err != nil {
 		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (2)", actor, jobID)
-		return LoggedError("Kafka-related failure (2): %s", err.Error())
+		return LoggedError("rabbit-related failure (2): %s", err.Error())
 	}
 	defer conn.Close()
 	ch, err := conn.Channel()
 	if err != nil {
 		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (3)", actor, jobID)
-		return LoggedError("Kafka-related failure (3): %s", err.Error())
+		return LoggedError("rabbit-related failure (3): %s", err.Error())
 	}
 	defer ch.Close()
 
-	ex := os.Getenv("PIAZZA_EXCHANGE_NAME")
-	if ex == "" {
-		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (4)", actor, jobID)
-		return LoggedError("Kafka-related failure (4): Exchange variable does not exist or is empty")
-	}
-
+	ex := "Piazza"
 	topic := fmt.Sprintf("Request-Job-%s", service.sys.Space)
 	message := jobInstance
 
@@ -241,8 +236,8 @@ func (service *Service) sendToRabbitMQ(jobInstance string, jobID piazza.Ident, a
 		nil,   // arguments
 	)
 	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (5)", actor, jobID)
-		return LoggedError("Kafka-related failure (5): Exchange variable does not exist or is empty")
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (4)", actor, jobID)
+		return LoggedError("rabbit-related failure (4): %s", err.Error())
 	}
 
 	err = ch.Publish(
@@ -255,8 +250,8 @@ func (service *Service) sendToRabbitMQ(jobInstance string, jobID piazza.Ident, a
 			Body:        []byte(message),
 		})
 	if err != nil {
-		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (6)", actor, jobID)
-		return LoggedError("Kafka-related failure (6): Exchange variable does not exist or is empty")
+		service.syslogger.Audit(actor, "creatingJobFailure", "rabbitmq", "User [%s] sending job [%s] to rabbitmq failed (5)", actor, jobID)
+		return LoggedError("rabbit-related failure (5): %s", err.Error())
 	}
 
 	return nil
