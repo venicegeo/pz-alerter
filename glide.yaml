@@ -1,7 +1,7 @@
 package: github.com/venicegeo/pz-workflow
 import:
-- package: github.com/Shopify/sarama
-  version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
+- package: github.com/streadway/amqp
+  version: 2cbfe40c9341ad63ba23e53013b3ddc7989d801c
 - package: github.com/gin-gonic/gin
   version: e2212d40c62a98b388a5eb48ecbdcf88534688ba
 - package: github.com/venicegeo/pz-gocommon

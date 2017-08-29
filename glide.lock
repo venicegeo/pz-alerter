@@ -1,5 +1,5 @@
-hash: 30bf1819b0aee799802f7c307ea92dc37d455f1ed180241ff4d8ea6d76196f51
-updated: 2017-03-01T15:25:19.515583711-05:00
+hash: 53e58e58cd7055cb2c2191e5a3fc7339ef2ff8e8ab9bdc070bad74170b6f749b
+updated: 2017-08-29T12:05:18.947790073-04:00
 imports:
 - name: github.com/braintree/manners
   version: 82a8879fc5fd0381fa8b2d8033b19bf255252088
@@ -42,8 +42,10 @@ imports:
   version: 1f30fe9094a513ce4c700b9a54458bbb0c96996c
 - name: github.com/Shopify/sarama
   version: 0fb560e5f7fbcaee2f75e3c34174320709f69944
+- name: github.com/streadway/amqp
+  version: 2cbfe40c9341ad63ba23e53013b3ddc7989d801c
 - name: github.com/venicegeo/pz-gocommon
-  version: 9040fc9ac1a6b46dc885d3aead3300b898543dff
+  version: 29b7ec7e2b80393445f7fb1014e89178ff4d096f
   subpackages:
   - elasticsearch
   - gocommon
