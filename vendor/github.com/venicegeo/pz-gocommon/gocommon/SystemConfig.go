@@ -21,12 +21,11 @@ import (
 	"strings"
 )
 
-const DefaultElasticsearchAddress = "localhost:9200"
-const DefaultKafkaAddress = "localhost:9092"
-const DefaultPzLoggerAddress = "localhost:14600"
-const DefaultPzUuidgenAddress = "localhost:14800"
+const DefaultElasticsearchAddress = "http://localhost:9200"
+const DefaultKafkaAddress = "http://localhost:9092"
 const DefaultDomain = ".venicegeo.io"
-const DefaultProtocol = "http"
+const DefaultOutboundProtocol = "https"
+const GenericServerProtocol = "http"
 
 const waitTimeoutMs = 3000
 const waitSleepMs = 250
@@ -100,7 +99,7 @@ type SystemConfig struct {
 	// our external services
 	endpoints ServicesMap
 
-	Space string // int or stage or prod or...
+	Space        string // int or stage or prod or...
 	PiazzaSystem string // System-level username
 
 	vcapApplication *VcapApplication
@@ -196,7 +195,10 @@ func (sys *SystemConfig) runHealthChecks() error {
 			continue
 		}
 
-		url := fmt.Sprintf("%s://%s%s", DefaultProtocol, addr, HealthcheckEndpoints[name])
+		url := addr + HealthcheckEndpoints[name]
+		if !(strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://")) {
+			url = DefaultOutboundProtocol + url
+		}
 
 		resp, err := http.Get(url)
 		if err != nil {
@@ -236,7 +238,10 @@ func (sys *SystemConfig) GetURL(name ServiceName) (string, error) {
 		return "", err
 	}
 
-	url := fmt.Sprintf("%s://%s%s", DefaultProtocol, addr, EndpointPrefixes[name])
+	url := addr + EndpointPrefixes[name]
+	if !(strings.HasPrefix(url, "http://") || strings.HasPrefix(url, "https://")) {
+		url = DefaultOutboundProtocol + url
+	}
 
 	return url, nil
 }
@@ -251,7 +256,7 @@ func (sys *SystemConfig) WaitForService(name ServiceName) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s://%s", DefaultProtocol, addr)
+	url := fmt.Sprintf("%s://%s", DefaultOutboundProtocol, addr)
 	return WaitForService(name, url)
 }
 
@@ -261,6 +266,6 @@ func (sys *SystemConfig) WaitForServiceToDie(name ServiceName) error {
 		return err
 	}
 
-	url := fmt.Sprintf("%s://%s", DefaultProtocol, addr)
+	url := fmt.Sprintf("%s://%s", DefaultOutboundProtocol, addr)
 	return WaitForServiceToDie(name, url)
 }
