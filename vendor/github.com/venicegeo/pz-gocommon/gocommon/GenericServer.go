@@ -66,7 +66,7 @@ func (server *GenericServer) Start() (chan error, error) {
 		done <- err
 	}()
 
-	url := fmt.Sprintf("%s://%s", DefaultProtocol, sys.BindTo)
+	url := fmt.Sprintf("%s://%s", GenericServerProtocol, sys.BindTo)
 	err := WaitForService(sys.Name, url)
 	if err != nil {
 		return nil, err
