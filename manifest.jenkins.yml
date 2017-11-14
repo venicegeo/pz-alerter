@@ -8,7 +8,7 @@ applications:
   timeout: 180
   services:
       - pz-elasticsearch
-      - pz-kafka
+      - pz-rabbitmq
   env:
     LOGGER_INDEX: piazzalogger
     PZ_PEN: 48851
