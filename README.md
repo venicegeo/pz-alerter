@@ -9,6 +9,8 @@ Before building and running the pz-workflow project, please ensure that the foll
 * [ElasticSearch](https://www.elastic.co/)
 * [Apache Kafka](https://kafka.apache.org/quickstart)
 
+For additional details on prerequisites, please refer to the Piazza Developer's Guide repository content for [Core Overview](https://github.com/venicegeo/pz-docs/blob/master/documents/devguide/02-pz-core.md) or [Piazza workflow](https://github.com/venicegeo/pz-docs/blob/master/documents/devguide/15-pz-workflow.md) sections. Also refer to the [prerequisites for using Piazza](https://github.com/venicegeo/pz-docs/blob/master/documents/devguide/03-jobs.md) section for additional details.
+
 ## Setup, Configuring & Running
 
 ### Setup
