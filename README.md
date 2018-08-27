@@ -5,7 +5,7 @@ The Piazza workflow service enables the construction and use of "event" notifica
 Before building and running the pz-workflow project, please ensure that the following components or piazza services are available and/or installed, as necessary:
 * [Go](https://golang.org/doc/install) v1.7 or later
 * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) (for checking out repository source)
-- [Glide](https://glide.sh)
+* [Glide](https://glide.sh)
 * [ElasticSearch](https://www.elastic.co/)
 * [Apache Kafka](https://kafka.apache.org/quickstart)
 
